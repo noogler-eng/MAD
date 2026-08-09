@@ -1,188 +1,191 @@
 # MAD Docs — React Native + Expo Handbook
 
-Ye ek self-hosted HTML documentation site hai jo React Native + Expo ko basic se production-level tak
-Hinglish mein cover karta hai. Design: Claude-style dark theme (terracotta orange accent), sidebar nav,
-code blocks with copy button, "Senior Dev Note" callouts for security/architecture/crash wisdom.
+A self-hosted HTML documentation site that teaches React Native + Expo from basics to
+production-level, entirely in Hinglish, at a senior-developer depth.
 
-**Status: ✅ ALL 21 CHAPTERS COMPLETE** (17 core course chapters + 4 extra gap-filling chapters, each with
-an Advanced Deep-Dive section and a senior-level Interview Questions section).
+**Status:** ✅ All 21 chapters complete — 17 core course chapters + 4 extra gap-filling chapters,
+each with an **Advanced Deep-Dive** section and a senior-level **Interview Questions** section.
 
 **Location:** `/Users/sharadpoddar/Desktop/MAD/docs/`
 
-**Course source:** Chapters 1-17 follow [codewithbeto.dev's React Native course](https://codewithbeto.dev)
-curriculum (17 topics, Intro through Publishing/Native Modules/Bonus). Chapters 18-21 are extra chapters
-added to fill gaps the course curriculum didn't cover, plus a hands-on capstone project.
+---
 
-> **For Claude (future sessions):** This file is the source of truth for what's in the handbook and how
-> it's built. Read this before editing/extending any chapter — reuse `assets/style.css` / `assets/app.js`
-> classes exactly, follow the same sidebar markup pattern (all 21 chapters wired in every file's sidebar,
-> split into "Course" (1-17) and "Extra Topics" (18-21) nav-groups), keep the Hinglish tone (Latin script
-> ONLY — never let Devanagari characters slip into prose, this has happened before and been caught/fixed
-> multiple times, double-check new content), and keep adding `.callout.senior` production notes. Don't
-> restart the design system — extend it.
->
-> **HARD REQUIREMENT #1: every single line inside every code block MUST have an inline `//` (or
-> language-appropriate) comment explaining what that exact line does.** Not just the tricky lines — every
-> line, including simple ones like imports and closing braces. Sharad is learning line-by-line. For JSON
-> files that don't support comments (`eas.json`, `app.json`), use the "teaching comment" pattern (annotate
-> as if JS/JSON5 comments were allowed, with a caption noting real JSON doesn't support them).
->
-> **HARD REQUIREMENT #2: every folder/file-structure tree block MUST also have an inline comment on every
-> file/folder line explaining what that file/folder is for AND why it's structured that way** (the
-> reasoning, not just the label).
->
-> **ESTABLISHED PATTERN (from ch.1 onward, now standard for every chapter): every chapter ends with an
-> "Advanced Deep-Dive — Beyond the Basics" (`id="advanced-deep-dive"`) section and a "🎯 Interview
-> Questions — Senior React Native Developer" (`id="interview-questions"`) section, both linked in the
-> `.toc`, right before `.prevnext`.** New chapters should follow this same shape unless there's a good
-> reason not to (ch.21's capstone uses a lighter "test your understanding" variant since it's a practical
-> build-along, not a concept chapter).
+## Table of Contents
+
+- [Overview](#overview)
+- [Viewing the Handbook](#viewing-the-handbook)
+- [Chapters](#chapters)
+  - [Core Course (1–17)](#core-course-1-17)
+  - [Extra Topics (18–21)](#extra-topics-18-21)
+- [Project Structure](#project-structure)
+- [Where Cross-Cutting Topics Live](#where-cross-cutting-topics-live)
+- [Design System Reference](#design-system-reference)
+- [Notes for Contributors / Claude](#notes-for-contributors--claude)
 
 ---
 
-## File structure
+## Overview
+
+| | |
+|---|---|
+| **Theme** | Dark, Claude-style UI — terracotta orange accent |
+| **Language** | Hinglish prose (Latin script), English code + technical headings |
+| **Chapters** | 21 (17 core + 4 extra), ~23,000 lines of HTML |
+| **Course source** | Chapters 1–17 follow [codewithbeto.dev's React Native course](https://codewithbeto.dev) |
+| **Extra chapters** | 18–21 fill gaps the course curriculum didn't cover, plus a hands-on capstone project |
+
+Every chapter includes:
+- A table of contents box with anchor links to every section
+- Fully commented code blocks (every line explained — see [Design System Reference](#design-system-reference))
+- `.callout` boxes for senior-level notes, warnings, security-critical info, and quick tips
+- An **Advanced Deep-Dive** section
+- A senior-level **Interview Questions** section
+- Prev/Next navigation to the adjacent chapter
+
+---
+
+## Viewing the Handbook
+
+This is a static site — no build step required.
+
+```bash
+cd /Users/sharadpoddar/Desktop/MAD/docs
+python3 -m http.server 8000
+```
+
+Then open **http://localhost:8000/index.html** in a browser.
+
+---
+
+## Chapters
+
+### Core Course (1–17)
+
+| # | Chapter | Covers | Advanced Deep-Dive |
+|---|---|---|---|
+| 1 | [Introduction](01-introduction.html) | RN+Expo fundamentals, dev env setup, New Architecture (JSI/Fabric/TurboModules/Hermes), Expo Go vs Dev Builds, scalable folder structure | Hermes bytecode compilation, Prebuild/CNG internals, JS engine comparison, monorepo/Metro config |
+| 2 | [Components & APIs](02-components-and-apis.html) | Core components, FlatList/FlashList virtualization, custom/compound components, memoization | Fabric shadow tree/reconciliation, Context re-render pitfalls, `useSyncExternalStore`, DevTools Profiler |
+| 3 | [Style & Design](03-style-and-design.html) | StyleSheet internals, Flexbox, design tokens, dark mode | Yoga layout engine internals, array style resolution, responsive design systems |
+| 4 | [Expo Router](04-expo-router.html) | File-based routing, dynamic routes, auth flow, RBAC, deep linking *(flagship security chapter)* | AASA/assetlinks.json verification, navigation state persistence, auth-guard race conditions |
+| 5 | [Animations & Gestures](05-animations-and-gestures.html) | Reanimated 3, Gesture Handler v2, swipe-to-delete, 60fps rules | Worklet Babel-plugin internals, Fabric layout animations, shared element transitions |
+| 6 | [Expo UI](06-expo-ui.html) | SwiftUI/Compose bridging, universal components, platform-fork architecture | Fabric shadow-tree mounting, state-sync cost analysis, bundle-size trade-offs |
+| 7 | [Testing](07-testing.html) | Testing pyramid, Jest, RNTL, Maestro E2E, CI integration | Provider-stack test utilities, testing Reanimated/gestures, visual regression testing |
+| 8 | [Push Notifications](08-push-notifications.html) | Expo Notifications vs OneSignal, FCM/APNs, permission flows | Silent/data-only push architecture, notification categories, badge count sync |
+| 9 | [Backend + Supabase](09-backend-supabase.html) | API routes, RLS, client/server key patterns *(security-heavy chapter)* | Realtime subscriptions, offline-first sync, optimistic updates, idempotency |
+| 10 | [EAS Build](10-eas-build.html) | Build profiles, credentials, version automation | Build caching internals, monorepo builds, dependency-conflict troubleshooting |
+| 11 | [EAS Submit](11-eas-submit.html) | App Store/Play Store submission automation, signing | App Store Connect API scope, staged rollout automation |
+| 12 | [EAS Update](12-eas-update.html) | OTA updates, runtime versions, channels, rollback | Manifest resolution/asset diffing, rollout percentage strategy, code signing |
+| 13 | [EAS Workflows](13-eas-workflows.html) | CI/CD YAML pipelines, Maestro-in-CI | Matrix builds, workflow composition for monorepos |
+| 14 | [Publishing](14-publishing.html) | Manual Xcode flow, full App Store/Play Store checklists | Phased release strategies, metadata automation, localization at scale |
+| 15 | [Payments](15-payments.html) | IAP vs Stripe policy split, RevenueCat, PCI security *(high-stakes chapter)* | Server-side entitlement caching, subscription state machines, proration |
+| 16 | [Native Modules](16-native-modules.html) | Expo Modules API, Swift+Kotlin+TS native module & view from scratch | Threading model, memory management, crash symbolication |
+| 17 | [Bonus](17-bonus.html) | Apple Widgets, Expo SDK upgrade strategy, Meta Ads/Facebook SDK | App Clips, Live Activities, App Bundles, CodePush vs EAS Update — plus capstone-style questions tying the whole handbook together |
+
+### Extra Topics (18–21)
+
+| # | Chapter | Covers | Advanced Deep-Dive |
+|---|---|---|---|
+| 18 | [State Management](18-state-management.html) | Context vs Zustand vs Redux Toolkit vs Jotai, decision framework, MMKV/AsyncStorage persistence, selector patterns | XState, RTK Query vs TanStack Query, derived state |
+| 19 | [Debugging & Crashes](19-debugging-and-crashes.html) | Dev tools (Flipper/DevTools/Reactotron), Sentry setup, crash symbolication, JS errors vs native crashes vs ANRs | Sentry breadcrumbs, release health tracking, custom error boundaries |
+| 20 | [Accessibility & i18n](20-accessibility-i18n.html) | a11y props, screen reader testing, font scaling, i18next, RTL layout, pluralization | `AccessibilityInfo` API, accessible gesture components, CI a11y testing |
+| 21 | [Capstone: Free Full App](21-capstone-free-app.html) | End-to-end build of a "Streaks" habit tracker using **only free tiers**: Expo + Supabase (RLS) + Razorpay/Stripe Test Mode + EAS free tier. Full steps: project setup → Supabase/RLS → auth → habit logic → payment order + signature verification → per-stage debugging → free build/share → free-vs-paid-at-scale breakdown | *(uses a lighter "test your understanding" section instead — it's a practical build-along)* |
+
+> 18–19 were explicitly flagged as gaps in earlier drafts of this handbook (state management and
+> debugging/crash analysis weren't part of the original 17-topic course) — both are now filled.
+> 20 (accessibility/i18n) was never part of the course either. No further known gaps remain; see
+> [Notes for Contributors](#notes-for-contributors--claude) for how to add more.
+
+---
+
+## Project Structure
 
 ```
 docs/
-├── readme.md                        (this file — progress tracker + design-system reference)
-├── index.html                       (hub page, links to all 21 chapters)
+├── readme.md                        # this file
+├── index.html                       # hub page — links to all 21 chapters
 ├── assets/
-│   ├── style.css                    (design system — dark + orange, all shared classes)
-│   └── app.js                       (copy-button behaviour, active nav highlighting)
+│   ├── style.css                    # design system — dark + orange, all shared classes
+│   └── app.js                       # copy-button behaviour, active nav highlighting
 ├── 01-introduction.html
 ├── 02-components-and-apis.html
-├── 03-style-and-design.html
-├── 04-expo-router.html
-├── 05-animations-and-gestures.html
-├── 06-expo-ui.html
-├── 07-testing.html
-├── 08-push-notifications.html
-├── 09-backend-supabase.html
-├── 10-eas-build.html
-├── 11-eas-submit.html
-├── 12-eas-update.html
-├── 13-eas-workflows.html
-├── 14-publishing.html
-├── 15-payments.html
-├── 16-native-modules.html
-├── 17-bonus.html
-├── 18-state-management.html
-├── 19-debugging-and-crashes.html
-├── 20-accessibility-i18n.html
+├── ...
 └── 21-capstone-free-app.html
 ```
 
 ---
 
-## ✅ Done — Chapters 1-17 (Core Course)
+## Where Cross-Cutting Topics Live
 
-Each of these covers its core topic PLUS an Advanced Deep-Dive and Interview Questions section.
+Some topics span multiple chapters rather than having one home. Quick index:
 
-1. **Introduction** — RN+Expo fundamentals, dev env setup, New Architecture (JSI/Fabric/TurboModules/Hermes),
-   Expo Go vs Dev Builds, scalable folder structure. Advanced: Hermes bytecode compilation, Prebuild/CNG
-   internals, JS engine comparison, monorepo/Metro config.
-2. **Components & APIs** — Core components, FlatList/FlashList virtualization, custom/compound components,
-   memoization. Advanced: Fabric shadow tree/reconciliation, Context re-render pitfalls, `useSyncExternalStore`,
-   DevTools Profiler workflow.
-3. **Style & Design** — StyleSheet internals, Flexbox, design tokens, dark mode. Advanced: Yoga layout engine
-   internals, array style resolution, UI-thread vs layout-thread animatable properties, responsive design systems.
-4. **Expo Router** — File-based routing, dynamic routes, auth flow, RBAC, deep linking (flagship security
-   chapter). Advanced: AASA/assetlinks.json verification internals, navigation state persistence, auth-guard
-   race conditions, permission-based RBAC at scale.
-5. **Animations & Gestures** — Reanimated 3, Gesture Handler v2, swipe-to-delete, 60fps rules. Advanced:
-   worklet Babel-plugin serialization internals, Fabric layout animations, shared element transitions,
-   gesture composition APIs.
-6. **Expo UI** — SwiftUI/Compose bridging, universal components, platform-fork architecture. Advanced:
-   Fabric shadow-tree mounting of native views, state-sync cost analysis, bundle-size trade-offs.
-7. **Testing** — Testing pyramid, Jest, RNTL, Maestro E2E, CI integration. Advanced: provider-stack test
-   utilities, testing Reanimated/gestures, visual regression testing, CI performance profiling.
-8. **Push Notifications** — Expo Notifications vs OneSignal, FCM/APNs, permission flows. Advanced:
-   silent/data-only push architecture, notification categories/actions, badge count sync.
-9. **Backend + Supabase** — API routes, RLS, client/server key patterns (security-heavy chapter). Advanced:
-   Realtime subscriptions, offline-first sync/conflict resolution, optimistic updates with rollback,
-   idempotency for mobile APIs.
-10. **EAS Build** — Build profiles, credentials, version automation. Advanced: build caching internals,
-    monorepo builds, custom build hooks, dependency-conflict troubleshooting.
-11. **EAS Submit** — App Store/Play Store submission automation, signing. Advanced: App Store Connect API
-    scope/key rotation, staged rollout automation, submit idempotency.
-12. **EAS Update** — OTA updates, runtime versions, channels, rollback. Advanced: manifest resolution/asset
-    diffing, rollout percentage strategy, update code signing.
-13. **EAS Workflows** — CI/CD YAML pipelines, Maestro-in-CI. Advanced: matrix builds, workflow composition
-    for monorepos, secrets scoping.
-14. **Publishing** — Manual Xcode flow, full App Store/Play Store checklists. Advanced: phased release
-    strategies, App Store Connect API metadata automation, localization at scale.
-15. **Payments** — IAP vs Stripe policy split, RevenueCat, PCI security (high-stakes chapter). Advanced:
-    server-side entitlement caching, subscription state machines, proration handling.
-16. **Native Modules** — Expo Modules API, Swift+Kotlin+TS native module & view from scratch. Advanced:
-    threading model, memory management (ARC/GC), sync vs async performance, crash symbolication.
-17. **Bonus** — Apple Widgets, Expo SDK upgrade strategy, Meta Ads/Facebook SDK. Advanced: App Clips/Instant
-    Apps, Live Activities, Android App Bundles, CodePush vs EAS Update. Includes capstone-style questions
-    tying the whole handbook together.
-
-## ✅ Done — Chapters 18-21 (Extra Topics)
-
-18. **State Management** (`18-state-management.html`) — Context vs Zustand vs Redux Toolkit vs Jotai, senior
-    decision framework, MMKV/AsyncStorage persistence, selector patterns to prevent re-renders. Advanced:
-    XState for complex flows, RTK Query vs TanStack Query (client vs server state distinction), derived state.
-19. **Debugging & Crashes** (`19-debugging-and-crashes.html`) — dev tools (Flipper/DevTools/Reactotron),
-    Sentry setup, crash symbolication (dSYM/ProGuard mapping) deep-dive, JS errors vs native crashes vs ANRs,
-    "works locally, crashes in prod" debugging checklist, performance profiling. Advanced: Sentry breadcrumbs,
-    release health/crash-free rate tracking, custom error boundaries. This was explicitly flagged as an open
-    gap in earlier versions of this readme — now filled.
-20. **Accessibility & i18n** (`20-accessibility-i18n.html`) — a11y props, screen reader testing (VoiceOver/
-    TalkBack), font scaling, color contrast, i18next setup, RTL layout support, pluralization/locale
-    formatting. Advanced: `AccessibilityInfo` API, accessible custom-gesture components, CI a11y testing.
-21. **Capstone: Free Full App** (`21-capstone-free-app.html`) — the biggest, most hands-on chapter. Builds a
-    real "Streaks" habit-tracker app end-to-end using ONLY free tiers: Expo + Supabase (free tier, RLS) +
-    Razorpay Test Mode (with a Stripe Test Mode callout for non-India readers) for a premium unlock feature +
-    EAS free tier for builds. Full step-by-step: project setup → Supabase tables/RLS → auth flow → habit
-    tracking logic → Razorpay order creation (server-side, test keys) → client checkout → server-side
-    signature verification before unlocking premium → a dedicated debugging-steps section per stage
-    (RLS issues, auth redirect loops, payment-verification failures, Expo Go vs Dev Build gotchas, network
-    inspection) → building/sharing a free preview build → an honest "what's free forever vs what costs money
-    at scale" table → closing notes on what it'd take to actually ship this to production using the rest of
-    the handbook (ch.11 Submit, ch.14 Publishing, ch.15 live payment keys, ch.19 Sentry).
+| Topic | Chapters |
+|---|---|
+| Security (tokens, SSL pinning, deep links, RLS, PCI) | 4, 9, 15, 21 |
+| API key handling (`EXPO_PUBLIC_`, EAS Secrets, test vs live keys) | 1, 9, 21 |
+| Firebase (FCM) | 8 |
+| State management | 18 |
+| Debugging & crash analysis | 19 |
+| Accessibility & i18n | 20 |
+| Automations / CI-CD | 10, 13 |
+| Expo SDK upgrades | 17 |
+| Full production-app walkthrough | 21 (ties together ch.4, 9, 10, 15, 19) |
 
 ---
 
-## Cross-cutting topics — where they live
+## Design System Reference
 
-- **Security**: token storage/SSL pinning/deep-link validation (ch.4), RLS/API key split (ch.9), payment
-  security/PCI (ch.15), receipt/signature verification (ch.15, ch.21)
-- **API keys handling**: `EXPO_PUBLIC_` exposure (ch.1), EAS Secrets + backend-proxy pattern (ch.9), test vs
-  live key separation (ch.21)
-- **Firebase**: FCM for push (ch.8)
-- **State management**: full dedicated chapter (ch.18) — this was a real gap in the original 17-chapter course
-- **Debugging & crash analysis**: full dedicated chapter (ch.19) — previously flagged as open, now filled
-- **Accessibility & i18n**: full dedicated chapter (ch.20) — not part of the original course at all
-- **Automations**: EAS Workflows (ch.13), version-code automation (ch.10)
-- **New SDKs**: Expo SDK upgrade strategy (ch.17)
-- **Real production app walkthrough**: the capstone (ch.21) — ties together Router (ch.4), Supabase (ch.9),
-  EAS Build (ch.10), Payments (ch.15), and Debugging (ch.19) into one coherent build
+| | |
+|---|---|
+| Background | `--bg: #1a1918` |
+| Elevated surface | `--bg-elevated: #21201e` |
+| Accent | `--accent: #d97757` (terracotta orange) |
 
-No further known gaps remain in the handbook as of this writing. If new gaps surface later (e.g. a
-dedicated GraphQL/tRPC chapter, a deeper monorepo/Turborepo chapter, or a Web+Native code-sharing chapter
-for teams also targeting `react-native-web`), add them as chapters 22+ following the same "Extra Topics"
-sidebar group pattern.
+- **Sidebar:** two `nav-group`s — "Course" (1–17, plus Home) and "Extra Topics" (18–21). Kept in
+  sync across every HTML file manually whenever a chapter is added.
+- **Per-chapter layout:** `.toc` box at top → numbered content sections → Advanced Deep-Dive →
+  Interview Questions → `.prevnext` navigation.
+- **Code blocks:** `.code-block` with `.code-title` + `.copy-btn`, syntax highlighted via `.tok-*`
+  spans.
+- **Callouts:** `.callout.senior` 🧠 (architecture/production wisdom), `.callout.warn` ⚠️
+  (gotchas), `.callout.danger` 🔒 (security/crash critical), `.callout.info`, `.callout.hinglish-tip`.
+- **Progress indicator:** `"Chapter N of 21"` on chapter pages, `"21 / 21 topics ready"` on
+  `index.html`.
+- **Language:** Hinglish prose in **Latin script only** — no Devanagari. Verify with:
+  ```bash
+  python3 -c "
+  import re, glob
+  for f in glob.glob('*.html'):
+      if re.findall(r'[ऀ-ॿ]+', open(f, encoding='utf-8').read()):
+          print(f)
+  "
+  ```
 
 ---
 
-## Design system reference (for continuity)
+## Notes for Contributors / Claude
 
-- Colors: `--bg:#1a1918`, `--bg-elevated:#21201e`, `--accent:#d97757` (terracotta orange), full palette in
-  `assets/style.css`
-- Sidebar: two `nav-group`s — "Course" (chapters 1-17, plus Home) and "Extra Topics" (chapters 18-21). Every
-  chapter's sidebar must be kept in sync across ALL html files whenever a new chapter is added — this is a
-  manual step (find/replace across all files), not automatic.
-- Every chapter: `.toc` box at top (links to every h2 including Advanced Deep-Dive + Interview Questions),
-  `.code-block` with `.code-title` + `.copy-btn`, syntax via `.tok-*` spans
-- Callout types: `.callout.senior` (🧠 architecture/production wisdom), `.callout.warn` (⚠️ gotchas),
-  `.callout.danger` (🔒 security/crash critical), `.callout.info`, `.callout.hinglish-tip`
-- Every chapter ends with `.prevnext` linking to previous/next chapter (chain verified 01→21→index)
-- Progress-pill format: `"Chapter N of 21"` on chapter pages, `"21 / 21 topics ready"` on index.html
-- Language: Hinglish prose (Latin script ONLY, no Devanagari — verify with a regex scan
-  `[ऀ-ॿ]+` across files after any bulk generation, this has caught real slip-ups before), English code +
-  technical headings, written like a senior Indian dev explaining to a colleague — not textbook-formal
-- **Every code block: every line commented** (hard requirement #1), **every folder tree: every line
-  reasoned** (hard requirement #2), **every chapter: Advanced Deep-Dive + Interview Questions sections**
-  (established pattern) — all apply to any future edits or new chapters
+Read this before editing or extending any chapter.
+
+**Hard requirements** (apply to every code block, in every chapter):
+
+1. **Every line of code must be commented.** Not just the tricky lines — imports, closing braces,
+   everything. The reader is learning line-by-line. For JSON files that don't support comments
+   (`eas.json`, `app.json`), use a "teaching comment" pattern — annotate as if comments were
+   allowed, with a caption noting real JSON doesn't support them.
+2. **Every folder/file-structure tree must explain *why*, not just *what*.** Each line needs a
+   comment describing the file/folder's purpose and the reasoning behind its placement.
+
+**Established pattern** for every chapter: end with an "Advanced Deep-Dive — Beyond the Basics"
+(`id="advanced-deep-dive"`) section and a "🎯 Interview Questions — Senior React Native Developer"
+(`id="interview-questions"`) section, both linked from the `.toc`, immediately before `.prevnext`.
+
+**When adding a new chapter:**
+- Reuse `assets/style.css` / `assets/app.js` classes exactly — don't invent new ones.
+- Copy the sidebar markup from an existing file and update it across **all** HTML files (this is a
+  manual step, not automatic).
+- Keep the Hinglish tone — Latin script only, run the Devanagari check above after generating content.
+- Number it 22+ under the "Extra Topics" nav-group unless it belongs in the original 17-chapter course.
+
+Ideas for future chapters if new gaps surface: a dedicated GraphQL/tRPC chapter, a deeper
+monorepo/Turborepo chapter, or a Web+Native code-sharing chapter for teams targeting
+`react-native-web`.
