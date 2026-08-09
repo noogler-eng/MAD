@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Native Modules — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link active" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Native Modules</div>
+      <div class="progress-pill">Chapter 16 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 16 · Native Extensibility</span>
+      <h1>Native Modules — Apna Native Code Likhna, Root Se</h1>
+      <p class="subtitle">
+        Chapter 1 mein humne dekha tha JSI, Fabric aur TurboModules kaise React Native ke "New Architecture" ka
+        core hain. Ab hum wahi concepts use karke <strong>apna khud ka native module</strong> banayenge —
+        <strong>Expo Modules API</strong> ke through, jo aaj Expo ka officially recommended tareeka hai kisi bhi
+        native capability (chahe Expo SDK mein ho ya na ho) ko apne RN app mein expose karne ka. Hum function-style
+        modules, native views, packaging/distribution, aur config plugins tak — sab root se cover karenge, saath
+        mein Swift aur Kotlin dono ka line-by-line breakdown.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#when-native-modules">1. Kab Actually Native Module Chahiye</a></li>
+          <li><a href="#expo-modules-api">2. Expo Modules API — Modern Approach Kyun</a></li>
+          <li><a href="#create-native-module">3. Native Module Banana — Full Example</a></li>
+          <li><a href="#create-native-view">4. Native View Banana — Full Example</a></li>
+          <li><a href="#distribution-config-plugins">5. Distribution aur Config Plugins</a></li>
+          <li><a href="#gotchas">6. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">8. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="when-native-modules" style="border-top:none; padding-top:0; margin-top:28px;">Kab Actually Native Module Chahiye</h2>
+
+      <p>
+        Chapter 1 mein humne JSI ka mental model banaya tha — <strong>JSI (JavaScript Interface)</strong> ek C++
+        layer hai jo JS engine (Hermes) ko native C++ objects ke saath directly, synchronously bind karta hai, aur
+        <strong>TurboModules</strong> is JSI foundation ke upar native modules ko lazy-load karne ka mechanism
+        dete hain. Jab hum "native module likhna" bolte hain, hum literally ek naya TurboModule bana rahe hote
+        hain — koi native (Swift/Kotlin) capability jo JS side se ek clean, typed function call jaisi dikhti hai,
+        lekin under the hood JSI ke through directly native code ko hit karti hai, bina Bridge ke purane
+        JSON-serialization overhead ke.
+      </p>
+
+      <p>
+        Ab sabse important senior-level question — <strong>kab aapko khud native module likhna chahiye?</strong>
+        Ye answer bahut clear hona chahiye kyunki galat decision (bahut jaldi native module likhna) unnecessary
+        maintenance burden create karta hai jo aage is chapter mein hum dekhenge. Sahi decision tree ye hai:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Situation</th><th>Sahi approach</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Capability already <strong>Expo SDK</strong> mein hai (camera, location, notifications, file system, etc.)</td>
+            <td>Use karo directly — <code>expo-camera</code>, <code>expo-location</code>, wagera. Khud likhne ki zaroorat hi nahi.</td>
+          </tr>
+          <tr>
+            <td>Capability Expo SDK mein nahi hai, lekin <strong>npm pe koi maintained community package</strong> already available hai (jaise <code>react-native-mmkv</code>, <code>react-native-vision-camera</code>)</td>
+            <td>Us package ko use karo. Kisi aur ne already ye native code likh, test aur maintain kiya hai — reinvent mat karo.</td>
+          </tr>
+          <tr>
+            <td>Capability ek <strong>niche hardware SDK, proprietary company SDK, ya bahut specific native API</strong> hai jiska koi RN/Expo wrapper exist hi nahi karta (jaise: company ka apna Bluetooth POS device SDK, ek internal biometric hardware ka native SDK, ya ek bahut specific OS-level API jo abhi tak kisi ne wrap nahi ki)</td>
+            <td><strong>Yahi</strong> genuine case hai jab aap khud native module likhoge. Ye is chapter ka focus hai.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Native module likhna <strong>last resort</strong> hona chahiye, first instinct nahi. Har baar jab
+          aapko lage "iske liye native code likhna padega", pehle npm pe 10 minute search karo (aur Expo SDK
+          docs check karo) — kyunki har native module jo aap khud likhte ho, wo ek <strong>maintenance liability</strong>
+          bhi ban jaata hai jo aapko har Xcode/Android Gradle update, har Expo SDK major upgrade ke saath khud
+          maintain karni padegi (is chapter ke end mein "Gotchas" section mein isko detail se dekhenge). Ek
+          community-maintained package use karna almost hamesha cheaper hai long-term mein — kisi aur ki team
+          us maintenance cost ko already bear kar rahi hai.
+        </p>
+      </div>
+
+      <p>
+        Ek concrete example: agar aapko battery level chahiye, pehle check karo — kya <code>expo-battery</code>
+        already exist karta hai? (Haan, karta hai). Is chapter mein hum jaan-boojh kar ek thoda deeper example
+        use karenge jahan hume ek raw native API (device build fingerprint) chahiye jiske liye Expo SDK mein
+        koi direct wrapper nahi hai — taaki example genuinely meaningful ho, sirf ek already-solved problem ko
+        dobara solve na karein.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="expo-modules-api">Expo Modules API — Modern Approach Kyun</h2>
+
+      <p>
+        Pehle samjhte hain <strong>purana tareeka</strong> native module likhne ka, taaki aapko pata chale Expo
+        Modules API actually kitna time bacha raha hai. Raw TurboModule likhne ke liye aapko ye sab manually
+        karna padta tha:
+      </p>
+      <ul>
+        <li>Ek <strong>Codegen spec file</strong> (TypeScript interface jisse Codegen tool C++ glue code generate karta hai) hand-write karna, with bahut strict typing rules.</li>
+        <li><code>babel.config.js</code>, <code>metro.config.js</code>, aur native build files (<code>Podfile</code>, <code>build.gradle</code>) mein manual codegen wiring setup karna.</li>
+        <li>Native side pe raw <strong>C++/Objective-C++ (iOS)</strong> aur <strong>C++/Java (Android)</strong> boilerplate likhna jo JSI HostObject ko manually implement karta hai.</li>
+        <li>Auto-linking ke liye <code>react-native.config.js</code> jaisi files manually configure karna.</li>
+      </ul>
+      <p>
+        Ye poora process verbose, error-prone, aur frankly bahut senior React Native engineers ke liye bhi
+        intimidating tha — kyunki isme C++ aur JSI internals ka deep knowledge chahiye hota tha, sirf ek simple
+        function expose karne ke liye bhi.
+      </p>
+
+      <p>
+        <strong>Expo Modules API</strong> ne is poore complexity ko ek clean <strong>Swift/Kotlin-first DSL
+        (Domain-Specific Language)</strong> ke peeche abstract kar diya. Aap ek high-level, declarative
+        <code>ModuleDefinition</code> likhte ho Swift ya Kotlin mein — aur Expo Modules API background mein
+        automatically saara JSI/TurboModule boilerplate, Codegen wiring, aur auto-linking generate kar deta hai.
+        Aapko kabhi C++ nahi likhna padta, kabhi manually Codegen spec files nahi banani padti.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Important — ye sirf "Expo apps" ke liye nahi hai</div>
+        <p>
+          Ek common misconception hai ki Expo Modules API sirf Expo-managed projects mein kaam karta hai. Ye
+          galat hai — Expo Modules API ek <strong>standalone native-module-authoring framework</strong> hai jo
+          <strong>bare React Native projects mein bhi</strong> equally kaam karta hai (Expo install kiye bina
+          bhi). Isi wajah se Expo team ne <code>npx create-expo-module</code> ko har naye native module ke liye
+          <strong>industry-recommended default</strong> bana diya hai, chahe aapka target project Expo-based ho
+          ya pure bare RN CLI ho.
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th>Raw TurboModule (old way)</th><th>Expo Modules API (modern way)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Spec/interface definition</td>
+            <td>Manual Codegen TypeScript spec file, strict syntax rules</td>
+            <td>Koi separate spec file nahi — Swift/Kotlin DSL khud hi type-safe interface define karta hai</td>
+          </tr>
+          <tr>
+            <td>Native implementation language</td>
+            <td>C++/Objective-C++ (iOS), C++/Java (Android) — low-level</td>
+            <td>Swift (iOS), Kotlin (Android) — modern, high-level, DSL-based</td>
+          </tr>
+          <tr>
+            <td>JSI/TurboModule glue code</td>
+            <td>Aapko khud samajhna aur likhna padta tha</td>
+            <td>Fully auto-generated, invisible to the author</td>
+          </tr>
+          <tr>
+            <td>Auto-linking setup</td>
+            <td>Manual config files</td>
+            <td>Automatic via <code>expo-module.config.json</code></td>
+          </tr>
+          <tr>
+            <td>Works in bare RN (non-Expo) projects?</td>
+            <td>Yes (it's the RN-native way)</td>
+            <td>Yes — <code>npx create-expo-module</code> generates a package usable anywhere</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="create-native-module">Native Module Banana — Full Example</h2>
+
+      <p>
+        Hum ek real, useful module banayenge: <strong>device ka build fingerprint</strong> nikalna — ek unique
+        string jo device ke exact OS build ko identify karta hai (iOS pe <code>UIDevice</code> ka combination,
+        Android pe <code>Build.FINGERPRINT</code>). Ye deliberately aisa example hai jiske liye Expo SDK mein
+        koi ready-made wrapper nahi hai, isliye ye genuinely dikhata hai ki native module kab likhna sensible hai.
+      </p>
+
+      <h3>Step 1 — Scaffold karna</h3>
+      <p>
+        Sabse pehla step hamesha same command hai — <code>create-expo-module</code> CLI ek poora working module
+        skeleton generate kar deta hai, dono platforms (Swift + Kotlin) ke liye, TypeScript wrapper ke saath.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Local module banane ke liye — apne existing Expo/RN project ke andar hi ye chalao</span>
+npx create-expo-module@latest --local device-fingerprint
+
+<span class="tok-com"># --local flag ka matlab: module "modules/device-fingerprint" folder mein banega, npm pe publish nahi hoga abhi</span>
+<span class="tok-com"># CLI aapse module name, package name (iOS bundle-style) aur short description poochega</span></code></pre>
+      </div>
+
+      <p>
+        Is command ke baad generated folder structure kuch aisi dikhti hai — har file ka role samajhna zaroori
+        hai, kyunki aage hum inhi files ko edit karenge:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>modules/
+└── device-fingerprint/                        <span class="tok-com"># "modules/" root Expo convention hai — local module ko npm package jaisa isolate karta hai, taaki baad mein publish karna trivial ho</span>
+    ├── expo-module.config.json                <span class="tok-com"># Expo CLI/autolinking ko batata hai ki is module ka native code kaha hai (ios/android keys) — iske bina auto-linking kaam nahi karega</span>
+    ├── index.ts                               <span class="tok-com"># Package ka public entry point — yahi file hai jo "import { getBuildFingerprint } from '...'" pe resolve hoti hai</span>
+    ├── ios/
+    │   ├── DeviceFingerprint.podspec           <span class="tok-com"># CocoaPods spec — batata hai Xcode build ko kaunsi Swift files compile karni hain aur kaunse iOS frameworks link karne hain</span>
+    │   └── DeviceFingerprintModule.swift       <span class="tok-com"># Actual Swift implementation — Expo Modules API Swift-first hai isliye .swift hi primary native language hai iOS ke liye</span>
+    ├── android/
+    │   ├── build.gradle                        <span class="tok-com"># Gradle build config — Kotlin compiler version, Android SDK target version, dependencies yahan declare hote hain</span>
+    │   └── src/main/java/expo/modules/devicefingerprint/
+    │       └── DeviceFingerprintModule.kt      <span class="tok-com"># Kotlin implementation — Swift ka Android-equivalent, same ModuleDefinition DSL pattern follow karta hai</span>
+    └── src/
+        └── DeviceFingerprintModule.ts          <span class="tok-com"># TypeScript wrapper jo native module ko requireNativeModule() se load karke ek clean typed API expose karta hai JS side ko</span></code></pre>
+      </div>
+
+      <h3>Step 2 — <code>expo-module.config.json</code> samajhna</h3>
+      <p>
+        Ye file autolinking ka "map" hai — Expo CLI prebuild ke time is file ko padh kar samajhta hai ki iOS aur
+        Android native project mein kya link karna hai. JSON comments support nahi karta, isliye neeche
+        "teaching comments" style mein annotate kiya hai (jaise agar JS/JSON5 comments allowed hote) — real file
+        mein ye comments nahi honge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>modules/device-fingerprint/expo-module.config.json (teaching-annotated, real JSON mein comments nahi hote)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-com">// "platforms": batata hai ye module kaunse platforms support karta hai — Expo CLI sirf inhi platforms ke liye linking try karega</span>
+  <span class="tok-attr">"platforms"</span>: [<span class="tok-str">"ios"</span>, <span class="tok-str">"android"</span>],
+  <span class="tok-com">// "ios" object — iOS-specific linking config</span>
+  <span class="tok-attr">"ios"</span>: {
+    <span class="tok-com">// "modules" array — kaunsi Swift class(es) ko native module ke roop mein register karna hai</span>
+    <span class="tok-attr">"modules"</span>: [<span class="tok-str">"DeviceFingerprintModule"</span>]
+  },
+  <span class="tok-com">// "android" object — Android-specific linking config</span>
+  <span class="tok-attr">"android"</span>: {
+    <span class="tok-com">// "modules" array — kaunsi Kotlin class ka fully-qualified name register karna hai</span>
+    <span class="tok-attr">"modules"</span>: [<span class="tok-str">"expo.modules.devicefingerprint.DeviceFingerprintModule"</span>]
+  }
+}</code></pre>
+      </div>
+
+      <h3>Step 3 — Swift implementation (iOS)</h3>
+      <p>
+        Ab asli implementation. <code>ModuleDefinition</code> DSL ek Swift builder-pattern hai jisme aap
+        declaratively bolte ho "ye module ka naam hai, ye function hai jo ye karta hai" — aur Expo Modules API
+        background mein JSI binding generate kar deta hai. Har line commented hai neeche.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ios/DeviceFingerprintModule.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ExpoModulesCore import karna zaroori hai — ye ModuleDefinition, Module base class, Function() DSL, wagera provide karta hai</span>
+<span class="tok-kw">import</span> ExpoModulesCore
+
+<span class="tok-com">// Har Expo native module ek class hai jo Module base class ko extend karti hai — ye Expo Modules API ka required contract hai</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> DeviceFingerprintModule: Module {
+  <span class="tok-com">// "definition" property override karna required hai — yahi wo jagah hai jaha module ka poora public surface declare hota hai</span>
+  <span class="tok-kw">public</span> <span class="tok-kw">func</span> definition() -> ModuleDefinition {
+    <span class="tok-com">// Name(...) — JS side se is naam se module access hota hai (requireNativeModule("DeviceFingerprint"))</span>
+    Name(<span class="tok-str">"DeviceFingerprint"</span>)
+
+    <span class="tok-com">// Function(...) — ek synchronous function expose karta hai jo JS se seedha, bina Promise ke, call ho sakta hai (JSI ki wajah se sync possible hai)</span>
+    Function(<span class="tok-str">"getBuildFingerprint"</span>) <span class="tok-kw">in</span>
+      <span class="tok-com">// UIDevice.current — iOS ka system API jo current device ki info deta hai</span>
+      <span class="tok-kw">let</span> systemName = UIDevice.current.systemName
+      <span class="tok-com">// systemVersion — jaise "17.4" — iOS version string</span>
+      <span class="tok-kw">let</span> systemVersion = UIDevice.current.systemVersion
+      <span class="tok-com">// identifierForVendor — app-vendor-scoped unique device identifier (Apple ki privacy-safe alternative to old UDID)</span>
+      <span class="tok-kw">let</span> vendorId = UIDevice.current.identifierForVendor?.uuidString ?? <span class="tok-str">"unknown"</span>
+      <span class="tok-com">// Sab pieces ko ek single fingerprint string mein combine karke return karna — ye value JS ko as-is milegi</span>
+      <span class="tok-kw">return</span> <span class="tok-str">"\(systemName)-\(systemVersion)-\(vendorId)"</span>
+
+
+    <span class="tok-com">// AsyncFunction(...) — jab native operation genuinely async ho (jaise disk/network I/O), Promise-returning function expose karte hain</span>
+    AsyncFunction(<span class="tok-str">"getBuildFingerprintAsync"</span>) { (promise: Promise) <span class="tok-kw">in</span>
+      <span class="tok-com">// DispatchQueue.global — background thread pe kaam karna, taaki main/UI thread block na ho</span>
+      DispatchQueue.global(qos: .userInitiated).async {
+        <span class="tok-com">// Same fingerprint logic, ab background thread ke andar (demonstrate karne ke liye ki AsyncFunction thread-safe pattern kaisa dikhta hai)</span>
+        <span class="tok-kw">let</span> fingerprint = <span class="tok-str">"\(UIDevice.current.systemName)-\(UIDevice.current.systemVersion)"</span>
+        <span class="tok-com">// promise.resolve — JS side Promise ko successfully resolve karta hai is value ke saath</span>
+        promise.resolve(fingerprint)
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Sharad ke liye Swift quick-notes</div>
+        <p>
+          Agar Swift naya lag raha hai: <code>let</code> ek immutable variable declare karta hai (JS ke
+          <code>const</code> jaisa), <code>?? "unknown"</code> nil-coalescing operator hai (JS ke
+          <code>??</code> jaisa hi behave karta hai), aur <code>\(...)</code> string interpolation syntax hai
+          (JS ke template literal <code>${...}</code> ka Swift equivalent). Trailing closure syntax
+          (<code>{ (promise) in ... }</code>) JS ke arrow function jaisa hi ek callback-passing pattern hai.
+        </p>
+      </div>
+
+      <h3>Step 4 — Kotlin implementation (Android)</h3>
+      <p>
+        Same DSL concept, Kotlin mein. Notice karo structure Swift jaisa hi hai — <code>Name()</code>,
+        <code>Function()</code>, <code>AsyncFunction()</code> — ye Expo Modules API ka jaan-boojh kar symmetric
+        design hai, taaki dono platforms ka code mentally map ho sake.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>android/.../DeviceFingerprintModule.kt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Package declaration — Kotlin/Java convention, expo-module.config.json mein diya gaya fully-qualified name isi se match karna chahiye</span>
+<span class="tok-kw">package</span> expo.modules.devicefingerprint
+
+<span class="tok-com">// android.os.Build — Android system class jisme device/OS build info static fields ke roop mein milti hai</span>
+<span class="tok-kw">import</span> android.os.Build
+<span class="tok-com">// Expo Modules Kotlin API ka core Module base class</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.Module
+<span class="tok-com">// ModuleDefinition builder DSL — Swift ke ModuleDefinition ka Kotlin equivalent</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.ModuleDefinition
+
+<span class="tok-com">// Class Module ko extend karti hai — Expo Modules API ka required contract, Swift wale pattern jaisa hi</span>
+<span class="tok-kw">class</span> DeviceFingerprintModule : Module() {
+  <span class="tok-com">// definition() override karna required hai — yahan module ka poora public API declare hota hai</span>
+  <span class="tok-kw">override</span> <span class="tok-kw">fun</span> definition() = ModuleDefinition {
+    <span class="tok-com">// Name(...) — JS side isi naam se module access karega, iOS wale Name() se match hona chahiye</span>
+    Name(<span class="tok-str">"DeviceFingerprint"</span>)
+
+    <span class="tok-com">// Function(...) — synchronous native function, JSI ke through direct call hota hai</span>
+    Function(<span class="tok-str">"getBuildFingerprint"</span>) {
+      <span class="tok-com">// Build.FINGERPRINT — Android ka apna unique build identifier string (manufacturer/product/device/version sab encode karta hai)</span>
+      <span class="tok-kw">val</span> fingerprint = Build.FINGERPRINT
+      <span class="tok-com">// Build.MODEL — device ka model name, jaise "Pixel 8"</span>
+      <span class="tok-kw">val</span> model = Build.MODEL
+      <span class="tok-com">// Sab combine karke return — ye value directly JS side promise/return value banti hai</span>
+      <span class="tok-str">"$model-$fingerprint"</span>
+    }
+
+    <span class="tok-com">// AsyncFunction(...) — Kotlin coroutines ke through background execution, Promise JS ko automatically wire ho jaata hai</span>
+    AsyncFunction(<span class="tok-str">"getBuildFingerprintAsync"</span>) { promise: expo.modules.kotlin.Promise ->
+      <span class="tok-com">// Yahan bhi same fingerprint logic — real app mein ye kisi slow I/O call ki jagah hoti (jaise disk read)</span>
+      <span class="tok-kw">val</span> fingerprint = <span class="tok-str">"${Build.MODEL}-${Build.FINGERPRINT}"</span>
+      <span class="tok-com">// promise.resolve — JS Promise ko is value ke saath resolve karta hai</span>
+      promise.resolve(fingerprint)
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Sharad ke liye Kotlin quick-notes</div>
+        <p>
+          <code>val</code> Kotlin ka immutable variable keyword hai (Swift ke <code>let</code>, JS ke
+          <code>const</code> jaisa). <code>"$model-$fingerprint"</code> string template hai (JS ke
+          <code>${...}</code> jaisa, bas <code>$</code> ke baad seedha variable name likhte ho braces ke bina
+          agar simple expression ho). Trailing lambda syntax (<code>{ promise -> ... }</code>) JS ke arrow
+          function jaisa hi ek concept hai.
+        </p>
+      </div>
+
+      <h3>Step 5 — TypeScript wrapper</h3>
+      <p>
+        Ye woh file hai jo actually JS side se import hoti hai — <code>requireNativeModule</code> Expo Modules
+        API ka function hai jo native side pe registered module ko naam se dhoondh kar JS proxy object return
+        karta hai, jispe humare Swift/Kotlin <code>Function()</code> calls automatically methods ban jaate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>src/DeviceFingerprintModule.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// requireNativeModule — Expo Modules API ka helper jo naam se native module dhoondh kar JS proxy deta hai</span>
+<span class="tok-kw">import</span> { requireNativeModule } <span class="tok-kw">from</span> <span class="tok-str">'expo-modules-core'</span>;
+
+<span class="tok-com">// TypeScript interface — native module ka shape describe karta hai, taaki callers ko autocomplete/type-safety mile</span>
+<span class="tok-kw">interface</span> DeviceFingerprintModuleType {
+  <span class="tok-com">// Synchronous function signature — Swift/Kotlin ke Function() se match hona chahiye</span>
+  getBuildFingerprint(): <span class="tok-kw">string</span>;
+  <span class="tok-com">// Async function signature — Promise return karta hai, Swift/Kotlin ke AsyncFunction() se match</span>
+  getBuildFingerprintAsync(): <span class="tok-kw">Promise</span>&lt;<span class="tok-kw">string</span>&gt;;
+}
+
+<span class="tok-com">// "DeviceFingerprint" string yahan wahi naam hona chahiye jo Swift/Kotlin ke Name() mein diya gaya tha — ye link banata hai JS aur native ke beech</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> requireNativeModule&lt;DeviceFingerprintModuleType&gt;(<span class="tok-str">'DeviceFingerprint'</span>);</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>modules/device-fingerprint/index.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Package ke root se saara implementation re-export karna — consumers "modules/device-fingerprint" se hi import karenge</span>
+<span class="tok-kw">export</span> { <span class="tok-kw">default</span> } <span class="tok-kw">from</span> <span class="tok-str">'./src/DeviceFingerprintModule'</span>;</code></pre>
+      </div>
+
+      <p>Ab app code mein use karna bilkul normal JS import jaisa simple hai:</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(tabs)/settings.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Apne local module se default export import karna — jaise koi bhi normal npm package import karte ho</span>
+<span class="tok-kw">import</span> DeviceFingerprint <span class="tok-kw">from</span> <span class="tok-str">'../../modules/device-fingerprint'</span>;
+
+<span class="tok-com">// Synchronous call — JSI ki wajah se ye seedha, instantly, bina await ke return hota hai</span>
+<span class="tok-kw">const</span> fingerprint = DeviceFingerprint.getBuildFingerprint();
+<span class="tok-com">// Result ko console pe print karna, debugging ke liye</span>
+console.log(<span class="tok-str">'Device fingerprint:'</span>, fingerprint);</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Expo Go mein nahi chalega</div>
+        <p>
+          Ye code Expo Go mein kaam nahi karega — custom native module hai to aapko <strong>Development Build</strong>
+          chahiye hi hoga (Chapter 1 mein dekha gaya trade-off yahan directly apply hota hai). <code>npx expo
+          prebuild</code> chalao (ya <code>eas build --profile development</code>) taaki native code compile ho
+          aur module link ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="create-native-view">Native View Banana — Full Example</h2>
+
+      <p>
+        Ab tak humne sirf <em>functions</em> expose kiye — call karo, result milta hai. Lekin kabhi kabhi aapko
+        ek poori <strong>native UI surface</strong> expose karni hoti hai — jaise ek native map view, ek camera
+        preview surface, ya koi complex native rendering jise React ke declarative component model mein use
+        karna ho. Iske liye Expo Modules API ka <code>View</code> DSL hai.
+      </p>
+
+      <p>
+        Concept simple hai: Swift side pe aap ek <code>ExpoView</code> subclass banate ho jo asal native UIView
+        wrap karta hai, uske props declare karte ho, aur Expo Modules API automatically ek React Native "host
+        component" bana deta hai jise JS side <code>requireNativeViewManager</code> se access karta hai. Hum
+        yahan ek simplified <strong>native color-preview surface</strong> banayenge — concept dikhane ke liye ki
+        native UIView/View kaise ek prop lekar khud ko render karta hai (real app mein ye ek map SDK ka
+        camera view, ya kisi proprietary SDK ka rendering surface hota).
+      </p>
+
+      <h3>Swift — <code>ExpoView</code> subclass</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>ios/ColorSurfaceView.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ExpoModulesCore import — ExpoView base class aur prop-related helpers isi se milte hain</span>
+<span class="tok-kw">import</span> ExpoModulesCore
+
+<span class="tok-com">// ExpoView ko extend karna — ye Expo Modules API ka base class hai jo native view ko RN host component banane deta hai</span>
+<span class="tok-kw">class</span> ColorSurfaceView: ExpoView {
+  <span class="tok-com">// Actual UIKit view jo hum wrap kar rahe hain — real case mein ye kisi SDK ka camera/map view hota</span>
+  <span class="tok-kw">let</span> innerView = UIView()
+
+  <span class="tok-com">// Required initializer — appContext ExpoView ko chahiye hota hai module registry access karne ke liye</span>
+  <span class="tok-kw">required</span> <span class="tok-kw">init</span>(appContext: AppContext? = <span class="tok-kw">nil</span>) {
+    <span class="tok-com">// Parent initializer call karna mandatory hai Swift mein subclass banate waqt</span>
+    <span class="tok-kw">super</span>.init(appContext: appContext)
+    <span class="tok-com">// innerView ko is wrapper view ke andar add karna — taaki wo actual visible content ho</span>
+    addSubview(innerView)
+  }
+
+  <span class="tok-com">// layoutSubviews — UIKit lifecycle method, jab bhi parent ka size/layout change ho, ye call hota hai</span>
+  <span class="tok-kw">override</span> <span class="tok-kw">func</span> layoutSubviews() {
+    <span class="tok-com">// super call karna zaroori hai default UIKit layout behavior preserve karne ke liye</span>
+    <span class="tok-kw">super</span>.layoutSubviews()
+    <span class="tok-com">// innerView ko poore parent bounds tak stretch karna — taaki color surface full width/height le</span>
+    innerView.frame = bounds
+  }
+
+  <span class="tok-com">// setColor — ye function JS se aane wale "color" prop ko receive karega aur native view update karega</span>
+  <span class="tok-kw">func</span> setColor(_ hex: String) {
+    <span class="tok-com">// UIColor(hex:) — ek custom extension hoti (yahan simplify kiya) jo hex string ko UIColor mein convert karti</span>
+    innerView.backgroundColor = UIColor(hex: hex)
+  }
+}</code></pre>
+      </div>
+
+      <h3>Swift — module definition mein <code>View</code> register karna</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>ios/ColorSurfaceModule.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ExpoModulesCore import — View() DSL yahi se milta hai</span>
+<span class="tok-kw">import</span> ExpoModulesCore
+
+<span class="tok-com">// Module class jo is native view ko host karta hai</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> ColorSurfaceModule: Module {
+  <span class="tok-kw">public</span> <span class="tok-kw">func</span> definition() -> ModuleDefinition {
+    <span class="tok-com">// Name — JS side requireNativeViewManager isi naam se view dhoondhega</span>
+    Name(<span class="tok-str">"ColorSurfaceView"</span>)
+
+    <span class="tok-com">// View(...) — batata hai ki ye module ek native view export karta hai, ColorSurfaceView.self class reference hai</span>
+    View(ColorSurfaceView.self) {
+      <span class="tok-com">// Prop(...) — "color" naam ka prop declare karna, jab JS se ye prop change ho, closure call hota hai with new value</span>
+      Prop(<span class="tok-str">"color"</span>) { (view: ColorSurfaceView, color: String) <span class="tok-kw">in</span>
+        <span class="tok-com">// View ke setColor method ko call karke actual native update trigger karna</span>
+        view.setColor(color)
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h3>Kotlin — equivalent Android implementation</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>android/.../ColorSurfaceView.kt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Package declaration, config.json ke android.modules path se match karna chahiye</span>
+<span class="tok-kw">package</span> expo.modules.colorsurface
+
+<span class="tok-com">// Android Context — har View ko chahiye hota hai construct hone ke liye</span>
+<span class="tok-kw">import</span> android.content.Context
+<span class="tok-com">// android.view.View — base Android View class jo hum wrap/extend kar rahe hain</span>
+<span class="tok-kw">import</span> android.view.View
+<span class="tok-com">// Color parsing helper class</span>
+<span class="tok-kw">import</span> android.graphics.Color
+<span class="tok-com">// ExpoView — Expo Modules Kotlin API ka base class jo native view ko RN host component banane deta hai</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.views.ExpoView
+<span class="tok-com">// AppContext — module registry aur lifecycle access dene wala Expo context object</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.AppContext
+
+<span class="tok-com">// ExpoView subclass — constructor mein context aur appContext dono chahiye hote hain</span>
+<span class="tok-kw">class</span> ColorSurfaceView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
+  <span class="tok-com">// Actual wrapped Android View — real case mein ye kisi SDK ka camera/map SurfaceView hota</span>
+  <span class="tok-kw">private</span> <span class="tok-kw">val</span> innerView = View(context)
+
+  <span class="tok-com">// init block — Kotlin class ka constructor body jaisa, class create hote hi chalta hai</span>
+  init {
+    <span class="tok-com">// innerView ko is wrapper ke andar add karna</span>
+    addView(innerView)
+  }
+
+  <span class="tok-com">// setColor — JS se aane wale "color" prop ko yahi function receive karega</span>
+  <span class="tok-kw">fun</span> setColor(hex: String) {
+    <span class="tok-com">// Color.parseColor — hex string (jaise "#FF0000") ko Android Color int mein convert karta hai</span>
+    innerView.setBackgroundColor(Color.parseColor(hex))
+  }
+
+  <span class="tok-com">// onLayout override — Android View lifecycle method, layout pass hone pe call hota hai</span>
+  <span class="tok-kw">override</span> <span class="tok-kw">fun</span> onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+    <span class="tok-com">// innerView ko poore parent bounds tak stretch karna, layout params ke through</span>
+    innerView.layout(0, 0, right - left, bottom - top)
+  }
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>android/.../ColorSurfaceModule.kt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Package declaration</span>
+<span class="tok-kw">package</span> expo.modules.colorsurface
+
+<span class="tok-com">// Expo Modules Kotlin API imports — Module base class aur ModuleDefinition/View DSL</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.Module
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.ModuleDefinition
+<span class="tok-com">// viewOf helper — Kotlin DSL mein View(...) prop typing ke liye chahiye hota hai</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.views.ExpoView
+
+<span class="tok-com">// Module class jo native view ko host/register karta hai</span>
+<span class="tok-kw">class</span> ColorSurfaceModule : Module() {
+  <span class="tok-kw">override</span> <span class="tok-kw">fun</span> definition() = ModuleDefinition {
+    <span class="tok-com">// Name — JS side ka requireNativeViewManager isi naam ko dhoondhega</span>
+    Name(<span class="tok-str">"ColorSurfaceView"</span>)
+
+    <span class="tok-com">// View(...) — batata hai ki ye module ek View export karta hai, ColorSurfaceView::class reference ke saath</span>
+    View(ColorSurfaceView::class) {
+      <span class="tok-com">// Prop(...) — "color" prop declare karna, jab JS se change ho tab lambda call hota hai</span>
+      Prop(<span class="tok-str">"color"</span>) { view: ColorSurfaceView, color: String ->
+        <span class="tok-com">// View ke setColor method ko call karna, actual native rendering update ke liye</span>
+        view.setColor(color)
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h3>TypeScript wrapper — <code>requireNativeViewManager</code></h3>
+      <p>
+        Function-based module se difference yahan ye hai — hume <code>requireNativeViewManager</code> chahiye
+        (function ke liye jo <code>requireNativeModule</code> tha), aur result ek React component hota hai, na
+        ki ek plain object.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>src/ColorSurfaceView.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// requireNativeViewManager — native View() ko React component ke roop mein load karne wala Expo helper</span>
+<span class="tok-kw">import</span> { requireNativeViewManager } <span class="tok-kw">from</span> <span class="tok-str">'expo-modules-core'</span>;
+<span class="tok-com">// React ki type import, sirf typing ke liye chahiye</span>
+<span class="tok-kw">import</span> <span class="tok-kw">type</span> { ViewProps } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-com">// Props interface — standard RN ViewProps extend karta hai plus humara custom "color" prop</span>
+<span class="tok-kw">interface</span> ColorSurfaceViewProps <span class="tok-kw">extends</span> ViewProps {
+  <span class="tok-com">// color prop — Swift/Kotlin ke Prop("color") se match hona chahiye</span>
+  color: <span class="tok-kw">string</span>;
+}
+
+<span class="tok-com">// requireNativeViewManager<Props>("ColorSurfaceView") — "ColorSurfaceView" wahi Name() hai jo Swift/Kotlin mein register kiya tha</span>
+<span class="tok-kw">const</span> NativeColorSurfaceView = requireNativeViewManager&lt;ColorSurfaceViewProps&gt;(<span class="tok-str">'ColorSurfaceView'</span>);
+
+<span class="tok-com">// Export ek typed React component ke roop mein — consumers ko lagega ye ek normal RN component hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> ColorSurfaceView(props: ColorSurfaceViewProps) {
+  <span class="tok-com">// Directly native view ko render karna, props ko pass-through karte hue</span>
+  <span class="tok-kw">return</span> &lt;NativeColorSurfaceView {...props} /&gt;;
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(tabs)/preview.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Native view component ko normal RN component ki tarah import karna</span>
+<span class="tok-kw">import</span> ColorSurfaceView <span class="tok-kw">from</span> <span class="tok-str">'../../modules/color-surface/src/ColorSurfaceView'</span>;
+
+<span class="tok-com">// JSX mein use karna — bilkul <View> jaisa dikhta hai, lekin backing implementation fully native hai</span>
+&lt;ColorSurfaceView color=<span class="tok-str">"#d97757"</span> style={{ width: <span class="tok-num">200</span>, height: <span class="tok-num">200</span> }} /&gt;</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Native views ka real-world use case almost hamesha "koi native rendering surface jo React's declarative
+          view tree ke andar exist karni chahiye" hota hai — Apple/Google Maps SDK views, camera preview
+          surfaces, video player surfaces, ya kisi proprietary SDK ka rendering canvas. Agar aapko sirf ek value
+          chahiye (jaise humara battery/fingerprint example), <code>Function()</code> hi kaafi hai — <code>View()</code>
+          tabhi reach karo jab genuinely ek visual native surface expose karni ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="distribution-config-plugins">Native Modules Next Steps — Distribution aur Config Plugins</h2>
+
+      <h3>Packaging for reuse</h3>
+      <p>
+        Ek local module (<code>--local</code> flag se banaya gaya, jo <code>modules/</code> folder mein rehta
+        hai) sirf ek project ke liye theek hai. Agar aapko ye module <strong>multiple projects/teams</strong> ke
+        beech share karna hai, do options hain:
+      </p>
+      <ul>
+        <li>
+          <strong>Local npm workspace package</strong> — agar aapke saare projects ek monorepo (Turborepo/Nx/pnpm
+          workspaces) mein hain, module ko ek workspace package bana do (jaise <code>packages/device-fingerprint</code>)
+          aur usse har app <code>"device-fingerprint": "workspace:*"</code> se consume kare. Ye best option hai
+          agar saare consumers same monorepo mein hain — no publishing overhead, changes turant sab jagah reflect
+          hote hain.
+        </li>
+        <li>
+          <strong>Published npm package</strong> — agar module ko organization ke bahar ya alag-alag independent
+          repos mein use karna hai, <code>npm publish</code> karo (private registry ya public npm pe). Ab ye
+          exactly wahi tareeka hai jaise koi bhi third-party native module (jaise <code>react-native-mmkv</code>)
+          consume hota hai — <code>npx expo install your-org/device-fingerprint</code>.
+        </li>
+      </ul>
+
+      <h3>Config Plugins — kya aur kyun</h3>
+      <p>
+        Ek subtle problem hai jab custom native code likhte ho: kabhi kabhi aapke native module ko ek
+        <strong>native project-level configuration change</strong> bhi chahiye hoti hai — jaise iOS
+        <code>Info.plist</code> mein ek permission string add karna (<code>NSCameraUsageDescription</code> jaisa),
+        ya Android <code>AndroidManifest.xml</code> mein ek permission ya intent-filter add karna. Agar aap ye
+        manually <code>ios/</code>/<code>android/</code> folders edit karke karte ho, aap Expo ke poore
+        "no manual native folder editing" workflow ko tod dete ho — kyunki jab bhi koi <code>npx expo prebuild</code>
+        chalayega (native folders regenerate karne ke liye), aapke manual edits <strong>overwrite ho jaayenge</strong>.
+      </p>
+      <p>
+        <strong>Config Plugin</strong> is problem ka solution hai — ye ek JS/TS function hai jo
+        <code>app.config.ts</code> mein register hota hai aur <strong>prebuild ke time programmatically</strong>
+        generated native project ko modify karta hai. Matlab aap manual edit ki jagah code likhte ho jo har
+        prebuild pe automatically wahi change apply kar deta hai — idempotent aur version-controlled.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>modules/device-fingerprint/app.plugin.js</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// @expo/config-plugins se helper functions import karna — ye Info.plist/AndroidManifest.xml ko safely modify karne ke tools dete hain</span>
+<span class="tok-kw">const</span> { withInfoPlist, withAndroidManifest } = require(<span class="tok-str">'@expo/config-plugins'</span>);
+
+<span class="tok-com">// withDeviceFingerprint — humara custom config plugin function, config object leke modified config return karta hai</span>
+<span class="tok-kw">function</span> withDeviceFingerprint(config) {
+  <span class="tok-com">// withInfoPlist — iOS Info.plist ko modify karne ka wrapper, callback mein plist object milta hai</span>
+  config = withInfoPlist(config, (config) => {
+    <span class="tok-com">// NSUserTrackingUsageDescription jaisi koi custom permission string yahan add karna, prebuild ke time automatically inject hoga</span>
+    config.modResults.NSDeviceFingerprintUsageDescription =
+      <span class="tok-str">'App device build info use karta hai support diagnostics ke liye.'</span>;
+    <span class="tok-com">// Modified config object return karna mandatory hai — mod chain ko is return value pe continue karna hota hai</span>
+    <span class="tok-kw">return</span> config;
+  });
+
+  <span class="tok-com">// withAndroidManifest — same concept, ab AndroidManifest.xml ke liye</span>
+  config = withAndroidManifest(config, (config) => {
+    <span class="tok-com">// manifest.manifest — parsed XML tree ka root access</span>
+    <span class="tok-kw">const</span> androidManifest = config.modResults.manifest;
+    <span class="tok-com">// Yahan real plugin mein permission tag push karte, jaise <uses-permission> node add karna array mein</span>
+    <span class="tok-com">// (simplified rakha gaya hai example ke liye — production plugin mein XML tree manipulation helper functions use hote hain)</span>
+    <span class="tok-kw">return</span> config;
+  });
+
+  <span class="tok-com">// Final modified config return karna — Expo config resolution pipeline isi return value ko aage use karta hai</span>
+  <span class="tok-kw">return</span> config;
+}
+
+<span class="tok-com">// module.exports — plugin ko app.config.ts se import karne layak banata hai</span>
+module.exports = withDeviceFingerprint;</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app.config.ts (plugin register karna)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { ExpoConfig, ConfigContext } <span class="tok-kw">from</span> <span class="tok-str">'expo/config'</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  <span class="tok-com">// plugins array mein apna config plugin ka path add karna — prebuild ke time Expo isse automatically run karega</span>
+  plugins: [
+    <span class="tok-com">// Local module ke andar wale app.plugin.js ka relative path</span>
+    <span class="tok-str">'./modules/device-fingerprint/app.plugin.js'</span>,
+  ],
+});</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Config Plugins ka poora point ye hai ki aapki team <strong>kabhi bhi manually <code>ios/</code> ya
+          <code>android/</code> folders touch na kare</strong> — chahe wo Info.plist permission ho, ya
+          AndroidManifest entry, ya kisi native <code>build.gradle</code> dependency ki tweak. Agar aap ek team
+          lead ho, ye ek non-negotiable rule bana dena chahiye: <strong>koi manual native edit repo mein commit
+          nahi hoga jab tak wo config plugin ke through automate nahi kiya gaya</strong> — warna agli baar jab
+          koi <code>prebuild --clean</code> chalayega, saara manual kaam silently gayab ho jaayega, aur debug
+          karna nightmare banega ("permission popup aana band ho gaya, kyun?" jaisi tickets is category mein
+          aati hain).
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Har native change ke baad Development Build rebuild chahiye</div>
+        <p>
+          JS-only changes hot-reload/Fast Refresh se turant reflect ho jaate hain — lekin <strong>native code
+          (Swift/Kotlin/config plugin) mein koi bhi change</strong> ke baad, purani development build ab
+          stale/invalid hai. Aapko fresh native build chahiye hi hoga
+          (<code>npx expo run:ios</code> / <code>npx expo run:android</code>, ya <code>eas build --profile
+          development</code> phir se). Ye ek bahut common confusion point hai naye developers ke liye jo "code
+          change kiya, kuch nahi hua" wale symptom se struggle karte hain — root cause hamesha ye hoti hai ki
+          native side rebuild hi nahi hua.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Swift aur Kotlin implementations perfectly symmetric nahi honge</div>
+        <p>
+          Ek senior-level acceptance ye honi chahiye ki iOS aur Android ke underlying platform APIs kabhi
+          exactly same nahi hote — jaise humare example mein iOS <code>identifierForVendor</code> deta hai
+          jabki Android <code>Build.FINGERPRINT</code> ek completely different concept hai. Ye <strong>bug
+          nahi hai</strong>, ye <strong>platform reality</strong> hai. Aapka job ye hai ki JS-facing API
+          (function signature, return type) symmetric rahe, lekin under-the-hood implementation platform ke
+          hisaab se divergent ho sakta hai — isko chhupane ki koshish mat karo, documentation mein clearly
+          likho ki dono platforms exactly kya return karte hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Expo SDK upgrades ke saath custom module versioning</div>
+        <p>
+          Aapka custom native module ek specific version ke <code>expo-modules-core</code> API ke against likha
+          gaya hai. Jab aap Expo SDK ko <strong>major version</strong> upgrade karte ho (jaise SDK 51 → SDK 52),
+          <code>expo-modules-core</code> ka underlying API surface change ho sakta hai (naye DSL features add
+          hote hain, kabhi kabhi deprecated patterns remove bhi hote hain). Matlab har major Expo SDK upgrade ke
+          time aapko apne custom native modules ko bhi test/update karna padega — ye ek recurring maintenance
+          task hai jo aapke roadmap mein explicitly plan karna chahiye, "SDK upgrade" sirf <code>package.json</code>
+          version bump nahi hai jab custom native code involved ho.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Sabse bada point — aap ab native build breakage ke bhi owner ho</div>
+        <p>
+          Ye is poore chapter ka sabse important takeaway hai: jis din aap ek custom native module likhte ho,
+          aap sirf ek feature nahi bana rahe — aap ek <strong>ongoing maintenance commitment</strong> le rahe ho.
+          Xcode ka naya version aa sakta hai jo Swift syntax/API deprecate kar de. Android Gradle Plugin ka major
+          upgrade ho sakta hai jo aapki <code>build.gradle</code> config ko incompatible bana de. Apple/Google
+          ka koi naya OS version (iOS 19, Android 16) koi permission model change kar sakta hai jo aapke native
+          code ko directly affect kare. Ye saari cheezein aisi hain jo <strong>agar aap ek existing, community-maintained
+          package use kar rahe hote, koi aur team ke liye already solve kar chuki hoti</strong>. Isi wajah se
+          chapter ke shuru mein humne bola tha — native module likhna last resort hona chahiye. Agar likhna
+          zaroori hai, to us decision ko team ke saath explicitly document karo: "ye module humne isliye likha
+          kyunki X capability kahin available nahi thi, aur iski maintenance responsibility Y team/person ki
+          hai" — taaki 6 mahine baad jab Xcode update se build toot jaaye, koi confused na ho ki ye code kahan
+          se aaya aur kaun fix karega.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne dekha <em>kaise</em> native module likhte hain. Ab senior-level territory mein jaate hain —
+        <em>internally</em> ye chalta kaise hai, kaha performance/memory ke landmines chhupe hote hain, aur jab
+        production mein cheezein toot jaati hain (crashes, jank, hangs) to root cause tak kaise pahunchna hai. Ye
+        wo knowledge hai jo interview mein bhi poocha jaata hai aur real incidents mein bhi kaam aata hai.
+      </p>
+
+      <h3>Threading model — kaunse thread pe aapka native code chalta hai</h3>
+      <p>
+        Ye sabse zyada misunderstood cheez hai naye native module authors ke liye. Default behavior samajhna
+        zaroori hai: <strong>Expo Modules API mein <code>Function()</code> synchronously JS calling thread pe hi
+        chalta hai</strong> — aur JS calling thread almost hamesha JS thread hota hai jisse aapki UI rendering bhi
+        (indirectly, React reconciliation ke through) juri hoti hai. Matlab agar aapke <code>Function()</code> ke
+        andar koi bhi slow, blocking operation hai (jaise ek bada file read, ek heavy CPU computation, ya koi
+        synchronous network call), <strong>wo poore JS thread ko block kar dega</strong> jab tak wo function
+        return nahi karta — is dauran aapki app ka UI freeze ho jaayega, animations ruk jaayengi, taps respond
+        nahi karenge.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Danger — synchronous Function() mein heavy kaam mat karo</div>
+        <p>
+          Agar aap <code>Function("readHugeFile")</code> jaisa kuch likhte ho jo synchronously ek bade file ko
+          disk se poora read karke return kare, to ye call JS thread ko us poore duration ke liye block karega —
+          chahe file 50MB ka ho aur read mein 2 second lage, aapki poori app 2 second ke liye "hung" dikhegi. Ye
+          exactly wo scenario hai jaha aapko <code>AsyncFunction()</code> use karke background thread pe kaam
+          offload karna chahiye.
+        </p>
+      </div>
+
+      <p>
+        Solution ye hai ki heavy/slow kaam ko explicitly ek background thread/queue pe offload karo, aur sirf
+        result JS ko Promise ke through wapas do. iOS pe Swift's <code>DispatchQueue.global()</code> is kaam ke
+        liye use hota hai (jo humne pehle bhi <code>AsyncFunction</code> example mein dekha tha), aur Android pe
+        Kotlin coroutines ke saath ek background <code>Dispatcher</code> (jaise <code>Dispatchers.IO</code>) use
+        hota hai. Neeche ek concrete "large file read" example hai jo dikhata hai galat (blocking) aur sahi
+        (offloaded) dono tareeke:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ios/FileReaderModule.swift — sahi tareeka (background offload)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Foundation import — FileManager aur Data types isi se milte hain, file I/O ke liye zaroori</span>
+<span class="tok-kw">import</span> Foundation
+<span class="tok-com">// ExpoModulesCore import — ModuleDefinition, Function, AsyncFunction, Promise sab yahin se aate hain</span>
+<span class="tok-kw">import</span> ExpoModulesCore
+
+<span class="tok-com">// Module base class extend karna, Expo Modules API ka standard contract</span>
+<span class="tok-kw">public</span> <span class="tok-kw">class</span> FileReaderModule: Module {
+  <span class="tok-kw">public</span> <span class="tok-kw">func</span> definition() -> ModuleDefinition {
+    <span class="tok-com">// Module ka JS-facing naam</span>
+    Name(<span class="tok-str">"FileReader"</span>)
+
+    <span class="tok-com">// ❌ GALAT PATTERN (sirf dikhane ke liye, production mein mat likho): agar ye Function() hota aur seedha yahin synchronously bada file read karta,</span>
+    <span class="tok-com">// to Data(contentsOf:) jaisa disk read call JS thread ko block kar deta jab tak file poori na padh li jaaye.</span>
+
+    <span class="tok-com">// ✅ SAHI PATTERN — AsyncFunction se JS thread ko turant free kar dena, actual read background thread pe hoga</span>
+    AsyncFunction(<span class="tok-str">"readLargeFile"</span>) { (path: String, promise: Promise) <span class="tok-kw">in</span>
+      <span class="tok-com">// DispatchQueue.global(qos: .utility) — ek background dispatch queue jo heavy I/O ke liye designed hai (main/UI thread se alag)</span>
+      DispatchQueue.global(qos: .utility).async {
+        <span class="tok-kw">do</span> {
+          <span class="tok-com">// URL(fileURLWithPath:) — string path ko Foundation URL object mein convert karna, file APIs ko yahi chahiye hota hai</span>
+          <span class="tok-kw">let</span> url = URL(fileURLWithPath: path)
+          <span class="tok-com">// Data(contentsOf:) — actual blocking disk read yahan hota hai, lekin ab hum background thread pe hain isliye UI safe hai</span>
+          <span class="tok-kw">let</span> data = <span class="tok-kw">try</span> Data(contentsOf: url)
+          <span class="tok-com">// data.count — bytes ki total length, isse hum sirf size return kar rahe hain demonstration ke liye</span>
+          <span class="tok-kw">let</span> sizeInBytes = data.count
+          <span class="tok-com">// promise.resolve — Promise ko resolve karna hamesha wapas kisi bhi thread se safe hota hai, Expo Modules API internally main-thread marshaling handle karta hai JS ko deliver karne ke liye</span>
+          promise.resolve(sizeInBytes)
+        } <span class="tok-kw">catch</span> {
+          <span class="tok-com">// Agar file read fail ho (file exist nahi karti, permission issue, etc.), promise.reject se JS side ko proper error milta hai (Promise reject ho jaata hai)</span>
+          promise.reject(<span class="tok-str">"E_FILE_READ"</span>, <span class="tok-str">"File read failed: \(error.localizedDescription)"</span>)
+        }
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>android/.../FileReaderModule.kt — Kotlin coroutines ke saath background offload</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Package declaration, expo-module.config.json ke fully-qualified name se match hona chahiye</span>
+<span class="tok-kw">package</span> expo.modules.filereader
+
+<span class="tok-com">// java.io.File — Android/JVM ka standard file-access class</span>
+<span class="tok-kw">import</span> java.io.File
+<span class="tok-com">// Module base class</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.Module
+<span class="tok-com">// ModuleDefinition DSL builder</span>
+<span class="tok-kw">import</span> expo.modules.kotlin.modules.ModuleDefinition
+
+<span class="tok-com">// Class Module ko extend karti hai — standard Expo Modules API contract</span>
+<span class="tok-kw">class</span> FileReaderModule : Module() {
+  <span class="tok-kw">override</span> <span class="tok-kw">fun</span> definition() = ModuleDefinition {
+    <span class="tok-com">// JS-facing module name</span>
+    Name(<span class="tok-str">"FileReader"</span>)
+
+    <span class="tok-com">// AsyncFunction — Expo Modules Kotlin API internally isse coroutine ke andar, background dispatcher pe run karta hai by default,</span>
+    <span class="tok-com">// isliye humein explicitly withContext(Dispatchers.IO) likhne ki zaroorat nahi — lekin senior awareness ke liye pattern yahan spell out kiya gaya hai</span>
+    AsyncFunction(<span class="tok-str">"readLargeFile"</span>) { path: String, promise: expo.modules.kotlin.Promise ->
+      <span class="tok-kw">try</span> {
+        <span class="tok-com">// File(path) — path string se File object banana</span>
+        <span class="tok-kw">val</span> file = File(path)
+        <span class="tok-com">// file.readBytes() — poora file content ek ByteArray mein blocking read karta hai (ye "expensive" operation hai jo hum offload kar rahe hain)</span>
+        <span class="tok-kw">val</span> bytes = file.readBytes()
+        <span class="tok-com">// bytes.size — total byte count, JS ko wapas bhejne ke liye</span>
+        <span class="tok-kw">val</span> sizeInBytes = bytes.size
+        <span class="tok-com">// promise.resolve — JS Promise ko is value ke saath resolve karna</span>
+        promise.resolve(sizeInBytes)
+      } <span class="tok-kw">catch</span> (e: Exception) {
+        <span class="tok-com">// promise.reject — error code aur message ke saath JS Promise ko reject karna, taaki caller try/catch mein handle kar sake</span>
+        promise.reject(<span class="tok-str">"E_FILE_READ"</span>, <span class="tok-str">"File read failed: ${e.message}"</span>, e)
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interview mein agar koi poochhe "Expo Modules API mein native function kis thread pe run hota hai by
+          default", sahi answer ye hai: <strong><code>Function()</code> synchronous hota hai aur calling JS
+          thread pe hi directly execute hota hai</strong> (JSI ki wajah se ye possible hai, bina kisi
+          serialization ke) — isliye ye sirf fast, non-blocking operations ke liye hai. <code>AsyncFunction()</code>
+          apna kaam ek separate execution context mein karta hai (aapka explicit <code>DispatchQueue</code>/coroutine
+          dispatcher) aur sirf final result JS thread ko Promise resolve/reject ke through deliver hota hai — ye
+          hi asli "offloading" hai.
+        </p>
+      </div>
+
+      <h3>Memory management — JS-native boundary ke dono taraf</h3>
+      <p>
+        Ye ek conceptual awareness hai jo senior engineers se expect ki jaati hai, chahe aap din-pratidin JNI-level
+        memory management na kar rahe ho. Do alag memory models hain jo aapke native module ke through interact
+        karte hain:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Platform</th><th>Memory model</th><th>Native module author ke liye implication</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>iOS (Swift)</td>
+            <td><strong>ARC (Automatic Reference Counting)</strong> — compiler automatically retain/release calls insert karta hai, developer ko manually memory free nahi karni padti</td>
+            <td>
+              Objects ko JS se/JS ko pass karne mein aam taur pe koi manual memory management nahi chahiye. Lekin
+              <strong>retain cycles</strong> ka risk hai — agar aapka native module kisi object (jaise ek delegate
+              ya callback closure) ko strongly hold karta hai, aur wo object wapas module ko strongly reference
+              karta hai, dono ek dusre ko zinda rakhte hain forever (memory leak), kyunki ARC ka reference count
+              kabhi zero nahi hota. Common fix: delegate/callback references ko <code>weak</code> banao.
+            </td>
+          </tr>
+          <tr>
+            <td>Android (Kotlin/JVM)</td>
+            <td><strong>JVM Garbage Collection</strong> — ek background GC thread periodically unused objects detect karke free karta hai</td>
+            <td>
+              Zyadatar cases mein GC sab handle kar leta hai automatically. Lekin agar aap kabhi raw JNI level tak
+              jaate ho (bahut rare, sirf extreme low-level native-C/C++ integration cases mein), wahan JNI
+              references (<code>local</code>/<code>global</code> refs) ko manually manage karna padta hai — ye is
+              chapter ke scope se bahar hai, lekin senior awareness ke liye jaanna zaroori hai ki "agar kabhi JNI
+              tak jaana pade, memory management automatic nahi rahega."
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Retain cycle ka practical example</div>
+        <p>
+          Socho aapka native module ek delegate pattern use karta hai — module ek callback handler ko strongly
+          store karta hai, aur wo handler apne closure ke andar module ka reference bhi strongly capture kar leta
+          hai (jaise <code>self</code> ko strong capture karna Swift closure mein). Result: dono objects ka
+          reference count kabhi zero nahi hoga, dono memory mein forever reh jaayenge chahe unhe kahin use na kiya
+          jaa raha ho. Fix: closure mein <code>[weak self]</code> capture list use karo, ya delegate property ko
+          <code>weak var</code> banao.
+        </p>
+      </div>
+
+      <h3>Synchronous vs async — performance ka rule of thumb</h3>
+      <p>
+        Ye decision har naye function ke liye lena padta hai, aur senior engineers ke liye ye almost muscle-memory
+        hona chahiye:
+      </p>
+      <ul>
+        <li>
+          <strong><code>Function()</code> (synchronous)</strong> — JS thread ko block karta hai jab tak return na
+          ho. Sirf tab use karo jab operation genuinely fast ho (microseconds se low-single-digit-milliseconds
+          range) — jaise ek simple system property read karna (<code>Build.MODEL</code>, <code>UIDevice</code>
+          info), ek in-memory calculation, ya koi cached value return karna.
+        </li>
+        <li>
+          <strong><code>AsyncFunction()</code> (asynchronous)</strong> — Promise return karta hai, JS thread ko
+          block nahi karta. Use karo kisi bhi operation ke liye jo network, disk I/O, heavy computation, ya kisi
+          bhi unpredictable-duration kaam involve kare.
+        </li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Rule of thumb</div>
+        <p>
+          Agar operation <strong>kabhi bhi</strong> kuch milliseconds se zyada le sakti hai — chahe usually fast
+          ho lekin edge case mein slow ho sakti ho (jaise ek file jo normally chhoti hoti hai lekin kabhi bahut
+          badi ho sakti hai) — <strong>use hamesha async banao</strong>. "Usually fast hai" ek trap hai; production
+          mein wahi 1% slow case aapki poori app ko freeze kar dega. Jab doubt ho, <code>AsyncFunction()</code> hi
+          default choice honi chahiye — sync sirf tab jab aap 100% certain ho ki operation trivially fast hai.
+        </p>
+      </div>
+
+      <h3>Native crash symbolication — hex address se readable stack trace tak</h3>
+      <p>
+        Ye ek aisi cheez hai jo bahut teams ko production mein surprise leti hai jab unka pehla custom native
+        module crash karta hai. JS-side crash (jaise ek unhandled exception in a React component) hamesha ek
+        readable stack trace deta hai — file name, line number, function name — kyunki JS source maps available
+        hote hain. Lekin <strong>native code (Swift/Kotlin/C++) crash</strong> jab production build mein hota hai,
+        crash report mein aapko sirf ek <strong>memory address ya hex offset</strong> milta hai (jaise
+        <code>0x0000000104a3f2c8</code>), na ki function ka naam ya line number.
+      </p>
+      <p>
+        Iski wajah simple hai: production build ke liye compiler code ko <strong>optimize aur strip</strong> karta
+        hai — readable symbol names (function/variable names) binary se strip ho jaate hain size aur reverse-engineering
+        protection ke liye. Ye symbol-to-address mapping ek alag file mein store hoti hai: iOS pe
+        <strong>dSYM (Debug Symbol) file</strong>, Android pe <strong>mapping file</strong> (ProGuard/R8 se, ya
+        native <code>.so</code> files ke liye symbol files). Jab tak aap crash reporting tool (Sentry, Bugsnag,
+        Firebase Crashlytics) ko us <strong>exact build</strong> ke matching dSYM/mapping file upload nahi karte,
+        crash report hamesha unreadable hex addresses hi dikhayega — chahe aapka source code perfectly fine ho.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Common gap — custom native module crash aur "hume pata hi nahi chala kyun"</div>
+        <p>
+          Ye exactly wo scenario hai jo custom native modules ke saath teams ko sabse zyada frustrate karta hai:
+          module production mein kisi rare device/OS-version combination pe crash karta hai, crash reporting tool
+          mein sirf hex addresses dikhte hain, aur symbols upload nahi hue the us exact build ke liye — result:
+          team ko pata hi nahi chalta crash <em>kaha</em> ho raha hai, sirf itna pata hai ki ho raha hai. Fix:
+          <strong>EAS Build/CI pipeline mein dSYM upload (iOS) aur mapping file upload (Android) ko automate karo</strong>
+          har production build ke saath, seedha apne crash reporting tool (Sentry/Bugsnag) ko — taaki agli baar
+          jab custom native code crash kare, aapke paas readable stack trace ho, hex address nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level React Native interviews mein native
+        modules aur architecture internals ke around poochhe jaate hain. Har answer detailed hai — sirf "sahi
+        jawab" nahi, balki <em>kyun</em> wo sahi hai, taaki aap ye concepts genuinely samajh kar interview mein
+        confidently explain kar sako.
+      </p>
+
+      <h3>1. JSI actually hai kya, low level pe? Ye JS ko C++/native code call karne kaise deta hai bina JSON serialization ke?</h3>
+      <p>
+        <strong>JSI (JavaScript Interface)</strong> ek C++ layer/API hai jo JS engine (Hermes, JavaScriptCore,
+        V8) ke andar directly embed hoti hai. Purane Bridge architecture mein, JS aur native side ek
+        dusre se completely isolated processes/threads ki tarah communicate karte the — har call ek message ban
+        jaata tha jo JSON string mein serialize hota, ek async queue pe bhejta jaata, dusri taraf deserialize
+        hota, phir process hota. Ye slow tha kyunki har cross-boundary call mein serialization/deserialization
+        cost + queueing latency dono the.
+      </p>
+      <p>
+        JSI is poore overhead ko eliminate karta hai kyunki ye JS engine ko <strong>native C++ objects (called
+        HostObjects) ko directly reference karne</strong> deta hai, jaise wo JS objects hi hon. Jab JS code ek
+        native function call karta hai, JS engine literally ek C++ function pointer ko directly invoke karta hai
+        — koi JSON string nahi banti, koi async message queue nahi, koi serialization nahi. Ye almost ek regular
+        function call jaisa fast hota hai (same-process, same-memory-space call), sirf ek thin C++ interop layer
+        ke through. Isi wajah se JSI synchronous native calls possible banata hai (jaise humara
+        <code>Function()</code> jo directly return value deta hai) — Bridge architecture mein synchronous calls
+        practically impossible the.
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Interview tip</div>
+        <p>
+          Agar interviewer deeper poochhe: TurboModules aur Fabric dono JSI ke upar bane hain. TurboModules
+          native modules ko <strong>lazily</strong> (jab pehli baar use ho tabhi) load karte hain JSI HostObjects
+          ke through, jabki purana Bridge sab modules ko app start pe eagerly initialize karta tha — ye startup
+          time improvement ka bhi ek bada reason hai New Architecture mein.
+        </p>
+      </div>
+
+      <h3>2. Aap ek native module likh rahe ho jo ek bada file read karta hai — Function() use karoge ya AsyncFunction(), aur ye matter kyun karta hai?</h3>
+      <p>
+        Definitely <strong>AsyncFunction()</strong>. Reasoning: <code>Function()</code> synchronously calling
+        thread (jo JS thread hota hai) pe hi directly execute hota hai — matlab jab tak file read complete na ho,
+        poora JS thread block rahega. JS thread sirf JS code hi nahi run karta, ye React ke reconciliation aur
+        event handling ka bhi core hai, isliye is thread ka block hona directly UI freeze/unresponsive taps/stuck
+        animations ke roop mein dikhega user ko.
+      </p>
+      <p>
+        <code>AsyncFunction()</code> use karke, hum actual file-read kaam ko explicitly ek background thread
+        (iOS pe <code>DispatchQueue.global()</code>, Android pe coroutine ka background dispatcher) pe daalte
+        hain, aur JS side ko turant ek Promise mil jaata hai jo baad mein resolve/reject hota hai jab background
+        kaam complete ho. Is se JS thread kabhi block nahi hota, chahe file 1KB ka ho ya 500MB ka.
+      </p>
+      <p>
+        Rule of thumb jo main hamesha follow karta hoon: agar operation ka duration file size, network
+        condition, ya kisi external factor pe depend karta hai (matlab worst-case unpredictable hai), wo
+        <strong>hamesha</strong> async honi chahiye — chahe average case mein wo fast lage.
+      </p>
+
+      <h3>3. Aapki app sirf production mein crash karti hai, sirf kuch Android devices pe, aur crash report ek hex address hai jo aap padh nahi sakte — process kya hoga readable banane ka aur cause dhoondhne ka?</h3>
+      <p>
+        Ye ek classic native-crash-symbolication problem hai. Mera process ye hoga:
+      </p>
+      <ul>
+        <li>
+          <strong>Pehle confirm karo ki symbols upload ho rahe hain:</strong> crash reporting tool (Sentry/Bugsnag/Crashlytics)
+          ke dashboard mein check karo ki us exact build/version ke liye mapping file (Android) already uploaded
+          hai ya nahi. Agar nahi, ye pehla fix hai — CI/EAS Build pipeline mein mapping file upload step add/verify
+          karo, taaki agli build se symbolicated crash reports milein.
+        </li>
+        <li>
+          <strong>Existing crash ko manually symbolicate karne ki koshish karo:</strong> agar us build ka mapping
+          file locally available hai (build artifacts se), tools (jaise Android's <code>retrace</code>, ya
+          Sentry CLI ka symbolication command) use karke hex addresses ko readable stack trace mein convert karo.
+        </li>
+        <li>
+          <strong>Device/OS pattern dhoondo:</strong> "sirf kuch devices pe" ka matlab hai probably ek specific
+          OEM (Samsung/Xiaomi custom Android build), specific Android version, ya specific chipset/architecture
+          (ARM vs x86) se related issue hai — crash reporting tool mein device/OS breakdown dekho, pattern
+          isolate karo.
+        </li>
+        <li>
+          <strong>Native module code review karo un patterns ke against:</strong> jaise null pointer access jo
+          sirf kisi specific OS version mein null return karta ho, ya ek native API jo sirf certain OEM builds
+          mein deprecated/missing ho.
+        </li>
+        <li>
+          <strong>Long-term fix:</strong> future crashes ke liye ensure karo har production release automatically
+          apne symbols upload kare — taaki next time ye pura investigation process skip ho jaaye aur seedha
+          readable stack trace mile.
+        </li>
+      </ul>
+
+      <h3>4. Ek teammate ek custom native module likhna chahta hai kisi cheez ke liye jo aapko lagta hai ek existing library already achhe se karti hai. Ye conversation kaise handle karoge?</h3>
+      <p>
+        Ye ek judgment/leadership question hai, technical se zyada. Mera approach hoga curiosity-first, blocking
+        nahi:
+      </p>
+      <ul>
+        <li>
+          Pehle unse poochna ki unhone kya specifically evaluate kiya — kaunsi library dekhi, usme kya missing
+          laga jo unhe custom module likhne pe majboor kar raha hai. Kabhi kabhi genuine gap hota hai (library
+          maintained nahi hai, ya ek bahut specific requirement support nahi karti) — is case mein unka decision
+          sahi ho sakta hai.
+        </li>
+        <li>
+          Agar gap genuine nahi lagta, unhe is chapter ka wahi decision-tree share karna jo humne shuru mein
+          dekha: Expo SDK → community package → sirf tabhi custom likho jab dono options genuinely fail karte ho.
+          Aur ye reasoning explain karna ki custom native module ek one-time feature nahi, ek <strong>ongoing
+          maintenance commitment</strong> hai — har Xcode/Gradle/OS update ke saath potential breakage, jisko koi
+          na koi team ko forever maintain karna padega.
+        </li>
+        <li>
+          Agar unka concern library ki quality/maintenance ka hai (jaise "library 8 mahine se update nahi hui"),
+          alternative suggest karna: ek aur maintained library dhoondo, ya us existing library mein contribute
+          karo (PR bhejo) instead of poora naya module maintain karna.
+        </li>
+        <li>
+          Final decision agar phir bhi custom module likhna hi hai, to team ke saath explicitly document karna
+          <em>kyun</em> ye decision liya gaya aur maintenance ownership kiski hai — taaki future mein koi confuse
+          na ho.
+        </li>
+      </ul>
+      <p>
+        Point ye hai ki main "na" nahi bolta seedha — main unhe wahi decision framework doon jo maine khud use
+        kiya hota, aur unhe khud us conclusion pe pahunchne doon.
+      </p>
+
+      <h3>5. Prop() closure ke andar aap heavy computation kar rahe ho jab native view re-render hoti hai. Kya problem ho sakti hai?</h3>
+      <p>
+        <code>Prop()</code> callbacks har baar chalte hain jab wo specific prop JS side se change hoti hai — aur
+        ye synchronously, UI thread pe hi chalta hai (kyunki native view updates hamesha main/UI thread pe hone
+        chahiye, UIKit/Android View system ka requirement hai). Agar <code>Prop()</code> ke andar koi heavy
+        computation hai (jaise complex image processing, large data transformation), ye directly UI thread ko
+        block karega jab tak complete na ho — result: janky/stuttering UI, especially agar prop frequently change
+        ho raha ho (jaise ek animation value jo har frame update hoti ho).
+      </p>
+      <p>
+        Fix: <code>Prop()</code> ke andar sirf lightweight, direct view-update logic rakho (jaise seedha
+        background color set karna). Agar genuinely heavy computation chahiye, use kisi background thread pe
+        offload karo aur result ko main thread pe wapas dispatch karke apply karo (iOS:
+        <code>DispatchQueue.main.async</code> se wapas aana after background work; Android: similar main-thread
+        dispatch pattern), ya better — computation ko JS side pe hi pre-compute karke ek simple value native ko
+        bhejo, taaki native view sirf apply kare, compute na kare.
+      </p>
+
+      <h3>6. Config Plugins prebuild ke time exactly kya karte hain, aur inke bina custom native module ka Info.plist/AndroidManifest change kyun break hota hai?</h3>
+      <p>
+        Config Plugins JS/TS functions hain jo <code>app.config.ts</code> ke <code>plugins</code> array mein
+        register hote hain. Jab <code>npx expo prebuild</code> chalta hai, Expo CLI native <code>ios/</code> aur
+        <code>android/</code> folders ko <strong>from scratch generate</strong> karta hai (template files se) —
+        aur phir har registered config plugin ko sequentially run karta hai, jisse wo generated config
+        (<code>Info.plist</code>, <code>AndroidManifest.xml</code>, <code>build.gradle</code>, etc.) ko
+        programmatically modify kar sake, mod-callback pattern (<code>withInfoPlist</code>, <code>withAndroidManifest</code>)
+        ke through.
+      </p>
+      <p>
+        Agar aap manually <code>ios/</code>/<code>android/</code> folders ke andar files edit karte ho (bina
+        config plugin ke), ye changes sirf tab tak survive karte hain jab tak koi <code>prebuild</code> dobara na
+        chale. Kyunki prebuild folders ko <strong>regenerate</strong> karta hai from scratch based on
+        <code>app.config.ts</code> + installed packages + config plugins — koi bhi manual edit jo in mechanisms
+        se nahi aaya, silently overwrite ho jaata hai. Isi wajah se config plugins mandatory hain kisi bhi
+        native-project-level change ke liye jab aap Expo ke managed prebuild workflow use kar rahe ho — ye
+        changes ko idempotent aur version-controlled banate hain, "prebuild-safe" banate hain.
+      </p>
+
+      <h3>7. ARC (iOS) aur Garbage Collection (Android) mein basic difference kya hai, aur native module authors ko dono ke baare mein kya jaanna chahiye?</h3>
+      <p>
+        <strong>ARC (Automatic Reference Counting)</strong>, jo iOS/Swift use karta hai, <em>compile-time</em>
+        pe kaam karta hai — compiler khud har object ke retain/release calls insert kar deta hai code mein, based
+        on static analysis of ownership. Isse memory deterministically aur turant free hoti hai jaise hi last
+        strong reference chala jaata hai — koi runtime pause nahi hota memory collection ke liye.
+      </p>
+      <p>
+        <strong>Garbage Collection (GC)</strong>, jo Android/Kotlin (JVM) use karta hai, <em>runtime</em> pe kaam
+        karta hai — ek background GC thread periodically heap scan karta hai aur unreachable objects ko free
+        karta hai. Ye developer se manual reference counting nahi mangta, lekin GC pause (chahe modern JVM GCs
+        mein bahut chhote hote hain) ek unpredictable timing element add karta hai.
+      </p>
+      <p>
+        Native module author ke liye practical implication: ARC ke saath, retain cycles (do objects ek dusre ko
+        strongly reference karte hue) ek real risk hai jo memory leak create karta hai — isliye delegate/callback
+        patterns mein <code>weak</code> references use karna important hai. GC ke saath, cycles apne aap detect
+        aur collect ho jaate hain (GC algorithms cycles handle karne ke liye designed hote hain), isliye ye
+        specific concern Android side pe utna critical nahi hai — lekin overall memory footprint (bahut saare
+        large objects hold karna) dono platforms pe equally matter karta hai.
+      </p>
+
+      <h3>8. Aapke native module ka Swift implementation kuch return karta hai jo iOS pe available hai lekin Android pe conceptually exist hi nahi karta (jaise humara fingerprint example). Iss asymmetry ko API design mein kaise handle karoge?</h3>
+      <p>
+        Ye ek real, common situation hai jo har senior native-module author face karta hai. Meri approach hai:
+      </p>
+      <ul>
+        <li>
+          <strong>JS-facing function signature (naam, parameters, return type) hamesha symmetric rakho</strong> —
+          dono platforms pe same function name, same TypeScript type. Consumer (app developer using the module)
+          ko platform-specific branching nahi karni chahiye API level pe agar avoid kiya jaa sake.
+        </li>
+        <li>
+          <strong>Underlying semantic difference ko documentation mein explicitly likho</strong> — jaise
+          "<code>getBuildFingerprint()</code> iOS pe vendor-scoped identifier + OS version return karta hai,
+          Android pe manufacturer build fingerprint string return karta hai — dono unique-per-build-hain lekin
+          exact format/uniqueness guarantees different hain."
+        </li>
+        <li>
+          Agar difference itna bada hai ki ek single unified API misleading hoga (jaise ek platform pe feature
+          hi exist nahi karta), <code>Platform.OS</code> check ke saath explicitly null/undefined return karna
+          ya ek separate optional method banana, taaki consumer ko compile-time/type-level pata chale ki ye
+          platform-specific hai — silently wrong assumption na bane.
+        </li>
+      </ul>
+      <p>
+        Point ye hai ki platform differences ko chhupana nahi, balki unhe explicitly, predictably surface karna —
+        taaki consuming developer surprised na ho.
+      </p>
+
+      <h3>9. Aap Expo SDK ko major version upgrade kar rahe ho aur aapke paas 3 custom native modules hain. Iska risk assessment/testing process kya hoga?</h3>
+      <p>
+        Major Expo SDK upgrades <code>expo-modules-core</code> ke underlying API surface ko change kar sakte hain
+        — naye DSL patterns, kabhi deprecated methods removed. Mera process:
+      </p>
+      <ul>
+        <li>
+          <strong>Release notes/changelog padhna sabse pehle</strong> — Expo SDK release notes mein specifically
+          "Breaking Changes" section check karo <code>expo-modules-core</code> ke against, dekho koi API deprecate/remove
+          to nahi hui jo humare modules use kar rahe hain.
+        </li>
+        <li>
+          <strong>Ek isolated branch pe upgrade karke <code>expo-doctor</code> chalana</strong> — ye tool
+          compatibility issues surface karta hai automatically, including native module related warnings.
+        </li>
+        <li>
+          <strong>Har custom module ko individually rebuild aur smoke-test karna</strong> — sirf JS side test
+          karna kaafi nahi hai, kyunki native compile-time issues sirf actual native build (<code>expo prebuild --clean</code>
+          + <code>run:ios</code>/<code>run:android</code>) chalane se pakde jaate hain.
+        </li>
+        <li>
+          <strong>Physical devices pe bhi test karna</strong>, sirf simulator/emulator nahi — kuch native-level
+          issues (permissions, hardware APIs) sirf real devices pe reproduce hote hain.
+        </li>
+        <li>
+          <strong>Rollback plan rakhna</strong> — agar upgrade ke baad koi custom module reliably kaam nahi kar
+          raha, ek clear decision point hona chahiye: fix karo abhi, ya upgrade ko temporarily hold karo jab tak
+          module update na ho jaaye. Ye risk assessment pehle se team ke saath discuss karna chahiye, upgrade ke
+          din nahi.
+        </li>
+      </ul>
+      <p>
+        Bottom line: major SDK upgrade jab custom native modules involved hon, kabhi bhi "sirf package.json version
+        bump" nahi hai — ye ek proper testing cycle deserve karta hai jo roadmap mein explicitly plan kiya gaya ho.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="15-payments.html">
+          <div class="label">← Previous</div>
+          <div class="title">Payments</div>
+        </a>
+        <a class="next" href="17-bonus.html">
+          <div class="label">Next →</div>
+          <div class="title">Bonus</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

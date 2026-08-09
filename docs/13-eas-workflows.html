@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EAS Workflows — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link active" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> EAS Workflows</div>
+      <div class="progress-pill">Chapter 13 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">EAS Workflows · CI/CD · YAML · Maestro</span>
+      <h1>EAS Workflows — Expo ka apna CI/CD System</h1>
+      <p class="subtitle">
+        Ab tak humne <code>eas build</code>, <code>eas submit</code>, aur <code>eas update</code> ko manually
+        terminal se run kiya hai — ya phir GitHub Actions jaisi external CI mein wire kiya hai. EAS Workflows
+        isse ek step aage le jaata hai: Expo ka apna YAML-based CI/CD system, jo Expo ke hi infra pe chalta hai
+        aur build/submit/update ko first-class steps ki tarah treat karta hai. Is chapter mein hum dekhenge ki
+        ye kaam kaise karta hai, basic se full release pipeline tak, Maestro E2E gate ke saath, aur sabse zaroori
+        — kab isko use karna hai aur kab GitHub Actions pe hi rehna hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#what-and-why">1. EAS Workflows Kya Hai Aur Kyun Exist Karta Hai</a></li>
+          <li><a href="#getting-started">2. Getting Started: Basic Workflow File</a></li>
+          <li><a href="#build-submit">3. Build and Submit Workflow (Full Release Pipeline)</a></li>
+          <li><a href="#e2e-maestro">4. E2E Testing in a Workflow (Maestro Integration)</a></li>
+          <li><a href="#triggers">5. Triggers and Conditions</a></li>
+          <li><a href="#decision-framework">6. EAS Workflows vs GitHub Actions — Senior Decision Framework</a></li>
+          <li><a href="#gotchas">7. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">9. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="what-and-why" style="border-top:none; padding-top:0; margin-top:28px;">1. EAS Workflows Kya Hai Aur Kyun Exist Karta Hai</h2>
+
+      <p>
+        <strong>EAS Workflows</strong> Expo ka apna CI/CD orchestration system hai — matlab tum YAML files
+        likhte ho jo <strong>Expo ke infra pe</strong> run hoti hain (wahi machines jinpe tumhare EAS Builds
+        chalte hain), na ki GitHub/GitLab ke apne CI runners pe. Ye conceptually GitHub Actions jaisa hi hai —
+        triggers, jobs, steps — lekin ek key difference ke saath: EAS Workflows ke paas <code>build</code>,
+        <code>submit</code>, aur <code>update</code> jaise <strong>first-class built-in step types</strong>
+        hain jo directly EAS platform ke primitives ko call karte hain, bina tumhe khud <code>eas</code> CLI
+        commands ko shell script mein wrap karna pade.
+      </p>
+
+      <p>
+        Isse samajhne ka sabse aasan tareeka: GitHub Actions mein agar tumhe build → submit chain karna ho,
+        tum kuch aisa likhte ho —
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>GitHub Actions ka glue-code approach (for comparison)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">steps</span>: <span class="tok-com"># GitHub Actions job ke andar steps ki list</span>
+  <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Setup Node <span class="tok-com"># Node.js runtime install karne wala step</span>
+    <span class="tok-attr">uses</span>: actions/setup-node@v4 <span class="tok-com"># third-party marketplace action use kiya</span>
+  <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Install Expo CLI <span class="tok-com"># eas-cli ko manually install karna padta hai</span>
+    <span class="tok-attr">run</span>: npm install -g eas-cli <span class="tok-com"># global install, GitHub runner pe koi built-in EAS support nahi hai</span>
+  <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Build <span class="tok-com"># actual build trigger karne wala step</span>
+    <span class="tok-attr">run</span>: eas build --platform ios --non-interactive --no-wait <span class="tok-com"># CLI command khud likhna padta hai, flags yaad rakhne padte hain</span>
+  <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Submit <span class="tok-com"># build complete hone ke baad submit karne wala step</span>
+    <span class="tok-attr">run</span>: eas submit --platform ios --latest --non-interactive <span class="tok-com"># phir se CLI ko manually orchestrate karna padta hai</span></code></pre>
+      </div>
+
+      <p>
+        Ye kaam karta hai, lekin har glue step tumhari zimmedari hai — CLI install karna, auth token wire
+        karna, "--latest build use karo" jaisa logic khud likhna, aur agar build fail ho jaaye toh submit
+        skip karne ka conditional logic bhi khud handle karna. EAS Workflows mein wahi cheez built-in step
+        types ke through first-class treat hoti hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>EAS Workflows ka native step approach (for comparison)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">jobs</span>: <span class="tok-com"># workflow ke andar jobs ki list</span>
+  <span class="tok-attr">build</span>: <span class="tok-com"># job ka naam, dusre jobs isko reference kar sakte hain</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in "build" job type — seedha EAS Build primitive ko call karta hai</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># build job ke parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># kaunse platform ke liye build banani hai</span>
+  <span class="tok-attr">submit</span>: <span class="tok-com"># dusra job, submit ke liye</span>
+    <span class="tok-attr">type</span>: submit <span class="tok-com"># built-in "submit" job type — App Store/Play Store submission handle karta hai</span>
+    <span class="tok-attr">needs</span>: <span class="tok-punc">[</span>build<span class="tok-punc">]</span> <span class="tok-com"># dependency — build job pehle complete/success hona chahiye</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># submit job ke parameters</span>
+      <span class="tok-attr">build_id</span>: <span class="tok-punc">${{</span> needs.build.outputs.build_id <span class="tok-punc">}}</span> <span class="tok-com"># build job ka output directly reference kiya — koi "--latest" guesswork nahi</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo — <code>needs.build.outputs.build_id</code> jaisa data-flow between jobs, credentials
+        handling, aur "agar build fail ho toh submit skip karo" jaisa dependency-based sequencing sab
+        <strong>platform ke andar built-in</strong> hai, kyunki EAS Workflows aur EAS Build/Submit/Update dono
+        ek hi platform (Expo) ke primitives hain. Isliye kam glue code likhna padta hai — trade-off ye hai ki
+        EAS Workflows ka ecosystem GitHub Actions jitna vast nahi hai (marketplace actions, third-party
+        integrations, Slack notifications, custom runners waghera) — wo sab abhi limited ya absent hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Aspect</th><th>EAS Workflows</th><th>GitHub Actions</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Build/Submit/Update steps</strong></td><td>First-class built-in job types</td><td>Manual <code>eas</code> CLI calls</td></tr>
+          <tr><td><strong>Runs where</strong></td><td>Expo ka apna infra</td><td>GitHub-hosted ya self-hosted runners</td></tr>
+          <tr><td><strong>Ecosystem</strong></td><td>Chhota, EAS-specific</td><td>Bahut bada marketplace (10,000+ actions)</td></tr>
+          <tr><td><strong>Non-mobile CI needs</strong></td><td>Limited (web dashboard deploy, lint on other services, etc.)</td><td>General-purpose, kuch bhi orchestrate kar sakta hai</td></tr>
+          <tr><td><strong>Setup effort</strong></td><td>Kam — same platform, less glue</td><td>Zyada — CLI install, auth wiring, custom scripts</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ye "vs" nahi, "aur" bhi ho sakta hai</div>
+        <p>
+          Bahut senior teams EAS Workflows aur GitHub Actions dono use karti hain — same time, different
+          purposes ke liye. GitHub Actions repo ke baaki CI (lint, typecheck, unit tests on every PR, web
+          dashboard deploy) handle karta hai, aur wahi se ek step EAS Workflows ko trigger kar deta hai jab
+          actual mobile release banani ho. Hum section 6 mein isko detail se dekhenge.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="getting-started">2. Getting Started: Basic Workflow File</h2>
+
+      <p>
+        EAS Workflows ek strict convention follow karta hai — saari workflow YAML files
+        <code>.eas/workflows/</code> folder ke andar honi chahiye. EAS CLI aur EAS ka dashboard automatically
+        is folder ko scan karte hain jab workflows list karni ho ya trigger karni ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Folder structure — .eas/workflows/</span><button class="copy-btn">Copy</button></div>
+        <pre><code>.eas/                              <span class="tok-com">// EAS-specific config ka root folder — eas.json ke sath-sath yahan workflows bhi rehte hain</span>
+└── workflows/                    <span class="tok-com">// EAS Workflows convention folder — CLI/dashboard automatically yahi jagah scan karte hain YAML files ke liye</span>
+    ├── build-and-submit.yml      <span class="tok-com">// ek workflow = ek release pipeline, alag file isliye taaki ye independently trigger/edit ho sake bina doosre workflows ko touch kiye</span>
+    └── e2e-tests.yml             <span class="tok-com">// testing workflow build-and-submit se alag rakha, taaki ye PR merge pe chale bina har build ke saath release trigger kiye</span></code></pre>
+      </div>
+
+      <p>
+        Ab ek sabse simple possible workflow likhte hain — jo <code>main</code> branch pe push hone par
+        automatically ek iOS build trigger kare. Har line commented hai, kyunki YAML syntax mein indentation
+        aur structure hi sab kuch hai — ek galat space se pura workflow silently fail ho sakta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/basic-build.yml</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Basic build on push <span class="tok-com"># workflow ka human-readable naam, EAS dashboard pe yahi dikhega</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># "on" block define karta hai ki ye workflow kab automatically trigger hogi</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># git push event pe trigger karne ka config</span>
+    <span class="tok-attr">branches</span>: <span class="tok-punc">[</span>main<span class="tok-punc">]</span> <span class="tok-com"># sirf "main" branch pe push hone par hi ye workflow chalegi, feature branches pe nahi</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># workflow ke andar actual kaam karne wale jobs ki list</span>
+  <span class="tok-attr">build_ios</span>: <span class="tok-com"># is job ka naam — descriptive rakho, dashboard aur logs mein yahi id dikhegi</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in job type "build" — EAS Build primitive ko directly invoke karta hai</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># build job ke configuration parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># iOS ke liye build banao — Android alag job mein karenge agle section mein</span>
+      <span class="tok-attr">profile</span>: production <span class="tok-com"># eas.json mein defined "production" build profile use karo (signing, env vars waghera us profile se aayenge)</span></code></pre>
+      </div>
+
+      <p>
+        Is file ko commit karke push karte hi, agli baar jab tum <code>main</code> pe push karoge, EAS
+        automatically ek production iOS build trigger kar dega — bina tumhe manually <code>eas build</code>
+        chalane ke. Workflow ko manually bhi trigger kar sakte ho, testing ke liye:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Manually run a workflow</span><button class="copy-btn">Copy</button></div>
+        <pre><code>eas workflow:run .eas/workflows/basic-build.yml <span class="tok-com"># given workflow file ko turant, manually trigger karo — git push ka wait nahi karna</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Naya workflow likhte waqt, pehle <code>eas workflow:run</code> se manually trigger karke test karo
+          — automatic git-push triggers pe rely karke test karoge toh har chhoti si YAML mistake debug karne
+          ke liye ek naya commit + push karna padega, jo bahut slow feedback loop hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="build-submit">3. Build and Submit Workflow (Full Release Pipeline)</h2>
+
+      <p>
+        Ab ek real release pipeline banate hain — jo iOS aur Android dono ke liye build kare, aur
+        <strong>sirf tab</strong> submit kare jab build successfully complete ho. Ye <code>needs</code>
+        field ke through automatically hota hai — agar <code>build_ios</code> job fail ho jaaye, uspe
+        depend karne wala <code>submit_ios</code> job automatically skip ho jaata hai, EAS Workflows isko
+        khud handle karta hai, tumhe manually "if build succeeded" jaisi condition likhne ki zaroorat nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/build-and-submit.yml</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Build and Submit — iOS and Android <span class="tok-com"># dashboard pe dikhne wala readable naam</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger conditions</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># git push based trigger</span>
+    <span class="tok-attr">tags</span>: <span class="tok-punc">[</span><span class="tok-str">'v*'</span><span class="tok-punc">]</span> <span class="tok-com"># sirf "v1.0.0" jaisa version tag push hone par hi trigger hoga — release-only pipeline, har normal commit pe nahi</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs ki list — kul 4 jobs honge: 2 build, 2 submit</span>
+  <span class="tok-attr">build_ios</span>: <span class="tok-com"># iOS build job</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in build job type</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># is job ke parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># iOS platform target</span>
+      <span class="tok-attr">profile</span>: production <span class="tok-com"># production signing/config profile eas.json se</span>
+
+  <span class="tok-attr">build_android</span>: <span class="tok-com"># Android build job, iOS se independent — parallel mein chalega</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># same built-in type, different platform param</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># is job ke parameters</span>
+      <span class="tok-attr">platform</span>: android <span class="tok-com"># Android platform target</span>
+      <span class="tok-attr">profile</span>: production <span class="tok-com"># production profile</span>
+
+  <span class="tok-attr">submit_ios</span>: <span class="tok-com"># iOS submission job</span>
+    <span class="tok-attr">type</span>: submit <span class="tok-com"># built-in "submit" job type — App Store Connect ko push karta hai</span>
+    <span class="tok-attr">needs</span>: <span class="tok-punc">[</span>build_ios<span class="tok-punc">]</span> <span class="tok-com"># dependency — build_ios success hone tak wait karega, fail hone par automatically skip</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># submit job ke parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># kaunsi store pe submit karna hai</span>
+      <span class="tok-attr">build_id</span>: <span class="tok-punc">${{</span> needs.build_ios.outputs.build_id <span class="tok-punc">}}</span> <span class="tok-com"># build_ios job ka exact output build id use karo, "latest" guess nahi</span>
+
+  <span class="tok-attr">submit_android</span>: <span class="tok-com"># Android submission job</span>
+    <span class="tok-attr">type</span>: submit <span class="tok-com"># same built-in type, Android ke liye</span>
+    <span class="tok-attr">needs</span>: <span class="tok-punc">[</span>build_android<span class="tok-punc">]</span> <span class="tok-com"># build_android pe depend karta hai, isliye iOS build fail hone se ye affect nahi hoga</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># submit params</span>
+      <span class="tok-attr">platform</span>: android <span class="tok-com"># Play Store target</span>
+      <span class="tok-attr">build_id</span>: <span class="tok-punc">${{</span> needs.build_android.outputs.build_id <span class="tok-punc">}}</span> <span class="tok-com"># build_android job ka exact build id reference</span></code></pre>
+      </div>
+
+      <p>
+        Yahan ek important architectural point hai — <code>build_ios</code> aur <code>build_android</code>
+        ke beech koi <code>needs</code> nahi hai, matlab ye dono jobs <strong>parallel</strong> mein chalenge
+        (independent dependency graph nodes). Lekin <code>submit_ios</code> sirf <code>build_ios</code> pe
+        depend karta hai, <code>submit_android</code> sirf <code>build_android</code> pe — is design se agar
+        Android build fail ho jaaye, iOS ka poora build-submit chain unaffected rehta hai, aur vice versa.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — dependency graph ko explicit socho</div>
+        <p>
+          Jab bhi ek naya job add karo, khud se poocho: "ye job kis output pe depend karta hai, aur agar
+          uska dependency fail ho jaaye toh kya ye job chalna chahiye ya nahi?" <code>needs: []</code> ka
+          matlab hai job independently, doosre jobs ke saath parallel chalega. Galat dependency wiring ka
+          common mistake: dono submit jobs ko dono build jobs pe depend kar dena (<code>needs: [build_ios,
+          build_android]</code>) — isse Android build fail hone par iOS submit bhi rukk jaayega, jo waste
+          hai jab dono platforms independent releases hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="e2e-maestro">4. E2E Testing in a Workflow (Maestro Integration)</h2>
+
+      <p>
+        Ch.7 mein humne dekha tha ki Maestro E2E tests real device/simulator pe, real build ke against chalte
+        hain — aur wo <em>locally</em> chalate the. Production-grade pipeline ka agla step: E2E tests ko
+        automated gate banao, jo build hone ke baad khud-ba-khud chale, aur agar tests fail hon toh submit
+        step ko block kar de. Isse ek poora "regression pehle hi pakdo, user tak pahunchne se pehle" safety
+        net ban jaata hai.
+      </p>
+
+      <p>
+        Kyun ye local Maestro runs se better hai? Kyunki local runs <strong>developer discipline</strong> pe
+        depend karte hain — koi bhool sakta hai run karna, "chhota change hai, skip karta hoon" bol sakta hai,
+        ya apne local machine pe stale dependencies ke saath test kar raha ho sakta hai. CI mein E2E gate
+        lagane se ye guarantee milti hai ki <strong>har single release</strong>, chahe kisi ne bhi push kiya
+        ho, ek identical, reproducible environment mein poora critical user journey (login → home) pass
+        karke hi store tak pahunchti hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/e2e-tests.yml</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Build, E2E Test, then Submit <span class="tok-com"># dashboard naam — pipeline ka intent clearly bata raha hai</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># push-based trigger</span>
+    <span class="tok-attr">tags</span>: <span class="tok-punc">[</span><span class="tok-str">'v*'</span><span class="tok-punc">]</span> <span class="tok-com"># sirf release tags pe — E2E + submit ek costly pipeline hai, har commit pe nahi chalani</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs list — build → maestro gate → submit</span>
+  <span class="tok-attr">build_preview</span>: <span class="tok-com"># pehla job — ek internal-distribution preview build banata hai (device pe installable, store submission nahi)</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in build job</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># build parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># iOS ke liye E2E chalayenge is example mein</span>
+      <span class="tok-attr">profile</span>: preview <span class="tok-com"># "preview" profile — dev-client nahi, but production jaisa build, simulator/internal install ke liye</span>
+
+  <span class="tok-attr">maestro_e2e</span>: <span class="tok-com"># dusra job — Maestro flows ko preview build ke against run karta hai</span>
+    <span class="tok-attr">type</span>: maestro <span class="tok-com"># built-in "maestro" job type — EAS ka managed Maestro runner invoke karta hai</span>
+    <span class="tok-attr">needs</span>: <span class="tok-punc">[</span>build_preview<span class="tok-punc">]</span> <span class="tok-com"># preview build complete hone tak wait — usi build pe test chalana hai</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># maestro job ke parameters</span>
+      <span class="tok-attr">build_id</span>: <span class="tok-punc">${{</span> needs.build_preview.outputs.build_id <span class="tok-punc">}}</span> <span class="tok-com"># kaunsi build pe test chalana hai, exact reference</span>
+      <span class="tok-attr">flow_path</span>: .maestro/login-to-home.yaml <span class="tok-com"># ch.7 wala hi flow file reuse kiya — critical login→home journey</span>
+
+  <span class="tok-attr">submit_ios</span>: <span class="tok-com"># teesra job — sirf E2E pass hone ke baad chalega</span>
+    <span class="tok-attr">type</span>: submit <span class="tok-com"># built-in submit job</span>
+    <span class="tok-attr">needs</span>: <span class="tok-punc">[</span>maestro_e2e<span class="tok-punc">]</span> <span class="tok-com"># yehi "gate" hai — maestro_e2e fail hone par ye job automatically skip ho jaayega, App Store tak nahi pahuchega</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># submit parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># store target</span>
+      <span class="tok-attr">build_id</span>: <span class="tok-punc">${{</span> needs.build_preview.outputs.build_id <span class="tok-punc">}}</span> <span class="tok-com"># note: preview build id yahan reuse nahi karna chahiye production submit ke liye, real setup mein alag "production profile" build job hoga jo E2E pass hone ke baad trigger hota hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — preview build ko directly store pe submit mat karo</div>
+        <p>
+          Upar wale example mein <code>submit_ios</code> ne <code>build_preview</code> ka hi build id use
+          kiya — ye sirf concept dikhane ke liye simplified hai. Real production pipeline mein "preview"
+          profile wali build App Store submission ke liye sahi signing/config nahi rakhti. Sahi pattern:
+          E2E gate ek <strong>preview</strong> build pe chalao (fast feedback), aur E2E pass hone ke baad
+          ek <strong>alag <code>build_production</code> job</strong> trigger karo jo <code>needs:
+          [maestro_e2e]</code> ke saath production profile use kare, phir usi ka output submit karo. Isse
+          E2E gate aur actual store-bound artifact clearly separate rehte hain.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — CI mein E2E ka real value</div>
+        <p>
+          Local Maestro run sirf ye prove karta hai ki "developer ke machine pe, uske current branch state
+          mein, flow pass hua." CI-based E2E gate ye prove karta hai ki "exact commit jo release ban raha hai,
+          ek clean/reproducible environment mein, poore critical journey ke saath, kaam karta hai." Fark subtle
+          lagta hai lekin real incidents isi gap mein hote hain — jaise koi developer local env variable set
+          karke bhool gaya, ya ek dependency uske machine pe cached thi jo fresh install mein missing thi.
+          CI gate in "works on my machine" cases ko systematically eliminate karta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="triggers">5. Triggers and Conditions</h2>
+
+      <p>
+        EAS Workflows ko trigger karne ke teen main tareeke hain — manual, git-push-based, aur tag-based —
+        aur inputs/parameters ka use karke ek hi workflow file ko multiple environments (dev/staging/prod)
+        ke liye reusable bana sakte ho.
+      </p>
+
+      <table>
+        <thead><tr><th>Trigger type</th><th>Kab use karo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Manual (<code>eas workflow:run</code>)</strong></td><td>Testing/debugging ke waqt, ya ad-hoc "abhi ek build chahiye" cases mein</td></tr>
+          <tr><td><strong>Push trigger (branch-based)</strong></td><td>Continuous builds — har baar <code>main</code>/<code>develop</code> pe merge hone par preview build</td></tr>
+          <tr><td><strong>Tag-based trigger</strong></td><td>Actual releases — sirf jab tum explicitly ek version tag (<code>v1.2.0</code>) push karo, tabhi production pipeline chale</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Ek hi workflow file ko dev/staging/prod teeno environments ke liye reuse karne ke liye, hardcoded
+        values ki jagah <strong>inputs</strong> define karo — phir manual run ke waqt ya dusre workflow se
+        call karte waqt value pass kar do.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/deploy-update.yml — reusable across environments</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Deploy OTA update <span class="tok-com"># workflow ka naam</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">workflow_call</span>: <span class="tok-com"># "workflow_call" — matlab ye workflow manually ya kisi aur workflow se parameters ke saath invoke hoga, auto-trigger nahi</span>
+    <span class="tok-attr">inputs</span>: <span class="tok-com"># is workflow ke reusable inputs define kar rahe hain</span>
+      <span class="tok-attr">environment</span>: <span class="tok-com"># input ka naam — "environment" parameter</span>
+        <span class="tok-attr">required</span>: <span class="tok-kw">true</span> <span class="tok-com"># bina environment specify kiye workflow run hi nahi hogi</span>
+        <span class="tok-attr">type</span>: string <span class="tok-com"># input ka data type — plain string expect ho raha hai</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs list</span>
+  <span class="tok-attr">publish_update</span>: <span class="tok-com"># OTA update publish karne wala job</span>
+    <span class="tok-attr">type</span>: update <span class="tok-com"># built-in "update" job type — EAS Update primitive ko invoke karta hai</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># job ke parameters</span>
+      <span class="tok-attr">branch</span>: <span class="tok-punc">${{</span> inputs.environment <span class="tok-punc">}}</span> <span class="tok-com"># update channel/branch ka naam dynamically input se aa raha hai — "dev"/"staging"/"production" jo bhi pass ho</span>
+      <span class="tok-attr">message</span>: Deploy to <span class="tok-punc">${{</span> inputs.environment <span class="tok-punc">}}</span> <span class="tok-com"># update ke saath attach hone wala descriptive message, dynamic bhi</span></code></pre>
+      </div>
+
+      <p>
+        Isko manually alag-alag environment ke liye run karna kuch aisa dikhega:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Run the same workflow for different environments</span><button class="copy-btn">Copy</button></div>
+        <pre><code>eas workflow:run .eas/workflows/deploy-update.yml --input environment=staging <span class="tok-com"># staging channel pe OTA update publish karo</span>
+eas workflow:run .eas/workflows/deploy-update.yml --input environment=production <span class="tok-com"># same workflow file, production channel pe — koi duplicate YAML nahi likhna pada</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Inputs ka pattern especially valuable hai jab tumhare paas 3+ environments hon — bina inputs ke,
+          tumhe <code>deploy-dev.yml</code>, <code>deploy-staging.yml</code>, <code>deploy-prod.yml</code>
+          jaisi teen almost-identical files maintain karni padengi, jinme se koi ek mein galti se drift
+          (stale params, missed update) ho sakta hai. Ek reusable file safer aur DRY dono hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="decision-framework">6. EAS Workflows vs GitHub Actions — Senior Decision Framework</h2>
+
+      <p>
+        Ab jab dono systems dekh liye, senior-level decision yahan hai: <strong>kab kaunsa choose karein,
+        aur kab dono ko combine karein.</strong>
+      </p>
+
+      <table>
+        <thead><tr><th>Situation</th><th>Recommendation</th></tr></thead>
+        <tbody>
+          <tr><td>Small-to-mid team, already fully EAS-based (build/submit/update sab EAS se)</td><td><strong>EAS Workflows</strong> — minimal glue, ek hi platform pe sab kuch, kam maintenance surface</td></tr>
+          <tr><td>Need web dashboard/backend bhi deploy karna, alag services ke saath</td><td><strong>GitHub Actions</strong> — broader CI capability, ek hi pipeline mein web + mobile dono orchestrate ho sakta hai</td></tr>
+          <tr><td>Complex multi-repo orchestration (monorepo ya multiple related repos)</td><td><strong>GitHub Actions</strong> — cross-repo triggers, matrix builds, aur third-party integrations ka mature ecosystem</td></tr>
+          <tr><td>Already heavy investment in GitHub Actions (existing workflows, secrets, custom actions)</td><td>Existing investment ko waste mat karo — <strong>GitHub Actions continue karo</strong>, EAS ko usmein call karo</td></tr>
+          <tr><td>Sirf mobile release automation chahiye, koi external CI dependency nahi rakhni</td><td><strong>EAS Workflows</strong> — koi separate CI account/runner setup ki zaroorat nahi</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Aur jaisa pehle mention kiya, dono ko <strong>combine</strong> karna bhi ek perfectly valid pattern
+        hai — GitHub Actions apna general-purpose CI (lint, typecheck, unit tests, web deploy) chalata rahe,
+        aur jab actual mobile release banani ho, ek step se EAS ko invoke kar de:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.github/workflows/release.yml — GH Actions triggering EAS</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Mobile release <span class="tok-com"># GitHub Actions workflow ka naam</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># push event pe</span>
+    <span class="tok-attr">tags</span>: <span class="tok-punc">[</span><span class="tok-str">'v*'</span><span class="tok-punc">]</span> <span class="tok-com"># version tag pe hi ye release job chalega</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># GitHub Actions ke apne jobs</span>
+  <span class="tok-attr">trigger_eas_workflow</span>: <span class="tok-com"># job ka naam</span>
+    <span class="tok-attr">runs-on</span>: ubuntu-latest <span class="tok-com"># GitHub-hosted Ubuntu runner pe chalega (ye khud build nahi karega, sirf EAS ko trigger karega)</span>
+    <span class="tok-attr">steps</span>: <span class="tok-com"># is job ke steps</span>
+      <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Checkout repo <span class="tok-com"># repo code checkout karne wala step</span>
+        <span class="tok-attr">uses</span>: actions/checkout@v4 <span class="tok-com"># official checkout action</span>
+      <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Setup Node <span class="tok-com"># Node.js setup step</span>
+        <span class="tok-attr">uses</span>: actions/setup-node@v4 <span class="tok-com"># official setup-node action</span>
+        <span class="tok-attr">with</span>: <span class="tok-com"># action ke inputs</span>
+          <span class="tok-attr">node-version</span>: 20 <span class="tok-com"># Node version pin kiya, reproducibility ke liye</span>
+      <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Install eas-cli <span class="tok-com"># eas-cli install karne wala step</span>
+        <span class="tok-attr">run</span>: npm install -g eas-cli <span class="tok-com"># global install kiya, taaki eas command available ho</span>
+      <span class="tok-punc">-</span> <span class="tok-attr">name</span>: Trigger EAS Workflow <span class="tok-com"># actual trigger step — GH Actions se EAS Workflows ko call kar rahe hain</span>
+        <span class="tok-attr">run</span>: eas workflow:run .eas/workflows/build-and-submit.yml --non-interactive <span class="tok-com"># EAS ka apna build+submit pipeline yahan se invoke ho raha hai</span>
+        <span class="tok-attr">env</span>: <span class="tok-com"># environment variables is step ke liye</span>
+          <span class="tok-attr">EXPO_TOKEN</span>: <span class="tok-punc">${{</span> secrets.EXPO_TOKEN <span class="tok-punc">}}</span> <span class="tok-com"># GH Actions ke encrypted secrets se EAS auth token pass kiya — GH secret, EAS credential dono ki security boundary respect ho rahi hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "best of both worlds" architecture</div>
+        <p>
+          Is pattern ka fayda: GitHub Actions apna strength (general-purpose orchestration, broad ecosystem,
+          multi-repo/multi-service coordination) use karta hai, jabki actual mobile build/submit/update ka
+          heavy-lifting EAS Workflows ko diya jaata hai jahan wo native primitives se seedha connect hai
+          (kam glue, better error messages, EAS dashboard pe consolidated build history). Ye trade-off nahi
+          hai — dono systems apna sabse strong use-case handle kar rahe hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">7. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ YAML syntax errors sirf run-time pe pakde jaate hain</div>
+        <p>
+          EAS Workflows ke liye abhi tak koi mature local linter/validator nahi hai jo commit karne se pehle
+          YAML structure ko validate kar de (jaisa GitHub Actions ke liye <code>actionlint</code> jaise tools
+          hain). Iska matlab: agar tumne indentation galat kiya, ya ek job ka <code>needs</code> kisi non-existent
+          job ko reference kar diya, ye galti sirf tab surface hogi jab workflow actually run hogi — aur agar
+          ye <code>main</code> pe push trigger hai, matlab production pipeline break ho sakta hai bina warning
+          ke. Practical mitigation: naya ya edited workflow hamesha ek <strong>feature branch pe</strong> banao,
+          <code>eas workflow:run</code> se manually test karo, aur sirf jab wo clean run kare tabhi
+          <code>main</code>/tag trigger wale path mein merge karo.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Secrets aur credentials workflow ke andar</div>
+        <p>
+          Ch.9 mein humne dekha tha ki API keys/secrets ko kabhi bhi client bundle mein hardcode nahi karna
+          chahiye — same principle workflows pe bhi lagu hota hai. Build/submit/update jobs ko jo bhi
+          credentials chahiye (Apple API keys, Play Store service account JSON, Supabase service-role keys
+          agar CI mein backend-side kaam ho raha hai), unhe hamesha <strong>EAS Secrets</strong>
+          (<code>eas secret:create</code>) ke through store karo, YAML file ke andar plaintext ya even git
+          history mein kabhi nahi. Workflow YAML ke andar secret ko sirf uska reference dikhna chahiye
+          (<code>${{ secrets.MY_SECRET }}</code> jaisa syntax), actual value kabhi commit history mein nahi
+          aani chahiye. Agar galti se ek secret plaintext commit ho jaaye, sirf file delete karna kaafi nahi
+          — git history se bhi purge karna padega aur credential ko turant rotate karna padega, kyunki commit
+          history public repo mein forever queryable hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Build minutes aur concurrency limits</div>
+        <p>
+          EAS ke free tier mein build minutes aur concurrent builds dono limited hain (paid plans mein zyada
+          milte hain, lekin unlimited nahi). Agar tumhara workflow design "har single commit pe full E2E
+          suite + iOS + Android build" karta hai, tum bahut jaldi apni monthly build minutes exhaust kar
+          doge — aur phir actual urgent release ke waqt tumhe queue mein wait karna padega ya extra minutes
+          purchase karne padenge. Senior-level mitigation: heavy pipelines (full Maestro E2E suite, dono
+          platform production builds) ko <strong>sirf PR merge / tag-based trigger</strong> pe rakho, na ki
+          har commit pe. Chhoti, fast checks (lint, unit tests, typecheck) GitHub Actions pe har commit pe
+          chala sakte ho kyunki wo EAS build minutes consume nahi karte — sirf jab code actually
+          release-ready ho tabhi EAS ke costly jobs (build/submit/E2E) trigger karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne EAS Workflows ke fundamentals dekh liye — basic build, build+submit chain, Maestro gate,
+        aur GitHub Actions ke saath decision framework. Ye section production-grade, multi-team scale pe le
+        jaata hai: <strong>matrix builds</strong> (ek workflow ko multiple profiles/platforms pe parallel
+        chalana), <strong>workflow composition/reuse</strong> (monorepo mein duplicate YAML se bachna), aur
+        <strong>secrets scoping</strong> (least-privilege access per workflow). Ye wahi cheezein hain jo ek
+        senior interview mein "aapne EAS Workflows production mein kaise scale kiya" jaisa follow-up sawaal
+        aane par expect ki jaati hain.
+      </p>
+
+      <h3>8.1 Matrix Builds — Sequential Nahi, Parallel</h3>
+
+      <p>
+        Section 3 mein humne <code>build_ios</code> aur <code>build_android</code> ko do alag, explicitly
+        likhe hue jobs ke through parallel chalaya tha. Jaise-jaise combinations badhte hain (2 platforms ×
+        3 profiles = 6 jobs), har combination ko haath se likhna repetitive aur error-prone ho jaata hai —
+        ek platform/profile add karna bhool jaana ek common mistake hai. <strong>Matrix builds</strong> is
+        repetition ko eliminate karte hain: tum ek hi job definition likhte ho, aur ek <code>matrix</code>
+        block bata deta hai ki kaunse combinations pe usko multiply karna hai — EAS Workflows internally
+        har combination ke liye ek separate job instance spawn karta hai, sab <strong>parallel</strong> mein.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/matrix-build.yml — same job, multiple platform+profile combos</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Matrix build across platforms and profiles <span class="tok-com"># dashboard pe dikhne wala naam</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># push-based trigger</span>
+    <span class="tok-attr">tags</span>: <span class="tok-punc">[</span><span class="tok-str">'v*'</span><span class="tok-punc">]</span> <span class="tok-com"># release tags pe hi ye poora matrix chalega — heavy pipeline hai, har commit pe nahi</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs list</span>
+  <span class="tok-attr">build_matrix</span>: <span class="tok-com"># ek hi job naam, lekin matrix ke through multiple instances mein expand hoga</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in build job type — matrix ke andar bhi wahi job type reuse hota hai</span>
+    <span class="tok-attr">strategy</span>: <span class="tok-com"># "strategy" block matrix expansion define karta hai</span>
+      <span class="tok-attr">matrix</span>: <span class="tok-com"># matrix ke axes yahan define hote hain</span>
+        <span class="tok-attr">platform</span>: <span class="tok-punc">[</span>ios, android<span class="tok-punc">]</span> <span class="tok-com"># pehla axis — ye do values</span>
+        <span class="tok-attr">profile</span>: <span class="tok-punc">[</span>preview, production<span class="tok-punc">]</span> <span class="tok-com"># dusra axis — ye do values, cross-product ho jaayega (2 x 2 = 4 job instances)</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># job ke parameters — yahan matrix variables ko reference kiya jaata hai</span>
+      <span class="tok-attr">platform</span>: <span class="tok-punc">${{</span> matrix.platform <span class="tok-punc">}}</span> <span class="tok-com"># current matrix instance ka platform value yahan inject hota hai</span>
+      <span class="tok-attr">profile</span>: <span class="tok-punc">${{</span> matrix.profile <span class="tok-punc">}}</span> <span class="tok-com"># current matrix instance ka profile value yahan inject hota hai</span></code></pre>
+      </div>
+
+      <p>
+        Ye single job definition <strong>4 alag build jobs</strong> spawn karega — (ios, preview), (ios,
+        production), (android, preview), (android, production) — sab EAS ke infra pe <strong>ek saath,
+        parallel</strong> chalenge, na ki ek ke baad ek sequentially. Isse total pipeline wall-clock time
+        drastically kam ho jaata hai (4 sequential builds ~40 min lete agar har ek 10 min ki ho, matrix mein
+        sab parallel chalne se poora set ~10-12 min mein complete ho sakta hai, network/queue variance ke
+        saath).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — matrix ka trade-off: speed vs concurrent minutes</div>
+        <p>
+          Matrix builds "free lunch" nahi hain — ye sirf <strong>wall-clock time</strong> kam karte hain,
+          total <strong>compute/build-minutes consumption</strong> same hi rehta hai (ya thoda zyada, queueing
+          overhead ki wajah se), bas sab ek saath consume hota hai instead of spread over time. Agar tumhari
+          EAS plan mein concurrent build ka limit hai (free/lower tiers pe common), toh 4-way matrix ek saath
+          trigger karne se baaki team members ke builds queue mein wait karenge jab tak matrix ke sab jobs
+          slots free nahi karte. Practical rule: matrix ka use tab karo jab <strong>latency critical ho</strong>
+          (jaise ek release ko jaldi ship karna hai aur team chhota hai, concurrency contention low hai) — na
+          ki har chhote commit pe habitually laga do, warna poori team ke build queue slow ho jaayenge.
+        </p>
+      </div>
+
+      <h3>8.2 Workflow Composition and Reuse — Monorepo Pattern</h3>
+
+      <p>
+        Bade orgs mein aksar ek monorepo hota hai jisme <strong>multiple RN apps</strong> rehte hain (jaise
+        ek consumer app, ek internal admin app, ek partner-facing app) — teeno ka release process
+        <em>similar-but-not-identical</em> hota hai: build steps almost same, lekin submit credentials,
+        bundle identifiers, aur kabhi-kabhi E2E flows alag hote hain. Naive approach har app ke liye poora
+        workflow YAML copy-paste kar dena hai — lekin isse jab bhi ek shared step change ho (jaise "Slack
+        notification add karo har build ke baad"), teeno files mein manually edit karna padega, aur drift
+        ka risk high ho jaata hai.
+      </p>
+
+      <p>
+        Do patterns is duplication ko kam karte hain — <strong>parameterized/reusable workflows</strong>
+        (jo section 5 mein <code>workflow_call</code> ke through dekha tha, wahi concept ab multi-app scale
+        pe) aur <strong>per-app thin wrapper workflows</strong> jo ek shared "core" workflow ko inputs ke
+        saath call karte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/_shared-release.yml — parameterized, reusable core pipeline</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Shared release pipeline <span class="tok-com"># ye "core" workflow hai — direct trigger nahi hoga, sirf dusre workflows se call hoga</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">workflow_call</span>: <span class="tok-com"># "workflow_call" — matlab ye sirf parameters ke saath invoke hoga, kabhi khud auto-trigger nahi hoga</span>
+    <span class="tok-attr">inputs</span>: <span class="tok-com"># is shared workflow ke reusable inputs</span>
+      <span class="tok-attr">app_slug</span>: <span class="tok-com"># kaunsa app hai — "consumer", "admin", "partner"</span>
+        <span class="tok-attr">required</span>: <span class="tok-kw">true</span> <span class="tok-com"># har caller ko app_slug specify karna hi hoga</span>
+        <span class="tok-attr">type</span>: string <span class="tok-com"># plain string input</span>
+      <span class="tok-attr">working_directory</span>: <span class="tok-com"># monorepo mein is app ka path — jaise "apps/consumer"</span>
+        <span class="tok-attr">required</span>: <span class="tok-kw">true</span> <span class="tok-com"># har app ka apna path hoga, isliye required</span>
+        <span class="tok-attr">type</span>: string <span class="tok-com"># plain string input</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># shared jobs list — ye logic sab apps ke liye common hai</span>
+  <span class="tok-attr">build</span>: <span class="tok-com"># build job, jo caller-specific inputs use karega</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in build job type</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># job parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># is example mein sirf iOS, real setup mein matrix bhi ho sakta hai</span>
+      <span class="tok-attr">profile</span>: production <span class="tok-com"># production profile</span>
+      <span class="tok-attr">working_directory</span>: <span class="tok-punc">${{</span> inputs.working_directory <span class="tok-punc">}}</span> <span class="tok-com"># monorepo mein sahi app folder ke andar se build chalao — ye hi wo cheez hai jo per-app alag hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/release-consumer-app.yml — thin per-app wrapper</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Release — Consumer App <span class="tok-com"># is specific app ka readable naam</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config, per-app alag ho sakta hai</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># push-based trigger</span>
+    <span class="tok-attr">tags</span>: <span class="tok-punc">[</span><span class="tok-str">'consumer-v*'</span><span class="tok-punc">]</span> <span class="tok-com"># app-specific tag prefix — teeno apps independently release ho sakte hain, ek dusre ko trigger kiye bina</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs list</span>
+  <span class="tok-attr">release</span>: <span class="tok-com"># is job ka naam</span>
+    <span class="tok-attr">uses</span>: ./.eas/workflows/_shared-release.yml <span class="tok-com"># yahan shared/core workflow ko call kiya, duplicate logic likhne ke bajaye</span>
+    <span class="tok-attr">with</span>: <span class="tok-com"># shared workflow ko pass hone wale inputs</span>
+      <span class="tok-attr">app_slug</span>: consumer <span class="tok-com"># is app ka slug</span>
+      <span class="tok-attr">working_directory</span>: apps/consumer <span class="tok-com"># monorepo mein iska path</span></code></pre>
+      </div>
+
+      <p>
+        Is pattern mein, teeno apps (consumer/admin/partner) ke apne chhote wrapper files hain (sirf trigger
+        conditions aur app-specific inputs), lekin actual heavy-lifting logic ek hi <code>_shared-release.yml</code>
+        mein centralized hai. Jab bhi shared logic change karni ho (naya step add karna, existing step ka
+        behavior badalna), ek hi jagah edit karna padta hai — teeno apps automatically updated behavior
+        pick karte hain agli release pe.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          File naming convention <code>_shared-release.yml</code> mein leading underscore purely ek team
+          convention hai (EAS ke liye technically zaroori nahi) — ye sirf ek visual signal hai ki "ye file
+          directly trigger nahi hoti, sirf dusre workflows se called hoti hai." Bade monorepos mein
+          <code>.eas/workflows/</code> folder jaldi bada ho jaata hai, aur naming se distinguish karna
+          zaroori hai ki kaunsi files entry-points hain aur kaunsi shared building-blocks.
+        </p>
+      </div>
+
+      <h3>8.3 Secrets Scoping Per Workflow — Least Privilege</h3>
+
+      <p>
+        Ch.9 mein humne backend secrets ke liye least-privilege principle dekha tha (anon key vs
+        service_role key). Wahi principle EAS Secrets pe bhi apply hota hai, aur senior teams isko
+        <strong>per-workflow scoping</strong> ke through enforce karte hain — matlab har workflow ko sirf
+        <strong>utne hi</strong> secrets tak access diya jaata hai jitne uske specific jobs ko chahiye,
+        na ki poore project ke saare secrets tak blanket access.
+      </p>
+
+      <p>
+        Concrete example: tumhare paas ek "build only" workflow hai jo sirf preview builds banata hai
+        (internal testing ke liye, kabhi store pe submit nahi karta), aur ek alag "release" workflow hai jo
+        build + submit dono karta hai. "Build only" workflow ko App Store Connect API key ya Play Store
+        service-account JSON ki <strong>koi zaroorat hi nahi</strong> — wo sirf submission steps use karte
+        hain. Agar phir bhi wo secrets har workflow ko globally available hon (EAS project-level secret ke
+        through, bina scoping ke), toh:
+      </p>
+
+      <table>
+        <thead><tr><th>Risk</th><th>Kyun matter karta hai</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Larger blast radius agar workflow compromise ho</strong></td><td>Agar "build only" workflow ke andar koi malicious dependency ya compromised third-party script chal jaaye, aur usko submission credentials tak bhi access ho, toh attacker directly App Store/Play Store pe fraudulent submission bhi kar sakta hai — jabki unscoped access na hone se ye impossible hota</td></tr>
+          <tr><td><strong>Accidental log leakage ka wider impact</strong></td><td>Agar koi debug step galti se environment variables print kar de (common mistake), aur workflow ke paas zyada secrets accessible hain, leak hone wale secrets ki list bhi badi hogi</td></tr>
+          <tr><td><strong>Audit clarity kam ho jaati hai</strong></td><td>Jab har secret har workflow ko available ho, "kaunsa workflow kaunsa credential actually use karta hai" trace karna mushkil ho jaata hai — incident response ke waqt ye slow-down create karta hai</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        EAS Secrets ko scope karne ka practical tareeka — secret ko environment-level ya specific workflow
+        reference ke through wire karo, aur workflow YAML mein sirf wahi secrets reference karo jo us
+        specific job ko chahiye:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/build-only-preview.yml — sirf wahi secrets jo chahiye</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">name</span>: Build only — internal preview <span class="tok-com"># is workflow ka intent naam se hi clear hai — sirf build, koi submit nahi</span>
+
+<span class="tok-attr">on</span>: <span class="tok-com"># trigger config</span>
+  <span class="tok-attr">push</span>: <span class="tok-com"># push-based trigger</span>
+    <span class="tok-attr">branches</span>: <span class="tok-punc">[</span>develop<span class="tok-punc">]</span> <span class="tok-com"># develop branch pe har push — frequent, low-stakes internal builds</span>
+
+<span class="tok-attr">jobs</span>: <span class="tok-com"># jobs list</span>
+  <span class="tok-attr">build_preview</span>: <span class="tok-com"># preview build job — koi submit job is file mein hai hi nahi</span>
+    <span class="tok-attr">type</span>: build <span class="tok-com"># built-in build job type</span>
+    <span class="tok-attr">params</span>: <span class="tok-com"># job parameters</span>
+      <span class="tok-attr">platform</span>: ios <span class="tok-com"># iOS preview build</span>
+      <span class="tok-attr">profile</span>: preview <span class="tok-com"># preview profile — isko sirf signing secrets chahiye, App Store Connect API key bilkul nahi chahiye</span>
+      <span class="tok-attr">env</span>: <span class="tok-com"># is job ke liye explicitly available environment/secrets</span>
+        <span class="tok-attr">SUPABASE_URL</span>: <span class="tok-punc">${{</span> secrets.SUPABASE_URL_STAGING <span class="tok-punc">}}</span> <span class="tok-com"># sirf staging backend url — production secret is workflow mein reference hi nahi kiya gaya</span>
+        <span class="tok-attr">SUPABASE_ANON_KEY</span>: <span class="tok-punc">${{</span> secrets.SUPABASE_ANON_KEY_STAGING <span class="tok-punc">}}</span> <span class="tok-com"># staging anon key — App Store/Play Store submission credentials yahan kahin bhi reference nahi hain</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Senior Dev Note — scoping ek "convention" hai, enforce khud karna padta hai</div>
+        <p>
+          Important caveat: EAS Secrets khud automatically kisi workflow ko kisi secret se "block" nahi karta
+          agar wo secret project-level available hai — scoping largely <strong>discipline aur naming/organization
+          se enforce hoti hai</strong> (jaise environment-specific secret names use karna — <code>_STAGING</code>
+          suffix — aur sirf wahi secrets reference karna jo us workflow ko chahiye, dusre available hone ke
+          bawajood). Isliye code review ke waqt naye/edited workflow YAML mein explicitly check karo ki koi
+          unrelated secret galti se reference toh nahi ho gaya — ye ek missable review item hai kyunki
+          <code>${{ secrets.X }}</code> syntax "harmless" dikhta hai jab tak tumhe pata na ho ki X kya hai
+          aur kya-kya us tak access rakhta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">9. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un sawaalon ko cover karta hai jo senior/staff RN role ke interviews mein CI/CD aur
+        release-engineering discussion ke around aksar puche jaate hain — architecture design, trade-offs,
+        aur incident-response scenarios. Har jawab ek strong senior engineer ki tarah socha gaya hai — sirf
+        "kya karna hai" nahi, balki "kyun" aur "kis cheez ka trade-off hai" bhi.
+      </p>
+
+      <h3>Q1. Design a CI/CD pipeline for a monorepo with 3 separate RN apps sharing a common package — what would trigger what, and how would you avoid unnecessary rebuilds?</h3>
+      <p>
+        Setup: <code>packages/shared-ui</code> ek common package hai jo teeno apps (<code>apps/consumer</code>,
+        <code>apps/admin</code>, <code>apps/partner</code>) use karte hain. Naive approach — <code>shared-ui</code>
+        mein ek chhota sa change hone par teeno apps ki poori build+submit pipeline trigger kar do — bahut
+        wasteful hai agar change sirf ek app ko relevant hai ya sirf ek internal refactor hai jisse behavior
+        change nahi hua.
+      </p>
+      <p>
+        Mera design: <strong>path-based triggers</strong> use karunga (jaisa GitHub Actions <code>paths:</code>
+        filter, ya EAS Workflows mein equivalent path-scoping) taaki har app ka workflow sirf tab trigger ho
+        jab uske apne folder ya <code>shared-ui</code> mein change ho — dono ko watch karna zaroori hai kyunki
+        shared package change teeno apps ko affect kar sakta hai. Isko section 8.2 wale shared/reusable
+        workflow pattern ke saath combine karunga taaki release logic teeno apps mein duplicate na ho. Cache
+        invalidation ke liye, <code>shared-ui</code> ka build output content-hash based cache key use karunga
+        (jaise Turborepo/Nx remote caching), taaki agar <code>shared-ui</code> unchanged hai, downstream app
+        builds usko cache se pull karein na ki rebuild karein. Aur sabse important — heavy jobs (actual EAS
+        build/submit) ko sirf release-tag trigger pe rakhunga, jabki lint/typecheck/unit-test jaise cheap
+        checks har PR pe chalte rahenge (GitHub Actions pe, EAS build minutes consume kiye bina).
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Interviewer kya sunna chahta hai</div>
+        <p>
+          Yahan interviewer dekh raha hai ki kya tum "trigger scoping" aur "build caching" dono ko alag
+          concerns ki tarah samajhte ho, aur kya tum expensive operations (mobile builds) ko cheap operations
+          (lint/typecheck) se deliberately alag treat karte ho cost-consciousness dikhane ke liye.
+        </p>
+      </div>
+
+      <h3>Q2. When would you still reach for GitHub Actions alongside EAS Workflows rather than doing everything in EAS Workflows?</h3>
+      <p>
+        Teen concrete scenarios: <strong>(1) non-mobile CI needs</strong> — agar same repo mein ek web
+        dashboard ya backend service bhi hai jo Vercel/AWS pe deploy hoti hai, EAS Workflows uske liye
+        designed hi nahi hai; GitHub Actions ek hi pipeline mein web + mobile dono orchestrate kar sakta hai.
+        <strong>(2) Third-party ecosystem dependency</strong> — jaise Slack/Discord notifications, Jira
+        ticket auto-linking, Datadog/Sentry release-marker creation — ye sab GitHub Actions marketplace mein
+        ready-made actions ke through minutes mein wire ho jaate hain, EAS Workflows mein equivalent built-in
+        support abhi limited hai. <strong>(3) Existing investment</strong> — agar team ke paas already
+        mature, battle-tested GitHub Actions workflows hain (custom actions, secrets already wired,
+        institutional knowledge), migrate karne ka cost aksar benefit se zyada hota hai — better hai ki
+        GitHub Actions apna general CI role continue kare, aur ek step se EAS ko sirf actual build/submit ke
+        liye invoke kare (jo hum section 6 mein dekh chuke hain).
+      </p>
+
+      <h3>Q3. A workflow accidentally exposed a secret in its logs — walk me through your incident response.</h3>
+      <p>
+        Sabse pehle <strong>containment</strong> — turant us secret ko <strong>rotate/revoke</strong> karna,
+        chahe wo Apple API key ho, Play Store service-account JSON ho, ya backend service_role key. Ye sabse
+        pehla step hai kyunki jab tak old credential valid hai, exposure active risk rehta hai — logs delete
+        karne se pehle bhi rotation priority pe hai. Doosra, <strong>log cleanup</strong> — CI provider ke
+        log retention settings check karo, agar possible ho toh us specific run ke logs delete/redact karo,
+        lekin ye assume mat karo ki delete karne se exposure poori tarah undo ho gayi — agar logs kisi third
+        party service (jaise external log aggregator) mein bhi forward ho rahe the, wahan bhi purge karna
+        hoga. Teesra, <strong>root cause</strong> — pata karo secret log mein kaise aaya: kya kisi step ne
+        <code>echo $SECRET</code> jaisa debug command chalaya, kya error message mein accidentally credential
+        include ho gaya, ya kya secret masking (jo CI providers usually automatically karte hain known secret
+        strings ke liye) is case mein fail hui. Chautha, <strong>prevention</strong> — us step ko fix karo
+        (debug logging remove/redact karo), aur team-wide review karo ki kya similar pattern kahin aur bhi
+        hai. Aakhir mein, agar exposure production credentials ka tha aur log kabhi public/wide-access repo
+        mein visible tha, <strong>affected stakeholders ko inform</strong> karna aur security incident ko
+        formally document karna — chhota lage toh bhi, "silent fix" karke aage badh jaana galat hai kyunki
+        audit trail future incidents ke liye zaroori hota hai.
+      </p>
+      <div class="callout danger">
+        <div class="callout-title">🔒 Order matters</div>
+        <p>
+          Interview mein specifically <strong>order</strong> pe zor do — "rotate first, investigate after"
+          — kyunki bahut candidates galti se "pehle investigate karunga ki kaise hua" bol dete hain, jabki
+          har minute jo credential rotate hone mein delay hoti hai, exposure window badhata hai.
+        </p>
+      </div>
+
+      <h3>Q4. Explain how <code>needs</code>-based dependency resolution differs from a simple sequential script, and why that matters at scale.</h3>
+      <p>
+        Ek sequential script (jaise ek shell script jo line-by-line <code>eas build</code> phir
+        <code>eas submit</code> chalata hai) mein control flow <strong>implicit aur linear</strong> hai —
+        agar beech mein koi command fail ho, poora script fail ho jaata hai (ya explicit
+        <code>if [ $? -eq 0 ]</code> checks likhne padte hain). <code>needs</code>-based dependency graph
+        (jo hum section 3 mein dekh chuke hain) ek <strong>explicit DAG (directed acyclic graph)</strong>
+        define karta hai — jobs bina dependency ke automatically parallel chalte hain, aur failure sirf
+        <em>downstream dependents</em> ko affect karta hai, unrelated parallel branches ko nahi. Scale pe ye
+        matter karta hai kyunki jaise-jaise jobs badhte hain (matrix builds, multiple platforms, E2E gates),
+        manually sequential logic likhna exponentially complex ho jaata hai, jabki DAG approach mein sirf
+        naye node ka <code>needs</code> define karna padta hai — graph khud resolve kar leta hai kaunse jobs
+        parallel chalenge aur kaunse wait karenge.
+      </p>
+
+      <h3>Q5. Your team wants a "canary" release process — ship to 5% of users first via OTA update, monitor, then roll out to 100%. How would you architect this with EAS Update + Workflows?</h3>
+      <p>
+        Ch.12 ke channels/branches concept ko yahan extend karunga. Ek dedicated <code>canary</code> channel
+        banaunga jo production build se link hai (same runtime version/fingerprint policy). Pipeline: pehle
+        <code>eas update --branch canary</code> se OTA update publish karo — production app users ka koi
+        fixed 5% is channel pe pointed hai (jo backend-side rollout config ya EAS ke rollout percentage
+        feature se control hota hai). Ek monitoring window (jaise 2-4 hours ya jab tak enough crash/error
+        telemetry na aa jaaye — Sentry ya similar tool se) rakhunga, is dauraan crash rate aur key metrics
+        (jaise checkout completion rate agar e-commerce app hai) baseline se compare karunga. Agar metrics
+        healthy hain, ek doosra workflow step (ya manual approval gate) full <code>production</code> channel
+        pe wahi update publish kar dega. Agar metrics degrade hue, <code>eas update:rollback</code>
+        (ch.12 mein dekha tha) canary channel pe turant chalega — bina naya native build banaye, kyunki ye
+        pure OTA-level rollback hai.
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — automated gate vs human gate</div>
+        <p>
+          Ye sawaal deliberately open-ended hai — ek achha jawab explicitly mention karta hai ki
+          "canary → full rollout" step ko fully automated (metrics threshold based) banaya ja sakta hai ya
+          <strong>human approval gate</strong> rakha ja sakta hai. High-stakes apps (payments, healthcare)
+          mein human gate safer hai; high-velocity, well-instrumented apps mein automated threshold-based
+          promotion feasible hai. Interviewer isse tumhara risk-judgment dekhta hai, sirf technical
+          implementation nahi.
+        </p>
+      </div>
+
+      <h3>Q6. What's the difference between build-time failure and OTA-update-time failure in terms of blast radius, and how does your CI/CD design account for that?</h3>
+      <p>
+        Build-time failure (jaise ek native build crash on launch, jo store review se bhi slip ho gaya) ka
+        blast radius <strong>bounded aur slow</strong> hota hai — sirf naye installs/updates affected hote
+        hain, aur App Store/Play Store review + staged rollout (ch.14 mein dekha) natural buffer dete hain.
+        OTA update failure (jaise EAS Update se ek broken JS bundle publish ho jaana) ka blast radius
+        <strong>immediate aur bahut zyada wide</strong> hota hai — jitne bhi users us channel pe hain, unko
+        turant naya bundle mil jaata hai, aur agar wo crash karta hai, sab affected users ek saath crash
+        experience karenge, bina kisi staged rollout buffer ke (agar percentage rollout use nahi kiya).
+        Isliye mera CI/CD design OTA updates ke liye zyada conservative gates rakhta hai: mandatory Maestro
+        E2E gate (section 4), staged percentage rollout jahan possible ho, aur ek <em>fast, tested</em>
+        rollback path (<code>eas update:rollback</code>) jo bina naye build cycle ke seconds mein revert kar
+        sake — jabki native build failures ke liye recovery path zyada dheema hai (naya build, naya App Store
+        review cycle) isliye unpe zyada pre-release testing (TestFlight/internal testing tracks) invest
+        karta hoon.
+      </p>
+
+      <h3>Q7. How would you prevent a workflow from accidentally submitting to production if a required E2E test was skipped due to a flaky infrastructure issue rather than a real failure?</h3>
+      <p>
+        Ye ek subtle risk hai — agar <code>maestro_e2e</code> job "skip" ho jaaye (jaise runner infra issue
+        ki wajah se, na ki actual test failure), aur agar downstream <code>submit</code> job ki
+        <code>needs</code> logic sirf "job fail nahi hua" check karti hai (na ki "job explicitly pass hua"),
+        toh submit galti se chal sakta hai bina real E2E validation ke. Mitigation: workflow ko design karo
+        taaki <code>needs</code>-based skip semantics explicitly verify ho — zyada platforms mein "skipped"
+        aur "succeeded" alag states hote hain, aur dependent job ko sirf "succeeded" pe hi proceed karna
+        chahiye, "not failed" pe nahi. Iske saath, infra flakiness ko reduce karne ke liye retry logic
+        (jaise ek automatic retry agar Maestro runner infra-level error de, test-assertion failure na ho) aur
+        alerting add karunga — agar E2E job baar-baar skip/retry ho raha hai, ye khud ek signal hai ki
+        runner infra unhealthy hai aur usko investigate karna chahiye, na ki silently ignore karke release
+        continue karna.
+      </p>
+
+      <h3>Q8. Design a rollback strategy that covers three failure modes: (a) bad native build already in store review, (b) bad OTA update already live, (c) a leaked secret used in a completed build.</h3>
+      <p>
+        Teeno alag layers pe hain, isliye teen alag responses chahiye. <strong>(a) Bad native build in
+        review</strong> — App Store Connect/Play Console se submission ko reject/cancel karo agar review
+        abhi pending hai (ch.14 ke submission checklist se related); agar already approved aur live ho chuka
+        hai, ek hotfix build jaldi banao aur expedited review request karo (Apple expedited review process),
+        aur agar OTA-fixable issue hai (JS-only bug), turant ek OTA update push karo taaki users ko fix mile
+        bina store review wait kiye. <strong>(b) Bad OTA update live</strong> — <code>eas update:rollback</code>
+        immediately chalao us channel pe — ye sabse fast recovery hai kyunki koi build/review cycle nahi
+        chahiye, seconds-to-minutes mein revert ho jaata hai. <strong>(c) Leaked secret in completed build</strong>
+        — ye sabse tricky hai kyunki build already distributed ho chuki hai; credential ko turant rotate karo
+        (jaise Q3 mein discuss kiya), lekin note karo ki agar secret client-bundle mein embed tha (jaise
+        galti se hardcoded API key jo bundle mein compile ho gaya), sirf rotation kaafi nahi — already-installed
+        app instances still purane, ab-invalid secret ke saath chal rahe honge jab tak wo update na karein,
+        isliye ek forced-update mechanism (OTA update jo naya secret-free code deploy kare, combined with
+        app-side version-check jo purane clients ko update karne pe force kare) zaroori ho sakta hai
+        depending on severity.
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Interviewer kya test kar raha hai</div>
+        <p>
+          Is sawaal ka goal ye dekhna hai ki kya tum samajhte ho ki <strong>native build</strong>,
+          <strong>OTA update</strong>, aur <strong>credential/secret</strong> teeno alag "planes" pe exist
+          karte hain, har ek ka apna recovery mechanism aur apna recovery speed hai — aur ek acha senior
+          engineer in teeno ko conflate nahi karta, har situation ke liye sahi tool reach karta hai.
+        </p>
+      </div>
+
+      <div class="prevnext">
+        <a class="prev" href="12-eas-update.html">
+          <div class="label">Previous</div>
+          <div class="title">← EAS Update</div>
+        </a>
+        <a class="next" href="14-publishing.html">
+          <div class="label">Next</div>
+          <div class="title">Publishing →</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

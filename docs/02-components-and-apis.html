@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Components &amp; APIs — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link active" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Components &amp; APIs</div>
+      <div class="progress-pill">Chapter 2 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Expo · TypeScript</span>
+      <h1>Components &amp; APIs</h1>
+      <p class="subtitle">
+        Is chapter mein hum React Native ke core components ko root-level pe samjhenge — sirf "ye component use karo"
+        nahi, balki "ye component internally kaise kaam karta hai" wala angle. Phir hum apne khud ke reusable
+        components design karna seekhenge, jaise ek library author karta hai — proper TypeScript types, compound
+        components, memoization ke internals, aur ek scalable folder structure. Last mein production mein aane
+        wale real crashes aur gotchas discuss karenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#core-components">1. Core Components Deep-Dive</a></li>
+          <li><a href="#custom-components">2. Building Custom Reusable Components</a></li>
+          <li><a href="#advanced-patterns">3. Advanced Custom Component Patterns</a></li>
+          <li><a href="#performance">4. Performance: memo, useMemo, useCallback in RN</a></li>
+          <li><a href="#folder-structure">5. Scalable Component Folder Structure</a></li>
+          <li><a href="#gotchas">6. Real-World Gotchas &amp; Crashes</a></li>
+          <li><a href="#advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">8. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="core-components" style="border-top:none; padding-top:0; margin-top:28px;">1. Core Components Deep-Dive</h2>
+
+      <p>
+        Chalo sabse pehle ek cheez clear kar lete hain — React Native ke "components" HTML elements nahi hain.
+        Jab tum <code>&lt;View&gt;</code> likhte ho, ye ek JS object return karta hai jo React ke reconciler ko
+        batata hai ki "is jagah ek native view chahiye". Fir React Native ka renderer (Fabric, new architecture mein)
+        us instruction ko actual native <code>UIView</code> (iOS) ya <code>android.view.View</code> (Android) mein
+        convert karta hai. Yehi wajah hai ki RN components web ke divs jaise dikhte hain lekin unke peeche poora
+        native rendering pipeline chal raha hota hai.
+      </p>
+
+      <h3>View aur Text — sabse basic building blocks</h3>
+      <p>
+        <code>View</code> ek non-scrollable container hai — flexbox ke default rules ke saath (<code>display: flex</code>,
+        <code>flexDirection: column</code> — web se ulta!). Internally ye native side pe ek plain container view
+        bind karta hai jiska koi apna default styling nahi hota (na padding, na border) — jo bhi style dikh raha hai
+        wo tumhare StyleSheet se aa raha hai.
+      </p>
+      <p>
+        <code>Text</code> thoda special hai — RN mein sirf <code>Text</code> ke andar hi raw string render ho sakti
+        hai. Agar tum <code>View</code> ke andar directly text daaloge to error aayega ("Text strings must be
+        rendered within a &lt;Text&gt; component"). Ye isliye kyunki native text layout (line height, font metrics)
+        iOS/Android pe bahut alag hote hain, aur RN ko explicitly janna padta hai ki kaunsa node "text measurement"
+        wala hai taaki wo Yoga (RN ka flexbox layout engine, C++ mein likha hua) ko sahi measurement de sake.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Yoga layout engine ek separate C++ library hai jo Facebook ne banayi thi flexbox ko cross-platform
+          consistent banane ke liye. Har render pe RN, JS tree ko shadow tree mein convert karta hai, Yoga us
+          shadow tree pe layout calculate karta hai (measure + layout pass), aur fir wahi computed frames
+          (x, y, width, height) native views ko commit hote hain. Isliye deeply nested Views ka cost sirf
+          "extra native views" nahi hai — Yoga ko unke liye extra layout calculations bhi karni padti hain.
+        </p>
+      </div>
+
+      <h3>ScrollView vs FlatList vs FlashList — ye asli test hai</h3>
+      <p>
+        Ye ek classic interview question hai aur production mein sabse zyada galat use hone wala pattern bhi.
+        Chalo internals se samajhte hain.
+      </p>
+      <p>
+        <strong>ScrollView</strong> apne saare children ko <em>eagerly</em> render karta hai — matlab jitne bhi
+        items tumne diye hain, sab ek saath mount ho jaate hain, chahe screen pe visible ho ya na ho. 20 items ke
+        liye ye bilkul fine hai. Lekin 500 items ke liye ye disaster hai — har item ka native view create hoga,
+        uska layout calculate hoga, uski memory allocate hogi — sab kuch upfront, even before user scroll kare.
+        Isse app ka initial render time bahut badh jaata hai aur memory usage explode ho jata hai.
+      </p>
+      <p>
+        <strong>FlatList</strong> is problem ko solve karta hai <em>virtualization</em> (a.k.a windowing) se.
+        Internally FlatList sirf un items ko render karta hai jo current viewport ke andar hain, plus ek chhota
+        sa "overscan" buffer (upar aur neeche thoda extra, taaki fast scroll pe blank gaps na dikhein — ye
+        <code>windowSize</code> prop se control hota hai, default 21, matlab ~10 viewport heights upar aur neeche).
+        Jaise hi user scroll karta hai aur koi item viewport se bahut door chala jaata hai, FlatList uska native
+        view <em>unmount</em> kar deta hai aur naya visible item mount karta hai. Ye sab ek internal
+        <code>VirtualizedList</code> component ke through hota hai jise FlatList wrap karta hai — VirtualizedList
+        hi actual windowing logic maintain karta hai (kaunse indices currently rendered hain, kab recycle karna hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ProductList.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> FlatList<span class="tok-punc">,</span> View<span class="tok-punc">,</span> Text <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">type</span> Product <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  id<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+  title<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+  price<span class="tok-punc">:</span> <span class="tok-kw">number</span><span class="tok-punc">;</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ProductList</span><span class="tok-punc">({</span> products <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> products<span class="tok-punc">:</span> Product<span class="tok-punc">[]</span> <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;FlatList</span>
+      <span class="tok-attr">data</span><span class="tok-punc">=</span><span class="tok-punc">{</span>products<span class="tok-punc">}</span>
+      <span class="tok-attr">keyExtractor</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span>item<span class="tok-punc">)</span> <span class="tok-kw">=></span> item<span class="tok-punc">.</span>id<span class="tok-punc">}</span>
+      <span class="tok-attr">renderItem</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span><span class="tok-punc">{</span> item <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">(</span>
+        <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> padding<span class="tok-punc">:</span> <span class="tok-num">12</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+          <span class="tok-tag">&lt;Text&gt;</span><span class="tok-punc">{</span>item<span class="tok-punc">.</span>title<span class="tok-punc">}</span><span class="tok-tag">&lt;/Text&gt;</span>
+        <span class="tok-tag">&lt;/View&gt;</span>
+      <span class="tok-punc">)</span><span class="tok-punc">}</span>
+      <span class="tok-comment"></span><span class="tok-com">{/* fixed height item => skip measurement pass entirely */}</span>
+      <span class="tok-attr">getItemLayout</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span>_data<span class="tok-punc">,</span> index<span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">(</span><span class="tok-punc">{</span>
+        length<span class="tok-punc">:</span> <span class="tok-num">56</span><span class="tok-punc">,</span>
+        offset<span class="tok-punc">:</span> <span class="tok-num">56</span> <span class="tok-punc">*</span> index<span class="tok-punc">,</span>
+        index<span class="tok-punc">,</span>
+      <span class="tok-punc">})</span><span class="tok-punc">}</span>
+      <span class="tok-attr">windowSize</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-num">10</span><span class="tok-punc">}</span>
+      <span class="tok-attr">initialNumToRender</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-num">8</span><span class="tok-punc">}</span>
+    <span class="tok-tag">/&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        <strong>FlashList</strong> (Shopify ne banaya hai) FlatList ka modern replacement hai jo same virtualization
+        idea pe based hai lekin bahut better perform karta hai. Wajah — FlatList ka biggest bottleneck ye hai ki
+        jab bhi naya item render hota hai, uska measurement hona padta hai (jab tak tum manually
+        <code>getItemLayout</code> na do), aur ye measurement JS thread pe expensive hai. FlashList ek technique
+        use karta hai jise <strong>cell recycling</strong> kehte hain (jaise Android ka RecyclerView ya iOS ka
+        UITableView karta hai) — matlab jab ek item screen se bahar jata hai, uska native view <em>destroy</em>
+        nahi hota, balki reuse hota hai naye data ke liye. Isse view creation/destruction ka overhead almost zero
+        ho jaata hai. FlashList apne aap average item size ko estimate bhi karta hai (<code>estimatedItemSize</code>)
+        taaki tumhe manually har item ka exact height na dena pade.
+      </p>
+
+      <table class="table">
+        <thead>
+          <tr><th>Component</th><th>Rendering strategy</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ScrollView</td><td>Eager — sab kuch upfront render</td><td>Short, fixed lists (&lt; 20 items)</td></tr>
+          <tr><td>FlatList</td><td>Windowing/virtualization, view unmount+remount</td><td>Medium-large lists, default choice</td></tr>
+          <tr><td>FlashList</td><td>Windowing + cell recycling (recycler pattern)</td><td>Large lists, feed-like UIs, perf-critical screens</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Mistake</div>
+        <p>
+          Log flow mein <code>ScrollView</code> ke andar <code>.map()</code> se list render karna sabse common
+          anti-pattern hai jo naye devs karte hain. Chhote list ke liye chalta hai, lekin as soon as data grows
+          (chat messages, product catalog, feed), app janky ho jaata hai. Agar list scrollable hai aur size
+          unbounded ho sakta hai — FlatList/FlashList use karo, ScrollView nahi.
+        </p>
+      </div>
+
+      <h3>Pressable vs TouchableOpacity vs old Touchable* APIs</h3>
+      <p>
+        RN ki history mein pehle <code>TouchableHighlight</code>, <code>TouchableOpacity</code>,
+        <code>TouchableWithoutFeedback</code>, aur <code>TouchableNativeFeedback</code> (Android-only ripple)
+        the — har ek apna alag feedback style deta tha but API inconsistent thi, aur inka gesture handling
+        RN ke purane (aur limited) touch responder system pe based tha.
+      </p>
+      <p>
+        <code>Pressable</code> in sabko replace karne ke liye laaya gaya — ek unified, configurable API jo
+        press state ko as a function expose karta hai (<code>({'{'} pressed {'}'}) =&gt; ...</code>), taaki tum
+        khud decide kar sako feedback kaisa dikhna chahiye (opacity change, scale animation, background color)
+        instead of ek fixed built-in behavior lene ke. Internally Pressable, RN ke <strong>Pressability</strong>
+        API pe based hai jo touch start/move/end/cancel ko zyada precisely handle karta hai — jaise
+        <code>onLongPress</code>, <code>delayLongPress</code>, hit slop (<code>hitSlop</code>), aur
+        press-out-of-bounds detection (agar finger element ke bahar move ho jaaye to press cancel ho jata hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>PressableExample.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">&lt;Pressable</span>
+  <span class="tok-attr">onPress</span><span class="tok-punc">=</span><span class="tok-punc">{</span>handleSubmit<span class="tok-punc">}</span>
+  <span class="tok-attr">hitSlop</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> top<span class="tok-punc">:</span> <span class="tok-num">8</span><span class="tok-punc">,</span> bottom<span class="tok-punc">:</span> <span class="tok-num">8</span><span class="tok-punc">,</span> left<span class="tok-punc">:</span> <span class="tok-num">8</span><span class="tok-punc">,</span> right<span class="tok-punc">:</span> <span class="tok-num">8</span> <span class="tok-punc">}}</span>
+  <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span><span class="tok-punc">{</span> pressed <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">[</span>
+    styles<span class="tok-punc">.</span>button<span class="tok-punc">,</span>
+    pressed <span class="tok-kw">&amp;&amp;</span> <span class="tok-punc">{</span> opacity<span class="tok-punc">:</span> <span class="tok-num">0.7</span> <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-punc">]}</span>
+<span class="tok-tag">&gt;</span>
+  <span class="tok-tag">&lt;Text&gt;</span>Submit<span class="tok-tag">&lt;/Text&gt;</span>
+<span class="tok-tag">&lt;/Pressable&gt;</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Naya code likh rahe ho to hamesha <code>Pressable</code> use karo. <code>TouchableOpacity</code> abhi
+          bhi deprecated nahi hai aur legacy codebases mein milega, lekin Meta ka direction clearly Pressable ki
+          taraf hai — future gesture improvements (jaise Gesture Handler ke saath integration) usi pe focus
+          karenge.
+        </p>
+      </div>
+
+      <h3>Image aur expo-image — caching ka asli game</h3>
+      <p>
+        RN ka built-in <code>Image</code> component basic disk caching karta hai (URL ke basis pe), lekin ye
+        platform ke default HTTP cache pe depend karta hai — jo predictable nahi hai, especially Android pe.
+        Har baar image URL change hone pe ya cache-headers missing hone pe, image dobara download ho sakti hai.
+        Isme koi memory cache bhi nahi hai by default — matlab same image dobara render hone pe bhi kabhi kabhi
+        decode dobara hota hai.
+      </p>
+      <p>
+        <strong>expo-image</strong> is problem ko properly solve karta hai. Ye do-level caching implement karta
+        hai — <em>memory cache</em> (already decoded bitmap, instant render) aur <em>disk cache</em> (downloaded
+        file, decode karna padega but network call nahi). Isse scroll karte waqt images "pop-in" nahi karti,
+        aur same image baar baar use hone pe (jaise avatar list mein) network hit hi nahi hota. Ye
+        <strong>blurhash</strong> placeholders bhi support karta hai — ek compact string (~20-30 chars) jo image
+        ka blurred preview encode karta hai, taaki actual image load hone tak user ko ek smooth blurred version
+        dikhe, blank white box nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Avatar.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> Image <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'expo-image'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">const</span> blurhash <span class="tok-punc">=</span> <span class="tok-str">'L6PZfSi_.AyE_3t7t7R**0o#DgR4'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">Avatar</span><span class="tok-punc">({</span> uri <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> uri<span class="tok-punc">:</span> <span class="tok-kw">string</span> <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;Image</span>
+      <span class="tok-attr">source</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> uri <span class="tok-punc">}}</span>
+      <span class="tok-attr">placeholder</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> blurhash <span class="tok-punc">}}</span>
+      <span class="tok-attr">cachePolicy</span><span class="tok-punc">=</span><span class="tok-str">"memory-disk"</span>
+      <span class="tok-attr">transition</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-num">200</span><span class="tok-punc">}</span>
+      <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> width<span class="tok-punc">:</span> <span class="tok-num">48</span><span class="tok-punc">,</span> height<span class="tok-punc">:</span> <span class="tok-num">48</span><span class="tok-punc">,</span> borderRadius<span class="tok-punc">:</span> <span class="tok-num">24</span> <span class="tok-punc">}}</span>
+    <span class="tok-tag">/&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Production apps mein — especially jinme image-heavy feeds hain (e-commerce, social) — <code>expo-image</code>
+          ko default bana do, plain <code>Image</code> se migrate kar do. Ye Facebook ke <strong>Yoga</strong>-independent
+          native layer (SDWebImage on iOS, Glide on Android) use karta hai jo already battle-tested caching
+          libraries hain — tum wheel reinvent nahi kar rahe, tum industry-standard cache reuse kar rahe ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="custom-components">2. Building Custom Reusable Components</h2>
+
+      <p>
+        Ab hum apna khud ka component design karenge — jaise ek library author (e.g. React Native Paper, Tamagui
+        ke devs) karte hain. Sochne ka tareeka simple hai: <strong>props ek API contract hain</strong>. Jo bhi
+        prop tum expose karte ho, wo ek promise hai consumer ke saath — agar tum badle mein kal usse remove/rename
+        karoge, breaking change hoga. Isliye props design karte waqt sochna padta hai — "kya ye prop generic
+        enough hai?", "kya do props ek dusre ko contradict kar sakte hain?".
+      </p>
+
+      <h3>Discriminated unions se invalid states ko impossible banana</h3>
+      <p>
+        Ek common mistake hai loosely-typed props dena, jaise <code>variant?: string</code> — isse consumer
+        kuch bhi type kar sakta hai aur typo runtime tak pakda nahi jaata. Better approach — TypeScript
+        discriminated unions use karke sirf valid combinations allow karo.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Button.types.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">type</span> <span class="tok-punc">{</span> PressableProps <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">export type</span> ButtonVariant <span class="tok-punc">=</span> <span class="tok-str">'primary'</span> <span class="tok-kw">|</span> <span class="tok-str">'secondary'</span> <span class="tok-kw">|</span> <span class="tok-str">'danger'</span><span class="tok-punc">;</span>
+<span class="tok-kw">export type</span> ButtonSize <span class="tok-punc">=</span> <span class="tok-str">'sm'</span> <span class="tok-kw">|</span> <span class="tok-str">'md'</span> <span class="tok-kw">|</span> <span class="tok-str">'lg'</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Discriminated union — "loading" state ke saath "disabled" combine nahi</span>
+<span class="tok-com">// karna padta manually check, TypeScript khud enforce karega valid shape.</span>
+<span class="tok-kw">type</span> BaseButtonProps <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  label<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+  variant<span class="tok-punc">?:</span> ButtonVariant<span class="tok-punc">;</span>
+  size<span class="tok-punc">?:</span> ButtonSize<span class="tok-punc">;</span>
+  onPress<span class="tok-punc">:</span> <span class="tok-punc">()</span> <span class="tok-kw">=></span> <span class="tok-kw">void</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span> <span class="tok-kw">&amp;</span> <span class="tok-kw">Omit</span><span class="tok-kw">&lt;</span>PressableProps<span class="tok-punc">,</span> <span class="tok-str">'onPress'</span> <span class="tok-kw">|</span> <span class="tok-str">'style'</span><span class="tok-kw">&gt;</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">type</span> IdleButtonProps <span class="tok-punc">=</span> BaseButtonProps <span class="tok-kw">&amp;</span> <span class="tok-punc">{</span>
+  loading<span class="tok-punc">?:</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>
+  disabled<span class="tok-punc">?:</span> <span class="tok-kw">boolean</span><span class="tok-punc">;</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">type</span> LoadingButtonProps <span class="tok-punc">=</span> BaseButtonProps <span class="tok-kw">&amp;</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// jab loading true ho, disabled prop dena hi nahi chahiye — button auto-disabled</span>
+  loading<span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>
+  disabled<span class="tok-punc">?:</span> <span class="tok-kw">never</span><span class="tok-punc">;</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">export type</span> ButtonProps <span class="tok-punc">=</span> IdleButtonProps <span class="tok-kw">|</span> LoadingButtonProps<span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Isse ye galti compile-time pe hi pakdi jaayegi: <code>&lt;Button loading disabled label="Save" /&gt;</code> —
+        TypeScript error dega kyunki <code>loading: true</code> ke saath <code>disabled</code> allowed hi nahi hai
+        (type <code>never</code> hai). Ye "invalid states ko unrepresentable banao" wali philosophy hai jo
+        senior-level TypeScript ka core idea hai.
+      </p>
+
+      <h3>Full Button implementation</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>Button.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> ActivityIndicator<span class="tok-punc">,</span> Pressable<span class="tok-punc">,</span> Text <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-kw">type</span> <span class="tok-punc">{</span> ButtonProps <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./Button.types'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> styles <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./Button.styles'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">export function</span> <span class="tok-fn">Button</span><span class="tok-punc">({</span>
+  label<span class="tok-punc">,</span>
+  variant <span class="tok-punc">=</span> <span class="tok-str">'primary'</span><span class="tok-punc">,</span>
+  size <span class="tok-punc">=</span> <span class="tok-str">'md'</span><span class="tok-punc">,</span>
+  loading<span class="tok-punc">,</span>
+  disabled<span class="tok-punc">,</span>
+  onPress<span class="tok-punc">,</span>
+  <span class="tok-punc">...</span>rest
+<span class="tok-punc">}</span><span class="tok-punc">:</span> ButtonProps<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> isDisabled <span class="tok-punc">=</span> loading <span class="tok-kw">||</span> disabled<span class="tok-punc">;</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;Pressable</span>
+      <span class="tok-attr">accessibilityRole</span><span class="tok-punc">=</span><span class="tok-str">"button"</span>
+      <span class="tok-attr">accessibilityState</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> disabled<span class="tok-punc">:</span> isDisabled <span class="tok-punc">}}</span>
+      <span class="tok-attr">disabled</span><span class="tok-punc">=</span><span class="tok-punc">{</span>isDisabled<span class="tok-punc">}</span>
+      <span class="tok-attr">onPress</span><span class="tok-punc">=</span><span class="tok-punc">{</span>onPress<span class="tok-punc">}</span>
+      <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span><span class="tok-punc">{</span> pressed <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">[</span>
+        styles<span class="tok-punc">.</span>base<span class="tok-punc">,</span>
+        styles<span class="tok-punc">[</span>variant<span class="tok-punc">],</span>
+        styles<span class="tok-punc">[</span>size<span class="tok-punc">],</span>
+        isDisabled <span class="tok-kw">&amp;&amp;</span> styles<span class="tok-punc">.</span>disabled<span class="tok-punc">,</span>
+        pressed <span class="tok-kw">&amp;&amp;</span> <span class="tok-kw">!</span>isDisabled <span class="tok-kw">&amp;&amp;</span> styles<span class="tok-punc">.</span>pressed<span class="tok-punc">,</span>
+      <span class="tok-punc">]}</span>
+      <span class="tok-punc">{</span><span class="tok-punc">...</span>rest<span class="tok-punc">}</span>
+    <span class="tok-tag">&gt;</span>
+      <span class="tok-punc">{</span>loading <span class="tok-punc">?</span> <span class="tok-punc">(</span>
+        <span class="tok-tag">&lt;ActivityIndicator</span> <span class="tok-attr">color</span><span class="tok-punc">=</span><span class="tok-str">"#fff"</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-punc">)</span> <span class="tok-punc">:</span> <span class="tok-punc">(</span>
+        <span class="tok-tag">&lt;Text</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{</span>styles<span class="tok-punc">.</span>label<span class="tok-punc">}</span><span class="tok-tag">&gt;</span><span class="tok-punc">{</span>label<span class="tok-punc">}</span><span class="tok-tag">&lt;/Text&gt;</span>
+      <span class="tok-punc">)</span><span class="tok-punc">}</span>
+    <span class="tok-tag">&lt;/Pressable&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <h3>forwardRef — jab tumhara component ek input hai</h3>
+      <p>
+        Agar tum ek reusable <code>TextField</code> bana rahe ho, to consumer ko kabhi kabhi zaroorat padegi
+        underlying native <code>TextInput</code> pe direct ref (e.g. <code>.focus()</code> call karne ke liye,
+        jab form validation fail ho aur pehla invalid field pe focus laana ho). Agar tumne apna component plain
+        function component banaya, to <code>ref</code> prop uspe kaam nahi karega by default — React refs ko
+        function components pass nahi karta jab tak explicitly forward na kiya jaaye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>TextField.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> forwardRef <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> TextInput <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-kw">type</span> <span class="tok-punc">{</span> TextInputProps <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">type</span> TextFieldProps <span class="tok-punc">=</span> TextInputProps <span class="tok-kw">&amp;</span> <span class="tok-punc">{</span>
+  errorMessage<span class="tok-punc">?:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-com">// forwardRef&lt;RefType, PropsType&gt; — RefType ye batata hai .current pe kya milega</span>
+<span class="tok-kw">export const</span> TextField <span class="tok-punc">=</span> forwardRef<span class="tok-kw">&lt;</span>TextInput<span class="tok-punc">,</span> TextFieldProps<span class="tok-kw">&gt;</span><span class="tok-punc">(</span>
+  <span class="tok-punc">(</span><span class="tok-punc">{</span> errorMessage<span class="tok-punc">,</span> <span class="tok-punc">...</span>rest <span class="tok-punc">}</span><span class="tok-punc">,</span> ref<span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;&gt;</span>
+      <span class="tok-tag">&lt;TextInput</span> <span class="tok-attr">ref</span><span class="tok-punc">=</span><span class="tok-punc">{</span>ref<span class="tok-punc">}</span> <span class="tok-punc">{</span><span class="tok-punc">...</span>rest<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-punc">{</span>errorMessage <span class="tok-kw">&amp;&amp;</span> <span class="tok-tag">&lt;Text</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> color<span class="tok-punc">:</span> <span class="tok-str">'red'</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span><span class="tok-punc">{</span>errorMessage<span class="tok-punc">}</span><span class="tok-tag">&lt;/Text&gt;</span><span class="tok-punc">}</span>
+    <span class="tok-tag">&lt;/&gt;</span>
+  <span class="tok-punc">)</span>
+<span class="tok-punc">);</span>
+
+TextField<span class="tok-punc">.</span>displayName <span class="tok-punc">=</span> <span class="tok-str">'TextField'</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// consumer side:</span>
+<span class="tok-com">// const inputRef = useRef&lt;TextInput&gt;(null);</span>
+<span class="tok-com">// inputRef.current?.focus();</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          <strong>Composition over configuration</strong> — jab tumhe lagne lage ki ek component ko 15 boolean
+          props chahiye (<code>showIcon</code>, <code>iconPosition</code>, <code>hasSubtitle</code>...), rukho.
+          Ye "props explosion" ek red flag hai. Iski jagah children/composition use karo —
+          <code>&lt;Card&gt;&lt;Card.Icon /&gt;&lt;Card.Title&gt;...&lt;/Card.Title&gt;&lt;/Card&gt;</code> — jo
+          agle section mein hum discuss karenge (compound components). Library authors (Radix, shadcn, React
+          Native Paper) sab isi principle pe move kar chuke hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-patterns">3. Advanced Custom Component Patterns</h2>
+
+      <h3>Compound Components — Context ke through implicit state sharing</h3>
+      <p>
+        Compound components pattern mein parent component internally ek React Context banata hai, aur uske
+        "sub-components" (jaise <code>Card.Header</code>, <code>Card.Body</code>) us context ko consume karte
+        hain. Isse consumer ko explicitly props pass nahi karne padte har child ko — state parent se implicitly
+        flow karta hai. Ye pattern tab useful hai jab tumhare components ka ek fixed "family" ho jo hamesha saath
+        use hota hai lekin layout flexible rehna chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Card.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> createContext<span class="tok-punc">,</span> useContext<span class="tok-punc">,</span> <span class="tok-kw">type</span> ReactNode <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> View<span class="tok-punc">,</span> Text <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">type</span> CardContextValue <span class="tok-punc">=</span> <span class="tok-punc">{</span> variant<span class="tok-punc">:</span> <span class="tok-str">'flat'</span> <span class="tok-kw">|</span> <span class="tok-str">'elevated'</span> <span class="tok-punc">};</span>
+
+<span class="tok-com">// null default => agar Card.Header, &lt;Card&gt; ke bahar use hua to hume pata chal jaayega</span>
+<span class="tok-kw">const</span> CardContext <span class="tok-punc">=</span> createContext<span class="tok-kw">&lt;</span>CardContextValue <span class="tok-kw">|</span> <span class="tok-kw">null</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">);</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">useCardContext</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> ctx <span class="tok-punc">=</span> useContext<span class="tok-punc">(</span>CardContext<span class="tok-punc">);</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">!</span>ctx<span class="tok-punc">)</span> <span class="tok-kw">throw new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">'Card.* must be used inside &lt;Card&gt;'</span><span class="tok-punc">);</span>
+  <span class="tok-kw">return</span> ctx<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CardRoot</span><span class="tok-punc">({</span> variant <span class="tok-punc">=</span> <span class="tok-str">'flat'</span><span class="tok-punc">,</span> children <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span>
+  variant<span class="tok-punc">?:</span> CardContextValue<span class="tok-punc">[</span><span class="tok-str">'variant'</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+  children<span class="tok-punc">:</span> ReactNode<span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;CardContext.Provider</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> variant <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> borderRadius<span class="tok-punc">:</span> <span class="tok-num">12</span><span class="tok-punc">,</span> backgroundColor<span class="tok-punc">:</span> <span class="tok-str">'#262524'</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+        <span class="tok-punc">{</span>children<span class="tok-punc">}</span>
+      <span class="tok-tag">&lt;/View&gt;</span>
+    <span class="tok-tag">&lt;/CardContext.Provider&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CardHeader</span><span class="tok-punc">({</span> children <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> children<span class="tok-punc">:</span> ReactNode <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">{</span> variant <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-fn">useCardContext</span><span class="tok-punc">();</span> <span class="tok-com">// shared state without prop drilling</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> padding<span class="tok-punc">:</span> <span class="tok-num">16</span><span class="tok-punc">,</span> borderBottomWidth<span class="tok-punc">:</span> variant <span class="tok-kw">===</span> <span class="tok-str">'elevated'</span> <span class="tok-punc">?</span> <span class="tok-num">1</span> <span class="tok-punc">:</span> <span class="tok-num">0</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-punc">{</span>children<span class="tok-punc">}</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CardBody</span><span class="tok-punc">({</span> children <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> children<span class="tok-punc">:</span> ReactNode <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-punc">{{</span> padding<span class="tok-punc">:</span> <span class="tok-num">16</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span><span class="tok-punc">{</span>children<span class="tok-punc">}</span><span class="tok-tag">&lt;/View&gt;</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// namespace pattern — object pe static properties attach karna</span>
+<span class="tok-kw">export const</span> Card <span class="tok-punc">=</span> <span class="tok-fn">Object.assign</span><span class="tok-punc">(</span>CardRoot<span class="tok-punc">,</span> <span class="tok-punc">{</span> Header<span class="tok-punc">:</span> CardHeader<span class="tok-punc">,</span> Body<span class="tok-punc">:</span> CardBody <span class="tok-punc">});</span>
+
+<span class="tok-com">// usage: &lt;Card variant="elevated"&gt;&lt;Card.Header&gt;...&lt;/Card.Header&gt;&lt;Card.Body&gt;...&lt;/Card.Body&gt;&lt;/Card&gt;</span></code></pre>
+      </div>
+
+      <h3>Render props vs custom hooks</h3>
+      <p>
+        Render props pattern (component ek function-as-children accept karta hai) purane React mein logic
+        share karne ka standard tareeka tha, before hooks existed. Aaj ke RN codebase mein 90% cases mein
+        <strong>custom hooks better hain</strong> — same logic reuse ho jaati hai bina extra component nesting
+        ke (jo "wrapper hell" create karta hai aur React DevTools mein debug karna mushkil banata hai).
+      </p>
+      <p>
+        Render props abhi bhi useful hain jab tumhe <em>rendering control</em> deni ho, sirf data nahi — jaise
+        FlatList ka <code>renderItem</code> khud ek render prop hai: list component data manage karta hai, but
+        actual UI kaisi dikhegi wo consumer decide karta hai. Agar tumhe sirf state/logic share karni hai (jaise
+        <code>useDebounce</code>, <code>useKeyboardHeight</code>), custom hook likho.
+      </p>
+
+      <h3>Controlled vs uncontrolled components</h3>
+      <p>
+        Controlled component mein value parent ke state se aati hai aur parent hi update karta hai
+        (<code>value</code> + <code>onChangeText</code> pattern) — single source of truth React state mein hai.
+        Uncontrolled mein component apni internal state khud maintain karta hai aur sirf zaroorat padne pe ref
+        ke through value expose karta hai. RN forms mein controlled zyada common hai kyunki validation, formatting
+        (jaise phone number masking) turant chahiye hoti hai — lekin high-frequency inputs (jaise ek search box
+        jisme har keystroke pe re-render mehenga hai) ke liye uncontrolled + debounced callback better perform
+        karta hai.
+      </p>
+
+      <h3>Polymorphic components ("as" prop) — ek advanced technique</h3>
+      <p>
+        Web React mein <code>as</code> prop pattern common hai (jaise <code>&lt;Box as="button"&gt;</code>)
+        jisse ek hi component different underlying HTML element render kar sake. RN mein iska use bahut kam hota
+        hai kyunki native elements HTML jaise interchangeable nahi hain (View aur Text fundamentally different
+        native views hain). Fir bhi advanced design systems mein tum ise use kar sakte ho jab tumhara component
+        Pressable ya View ya TouchableOpacity kisi bhi ek ko underlying render element ke roop mein le sake —
+        generic types ke saath (<code>as?: React.ComponentType&lt;any&gt;</code>). Ye zyada tar library-building
+        context mein milta hai, day-to-day feature code mein rarely zaroorat padti hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="performance">4. Performance: memo, useMemo, useCallback in RN Context</h2>
+
+      <p>
+        Web pe re-render "sasta" hota hai relatively — DOM diffing fast hai, browser highly optimized hai.
+        React Native mein historically (old bridge architecture, pre-Fabric) har re-render jo native side ko
+        kuch bhi communicate karta tha, JSON-serialize hoke async bridge se paar jaata tha — ye serialization
+        cost non-trivial thi, especially bade objects/arrays ke liye. New Architecture (JSI + Fabric) ne is
+        cost ko kaafi kam kar diya hai (synchronous, shared-memory-jaisa access), lekin fir bhi <strong>layout
+        recalculation</strong> ka cost real hai — har render pe agar layout-affecting props change hote hain,
+        Yoga ko dobara measure+layout pass chalana padta hai. Isliye unnecessary re-renders avoid karna RN mein
+        web se zyada matter karta hai, especially lists aur animations mein jaha 60fps maintain karna hota hai.
+      </p>
+
+      <h3>React.memo aur custom comparison</h3>
+      <p>
+        <code>React.memo</code> ek component ko wrap karta hai taaki React uska render skip kar de agar props
+        shallow-equal hain previous render se. Default comparison shallow hai (<code>Object.is</code> har prop
+        pe) — agar tumhare props mein nested objects/arrays hain jo har render pe naye reference se create ho
+        rahe hain, memo useless ho jaata hai. Tab custom comparison function do.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ProductCard.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> memo <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">type</span> ProductCardProps <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  id<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+  title<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">;</span>
+  price<span class="tok-punc">:</span> <span class="tok-kw">number</span><span class="tok-punc">;</span>
+  onPress<span class="tok-punc">:</span> <span class="tok-punc">(</span>id<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-kw">void</span><span class="tok-punc">;</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ProductCardBase</span><span class="tok-punc">({</span> id<span class="tok-punc">,</span> title<span class="tok-punc">,</span> price<span class="tok-punc">,</span> onPress <span class="tok-punc">}</span><span class="tok-punc">:</span> ProductCardProps<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// ... render logic</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// custom comparator — sirf price change pe re-render karo, id/title/onPress ignore</span>
+<span class="tok-kw">export const</span> ProductCard <span class="tok-punc">=</span> memo<span class="tok-punc">(</span>ProductCardBase<span class="tok-punc">,</span> <span class="tok-punc">(</span>prev<span class="tok-punc">,</span> next<span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> prev<span class="tok-punc">.</span>price <span class="tok-kw">===</span> next<span class="tok-punc">.</span>price <span class="tok-kw">&amp;&amp;</span> prev<span class="tok-punc">.</span>title <span class="tok-kw">===</span> next<span class="tok-punc">.</span>title<span class="tok-punc">;</span>
+<span class="tok-punc">});</span></code></pre>
+      </div>
+
+      <h3>useCallback — stable references memoized children ke liye</h3>
+      <p>
+        Agar parent ek inline arrow function pass karta hai memoized child ko (<code>onPress={() =&gt;
+        doSomething(id)}</code>), har render pe naya function reference banega — aur memo bekaar ho jaayega,
+        kyunki shallow comparison fail hogi. <code>useCallback</code> us function reference ko stable rakhta
+        hai jab tak dependencies change na ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ProductListScreen.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> useCallback<span class="tok-punc">,</span> useState <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> FlatList <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> ProductCard <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./ProductCard'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ProductListScreen</span><span class="tok-punc">({</span> products <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> products<span class="tok-punc">:</span> <span class="tok-kw">any</span><span class="tok-punc">[]</span> <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">[</span>selected<span class="tok-punc">,</span> setSelected<span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-fn">useState</span><span class="tok-kw">&lt;</span><span class="tok-kw">string</span> <span class="tok-kw">|</span> <span class="tok-kw">null</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">);</span>
+
+  <span class="tok-com">// stable across renders — dependency array empty because setSelected is stable too</span>
+  <span class="tok-kw">const</span> handlePress <span class="tok-punc">=</span> <span class="tok-fn">useCallback</span><span class="tok-punc">((</span>id<span class="tok-punc">:</span> <span class="tok-kw">string</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+    <span class="tok-fn">setSelected</span><span class="tok-punc">(</span>id<span class="tok-punc">);</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-punc">[])</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">const</span> renderItem <span class="tok-punc">=</span> <span class="tok-fn">useCallback</span><span class="tok-punc">((</span><span class="tok-punc">{</span> item <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> item<span class="tok-punc">:</span> <span class="tok-kw">any</span> <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;ProductCard</span> <span class="tok-punc">{</span><span class="tok-punc">...</span>item<span class="tok-punc">}</span> <span class="tok-attr">onPress</span><span class="tok-punc">=</span><span class="tok-punc">{</span>handlePress<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-punc">[</span>handlePress<span class="tok-punc">])</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;FlatList</span>
+      <span class="tok-attr">data</span><span class="tok-punc">=</span><span class="tok-punc">{</span>products<span class="tok-punc">}</span>
+      <span class="tok-attr">renderItem</span><span class="tok-punc">=</span><span class="tok-punc">{</span>renderItem<span class="tok-punc">}</span>
+      <span class="tok-attr">keyExtractor</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">(</span>item<span class="tok-punc">)</span> <span class="tok-kw">=></span> item<span class="tok-punc">.</span>id<span class="tok-punc">}</span>
+    <span class="tok-tag">/&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Mistake</div>
+        <p>
+          Sabse zyada dikhne wali mistake — <code>style={'{{'} marginTop: 10 {'}}'}</code> jaisa inline object
+          literal directly JSX mein pass karna kisi memoized child ko. Har render pe ye ek naya object reference
+          banayega, aur memo useless ho jaayega. Isse bahar nikalo — <code>StyleSheet.create</code> mein define
+          karo (jo ek stable reference deta hai) ya <code>useMemo</code> mein wrap karo agar dynamic hai.
+        </p>
+      </div>
+
+      <h3>getItemLayout — measurement pass ko skip karna</h3>
+      <p>
+        Jab FlatList ko pata nahi hota ki item ki height kya hogi, wo pehle render karta hai, fir measure karta
+        hai (async layout callback ke through), tab jaake scroll position calculations accurate hoti hain. Agar
+        tumhare items <strong>fixed height</strong> hain, tum <code>getItemLayout</code> de sakte ho jo directly
+        batata hai har index ki <code>length</code> aur <code>offset</code> — isse FlatList ko measurement ka
+        wait hi nahi karna padta, aur <code>scrollToIndex</code> jaise operations bhi instant ho jaate hain
+        (measurement-dependent nahi rehte).
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="folder-structure">5. Scalable Component Folder Structure</h2>
+
+      <p>
+        Jaise codebase badhta hai, ek single <code>components/</code> folder mein sab kuch daalna quickly
+        messy ho jaata hai. Har component ko apna khud ka folder do jisme uske sab related files colocated hon.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>src/
+├── ui/                          <span class="tok-com"># shared design-system components — app-wide reusable, kyunki 2+ features inhe use karte hain</span>
+│   ├── Button/                  <span class="tok-com"># har component apna khud ka folder — reason: styles/types/tests colocated rehte hain, isse dhoondhna aasan</span>
+│   │   ├── index.ts             <span class="tok-com"># barrel export — "export * from './Button'" — consumer ko internal file split ka pata nahi chalta (encapsulation)</span>
+│   │   ├── Button.tsx           <span class="tok-com"># actual component logic + JSX — sirf rendering concern, koi styling object yahan nahi</span>
+│   │   ├── Button.types.ts      <span class="tok-com"># props ke TypeScript types — alag file isliye taaki type contract ko component logic se independently review kar sakein</span>
+│   │   ├── Button.styles.ts     <span class="tok-com"># StyleSheet.create() yahan — style aur logic alag rakhne se component ka JSX padhna easier hota hai</span>
+│   │   └── Button.test.tsx      <span class="tok-com"># unit test colocated — component move/delete karo to test bhi saath chala jaata hai, orphan test nahi bachta</span>
+│   ├── Card/                    <span class="tok-com"># same shape jitna possible — consistency se naye developer ko pattern samajhna easy hota hai</span>
+│   │   ├── index.ts             <span class="tok-com"># barrel export</span>
+│   │   ├── Card.tsx             <span class="tok-com"># component logic</span>
+│   │   └── Card.styles.ts       <span class="tok-com"># styles alag — Card simple hai isliye types.ts skip kiya, over-engineering se bacha</span>
+│   └── TextField/               <span class="tok-com"># teesra shared component — "rule of three" ke baad hi ui/ mein promote kiya jaata hai</span>
+│       ├── index.ts             <span class="tok-com"># barrel export</span>
+│       ├── TextField.tsx        <span class="tok-com"># forwardRef wala input component — ref forwarding ke liye alag logic chahiye, isliye apna file</span>
+│       └── TextField.styles.ts  <span class="tok-com"># styles</span>
+│
+└── features/                    <span class="tok-com"># feature-local components — sirf ek feature ke liye, ui/ mein isliye nahi kyunki dusri feature reuse nahi karegi</span>
+    └── checkout/                <span class="tok-com"># checkout feature ka apna self-contained folder — delete karo to koi orphan file kahin aur nahi bachta</span>
+        ├── components/          <span class="tok-com"># sirf checkout ke liye specific UI — global ui/ mein nahi daala kyunki generic reuse-case nahi hai</span>
+        │   ├── OrderSummaryCard.tsx  <span class="tok-com"># checkout-specific presentation — kahin aur use nahi hoga isliye colocated</span>
+        │   └── PromoCodeInput.tsx    <span class="tok-com"># checkout-specific input — TextField (shared) ko internally use kar sakta hai, khud reusable nahi hai</span>
+        ├── hooks/               <span class="tok-com"># feature-scoped hooks — global hooks/ mein nahi kyunki sirf checkout flow ki state hai</span>
+        │   └── useCheckoutFlow.ts    <span class="tok-com"># checkout ka multi-step state machine yahan — component se alag taaki logic independently testable ho</span>
+        └── CheckoutScreen.tsx   <span class="tok-com"># feature ka entry screen — Expo Router se yahan import hoga, khud route file nahi hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>ui/Button/index.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// barrel export — consumer sirf 'ui/Button' se import karta hai,</span>
+<span class="tok-com">// internal file structure ka pata hi nahi chalta (encapsulation)</span>
+<span class="tok-kw">export</span> <span class="tok-punc">*</span> <span class="tok-kw">from</span> <span class="tok-str">'./Button'</span><span class="tok-punc">;</span>
+<span class="tok-kw">export</span> <span class="tok-kw">type</span> <span class="tok-punc">{</span> ButtonProps<span class="tok-punc">,</span> ButtonVariant <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./Button.types'</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        <strong>Kab colocate karo, kab centralize?</strong> Agar component sirf ek feature ke andar use hota hai
+        aur uska koi generic reuse-case nahi hai (jaise <code>PromoCodeInput</code> jo sirf checkout mein
+        chahiye), usse feature ke andar hi rakho — ye "colocation" hai, jisse feature ko delete/refactor karna
+        easy hota hai (sab ek jagah hai). Lekin agar 2+ features same component use karne lagein (jaise Button,
+        Card, Avatar), usse <code>ui/</code> folder mein promote karo — ab wo tumhara design system ka part hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Rule of thumb: "Rule of three" follow karo — jab tak ek component teesri baar reuse na ho raha ho,
+          usse premature abstract mat karo. Do jagah copy-paste chalta hai; teesri jagah pe refactor karke
+          <code>ui/</code> mein move karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">6. Real-World Gotchas &amp; Crashes</h2>
+
+      <div class="callout danger">
+        <div class="callout-title">🔴 Crash: "Cannot read property 'X' of undefined"</div>
+        <p>
+          Ye sabse common production crash hai RN apps mein. Ye tab hota hai jab tum list render karte waqt
+          API data pe directly nested property access karte ho bina null-check ke — e.g.
+          <code>item.user.name</code> jab <code>item.user</code> hi <code>undefined</code> ho (deleted user,
+          incomplete API response, ya race condition jaha data abhi fully load nahi hua). FlatList jab bulk
+          render karta hai, ek bhi bad item poora list crash kar sakta hai. Hamesha optional chaining
+          (<code>item.user?.name ?? 'Unknown'</code>) use karo aur API response ko Zod/Yup jaisi library se
+          runtime validate karo, sirf TypeScript types pe trust mat karo (TypeScript compile-time hi hai,
+          runtime pe koi guarantee nahi deta jab data external API se aa raha ho).
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Missing "key" prop — sirf warning nahi, real bug</div>
+        <p>
+          List render karte waqt <code>key</code> prop missing hona sirf console warning nahi hai — ye React ke
+          reconciliation algorithm ko confuse karta hai. Bina stable key ke, React index-based matching use
+          karta hai — agar list reorder ho, item beech mein insert/delete ho, to React galat DOM/native node ko
+          galat item se associate kar sakta hai. Isse subtle bugs aate hain jaise: TextInput mein type kiya hua
+          text galat row pe dikhna, animation state galat item pe jump karna, ya checkbox ka checked state
+          swap ho jaana jab list filter/sort ho. Hamesha stable unique ID use karo key ke liye, array index nahi
+          (index tab bhi problematic hai jab list reorder/filter hoti hai).
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔴 Memory leak: subscriptions cleanup na karna</div>
+        <p>
+          Agar tum <code>useEffect</code> ke andar ek event listener, WebSocket subscription, ya
+          <code>Keyboard.addListener</code> jaisa kuch register karte ho aur cleanup function return nahi karte,
+          har baar jab component mount/unmount hota hai (navigation ke through baar baar), naya listener add
+          hota rehta hai bina purane hataye. Kuch navigations ke baad tumhare paas dozens duplicate listeners
+          hain — memory grow karti rehti hai, aur unmounted component ke callback ke andar
+          <code>setState</code> call hone se crash bhi aa sakta hai ("Can't perform a React state update on an
+          unmounted component" — jo newer React mein silently ignore hota hai but underlying leak abhi bhi hai).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>useKeyboardHeight.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> useEffect<span class="tok-punc">,</span> useState <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> Keyboard <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">export function</span> <span class="tok-fn">useKeyboardHeight</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">[</span>height<span class="tok-punc">,</span> setHeight<span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-fn">useState</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">);</span>
+
+  <span class="tok-fn">useEffect</span><span class="tok-punc">(()</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+    <span class="tok-kw">const</span> showSub <span class="tok-punc">=</span> Keyboard<span class="tok-punc">.</span><span class="tok-fn">addListener</span><span class="tok-punc">(</span><span class="tok-str">'keyboardDidShow'</span><span class="tok-punc">,</span> <span class="tok-punc">(</span>e<span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+      <span class="tok-fn">setHeight</span><span class="tok-punc">(</span>e<span class="tok-punc">.</span>endCoordinates<span class="tok-punc">.</span>height<span class="tok-punc">);</span>
+    <span class="tok-punc">});</span>
+    <span class="tok-kw">const</span> hideSub <span class="tok-punc">=</span> Keyboard<span class="tok-punc">.</span><span class="tok-fn">addListener</span><span class="tok-punc">(</span><span class="tok-str">'keyboardDidHide'</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-kw">=></span> <span class="tok-fn">setHeight</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">));</span>
+
+    <span class="tok-com">// CRITICAL: cleanup, warna har mount pe naya listener stack hota jaayega</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">()</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+      showSub<span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">();</span>
+      hideSub<span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">();</span>
+    <span class="tok-punc">};</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-punc">[])</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">return</span> height<span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Deeply nested inline style objects</div>
+        <p>
+          <code>style={'{{'} flex: 1, padding: 16, backgroundColor: theme.bg {'}}'}</code> jaisa inline object
+          literal directly render mein likhna — har render pe ek naya JS object allocate hota hai, jo
+          garbage collector pe pressure daalta hai aur memo/PureComponent optimizations ko break karta hai
+          (jaisa upar discuss kiya). <code>StyleSheet.create</code> use karo — ye ek stable reference deta hai
+          jo component lifetime mein change nahi hoti, aur old architecture mein ye styles ID mein resolve hoke
+          native side pe cache bhi ho sakte the (matlab sirf ek chhota integer bridge cross karta tha, poora
+          object nahi).
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Extra Context</div>
+        <p>
+          In sab crashes/gotchas ka ek common thread hai — <strong>RN apps web apps se zyada "fragile" feel
+          hote hain</strong> kyunki ek JS-side unhandled error poori app ko crash kar sakta hai (red screen ya
+          silent crash production mein), jabki web pe browser aksar isolated errors ko gracefully handle kar
+          leta hai. Isliye Error Boundaries lagana, Sentry/Bugsnag jaisa crash reporting set up karna, aur
+          defensive coding (null checks, runtime validation) RN mein "nice to have" nahi, zaroori hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ye section un devs ke liye hai jo already comfortable hain components use karne mein, aur ab jaanna
+        chahte hain ki "hood ke neeche" kya chal raha hai — jo bilkul wahi level hai jaha senior/staff interviews
+        actually test karte hain. Hum chaar cheezein cover karenge: React aur Fabric ke beech ka relationship,
+        Context ke re-render traps, <code>useSyncExternalStore</code>, aur profiling ka real workflow.
+      </p>
+
+      <h3>Reconciliation aur Fabric ke shadow tree ka internals</h3>
+      <p>
+        Pehle confusion clear karte hain — <strong>React ka reconciler</strong> aur <strong>Fabric</strong> do
+        alag cheezein hain jo saath mein kaam karti hain. React ka reconciler (Fiber architecture) sirf ye decide
+        karta hai ki "JS level pe kya change hua" — ye purani aur nayi <em>fiber tree</em> (React elements ka
+        in-memory representation) ko diff karta hai aur nikalta hai ki kaunse nodes add/update/remove karne hain.
+        Isko koi idea nahi hota ki native side pe kya render hoga — ye purely JS-level algorithm hai jo React DOM
+        (web) aur React Native dono mein same hai.
+      </p>
+      <p>
+        Jab React reconciler decide kar leta hai ki "ye host components change hue hain" (View, Text, Image
+        jaise host nodes — non-composite elements), tab Fabric ka kaam start hota hai. Fabric internally apna
+        khud ka <strong>shadow tree</strong> maintain karta hai — ye ek C++ mein likha hua tree hai jo har host
+        node ke liye ek corresponding <code>ShadowNode</code> object rakhta hai. React ka fiber tree "kya render
+        karna hai" describe karta hai; Fabric ka shadow tree "kaise layout aur render karna hai, thread-safely"
+        describe karta hai. Dono trees alag isliye hain kyunki React ka reconciliation JS thread pe chalta hai
+        (ya concurrent mode mein multiple priorities pe), jabki actual layout aur native mounting alag thread(s)
+        pe hona chahiye taaki UI thread kabhi block na ho.
+      </p>
+      <p>
+        Poora flow teen stages mein hota hai — inhe samajhna zaroori hai kyunki "commit" word interviews mein
+        bahut use hota hai:
+      </p>
+      <ol style="margin:0 0 16px 20px; color:var(--text-secondary); line-height:1.9;">
+        <li><strong>Render phase</strong> — React reconciler fiber tree diff karta hai (JS thread, ya concurrent
+        mode mein interruptible). Isi phase mein Fabric ke corresponding <code>ShadowNode</code>s clone/create
+        hote hain — purana shadow tree mutate nahi hota, ek naya immutable shadow tree bana ke complete kiya
+        jaata hai. Ye immutability hi thread-safety ki wajah hai — koi bhi thread purana tree padh sakta hai
+        bina kisi lock ke, kyunki wo kabhi mutate hi nahi hoga.</li>
+        <li><strong>Commit phase</strong> — jab naya shadow tree fully ban jaata hai, Fabric ise "commit" karta
+        hai — matlab is naye immutable shadow tree ko "current" tree ke roop mein atomically swap kar deta hai.
+        Isi commit ke andar Yoga (C++ layout engine) shadow tree pe layout calculate karta hai — har node ki
+        final x/y/width/height nikalta hai flexbox rules apply karke.</li>
+        <li><strong>Mount phase</strong> — computed layout ke saath, Fabric ab "mounting instructions" generate
+        karta hai (kaunsa native view create/update/delete/move karna hai) aur inhe native UI thread pe apply
+        karta hai — iOS pe <code>UIView</code> hierarchy update hoti hai, Android pe corresponding native View
+        hierarchy. Ye step hamesha main/UI thread pe hota hai kyunki OS ka rendering sirf usi thread se safe hai.</li>
+      </ol>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — do trees kyun?</div>
+        <p>
+          Ye two-tree model (React ka fiber tree + Fabric ka shadow tree) ka poora point <strong>concurrent
+          rendering ko thread-safe banana</strong> hai. Old architecture (pre-Fabric) mein sirf ek tree tha aur
+          render/commit synchronously ek hi bridge call mein hota tha — kaam chal jaata tha lekin priority-based
+          rendering (React 18 ke concurrent features, jaise <code>useTransition</code>) possible nahi thi bina
+          race conditions ke risk ke. Fabric ka immutable shadow tree isse solve karta hai: React JS thread pe
+          background mein ek naya tree bana sakta hai (high-priority update ko beech mein interrupt karke bhi)
+          bina current visible UI ko touch kiye, aur jab ready ho tab hi ek atomic commit se swap hota hai. Layout
+          thread aur JS thread ab independently, apni apni speed pe kaam kar sakte hain — dono ek dusre ko block
+          nahi karte.
+        </p>
+      </div>
+
+      <h3>Context re-render pitfalls — ek Context, saare consumers re-render</h3>
+      <p>
+        Ye ek bahut common senior-level mistake hai jo mid-level devs karte hain: ek bada single
+        <code>AppContext</code> banana jisme user, theme, notifications, cart — sab kuch daal do. Problem ye hai
+        ki React Context ka fundamental rule hai — <strong>jab bhi Provider ka <code>value</code> change hota
+        hai, us Context ke SAARE consumers re-render hote hain</strong>, chahe wo consumer sirf us value ke ek
+        chhote se hisse pe depend kyun na karta ho. React ye check nahi karta ki "consumer ne kaunsa field actually
+        use kiya" — ye sirf reference equality check karta hai poore <code>value</code> object pe.
+      </p>
+      <p>
+        Matlab agar tumhara <code>AppContext</code> mein <code>{'{'} user, theme, cartItems {'}'}</code> hai, aur
+        sirf <code>cartItems</code> update hua (jaise ek item add hua), to har wo component jo sirf
+        <code>theme</code> use kar raha tha bhi re-render hoga — bilkul unnecessary. Chhoti app mein ye
+        unnoticed reh jaata hai, lekin bade app mein (deep tree, expensive children) ye janky UI aur wasted CPU
+        cycles ka source ban jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>contexts-before.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ANTI-PATTERN — ek hi giant context mein sab kuch, alag concerns bhi mixed</span>
+<span class="tok-kw">type</span> AppContextValue <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  user<span class="tok-punc">:</span> User <span class="tok-kw">|</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>       <span class="tok-com">// auth state — kabhi kabhi change hota hai (login/logout)</span>
+  theme<span class="tok-punc">:</span> <span class="tok-str">'light'</span> <span class="tok-kw">|</span> <span class="tok-str">'dark'</span><span class="tok-punc">;</span> <span class="tok-com">// UI preference — rarely change hota hai</span>
+  cartItems<span class="tok-punc">:</span> CartItem<span class="tok-punc">[]</span><span class="tok-punc">;</span> <span class="tok-com">// frequently changes — har "add to cart" pe naya array</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">const</span> AppContext <span class="tok-punc">=</span> createContext<span class="tok-kw">&lt;</span>AppContextValue <span class="tok-kw">|</span> <span class="tok-kw">null</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">);</span>
+
+<span class="tok-com">// PROBLEM: cartItems update hote hi, sirf theme use karne wala</span>
+<span class="tok-com">// koi bhi deep-nested component bhi re-render ho jaayega — wasteful.</span></code></pre>
+      </div>
+
+      <p>
+        Senior pattern — Context ko <strong>concern ke hisaab se split karo</strong>, na ki "sab data ek jagah"
+        ke hisaab se. Alag-alag update-frequency wali cheezein alag Context mein rakho, taaki ek unrelated update
+        doosre consumers ko touch na kare.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>contexts-after.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> createContext<span class="tok-punc">,</span> useContext<span class="tok-punc">,</span> useMemo<span class="tok-punc">,</span> useState<span class="tok-punc">,</span> <span class="tok-kw">type</span> ReactNode <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// alag context — sirf auth-related data, rarely updates</span>
+<span class="tok-kw">const</span> UserContext <span class="tok-punc">=</span> createContext<span class="tok-kw">&lt;</span>User <span class="tok-kw">|</span> <span class="tok-kw">null</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">);</span>
+
+<span class="tok-com">// alag context — sirf theme data, apna independent update cycle</span>
+<span class="tok-kw">const</span> ThemeContext <span class="tok-punc">=</span> createContext<span class="tok-kw">&lt;</span><span class="tok-str">'light'</span> <span class="tok-kw">|</span> <span class="tok-str">'dark'</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-str">'dark'</span><span class="tok-punc">);</span>
+
+<span class="tok-com">// alag context — cart, jo sabse zyada frequently change hota hai</span>
+<span class="tok-kw">const</span> CartContext <span class="tok-punc">=</span> createContext<span class="tok-kw">&lt;</span>CartItem<span class="tok-punc">[]</span><span class="tok-kw">&gt;</span><span class="tok-punc">([])</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ThemeProvider</span><span class="tok-punc">({</span> children <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> children<span class="tok-punc">:</span> ReactNode <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">[</span>theme<span class="tok-punc">,</span> setTheme<span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-fn">useState</span><span class="tok-kw">&lt;</span><span class="tok-str">'light'</span> <span class="tok-kw">|</span> <span class="tok-str">'dark'</span><span class="tok-kw">&gt;</span><span class="tok-punc">(</span><span class="tok-str">'dark'</span><span class="tok-punc">);</span>
+
+  <span class="tok-com">// value ek primitive string hai isliye yahan useMemo zaroori nahi —</span>
+  <span class="tok-com">// lekin agar value ek OBJECT hoti ({ theme, setTheme }), useMemo zaroori ho jaata:</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;ThemeContext.Provider</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-punc">{</span>theme<span class="tok-punc">}</span><span class="tok-tag">&gt;</span><span class="tok-punc">{</span>children<span class="tok-punc">}</span><span class="tok-tag">&lt;/ThemeContext.Provider&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// jab value ek naya object ho (functions + state milake), useMemo lagana zaroori hai —</span>
+<span class="tok-com">// warna har parent re-render pe ek naya { } reference banega aur SAARE consumers</span>
+<span class="tok-com">// re-render honge, chahe underlying values same hi kyun na hon.</span>
+<span class="tok-kw">function</span> <span class="tok-fn">CartProvider</span><span class="tok-punc">({</span> children <span class="tok-punc">}</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> children<span class="tok-punc">:</span> ReactNode <span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">[</span>items<span class="tok-punc">,</span> setItems<span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-fn">useState</span><span class="tok-kw">&lt;</span>CartItem<span class="tok-punc">[]</span><span class="tok-kw">&gt;</span><span class="tok-punc">([])</span><span class="tok-punc">;</span>
+
+  <span class="tok-com">// useMemo ke bina, har CartProvider render pe { items, setItems } ka naya</span>
+  <span class="tok-com">// object banta — memo(Consumer) bhi bekaar ho jaata, kyunki value reference hamesha badalta</span>
+  <span class="tok-kw">const</span> value <span class="tok-punc">=</span> <span class="tok-fn">useMemo</span><span class="tok-punc">(</span><span class="tok-punc">()</span> <span class="tok-kw">=></span> <span class="tok-punc">({</span> items<span class="tok-punc">,</span> setItems <span class="tok-punc">}),</span> <span class="tok-punc">[</span>items<span class="tok-punc">])</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;CartContext.Provider</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-punc">{</span>value<span class="tok-punc">}</span><span class="tok-tag">&gt;</span><span class="tok-punc">{</span>children<span class="tok-punc">}</span><span class="tok-tag">&lt;/CartContext.Provider&gt;</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          <code>useMemo</code> on the Provider's <code>value</code> sirf tab kaam karta hai jab dependency array
+          sahi ho — agar tum <code>items</code> ke saath koi aur inline value (jaise <code>{'{'} items, count:
+          items.length {'}'}</code>) daaloge to wo bhi recompute hoga, jo fine hai. Real mistake tab hoti hai jab
+          log <code>value={'{{'} items, setItems {'}}'}</code> directly inline likh dete hain JSX mein bina
+          <code>useMemo</code> ke — is case mein object literal <code>{'{'} }</code> syntax har render pe
+          guaranteed naya reference banata hai, chahe <code>items</code> khud same kyun na ho. Aur split-context
+          approach ka real benefit sirf tab milega jab consumers bhi <code>React.memo</code> ho — warna parent
+          re-render hone pe children to re-render honge hi, Context se independent.
+        </p>
+      </div>
+
+      <h3>useSyncExternalStore — concurrent-safe external state subscription</h3>
+      <p>
+        React 18 se pehle, agar tumhe kisi external mutable source (jaise Redux se bahar ka custom store, ya ek
+        native event emitter jaise <code>NetInfo</code>, ya browser/RN ka <code>Dimensions</code> API) ko
+        subscribe karna hota tha, log usually <code>useState</code> + <code>useEffect</code> ka combo use karte
+        the — external store pe listener lagao, callback mein <code>setState</code> call karo. Ye kaam to karta
+        hai, lekin React 18 ke concurrent rendering mein ek subtle bug create kar sakta hai jise <strong>"tearing"</strong>
+        kehte hain — matlab ek hi render ke andar UI ke different parts external store ki DIFFERENT values dikha
+        sakte hain, kyunki concurrent render beech mein interrupt ho sakta hai aur store value render ke dauraan
+        change ho sakti hai.
+      </p>
+      <p>
+        <code>useSyncExternalStore</code> is exact problem ke liye design kiya gaya hook hai — ye React ko
+        guarantee deta hai ki ek external store ko subscribe karte waqt bhi, ek single render ke andar sabhi
+        components ko SAME, consistent snapshot value milegi, chahe concurrent rendering ke beech mein store
+        update ho jaaye. Ye internally React ko batata hai "is value ko concurrent-safe tarike se read karo" —
+        agar render ke dauraan store change ho jaaye, React us render ko discard karke dobara sync tareeke se
+        render karega.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>useNetworkStatus.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> useSyncExternalStore <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span><span class="tok-punc">;</span>
+<span class="tok-kw">import</span> NetInfo <span class="tok-kw">from</span> <span class="tok-str">'@react-native-community/netinfo'</span><span class="tok-punc">;</span> <span class="tok-com">// native connectivity event source</span>
+
+<span class="tok-com">// module-level mutable variable — ye "external store" hai, React ke bahar rehta hai</span>
+<span class="tok-kw">let</span> isConnected <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// subscribe: React ko batata hai "jab bhi store change ho, ye callback chalao"</span>
+<span class="tok-com">// return value ek unsubscribe function honi chahiye — React cleanup ke liye use karega</span>
+<span class="tok-kw">function</span> <span class="tok-fn">subscribe</span><span class="tok-punc">(</span>callback<span class="tok-punc">:</span> <span class="tok-punc">()</span> <span class="tok-kw">=></span> <span class="tok-kw">void</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> unsubscribe <span class="tok-punc">=</span> NetInfo<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">((</span>state<span class="tok-punc">)</span> <span class="tok-kw">=></span> <span class="tok-punc">{</span>
+    isConnected <span class="tok-punc">=</span> <span class="tok-punc">!!</span>state<span class="tok-punc">.</span>isConnected<span class="tok-punc">;</span> <span class="tok-com">// external store ko mutate karo</span>
+    <span class="tok-fn">callback</span><span class="tok-punc">();</span> <span class="tok-com">// React ko batao "re-check karo, kuch badla hai"</span>
+  <span class="tok-punc">});</span>
+  <span class="tok-kw">return</span> unsubscribe<span class="tok-punc">;</span> <span class="tok-com">// cleanup — component unmount pe React ye call karega</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// getSnapshot: current value synchronously return karna hai — no side effects allowed yahan</span>
+<span class="tok-kw">function</span> <span class="tok-fn">getSnapshot</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> isConnected<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// server-side rendering ke liye fallback snapshot (RN mein rarely relevant, but hook signature isse maangta hai)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">getServerSnapshot</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span> <span class="tok-com">// SSR pe assume connected, hydration ke baad real value aayegi</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">export function</span> <span class="tok-fn">useNetworkStatus</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// React guarantee karta hai — concurrent render ke andar bhi ye value tear nahi hogi</span>
+  <span class="tok-kw">return</span> <span class="tok-fn">useSyncExternalStore</span><span class="tok-punc">(</span>subscribe<span class="tok-punc">,</span> getSnapshot<span class="tok-punc">,</span> getServerSnapshot<span class="tok-punc">);</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// usage: const isOnline = useNetworkStatus(); — bilkul useState jaisa lagta hai use karne mein</span></code></pre>
+      </div>
+
+      <p>
+        Practically, agar tum koi state management library use kar rahe ho (Zustand, Jotai, ya even Redux ke
+        naye bindings), unke internals mein already <code>useSyncExternalStore</code> use ho raha hai — tumhe
+        khud isse directly likhna kam hi padta hai. Lekin jab tum khud ek custom store banate ho (jaise upar wala
+        network status example, ya ek native module se aane wala event stream), ye tumhara go-to primitive hona
+        chahiye — <code>useState</code> + manual <code>useEffect</code> listener pattern se concurrent-safe.
+      </p>
+
+      <h3>Profiling with React DevTools Profiler — actual senior workflow</h3>
+      <p>
+        "Meri app slow hai" — ye sabse vague bug report hai jo tumhe milega, aur senior dev ka job hai isse
+        specific bana dena. React DevTools ka <strong>Profiler tab</strong> exactly isi ke liye hai. Real workflow
+        kuch aisa dikhta hai:
+      </p>
+      <ol style="margin:0 0 16px 20px; color:var(--text-secondary); line-height:1.9;">
+        <li><strong>Record a session</strong> — Profiler mein "Record" dabao, jo interaction slow lag raha hai
+        wo perform karo (jaise list scroll, ya ek filter toggle), fir "Stop" dabao. Ye tumhe har commit ka
+        ek flame graph dega.</li>
+        <li><strong>Flame graph padhna</strong> — har bar ek component represent karta hai; bar ki <em>width</em>
+        batati hai us component (aur uske children) ko render karne mein kitna time laga, aur color (yellow se
+        red gradient, DevTools ki default color scale mein) batata hai relative render duration — jitna zyada
+        saturated color, utna zyada time. Agar ek chhota sa state update (jaise ek checkbox toggle) ek bahut wide,
+        deep flame graph produce kar raha hai jisme dozens unrelated components bhi shaamil hain, wahi tumhara
+        signal hai ki "kuch over-rendering ho raha hai".</li>
+        <li><strong>"Why did this render?" feature</strong> — har component bar pe click karke DevTools ye batata
+        hai ki us specific commit mein wo component kyun re-render hua — "Props changed", "State changed",
+        "Hooks changed", ya "Parent component rendered". Ye sabse actionable info hai — agar "Parent rendered"
+        wajah hai aur props/state khud same hain, to iska matlab hai ye component <code>React.memo</code> ka
+        candidate hai.</li>
+        <li><strong>Ranked view</strong> — commit ke andar components ko unke render duration ke hisaab se sort
+        karke dikhata hai (sabse slow upar). Isse tumhe pata chalta hai "in in sab renders mein se, actually
+        expensive kaunsa hai" — kabhi kabhi ek chhota component bahut baar re-render ho raha hota hai (jaise
+        FlatList ka ek renderItem), jabki koi bada component sirf ek baar render hota hai but har baar heavy
+        computation karta hai — dono alag problems hain, alag fixes chahiye.</li>
+      </ol>
+      <p>
+        Iske alawa <code>Settings → "Highlight updates when components render"</code> checkbox on karke tum
+        LIVE app ke upar rectangles blink hote dekh sakte ho jab bhi koi component re-render hota hai — quick
+        visual sanity check ke liye useful hai bina Profiler session record kiye, especially scroll performance
+        debug karte waqt.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interview mein agar tumse pucha jaaye "app slow hai, kya karoge" — sirf "memo laga dunga" mat bolo.
+          Correct answer sequence hai: (1) Profiler se record karke <em>reproduce</em> karo aur confirm karo ki
+          re-render hi problem hai, na ki kuch aur (jaise ek heavy synchronous computation, ya bridge/JSI
+          serialization cost, ya Yoga layout thrashing bade nested trees mein); (2) "why did this render" se
+          root cause identify karo; (3) tabhi targeted fix lagao — memo, useCallback, useMemo, context split,
+          ya list virtualization tuning. Guessing-first approach (bina measure kiye optimize karna) senior
+          interviews mein turant flag ho jaata hai — "premature optimization" ka classic trap.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">8. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye questions us level ke hain jo actual senior/staff RN interviews mein pucha jaata hai — sirf "API kaise
+        use karte ho" nahi, balki "internally kya ho raha hai" aur "trade-off kya hai" wale angle se. Answers
+        confidently aur specifically likhe gaye hain, jaise ek strong senior engineer interview mein bolega.
+      </p>
+
+      <h3>1. Explain exactly how FlatList decides what to render and unmount as you scroll — what is "windowing"?</h3>
+      <p>
+        FlatList khud rendering logic nahi rakhta — ye internally <code>VirtualizedList</code> ko wrap karta hai,
+        jo actual "windowing" (a.k.a virtualization) implement karta hai. Concept simple hai: poori list ko ek
+        saath mount karne ke bajaye, sirf ek "window" of items mount rakho — jo currently viewport ke andar hain,
+        plus ek buffer.
+      </p>
+      <p>
+        Practically ye teen props se control hota hai: <code>initialNumToRender</code> (pehla render kitne items
+        se start hoga — isse "time to first paint" fast rehta hai), <code>windowSize</code> (default 21 — units
+        "viewport heights" mein hain, matlab 21 ka matlab ~10 viewport heights upar aur ~10 neeche current
+        position se, plus current viewport), aur <code>maxToRenderPerBatch</code> (ek scroll batch mein max kitne
+        naye items render honge — isse ek hi frame mein bahut zyada work nahi hota, jo jank cause karta).
+        VirtualizedList internally scroll position track karta hai, calculate karta hai kaunse indices ab window
+        ke bahar chale gaye, unke native views ko <code>unmount</code> karta hai (state loss ke saath — ye
+        important hai, scroll wapas aane pe wo item fresh mount hoga), aur naye visible-ho-rahe indices ko mount
+        karta hai. Ye sab async batches mein hota hai (<code>InteractionManager</code>-jaisi scheduling ke through)
+        taaki scroll gesture ka JS thread response block na ho.
+      </p>
+
+      <h3>2. When would you reach for FlashList over FlatList, and what's the actual mechanism that makes it faster?</h3>
+      <p>
+        FlatList aur FlashList dono windowing use karte hain — fark <strong>view lifecycle</strong> mein hai.
+        FlatList jab item viewport se bahar jaata hai, uska native view literally <em>destroy</em> kar deta hai,
+        aur naya item viewport mein aane pe ek bilkul naya native view <em>create</em> karta hai. View
+        creation/destruction native side pe expensive hai — memory allocate/deallocate, native layout tree mein
+        insert/remove, sab cost hai.
+      </p>
+      <p>
+        FlashList (Shopify) <strong>cell recycling</strong> use karta hai — jaise Android ka RecyclerView ya iOS
+        ka UITableView/UICollectionView internally karte hain. Jab ek item screen se bahar jaata hai, uska native
+        view destroy nahi hota — usse ek pool mein rakh diya jaata hai, aur jab naya item viewport mein aata hai,
+        FlashList ek existing view ko <em>reuse</em> karta hai (sirf uska content/data update karta hai) instead
+        of naya banane ke. Isse view creation ka overhead almost eliminate ho jaata hai — sirf data binding ka
+        cost bachta hai, jo bahut sasta hai. Iske alawa FlashList apna layout estimation smarter tarike se karta
+        hai (<code>estimatedItemSize</code> ke through auto-averaging) taaki manual <code>getItemLayout</code> ki
+        zaroorat kam pade.
+      </p>
+      <p>
+        Reach for FlashList jab: list bahut lambi ho (thousands of items, feed-like UI), items visually similar
+        template share karte hon (recycling ka fayda tabhi milta hai jab views ka shape consistent ho), aur scroll
+        performance genuinely measured problem ho — Profiler se confirm karo, sirf assumption pe migrate mat karo,
+        kyunki FlashList ka apna migration cost (thoda different API surface, kuch edge cases jaise dynamic-height
+        items ke saath) bhi hai.
+      </p>
+
+      <h3>3. A list of 5000 items is janky on scroll — walk me through your diagnostic process.</h3>
+      <p>
+        Pehla step guessing nahi hai — measurement hai. Main in order karunga:
+      </p>
+      <ul style="margin:0 0 16px 20px; color:var(--text-secondary); line-height:1.9;">
+        <li><strong>Confirm virtualization ho hi rahi hai</strong> — check karo ki <code>ScrollView</code> ke
+        andar <code>.map()</code> to nahi use ho raha (sabse common root cause). Agar FlatList use ho raha hai,
+        check karo koi accidental prop (jaise pura data array as <code>extraData</code> pass karna jo unnecessary
+        re-render trigger kare) to nahi lagi.</li>
+        <li><strong>renderItem ki cost check karo</strong> — React DevTools Profiler se record karo scroll ke
+        dauraan, dekho renderItem kitni baar aur kitni der chal raha hai. Agar har item render mein koi
+        expensive computation hai (jaise inline date formatting, ya heavy style calculation jo memoized nahi hai),
+        wahi bottleneck hai.</li>
+        <li><strong>getItemLayout hai ya nahi</strong> — agar items fixed height hain aur <code>getItemLayout</code>
+        missing hai, FlatList ko measurement pass ka wait karna padta hai jo scroll ke response ko slow kar
+        sakta hai, especially <code>scrollToIndex</code> jaise operations mein.</li>
+        <li><strong>Images check karo</strong> — agar list mein images hain aur plain <code>Image</code> use ho
+        raha hai (na ki <code>expo-image</code>), har scroll pe re-decode ho sakta hai — memory cache missing hai.
+        Isse frame drops hote hain jab naye images mount hote hain.</li>
+        <li><strong>renderItem ko memo + stable reference do</strong> — confirm karo item component
+        <code>React.memo</code> hai, aur parent se pass ho rahe callbacks (<code>onPress</code> waghera)
+        <code>useCallback</code> se stable hain. Agar nahi, har render pe naya function reference banega aur
+        memo defeat ho jaayega.</li>
+        <li><strong>Agar sab kiya aur abhi bhi jank hai</strong> — tab FlashList migration consider karo, kyunki
+        ab bottleneck fundamentally view creation/destruction cost hai jo sirf recycling se fix hota hai, tuning
+        se nahi.</li>
+      </ul>
+
+      <h3>4. Why does an inline arrow function passed as a prop defeat React.memo, even if the function does the exact same thing every render?</h3>
+      <p>
+        <code>React.memo</code> default comparison <em>shallow reference equality</em> use karta hai har prop pe
+        (<code>Object.is</code>) — ye function ke <em>behavior</em> ko compare nahi karta, sirf uski memory
+        reference ko. JavaScript mein <code>() =&gt; doSomething()</code> jaisa arrow function literal jab bhi
+        JSX ke andar likha jaata hai, har render pe ek bilkul naya function object allocate hota hai — even agar
+        us function ka body character-by-character identical hai previous render se. Do functions "same kaam
+        karte hain" iska koi matlab nahi hai JS engine ke liye jab tak wo literally same object reference na hon.
+      </p>
+      <p>
+        Isliye memoized child ko <code>onPress={'{'}() =&gt; doSomething(id){'}'}</code> pass karna memo ko
+        automatically defeat kar deta hai — har parent render pe child ko "prop changed" dikhega (kyunki
+        reference change hui hai), aur memo ka comparison fail ho jaayega, child re-render hoga chahe uska real
+        behavior same hi kyun na ho. Fix — <code>useCallback</code> se function reference ko stabilize karo
+        (dependencies change na hone tak same reference milta rahega), ya function ko parent se pass karne ke
+        bajaye ek stable ID pass karo aur child khud apna handler internally resolve kare.
+      </p>
+
+      <h3>5. Explain the difference between the old Bridge architecture and JSI/Fabric, and why it matters for component performance.</h3>
+      <p>
+        Old architecture mein JS aur native side do completely separate runtimes the jo sirf ek async, batched,
+        JSON-serialized "Bridge" ke through communicate karte the. Har cross-side call — chahe wo ek native module
+        function ho ya ek UI update — pehle JSON string mein serialize hota tha, bridge cross karta tha
+        asynchronously, fir doosri taraf deserialize hota tha. Ye cost real hai, especially large payloads
+        (jaise ek bade array ya nested object) ke liye — aur crucially, ye <em>asynchronous</em> tha, matlab tum
+        kabhi bhi synchronously native side se kuch query nahi kar sakte the (jaise "is view ki current width
+        kya hai") bina ek round-trip promise ke.
+      </p>
+      <p>
+        JSI (JavaScript Interface) ye poora model badal deta hai — ab JS aur native code same memory space share
+        kar sakte hain via direct C++ bindings, bina serialization ke aur bina async round-trip ke. Fabric
+        (naya renderer) aur TurboModules (naye native modules) dono JSI ke upar bane hain. Component performance
+        ke liye iska matlab hai — render commits ab synchronous ho sakte hain jaha zaroorat ho, layout
+        measurements instant query ho sakte hain, aur bade props payloads ka serialization overhead essentially
+        khatam ho gaya hai. Practically — deeply nested component trees jo pehle bridge-bound the, ab kaafi
+        zyada headroom rakhte hain before performance issues aate hain — lekin Yoga layout cost (flexbox
+        calculation) abhi bhi real hai, kyunki wo architecture-independent hai.
+      </p>
+
+      <h3>6. What's the difference between a controlled and uncontrolled TextInput, and which would you pick for a search box with 10k+ item filtering?</h3>
+      <p>
+        Controlled TextInput mein value React state se drive hoti hai — <code>value={'{'}query{'}'}</code> +
+        <code>onChangeText={'{'}setQuery{'}'}</code>. Har keystroke pe: native side event fire karta hai, JS state
+        update hota hai, React re-render trigger hota hai, aur naya <code>value</code> wapas native input ko
+        commit hota hai. Ye single-source-of-truth deta hai (React state hamesha accurate hai) but har keystroke
+        ek full render cycle trigger karta hai.
+      </p>
+      <p>
+        10k+ item filtering wale search box ke liye, agar tum naive tarike se har keystroke pe poore 10k items
+        ko filter kar rahe ho synchronously render ke andar, ye lag introduce karega — user ko typing lag
+        mehsoos hoga kyunki render aur filter dono same JS thread pe compete kar rahe hain. Best approach —
+        input ko <strong>uncontrolled ya locally-controlled</strong> rakho (input apni khud ki state maintain
+        kare, ya ek separate fast-updating local state), aur actual filtering logic ko <strong>debounce</strong>
+        karo (jaise 200-300ms) — matlab filter sirf tab chale jab user typing pause kare, har single keystroke pe
+        nahi. Isse input responsiveness (jo user turant feel karta hai) aur filtering cost (jo expensive hai)
+        decouple ho jaate hain.
+      </p>
+
+      <h3>7. Why does splitting a large Context into multiple smaller contexts actually help performance — walk me through the mechanism?</h3>
+      <p>
+        React Context ka re-render trigger rule simple hai: jab Provider ka <code>value</code> reference change
+        hoti hai, us <code>Context.Consumer</code>/<code>useContext</code> ko use karne wale SAARE components
+        re-render hote hain — regardless of kya unhone value ke kis field ko actually use kiya. Ye field-level
+        granularity track nahi karta, sirf poore value object ki reference dekhta hai.
+      </p>
+      <p>
+        Agar tumhara Context ek bada object hai jisme multiple unrelated concerns hain (user, theme, cart), to
+        koi bhi ek concern update hone se (jaise cart) baaki sab consumers (jo sirf theme use kar rahe the) bhi
+        re-render honge — kyunki unhe pata hi nahi ki "sirf cart badla hai, mera wala field same hai". Jab tum
+        Context ko split karte ho (separate <code>UserContext</code>, <code>ThemeContext</code>,
+        <code>CartContext</code>), har Context apna independent <code>value</code> reference rakhta hai. Ab
+        cart update hone pe sirf <code>CartContext</code> ka reference change hota hai — <code>ThemeContext</code>
+        aur <code>UserContext</code> completely untouched rehte hain, isliye unke consumers re-render hi nahi
+        honge. Ye mechanism pure reference-identity based hai, isliye splitting directly is granularity problem
+        ko solve karta hai without kisi extra library ke.
+      </p>
+
+      <h3>8. What problem does useSyncExternalStore solve that useState + useEffect couldn't?</h3>
+      <p>
+        <code>useState</code> + <code>useEffect</code> se external store subscribe karna React 17 tak fine tha
+        kyunki rendering hamesha synchronous aur non-interruptible thi — ek render start hota, complete hota,
+        commit hota, bina beech mein kisi aur priority ke interfere kiye. React 18 ke concurrent features
+        (<code>useTransition</code>, automatic batching ke saath concurrent rendering) is guarantee ko todte
+        hain — ek render beech mein pause ho sakta hai, kisi aur high-priority update ko process karne ke liye,
+        aur phir resume ho sakta hai. Agar is beech mein external store ki value change ho jaaye, alag-alag
+        components ek hi logical render ke andar store ki DIFFERENT values dekh sakte hain — ye "tearing" hai,
+        aur ye ek bahut subtle, hard-to-reproduce bug class hai (UI ke different parts inconsistent state dikhate
+        hain, jaise ek badge count kahin 5 dikhaye aur kahin 6, same render mein).
+      </p>
+      <p>
+        <code>useSyncExternalStore</code> React ko explicitly batata hai "ye value ek external, React ke bahar ka
+        mutable source hai" — React internally ensure karta hai ki ek render ke dauraan agar store change ho
+        jaaye, to React us render ko discard karke synchronously dobara render kare taaki consistency guaranteed
+        rahe. Ye poore concurrent rendering model ke saath compatibility ka safety-net hai jo manual
+        useEffect-based subscription kabhi guarantee nahi kar sakta tha.
+      </p>
+
+      <h3>9. Explain the two-tree model in Fabric (React's fiber tree vs the shadow tree) — why can't React just directly manipulate native views?</h3>
+      <p>
+        React ka fiber tree ek pure JS data structure hai jo describe karta hai "logically kya render hona
+        chahiye" — ye completely platform-agnostic hai, same reconciler web aur native dono mein use hota hai.
+        Fabric ka shadow tree ek C++ data structure hai jo describe karta hai "ye kaise physically layout aur
+        mount hona chahiye" — is mein Yoga layout results, native view configs, sab kuch hota hai.
+      </p>
+      <p>
+        React seedhe native views ko directly manipulate nahi kar sakta kyunki (a) native view manipulation
+        sirf UI/main thread pe safe hai, jabki React reconciliation kisi bhi thread pe (ya multiple priorities
+        mein interleaved) ho sakti hai concurrent mode mein, aur (b) agar reconciliation directly mutable native
+        state ko touch kare, to ek interrupted/discarded render (jo concurrent mode mein normal hai) ek half-applied,
+        inconsistent UI state chhod sakta hai. Shadow tree ek <em>immutable intermediate representation</em> ke
+        roop mein kaam karta hai — React JS thread pe (kisi bhi priority se, freely) naya shadow tree bana sakta
+        hai bina current visible UI ko touch kiye, aur sirf jab wo tree fully complete ho jaaye, ek atomic
+        "commit" operation se real native views ko UI thread pe update kiya jaata hai. Ye separation hi
+        guarantees deta hai ki user ko kabhi bhi ek "half-rendered" ya inconsistent frame nahi dikhega.
+      </p>
+
+      <h3>10. You inherit a codebase where every component uses `React.memo` and every callback uses `useCallback`, but the app is still slow. What's your first hypothesis?</h3>
+      <p>
+        Ye ek classic "over-engineering without measurement" symptom hai, aur mera pehla hypothesis hoga ki
+        <code>memo</code>/<code>useCallback</code> khud hi problem ban gaye hain, fix nahi. Do concrete
+        possibilities: pehli — <code>useCallback</code> ki dependency array khud unstable hai (jaise ek object
+        jo parent mein har render pe naya banta hai dependency mein hai), jisse callback phir bhi har render pe
+        naya bin raha hai — memo ka poora point defeat ho gaya lekin extra hook overhead add ho gaya bina fayde
+        ke. Doosri — team ne <em>har</em> component ko memo kiya, chahe uski render cost trivial ho — memo khud
+        free nahi hai, ye ek shallow comparison run karta hai har render attempt pe; agar comparison khud costly
+        hai (bahut saare props) aur component ka actual render cheap hai, memo net-negative ho sakta hai.
+      </p>
+      <p>
+        Real fix hamesha same hai — Profiler khol ke actual bottleneck measure karo. Zyadatar cases mein
+        asli culprit kuch aur hota hai jo memo/useCallback bilkul touch nahi karte — jaise ek bada, unsplit
+        Context jiska value reference har render pe badalta hai (memo ke bawajood consumers re-render honge
+        kyunki context change khud memo se bypass ho jaata hai), ya list mein missing <code>getItemLayout</code>,
+        ya heavy synchronous work render ke andar (jaise JSON parsing, date formatting bina memoization ke), ya
+        simply bahut zyada deeply nested Views jisse Yoga layout pass khud expensive ho gaya hai — jisska memo se
+        koi lena dena nahi.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="01-introduction.html">
+          <div class="label">← Previous</div>
+          <div class="title">Introduction</div>
+        </a>
+        <a class="next" href="03-style-and-design.html">
+          <div class="label">Next →</div>
+          <div class="title">Style &amp; Design</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

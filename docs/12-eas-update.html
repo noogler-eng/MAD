@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EAS Update — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link active" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> EAS Update</div>
+      <div class="progress-pill">Chapter 12 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 12 · Build &amp; Release</span>
+      <h1>EAS Update — Over-The-Air JS Updates, Root Level Se</h1>
+      <p class="subtitle">
+        Is chapter mein hum dekhenge ki OTA (Over-The-Air) update actually <em>kaise</em> possible hai bina App
+        Store/Play Store review ke — root cause samjhenge (RN ka JS bundle runtime pe load hota hai), phir wo
+        <strong>sabse critical boundary</strong> dekhenge jo bahut teams misunderstand karti hain (OTA se native
+        code kabhi update nahi ho sakta), runtime versions ka fingerprinting model, channels ka concept, deploy
+        aur rollback ka actual flow, aur wo real-world gotchas jo production mein "update kyun nahi mil raha
+        users ko" jaisi confusion create karte hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#what-ota-is">1. What OTA Updates Actually Are</a></li>
+          <li><a href="#the-boundary">2. The Critical Boundary: OTA CAN'T Update</a></li>
+          <li><a href="#runtime-versions">3. Runtime Versions — Compatibility Enforcement</a></li>
+          <li><a href="#channels">4. Update Channels</a></li>
+          <li><a href="#deploying">5. Deploying an Update</a></li>
+          <li><a href="#rollback">6. Reverting a Bad Update</a></li>
+          <li><a href="#gotchas">7. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">9. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="what-ota-is" style="border-top:none; padding-top:0; margin-top:28px;">What OTA (Over-The-Air) Updates Actually Are</h2>
+
+      <p>
+        Sabse pehle root question: <strong>ye possible kaise hai ki koi app apna code update kar le bina App
+        Store ya Play Store ke review process se guzre?</strong> Iska answer React Native ke fundamental execution
+        model mein chhupa hai, isliye pehle wahi samjhte hain.
+      </p>
+
+      <p>
+        Ek pure native app (jaise Swift/Kotlin mein likha gaya) mein saara logic <strong>compile-time pe hi native
+        binary ke andar bake ho jaata hai</strong> — jab aap Xcode/Android Studio se build karte ho, saara code
+        machine code mein convert hoke <code>.ipa</code>/<code>.apk</code> ke andar permanently embed ho jaata
+        hai. Isliye ek single line change karne ke liye bhi — chahe wo ek button ka color hi kyun na ho — aapko
+        poora naya binary banana padta hai, aur store pe naya review submit karna padta hai.
+      </p>
+
+      <p>
+        React Native alag tarike se kaam karta hai. Aapka JS/TS code compile hoke native machine code nahi banta —
+        ye <strong>ek JS bundle (ek bada <code>.js</code> file, Metro bundler se generate)</strong> banta hai, jo
+        native binary ke <em>andar</em> ek asset ke roop mein embed hota hai (ya remote se fetch hota hai). Jab
+        app launch hoti hai, native runtime (Hermes engine) is JS bundle ko <strong>parse aur execute</strong>
+        karta hai — bilkul waise jaise browser ek webpage ka JS load karke chalata hai. Native binary sirf ek
+        "shell" hai jo JS engine, native modules, aur rendering infrastructure (Fabric) provide karta hai — actual
+        app logic (screens, business logic, UI tree construction) JS bundle ke andar hoti hai jo runtime pe load
+        hoti hai.
+      </p>
+
+      <p>
+        <strong>Yahi wo fundamental fact hai jispe EAS Update poora tika hua hai:</strong> agar JS bundle runtime
+        pe load hota hai (compile-time pe binary ke andar hardcoded nahi hota), to iska matlab hai ki agar hum is
+        JS bundle ko binary banne ke baad bhi replace kar dein — user ke device pe already installed binary ko
+        chhue bina — app ka behaviour change ho jayega, bina naya native binary banaye. EAS Update exactly yahi
+        karta hai: ye aapka naya JS bundle + updated assets (images, fonts) EAS ke servers pe upload karta hai, aur
+        jab user ka app agli baar launch/foreground hota hai, wo apne current runtime ke liye available naya
+        update check karta hai, download karta hai, aur <strong>agli launch se</strong> naya JS bundle use karta
+        hai — sab kuch bina store review ke, kyunki store ne jo binary approve kiya tha wo bilkul waisa hi hai,
+        sirf uske andar ka "content" (JS bundle) badla hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Web analogy jo click karwati hai</div>
+        <p>
+          Iske baare mein aise socho: ek website deploy karne ke baad aapko browser vendors se koi review nahi
+          maangni padti — aap seedha naya HTML/JS/CSS server pe daal dete ho aur next page load pe user ko naya
+          version mil jaata hai. React Native mein bhi JS bundle conceptually waisa hi "content" hai jo runtime pe
+          fetch/load hota hai — bas yahan "server" EAS ka update server hai aur "next page load" app ka next
+          launch hai.
+        </p>
+      </div>
+
+      <p>
+        Technically, EAS Update ek <strong>manifest-based delivery system</strong> hai: har published update ke
+        liye ek manifest (JSON metadata — kaunsa JS bundle, kaunse assets, kaunsa runtime version target hai)
+        generate hota hai. App launch pe <code>expo-updates</code> native module ye manifest EAS server se fetch
+        karta hai, compare karta hai currently-installed update se, aur agar naya available hai to bundle download
+        karke local storage mein cache kar leta hai. Ye poora process background mein hota hai — user ko koi
+        "installing update..." wala popup nahi dikhta by default, bas agli app open pe naya version silently
+        active ho jaata hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="the-boundary">The Critical Boundary: What OTA CAN'T Update</h2>
+
+      <p>
+        Ab is chapter ka <strong>sabse important concept</strong> — aur ye wahi cheez hai jo bahut teams
+        (including experienced developers) galat samajhte hain, aur is galat samajh ki wajah se production
+        incidents create karte hain.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 OTA Updates SIRF JS/Assets Update Kar Sakte Hain — Kabhi Native Code Nahi</div>
+        <p>
+          EAS Update sirf wahi cheez badal sakta hai jo runtime pe JS engine load karta hai — matlab <strong>JS/TS
+          code aur uske assets (images, fonts, JSON data)</strong>. Ye <strong>kabhi bhi</strong> ye cheezein
+          nahi kar sakta:
+        </p>
+        <ul>
+          <li><strong>Naya native module add karna</strong> — agar aapne <code>react-native-ble-plx</code> jaisi
+            ek nayi native dependency install ki jisme native (Swift/Kotlin) code hai, ye code sirf compile-time
+            pe binary ke andar link hota hai. OTA update se ye module device pe kabhi nahi pahunch sakta — device
+            ka installed binary literally us native code ko contain hi nahi karta.</li>
+          <li><strong>Native permissions change karna</strong> — camera, location, bluetooth jaisi permissions
+            <code>Info.plist</code> (iOS) ya <code>AndroidManifest.xml</code> (Android) mein declare hoti hain, jo
+            compile-time pe binary mein bake hoti hain. Naya permission add karna OTA se impossible hai.</li>
+          <li><strong>App icon ya splash screen (native level) change karna</strong> — ye native resources hain
+            jo binary ke andar compiled asset catalogs (iOS) ya resource files (Android) ke roop mein store hote
+            hain.</li>
+          <li><strong>Native config level changes</strong> — jaise <code>Info.plist</code>/<code>AndroidManifest.xml</code>
+            ke andar koi bhi entry, deep link scheme registration, native background modes, etc.</li>
+          <li><strong>Expo SDK ya React Native version upgrade karna</strong> — ye upgrades native runtime ke
+            core hi change karte hain (Hermes version, Fabric renderer version, native dependency versions) — ye
+            fundamentally ek naya binary hai, JS-level change nahi.</li>
+        </ul>
+        <p>
+          In sab cases mein <strong>ek fresh native build (EAS Build) aur naya store submission mandatory hai</strong>.
+          Sabse dangerous misunderstanding jo teams karte hain: production mein ek native-level crash aata hai
+          (jaise ek native module crash kar raha hai kisi permission ki wajah se), aur team panic mein "hotfix"
+          ke liye <code>eas update</code> chala deti hai — jo <strong>kaam hi nahi karega</strong>, kyunki bug
+          native layer mein hai aur JS bundle replace karne se native code touch hi nahi hota. Ye realization
+          production incident ke beech mein aana bahut costly hota hai — is boundary ko pehle se samajhna zaroori
+          hai.
+        </p>
+      </div>
+
+      <p>
+        Ek helpful mental model: <strong>OTA update sirf wahi cheez badal sakta hai jo aap bina naya native build
+        banaye local machine pe bhi change kar sakte the aur sirf JS reload/fast-refresh se dekh sakte the</strong>
+        (jaise ek screen ka layout, ek business logic bug, ek API call, ek string). Agar change ke liye
+        <code>eas build</code> chalana padta — matlab OTA se bhi nahi ho sakta.
+      </p>
+
+      <table>
+        <tr><th>Change Type</th><th>OTA Update se Possible?</th></tr>
+        <tr><td>JS/TS logic fix (bug fix, business logic)</td><td>Haan</td></tr>
+        <tr><td>UI/styling change (StyleSheet, layout)</td><td>Haan</td></tr>
+        <tr><td>Image/font/JSON asset replace</td><td>Haan</td></tr>
+        <tr><td>API endpoint URL change (JS-level config)</td><td>Haan</td></tr>
+        <tr><td>Naya native module add karna</td><td>Nahi — naya native build chahiye</td></tr>
+        <tr><td>Naya permission (camera/location) add karna</td><td>Nahi — naya native build chahiye</td></tr>
+        <tr><td>App icon/splash (native) change karna</td><td>Nahi — naya native build chahiye</td></tr>
+        <tr><td>Expo SDK / RN version upgrade</td><td>Nahi — naya native build chahiye</td></tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="runtime-versions">Runtime Versions — How Compatibility Is Enforced</h2>
+
+      <p>
+        Ab agla sawal: agar OTA sirf JS update kar sakta hai, to EAS kaise ensure karta hai ki jo JS update aap
+        publish kar rahe ho wo actually us device ke installed native binary ke saath <em>compatible</em> hai?
+        Sochiye — agar aapne apne code mein ek naya native module use karna start kiya (jo sirf naye binary mein
+        hai), aur galti se wo JS update purane binary wale users ko bhi mil gaya jinke paas wo native module hai
+        hi nahi — app seedha <strong>crash</strong> karegi launch pe, kyunki JS us native module ko call karne ki
+        koshish karega jo exist hi nahi karta.
+      </p>
+
+      <p>
+        Isi problem ko solve karne ke liye <strong><code>runtimeVersion</code></strong> concept hai. Runtime
+        version ko ek <strong>"fingerprint" of your native code</strong> samjho — ye ek string/value hai jo batata
+        hai ki is binary ka native surface area (native modules, native config) kya hai. EAS Update ek strict rule
+        follow karta hai: <strong>ek JS update sirf un devices ko deliver hoga jinka installed binary ka runtime
+        version, update ke target runtime version se exactly match karta ho</strong>. Agar match nahi karta, EAS
+        us update ko us device ko bilkul bhi nahi bhejta — device apna purana JS bundle hi chalata rehta hai,
+        jab tak use koi compatible update na mile.
+      </p>
+
+      <p>
+        Runtime version compute karne ke do main policies hain, jo <code>app.json</code>/<code>app.config.ts</code>
+        mein set hoti hain:
+      </p>
+
+      <ul>
+        <li><strong><code>"policy": "sdkVersion"</code></strong> — runtime version simply installed Expo SDK
+          version ke basis pe set hota hai (jaise <code>"exposdk:51.0.0"</code>). Simple hai, lekin coarse-grained
+          — agar aapne SDK version change kiye bina bhi ek naya native module add kiya (jaise
+          <code>npx expo install</code> se koi third-party native package), ye policy usse detect nahi karegi,
+          kyunki SDK version wahi raha. Matlab ek incompatible JS update galti se same-runtime-version wale purane
+          binary ko bhi mil sakta hai — aur crash kar sakta hai.</li>
+        <li><strong><code>"policy": "fingerprint"</code></strong> — ye zyada precise approach hai: ye actually
+          aapke native project ka ek cryptographic hash compute karta hai — native dependencies, config plugins,
+          native config files (sab kuch jo prebuild ke time native project banata hai) ko scan karke. Iska matlab
+          agar aap koi native-level change karte ho (naya native module, config plugin change, native permission
+          add) — chahe SDK version wahi rahe — fingerprint automatically change ho jaayega, aur EAS us purane
+          runtime version wale devices ko naya (incompatible) JS update bhejna band kar dega. Ye zyada safe hai
+          isliye modern projects mein <code>"fingerprint"</code> hi recommended default hai.</li>
+      </ul>
+
+      <p style="font-size:0.8rem; color:var(--text-faint); margin-bottom:6px;">
+        (comments added for teaching — real JSON doesn't support them, remove before use)
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>app.json (runtimeVersion policy)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"expo"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "expo" root config key</span>
+    <span class="tok-attr">"name"</span>: <span class="tok-str">"my-app"</span><span class="tok-punc">,</span> <span class="tok-com">// App ka display name</span>
+    <span class="tok-attr">"slug"</span>: <span class="tok-str">"my-app"</span><span class="tok-punc">,</span> <span class="tok-com">// URL-safe project identifier, EAS project se link karta hai</span>
+    <span class="tok-attr">"runtimeVersion"</span>: <span class="tok-punc">{</span> <span class="tok-com">// runtimeVersion object — native code ka "fingerprint" define karta hai</span>
+      <span class="tok-attr">"policy"</span>: <span class="tok-str">"fingerprint"</span> <span class="tok-com">// native project (deps + config plugins) ka hash use hoga fingerprint ke roop mein</span>
+    <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// runtimeVersion block close</span>
+    <span class="tok-attr">"updates"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "updates" block — EAS Update client (expo-updates) ka runtime behaviour control karta hai</span>
+      <span class="tok-attr">"url"</span>: <span class="tok-str">"https://u.expo.dev/your-project-id"</span><span class="tok-punc">,</span> <span class="tok-com">// EAS Update manifest server ka endpoint, jaha app update check karega</span>
+      <span class="tok-attr">"fallbackToCacheTimeout"</span>: <span class="tok-num">0</span> <span class="tok-com">// 0ms = agar naya update available hai to fetch complete hone tak wait mat karo, cached version se launch karo (non-blocking)</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// updates block close</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// expo block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          <code>"policy": "sdkVersion"</code> purana default tha aur simple projects ke liye kaam chala leta hai,
+          lekin jaise hi aapki team native dependencies frequently add/change karti hai (jo real production apps
+          mein normal hai), <code>"fingerprint"</code> policy migrate karna strongly recommended hai — ye
+          silent-crash class ke bugs ko structurally prevent karta hai, kyunki EAS khud detect kar leta hai ki
+          native surface change hua hai, aapko manually track nahi karna padta.
+        </p>
+      </div>
+
+      <p>
+        Practically iska matlab ye hai: jab bhi aap ek naya native build banate ho (chahe SDK version same ho),
+        us build ka runtime version compute hota hai us waqt ke native project state se. Jab aap <code>eas
+        update</code> chalate ho, EAS aapke current local project se bhi wahi runtime version compute karta hai
+        aur update ko usi runtime version "bucket" mein publish karta hai — sirf wahi devices jinka installed
+        binary us exact bucket mein hai, wo update receive karenge.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="channels">Update Channels</h2>
+
+      <p>
+        Runtime version compatibility ensure karta hai ki JS update crash na kare — lekin ek aur layer chahiye:
+        <strong>aap kaunse builds ko kaunsa update dena chahte ho, deliberately</strong>. Jaise aap nahi chahte
+        ki QA testing ke liye publish kiya gaya ek experimental update accidentally production users tak pahunch
+        jaaye — chahe unka runtime version match bhi karta ho. Isi ke liye <strong>channels</strong> hain.
+      </p>
+
+      <p>
+        Ek channel bas ek named "stream" hai — jaise <code>production</code>, <code>preview</code>,
+        <code>development</code> — jisse aap updates publish karte ho. Har build profile (<code>eas.json</code>
+        mein) ek specific channel se <strong>bind</strong> hota hai (build time pe hi ye binding binary ke andar
+        embed ho jaati hai). Jab wo binary launch hoti hai, wo sirf apne bound channel pe published updates check
+        karti hai — kisi aur channel ke updates use dikhte hi nahi.
+      </p>
+
+      <p style="font-size:0.8rem; color:var(--text-faint); margin-bottom:6px;">
+        (comments added for teaching — real JSON doesn't support them, remove before use)
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>eas.json (channels wired to build profiles)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"cli"</span>: <span class="tok-punc">{</span> <span class="tok-com">// CLI-level config, minimum version enforce karta hai</span>
+    <span class="tok-attr">"version"</span>: <span class="tok-str">">= 12.0.0"</span> <span class="tok-com">// Is config format ke saath compatible minimum EAS CLI version</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// cli block close</span>
+  <span class="tok-attr">"build"</span>: <span class="tok-punc">{</span> <span class="tok-com">// har build profile define hota hai yahan</span>
+    <span class="tok-attr">"development"</span>: <span class="tok-punc">{</span> <span class="tok-com">// local dev iteration ke liye profile</span>
+      <span class="tok-attr">"developmentClient"</span>: <span class="tok-kw">true</span><span class="tok-punc">,</span> <span class="tok-com">// expo-dev-client bundled hoga is build mein</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"internal"</span><span class="tok-punc">,</span> <span class="tok-com">// Directly install hoga, store review nahi</span>
+      <span class="tok-attr">"channel"</span>: <span class="tok-str">"development"</span> <span class="tok-com">// Is build ka binary sirf "development" channel ke updates check karega</span>
+    <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// development profile close</span>
+    <span class="tok-attr">"preview"</span>: <span class="tok-punc">{</span> <span class="tok-com">// QA/stakeholder testing ke liye profile</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"internal"</span><span class="tok-punc">,</span> <span class="tok-com">// Link/QR se direct install</span>
+      <span class="tok-attr">"channel"</span>: <span class="tok-str">"preview"</span> <span class="tok-com">// Is build ka binary sirf "preview" channel ke updates check karega — production se isolated</span>
+    <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// preview profile close</span>
+    <span class="tok-attr">"production"</span>: <span class="tok-punc">{</span> <span class="tok-com">// store submission ke liye profile</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"store"</span><span class="tok-punc">,</span> <span class="tok-com">// App Store/Play Store submission format</span>
+      <span class="tok-attr">"channel"</span>: <span class="tok-str">"production"</span> <span class="tok-com">// Is build ka binary sirf "production" channel ke updates check karega — real users yahi hain</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// production profile close (no trailing comma, last key)</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// build block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <p>
+        Is setup ka practical flow: jab aap <code>eas build --profile production</code> chalate ho, us binary ke
+        andar <code>channel: "production"</code> hardcode ho jaata hai (build time pe). Jab aap baad mein
+        <code>eas update --channel production</code> chalate ho, wo update sirf usi channel se bound saare
+        installed binaries (jinka runtime version bhi match karta ho) ko milta hai — <code>preview</code> ya
+        <code>development</code> channel wale binaries ko bilkul nahi milta, chahe unka runtime version same hi
+        kyun na ho.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Channel aur runtime version dono independent dimensions hain jo mil ke ek update ki "audience" define
+          karte hain: <strong>channel</strong> batata hai "kaunse build stream ke liye hai" (deliberate,
+          aapke control mein), aur <strong>runtime version</strong> batata hai "kaunse native binary shape ke
+          saath safe hai" (automatic safety check). Dono match hone chahiye tabhi update deliver hota hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="deploying">Deploying an Update</h2>
+
+      <p>
+        Ab actual deploy karte hain. Command hai <code>eas update</code> — is command ko chalane par step-by-step
+        ye hota hai: (1) local machine pe Metro bundler chalke aapka current JS code + assets ka production bundle
+        banata hai (jaisa build time pe hota, bas ab standalone), (2) is bundle ko EAS ke servers pe upload karta
+        hai, (3) EAS server ek naya "update" record banata hai jisme is bundle ka reference, current
+        <code>runtimeVersion</code>, aur specified channel included hota hai, aur channel ka manifest is naye
+        update ko point karne lagta hai, (4) jab bhi ek matching device (same channel + same runtime version)
+        agli baar app open/foreground karta hai, wo naya manifest fetch karta hai, dekhta hai ki update available
+        hai, bundle download karke local cache mein store karta hai, aur <strong>agli launch se</strong> naya
+        bundle active ho jaata hai (current running session turant nahi badalta, restart chahiye hota hai —
+        jab tak aap explicitly reload trigger na karo code se).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># eas-cli install/updated hona chahiye pehle (global ya npx se)</span>
+npx eas-cli --version <span class="tok-com"># Confirm karo ki CLI installed hai aur version eas.json ki requirement se match karta hai</span>
+
+<span class="tok-com"># Production channel pe ek naya JS update publish karna, ek human-readable message ke saath</span>
+eas update --branch production --message <span class="tok-str">"fix login bug"</span> <span class="tok-com"># --branch yahan channel ke naam jaisa treat hota hai (branch aur channel default mein same naam se linked hote hain)</span>
+
+<span class="tok-com"># Explicitly kis platform ke liye publish karna hai bhi specify kar sakte ho</span>
+eas update --branch production --platform android --message <span class="tok-str">"android-only asset fix"</span> <span class="tok-com"># Sirf Android devices is update ko dekhenge, iOS untouched</span>
+
+<span class="tok-com"># Publish hone ke baad, published updates ki list dekhna (kaunse runtime version pe kaunsa gaya)</span>
+eas update:list --branch production <span class="tok-com"># Har update ka ID, message, runtime version, aur publish time dikhega</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ "Branch" vs "Channel" confusion</div>
+        <p>
+          EAS Update mein technically ek "branch" hai jaha updates actually publish hote hain (ek ordered history
+          of updates, git branch jaisa concept), aur ek "channel" hai jo binary-facing naam hai jise builds
+          subscribe karte hain. Default setup mein branch aur channel same naam se ek-dusre se linked hote hain
+          (jaise <code>production</code> branch → <code>production</code> channel), isliye zyadatar practical
+          use mein aap dono naam ko interchangeably treat kar sakte ho — lekin advanced setups mein aap ek channel
+          ko different branches ke beech switch kar sakte ho bina naya build banaye (rollback ke liye exactly
+          yahi use hota hai, next section mein dekhenge).
+        </p>
+      </div>
+
+      <p>
+        Naya update device tak turant nahi pahunchta — <code>expo-updates</code> module by default app
+        launch/foreground event pe hi manifest check karta hai (background polling nahi, battery-friendly design
+        hai). Isliye agar aapne <code>eas update</code> chalaya, aur ek user ka phone tabhi background mein pada
+        hai, use naya update tabhi milega jab wo app dobara open karega.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="rollback">Reverting a Bad Update</h2>
+
+      <p>
+        Ab sochiye aapne ek update publish kiya aur usme bug nikla — production users ko crash ho raha hai. Kya
+        karein? Command hai <code>eas update:rollback</code> (ya conceptually equivalent: purani update ko dobara
+        publish/point karna) — lekin isko samajhne ke liye ek important mental model clear karna hoga:
+        <strong>"rollback" ka matlab literally "undo" nahi hai</strong> — EAS Update mein har published update
+        permanently stored rehta hai apne poore bundle ke saath. Rollback actually karta hai ye: <strong>channel
+        ke pointer ko wapas ek known-good, purani update pe point kar deta hai</strong>. Naya JS koi generate nahi
+        hota — bas channel ab bataata hai "sabse latest 'active' update wo hai jo pehle publish hua tha", aur
+        naye matching devices ko wahi purana (working) bundle serve hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Pehle dekho production branch pe kaunse updates published hain, kis order mein</span>
+eas update:list --branch production <span class="tok-com"># Har entry ka update-group ID milega, ye rollback target select karne ke liye chahiye</span>
+
+<span class="tok-com"># Channel ko ek specific (purani, known-good) update pe wapas point karna</span>
+eas channel:rollback production <span class="tok-com"># Interactive prompt aayega, jisse aap list se purana working update choose kar sakte ho</span>
+
+<span class="tok-com"># Ya directly ek specific update ko channel pe re-publish/point karna (non-interactive, scriptable)</span>
+eas channel:edit production --branch production <span class="tok-com"># Channel ko explicitly ek branch se (re-)link karta hai, CI scripts ke liye useful</span></code></pre>
+      </div>
+
+      <p>
+        Iska practical implication ye hai ki rollback <strong>almost instant</strong> hai — koi naya bundle build
+        ya upload nahi karna padta, bas ek server-side pointer change hota hai. Agli baar jab matching device
+        launch hoga, use naya manifest milega jo purani (safe) update ko point karta hai, aur wo download karke us
+        pe switch ho jaayega. Ye speed hi EAS Update ke sabse bade practical advantages mein se ek hai — ek buggy
+        native build ko fix karne mein hours/days lag sakte hain (naya build, naya store review), lekin ek buggy
+        OTA update ko rollback karne mein minutes.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Isi rollback speed ki wajah se, senior teams ka non-negotiable practice hota hai: <strong>har update
+          pehle <code>preview</code> channel pe publish karo, kuch ghante/din real device pe test karo, aur sirf
+          confident hone ke baad wahi build <code>production</code> channel pe publish karo</strong>. Directly
+          production pe publish karna "chalo try karte hain" wali mentality hai jo bilkul avoid karni chahiye —
+          rollback fast hai, lekin ek crash-causing update kuch minutes ke liye bhi live rehne se real users ko
+          crash ka experience mil chuka hota hai, jo trust aur reviews damage karta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Users jo app dobara nahi kholte, stuck reh jaate hain</div>
+        <p>
+          Agar koi user apni app hafton/mahino tak nahi kholta, uska binary us waqt ke runtime version pe hi
+          "frozen" rehta hai. Agar aapne beech mein naya native build (naya runtime version) bhi release kar diya
+          ho, purane users us naye runtime version target karne wale updates kabhi receive nahi karenge — unhe
+          sirf tab tak purane runtime-version-matching updates milte rahenge jab tak wo app open karte rahein, ya
+          jab tak wo store se ek fresh naya native build install na karein (jo unhe khud initiate karna padega,
+          store update ke through). Isliye OTA updates ko "sabhi users tak turant pahunch jaayega" maan lena
+          galat hai — active users fast update pate hain, inactive/dormant users significantly lag sakte hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Update check timing — instant nahi hota</div>
+        <p>
+          Update checks by default sirf <strong>app launch ya foreground</strong> event pe hote hain, koi
+          continuous background polling nahi hoti (battery consideration se by design). Matlab agar aap
+          <code>eas update</code> chalate ho, aur ek user ki app already open hai aur wo use kar raha hai, use
+          update turant nahi milega — tab tak nahi jab tak wo app close/background karke dobara open na kare (ya
+          aap explicitly programmatic check trigger karo <code>Updates.checkForUpdateAsync()</code> se, jo aap
+          khud call kar sakte ho app ke andar kisi useful moment pe, jaise app-foreground listener mein).
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Runtime version mismatch silently ignore hota hai, error nahi deta</div>
+        <p>
+          Ye ek confusing debugging experience create karta hai jo bahut developers ko pehli baar surprise karta
+          hai: agar aap ek update publish karte ho jiska <code>runtimeVersion</code> device ke installed binary se
+          match nahi karta, EAS <strong>koi error nahi dikhata</strong> — update bas silently us device ko deliver
+          hi nahi hota, jaise koi naya update exist hi nahi karta. Aapko koi failure log, koi crash, kuch nahi
+          dikhega — sirf "update kaam nahi kar raha" jaisa symptom milega. Jab bhi update apply nahi ho raha lage,
+          <strong>sabse pehle check karo</strong>: (1) channel match kar raha hai kya, (2) runtime version match
+          kar raha hai kya (<code>eas update:list</code> se published update ka runtime version, aur test device
+          pe installed binary ka runtime version compare karo). Zyadatar "update nahi aa raha" issues yahi turn
+          out hote hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ App Store / Play Store review guidelines — OTA ki limits</div>
+        <p>
+          OTA updates technically review-free hain, lekin isko misuse karna platform guidelines violate kar sakta
+          hai. Apple ke App Store Review Guidelines mein specifically language hai jo restrict karti hai ki OTA/
+          "hot code push" mechanisms sirf <strong>bug fixes aur minor JS-level feature improvements</strong> ke
+          liye use ho — inhe app ke <em>core purpose ya primary functionality</em> ko significantly badalne ke
+          liye use nahi karna chahiye (jaise ek completely different app "disguise" karke serve karna, ya
+          paid-feature-gating ko OTA se bypass karna). Google Play mein bhi similar spirit hai, halaki enforcement
+          historically kam strict raha hai. Senior-level practice: OTA updates ko unhi cheezon ke liye use karo
+          jo genuinely "same app, thoda behtar/fixed" ke daayre mein aati hain — agar change itna bada hai ki
+          app ka fundamental behaviour badal raha hai, wo ek naya store submission deserve karta hai, chahe
+          technically OTA se push karna possible bhi ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne EAS Update ka mental model, boundary, aur day-to-day flow cover kar liya. Ye section un
+        internals ko explore karta hai jo ek <strong>senior-level understanding</strong> ke liye zaroori hain —
+        ki manifest resolution actually kaise hota hai byte-level pe, production rollouts ko safely kaise stage
+        karte hain, aur update delivery ko cryptographically secure kaise banate hain.
+      </p>
+
+      <h3 style="margin-top:24px;">1. Update Manifest Resolution Algorithm — Actual Mechanism</h3>
+
+      <p>
+        Pehle humne kaha tha "app naya manifest fetch karta hai aur update download karta hai" — ab is exact
+        algorithm ko step-by-step deconstruct karte hain, kyunki interview mein "explain exactly" wale sawal
+        yahi expect karte hain.
+      </p>
+
+      <p>
+        Jab app launch/foreground hoti hai, <code>expo-updates</code> native module ye sequence follow karta hai:
+      </p>
+
+      <ul>
+        <li><strong>Step 1 — Request construct karna:</strong> App apne bound <code>channel</code> aur compute
+          kiye hue <code>runtimeVersion</code> ko HTTP headers mein daalke EAS update server (jo
+          <code>expo.updates.url</code> pe hai) ko ek request bhejta hai — matlab request khud hi bata deta hai
+          "mujhe kaunsi audience ka manifest chahiye".</li>
+        <li><strong>Step 2 — Server manifest resolve karta hai:</strong> Server us channel ke current branch pe
+          dekhta hai ki us exact runtime version ke liye <em>latest published update</em> kya hai, aur uska
+          manifest (JSON — update ID/hash, asset list with hashes, launch asset reference, extra metadata) wapas
+          bhejta hai.</li>
+        <li><strong>Step 3 — Comparison, naye bundle ke liye nahi, update ID ke liye:</strong> Client ye naya
+          manifest ka <strong>update ID</strong> apne currently-running (locally embedded ya pehle se
+          cached/installed) update ke ID se compare karta hai. Agar dono same hain — matlab already latest pe ho —
+          <strong>koi download hota hi nahi</strong>, process yahin stop ho jaata hai (network pe sirf ek chhota
+          manifest fetch hua, kuch aur nahi).</li>
+        <li><strong>Step 4 — Asset-level diffing (ye wahi part hai jo bahut log miss karte hain):</strong> Agar
+          update ID different hai (naya update available hai), client naye manifest ke andar list kiye gaye har
+          asset (JS bundle chunks, images, fonts) ka <strong>hash</strong> dekhta hai aur apne local asset cache
+          (jo already-downloaded assets store karta hai unke hash ke against) se compare karta hai.
+          <strong>Sirf wahi assets download hote hain jinka hash match nahi karta</strong> — matlab agar naye
+          update mein sirf ek chhota JS chunk change hua hai (jaise ek single screen ka logic), baaki saare
+          unchanged assets (fonts, images, unchanged JS chunks) <em>re-download nahi hote</em>, wo local cache se
+          hi reuse ho jaate hain. Ye conceptually bilkul waise hai jaise ek CDN/browser cache content-hash-based
+          filenames use karta hai — content same hai to hash same hai to re-fetch ki zaroorat nahi.</li>
+        <li><strong>Step 5 — Atomic activation:</strong> Jab saare naye/changed assets download ho jaate hain,
+          client ek complete naya "update" local storage mein commit karta hai — is process ke beech mein agar
+          app crash bhi ho jaaye, purana working update hi active rehta hai (partial/corrupt update kabhi
+          activate nahi hota, ye atomicity crash-safety ke liye critical hai). Agli launch pe naya update use
+          hota hai.</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Ye "delta update" jaisa kyun feel hota hai</div>
+        <p>
+          Bahut developers isko galat samajhte hain ki "OTA update matlab poora bundle phir se download hota
+          hai". Actually mechanism content-addressed hai — har asset uske hash se identify hota hai, na ki uske
+          naam se. Isliye agar aapne sirf ek chhoti si business-logic change ki hai (jaise ek validation rule),
+          sirf us JS chunk ka hash badlega jisme wo code hai, aur download size us change ke proportional hoga —
+          poore app ka bundle nahi. Ye especially large apps (jinke assets MBs mein hote hain) ke liye bandwidth
+          aur update-speed dono ke liye bada practical advantage hai.
+        </p>
+      </div>
+
+      <h3 style="margin-top:24px;">2. Rollout Percentage Strategies — Staged OTA Releases</h3>
+
+      <p>
+        Native app releases mein staged rollout ek well-known safety practice hai (App Store/Play Store dono
+        support karte hain "release to X% users first"). EAS Update mein bhi wahi concept hai —
+        <strong>rollout percentage</strong> — jisse aap ek update ko turant 100% users ko na bhejke, pehle ek
+        chhote percentage (jaise 10%) ko bhejte ho, kuch der monitor karte ho, phir gradually ramp-up karte ho.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 OTA rollout risk native rollout se BHI zyada critical kyun hai</div>
+        <p>
+          Native store releases mein Apple/Google ka review process ek (weak lekin non-zero) safety net hota
+          hai — obviously-crashing builds kabhi-kabhi review mein hi reject ho jaate hain, ya at least
+          submission-to-live ke beech kuch din ka buffer milta hai jisme internal testing ho sakti hai. OTA
+          updates is safety net ko <strong>completely bypass</strong> karte hain — <code>eas update</code> chalate
+          hi minutes ke andar aapka code matching sabhi devices tak pahunch sakta hai, bina kisi external review
+          ke. Iska matlab hai ki agar aapka OTA update mein koi crash-causing bug hai (jaise ek undefined variable
+          jo ek specific screen pe hit hota hai), aur aapne use directly 100% production pe publish kar diya —
+          <strong>saare active users ek saath crash experience karte hain</strong>, turant, bina kisi buffer ke.
+          Yahi wajah hai ki rollout percentage OTA context mein native se bhi zyada important safety mechanism
+          ban jaata hai.
+        </p>
+      </div>
+
+      <p>
+        Practical flow: aap <code>eas update</code> ko ek <code>--rollout-percentage</code> flag ke saath
+        publish karte ho (ya EAS dashboard se rollout adjust karte ho). Jitne bhi matching devices hain (same
+        channel + same runtime version), unmein se sirf specified percentage hi is naye update ko dekhega — baaki
+        devices apna current (purana, already-verified) update hi chalate rahenge. Ye assignment per-device
+        consistent hota hai (ek device ek baar "in" bucket mein aaya to wahi rehta hai, flip-flop nahi karta) taaki
+        testing/monitoring consistent rahe.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — staged rollout flow</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Step 1: Naya update sirf 10% matching devices ko publish karna (conservative first step)</span>
+eas update --branch production --message <span class="tok-str">"perf fix — staged rollout"</span> --rollout-percentage <span class="tok-num">10</span> <span class="tok-com"># Sirf 10% eligible devices is naye bundle ko dekhenge, baaki 90% purana chalate rahenge</span>
+
+<span class="tok-com"># Step 2: Kuch ghanton tak crash-free rate aur key metrics monitor karo (Sentry/crash reporting dashboard se)</span>
+<span class="tok-com"># -- ye step CLI command nahi hai, ye manual observation phase hai --</span>
+
+<span class="tok-com"># Step 3a: Agar sab theek laga — rollout percentage ko badhao (ramp-up)</span>
+eas update:edit --branch production --group <span class="tok-str">"&lt;update-group-id&gt;"</span> --rollout-percentage <span class="tok-num">50</span> <span class="tok-com"># Wahi update ab 50% devices tak, bina naya bundle publish kiye</span>
+
+<span class="tok-com"># Step 3b: Agar sab confident lage — 100% tak le jao (full rollout)</span>
+eas update:edit --branch production --group <span class="tok-str">"&lt;update-group-id&gt;"</span> --rollout-percentage <span class="tok-num">100</span> <span class="tok-com"># Ab saare matching devices is update ko receive karenge</span>
+
+<span class="tok-com"># Alternative: agar Step 2 mein crash-rate spike dikha — turant rollback (0% tak le jao ya pehla-wala rollback command use karo)</span>
+eas update:edit --branch production --group <span class="tok-str">"&lt;update-group-id&gt;"</span> --rollout-percentage <span class="tok-num">0</span> <span class="tok-com"># Naye update ko turant freeze karo, saare devices purane (safe) update pe hi rahenge</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Rollout percentage sirf "manual staged deploy" ke liye nahi — ye ek <strong>monitoring workflow</strong>
+          demand karta hai. Rollout percentage badhane se pehle aapke paas ek automated crash-free-rate ya
+          error-rate dashboard (Sentry, Bugsnag, ya custom) hona chahiye jisse aap "10% users pe kya crash rate
+          hai" ko objectively daikh sako — sirf "lag raha hai theek hai" wali gut-feeling se ramp-up karna
+          effectively poora rollout skip karne jaisa hi risky hai. Senior teams ek defined threshold rakhte hain
+          (jaise "crash-free rate 99.5% se neeche na jaaye"), aur agar threshold cross ho jaaye, rollout ko
+          auto-pause/rollback karne ka process (manual ya scripted) predefine karte hain — decide karne mein der
+          na lage jab production mein already users affected ho rahe hon.
+        </p>
+      </div>
+
+      <h3 style="margin-top:24px;">3. Code Signing for Updates — Security Model</h3>
+
+      <p>
+        Ab ek security-critical concept: agar app kisi bhi manifest/bundle ko blindly trust karke download aur
+        execute kar le jo update server se aaya, to ek attacker jo network path (CDN, ISP, compromised
+        proxy/MITM) ko control kar le, wo apna khud ka malicious JS bundle serve kar sakta hai jo app blindly
+        run kar legi — ye poori tarah se app ka control le sakta hai (JS engine ke through user data exfiltrate
+        karna, phishing screens dikhana, etc.), kyunki JS bundle ke paas app ke andar full logic-level access
+        hota hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Threat model: Compromised CDN / MITM attack</div>
+        <p>
+          Concrete attack scenario: koi attacker EAS ke CDN infrastructure ko compromise kar leta hai (ya kisi
+          corporate/public WiFi pe MITM position le leta hai jaha app ka update-check traffic guzarta hai), aur
+          jab app manifest request bhejti hai, attacker ek fake manifest + malicious JS bundle return kar deta
+          hai jo <em>bilkul valid dikhta hai</em> — same format, plausible update ID. Agar app ke paas is bundle
+          ki <strong>authenticity verify</strong> karne ka koi tarika nahi hai (sirf "manifest mila, download kar
+          liya, run kar diya"), app is malicious code ko silently execute kar degi — user ko kabhi pata bhi nahi
+          chalega ki unki app compromise ho chuki hai.
+        </p>
+      </div>
+
+      <p>
+        Isi threat ko defend karne ke liye <strong>code signing</strong> hai. EAS Update updates ko cryptographically
+        sign kar sakta hai — publish time pe ek private key (jo aapki organization ke paas securely hoti hai,
+        EAS ke servers pe nahi) se manifest pe ek digital signature generate hoti hai. App ke andar (build time
+        pe embed hone wala) corresponding <strong>public key</strong> hota hai. Jab app ek naya manifest fetch
+        karti hai, wo signature ko public key se verify karti hai — <strong>agar signature valid nahi hai (matlab
+        content aapki private key se sign nahi hua tha), app us update ko reject kar deti hai aur download hi
+        nahi karti</strong> — chahe manifest format sahi dikhta ho.
+      </p>
+
+      <p>
+        Iska practical matlab: <strong>sirf aapki organization ka private key hold karne wala hi ek "valid"
+        update publish kar sakta hai jo app accept karegi</strong>. Agar CDN compromise ho bhi jaaye aur attacker
+        apna fake manifest serve kare, us fake manifest pe valid signature nahi hogi (kyunki attacker ke paas
+        private key nahi hai) — app us update ko silently reject kar degi, exactly waise jaise runtime version
+        mismatch pe reject karti hai.
+      </p>
+
+      <p style="font-size:0.8rem; color:var(--text-faint); margin-bottom:6px;">
+        (comments added for teaching — real JSON doesn't support them, remove before use)
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>app.json (code signing configuration)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"expo"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "expo" root config key</span>
+    <span class="tok-attr">"updates"</span>: <span class="tok-punc">{</span> <span class="tok-com">// updates block — code signing config yahin jaata hai</span>
+      <span class="tok-attr">"url"</span>: <span class="tok-str">"https://u.expo.dev/your-project-id"</span><span class="tok-punc">,</span> <span class="tok-com">// Manifest server endpoint (as before)</span>
+      <span class="tok-attr">"codeSigningCertificate"</span>: <span class="tok-str">"./certs/certificate.pem"</span><span class="tok-punc">,</span> <span class="tok-com">// Build ke andar embed hone wala certificate — public key contain karta hai jo signature verify karega</span>
+      <span class="tok-attr">"codeSigningMetadata"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Signature algorithm metadata</span>
+        <span class="tok-attr">"keyid"</span>: <span class="tok-str">"main"</span><span class="tok-punc">,</span> <span class="tok-com">// Key identifier — multiple signing keys rotate karne ke liye use hota hai</span>
+        <span class="tok-attr">"alg"</span>: <span class="tok-str">"rsa-v1_5-sha256"</span> <span class="tok-com">// Signing algorithm — kaunsa cryptographic scheme use ho raha hai signature ke liye</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// codeSigningMetadata close</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// updates block close</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// expo block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — generating signing keys + signed publish</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Private + public keypair generate karna — private key ko secure rakho (CI secret store mein), commit mat karo</span>
+npx expo-updates codesigning:generate <span class="tok-com"># Ye private key file (keep secret) aur public certificate file (embed in app) generate karta hai</span>
+
+<span class="tok-com"># Normal publish command hi kaam karega — agar app.json mein codeSigningCertificate set hai, EAS automatically sign karega</span>
+eas update --branch production --message <span class="tok-str">"signed release"</span> <span class="tok-com"># Manifest publish hote hi private key se sign hoke jaayega, jise app apne embedded public cert se verify karegi</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Code signing OTA delivery ko waise hi treat karta hai jaise app store binaries ko treat kiya jaata hai
+          — <strong>signed artifact hi trusted artifact hai</strong>. Ye especially high-stakes apps (banking,
+          healthcare, enterprise) ke liye near-mandatory practice honi chahiye — agar aapki app sensitive data
+          handle karti hai, code signing ke bina EAS Update use karna ek unnecessary attack surface open rakhna
+          hai. Private key ka secure storage bhi utna hi critical hai jitna native signing keystore ka — agar
+          private key leak ho jaaye, attacker apne khud ke "valid-signed" malicious updates publish kar sakta
+          hai, isliye ise CI secrets manager mein rakho, kabhi repo mein commit mat karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level React Native interviews mein EAS
+        Update/OTA topic pe commonly puche jaate hain — internals, risk management, security, aur trade-offs ke
+        mix ke saath.
+      </p>
+
+      <h3>Q1. Explain exactly how the app decides whether to download an available OTA update — what's compared against what?</h3>
+      <p>
+        Do cheezein alag-alag compare hoti hain, do alag levels pe. Pehle, <strong>eligibility level</strong> pe:
+        request ke headers mein app apna current <code>channel</code> aur <code>runtimeVersion</code> bhejta hai
+        — server sirf usi channel/runtime-version combination ke liye latest manifest resolve karta hai (ye ek
+        server-side filter hai, client isse download nahi karta, bas sahi manifest hi milta hai). Doosra, jab
+        manifest mil jaata hai, client us manifest ka <strong>update ID</strong> apne currently-active update ke
+        ID se compare karta hai — agar same hai, koi download nahi hota. Agar different hai, tab
+        <strong>asset-level hash comparison</strong> hoti hai: naye manifest ke har asset ka hash local cache ke
+        hashes se compare hota hai, aur sirf mismatched-hash assets hi download hote hain. Total teen comparisons
+        hain: channel/runtime (server-side eligibility), update ID (client-side "kuch naya hai kya?"), aur
+        per-asset hash (client-side "kya specifically naya hai?").
+      </p>
+
+      <h3>Q2. You just published an OTA update and users start reporting a crash — what's your immediate action, and why is "just push a fix" not always fast enough?</h3>
+      <p>
+        Immediate action hai <strong>rollback, fix nahi</strong> — <code>eas channel:rollback</code> chalake
+        channel ko wapas last known-good update pe point karo. Ye seconds mein hota hai kyunki koi naya bundle
+        build/upload nahi hota, sirf server-side pointer change hota hai. "Just push a fix" slow hai kyunki: (1)
+        aapko pehle root cause diagnose karna padega (jo production crash logs se time leta hai), (2) fix likhna,
+        test karna, phir publish karna — ye poora cycle minutes se hours tak le sakta hai, aur is poore waqt
+        buggy update live rehta hai, active users ko crash continue hota rahega. Rollback ek "stop the bleeding"
+        move hai jo diagnosis se independent hai — pehle crash rokna, phir root cause pe kaam karna, phir ek
+        properly-tested fix ko fresh publish karna (staged rollout ke saath, directly 100% nahi).
+      </p>
+
+      <h3>Q3. What would happen if EAS Update had no code signing — describe a concrete attack.</h3>
+      <p>
+        Bina code signing ke, app sirf ye check karti hai ki manifest "well-formed" hai (sahi JSON shape,
+        expected fields) — content ki <em>authenticity</em> verify nahi hoti. Concrete attack: ek attacker jo
+        network path control karta hai (compromised WiFi router, DNS poisoning jo update-server domain ko apne
+        server pe redirect kare, ya EAS CDN infra compromise) app ke manifest request ko intercept karke apna
+        khud ka manifest + malicious JS bundle return kar deta hai. App bina kisi verification ke ye download
+        karke run kar degi — malicious JS ab full app-level access ke saath chal raha hai, matlab wo
+        AsyncStorage/SecureStore se tokens read kar sakta hai, fake login screens dikha sakta hai (credential
+        phishing), ya background mein user data exfiltrate kar sakta hai. Code signing isse defend karta hai
+        kyunki attacker ke paas organization ki private signing key nahi hoti, isliye uska fake manifest signature
+        verification mein fail ho jaata hai aur app use silently reject kar deti hai.
+      </p>
+
+      <h3>Q4. Give a real example of a bug that CANNOT be fixed via OTA update, and explain precisely why not.</h3>
+      <p>
+        Example: production mein pata chalta hai ki ek naya native permission (jaise Bluetooth) declare nahi
+        kiya gaya <code>Info.plist</code>/<code>AndroidManifest.xml</code> mein, aur ek feature usi permission pe
+        depend karta hai — app us feature ko access karte hi crash ya silently fail ho rahi hai. Ye OTA se fix
+        nahi ho sakta kyunki permission declaration <strong>compile-time pe native binary ke andar bake ho chuki
+        hai</strong> — <code>Info.plist</code>/<code>AndroidManifest.xml</code> JS runtime ka hissa nahi hain, wo
+        native build artifacts hain jo sirf <code>eas build</code> (naya native compile) se regenerate hote hain.
+        OTA sirf JS bundle aur JS-loadable assets replace kar sakta hai — jo bhi compile-time pe binary mein
+        permanently embed ho chuka hai (permissions, native modules, config plugins ka output), wo runtime pe
+        touch hi nahi ho sakta chahe aap kitna bhi JS-level "workaround" try karo.
+      </p>
+
+      <h3>Q5. What's the difference between "sdkVersion" and "fingerprint" runtimeVersion policies, and why would a senior dev push their team to migrate?</h3>
+      <p>
+        <code>sdkVersion</code> policy runtime version ko sirf installed Expo SDK number se derive karta hai —
+        coarse-grained, matlab agar aap SDK version change kiye bina bhi ek naya native dependency add karte ho,
+        runtime version wahi rehta hai, isliye EAS ye incompatibility detect hi nahi kar payega aur ek
+        incompatible JS update purane binary ko bhej sakta hai (crash risk). <code>fingerprint</code> policy
+        actually native project (dependencies + config plugins + native config files) ka cryptographic hash
+        compute karta hai — koi bhi native-level change automatically fingerprint badal deta hai, chahe SDK
+        version same rahe. Senior dev migrate karne ka push isliye karega kyunki ye ek <strong>structural, silent
+        bug class</strong> ko eliminate karta hai — aapko manually track nahi karna padta "kya is native change
+        ne compatibility break ki?", system khud detect karta hai.
+      </p>
+
+      <h3>Q6. Why does rollout percentage matter more for OTA updates than for native store rollouts?</h3>
+      <p>
+        Native store rollouts mein Apple/Google ka review process ek weak-lekin-non-zero safety net provide
+        karta hai — plus submission-to-live ke beech ek natural delay hota hai jisme internal QA ho sakti hai.
+        OTA updates is safety net ko poora bypass karte hain — publish karte hi minutes ke andar code matching
+        sabhi devices tak pahunch sakta hai. Agar rollout staged (jaise pehle 10%) na ho aur update mein crash
+        bug ho, saare active users ek saath, turant crash experience karte hain — koi buffer nahi hai jo damage
+        limit kare. Rollout percentage OTA context mein hi safety net ka role play karta hai jo native mein store
+        review partially provide karta hai — isliye ye "nice to have" nahi, near-mandatory practice honi chahiye.
+      </p>
+
+      <h3>Q7. A user reports "I'm not getting the latest update" but everything looks correctly published — what's your debugging checklist?</h3>
+      <p>
+        Order mein check karo: (1) <strong>Channel match</strong> — user ke build ka bound channel (build profile
+        se) us channel se match karta hai jispe update publish hua? (2) <strong>Runtime version match</strong> —
+        <code>eas update:list</code> se published update ka runtime version, aur user ke device ke installed
+        binary ka runtime version — ye dono exact match hone chahiye, mismatch silently ignore hota hai, koi
+        error nahi milta. (3) <strong>Launch/foreground timing</strong> — update sirf app launch/foreground pe
+        check hota hai, background polling nahi — user ne app close-reopen kiya ya nahi. (4) <strong>Rollout
+        percentage</strong> — agar staged rollout active hai, ho sakta hai ye specific user abhi bhi "excluded"
+        percentage mein ho. (5) <strong>Dormant user problem</strong> — agar user hafton se app nahi khola, uska
+        binary purane runtime version pe frozen ho sakta hai, aur naya runtime-version-targeting update use
+        milega hi nahi jab tak wo fresh native build install na kare.
+      </p>
+
+      <h3>Q8. Why doesn't a runtime version mismatch throw an error — and is that a good design decision?</h3>
+      <p>
+        Mismatch silently ignore hota hai (update simply deliver nahi hota, jaise koi naya update exist hi nahi
+        karta) kyunki EAS ka design philosophy hai <strong>"fail safe, fail silent"</strong> — agar mismatch pe
+        error throw hoti, aur wo error app ke normal update-check flow ko crash kar deti, to ye khud ek reliability
+        issue ban jaata (ek "no compatible update" scenario, jo completely normal hai — jaise ek naye build ke
+        turant baad, jab tak koi matching update publish na ho — app ko crash karwa dena). Design trade-off ye
+        hai: false negatives (developer confuse hota hai "update kyun nahi aa raha") accept kiye gaye hain taaki
+        false positives (normal no-update-available state ko error treat karke app crash karna) avoid ho sakein.
+        Practical implication: developers ko proactively <code>eas update:list</code> se runtime versions compare
+        karne ki habit banani padti hai, kyunki system khud warn nahi karega.
+      </p>
+
+      <h3>Q9. Walk through what happens internally if an OTA download is interrupted midway (app killed, network drop) — can this corrupt the app?</h3>
+      <p>
+        Nahi, corrupt nahi karta — is wajah se ki <code>expo-updates</code> ka commit process <strong>atomic</strong>
+        hai. Jab tak saare naye/changed assets (jinke hash match nahi hue the) fully download nahi ho jaate,
+        naya update "staged" state mein rehta hai — currently-active/running update <em>touch hi nahi hota</em>.
+        Sirf jab poora set successfully download ho chuka ho, tabhi client atomically naye update ko "active"
+        mark karta hai apne local metadata store mein. Agar beech mein app kill ho jaaye ya network drop ho jaaye,
+        agli baar app launch hone pe wo bas dubara try karega (ya jahan tak already-hashed assets download ho
+        chuke the, unhe skip karke resume-jaisa behavior milega) — lekin purana working update hamesha safe
+        rehta hai jab tak naya poora verified na ho jaaye. Ye crash-safety guarantee hi OTA ko production-safe
+        banati hai, warna ek half-downloaded corrupt bundle se poori app hi unbootable ho sakti thi.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="11-eas-submit.html">
+          <div class="label">← Previous</div>
+          <div class="title">EAS Submit</div>
+        </a>
+        <a class="next" href="13-eas-workflows.html">
+          <div class="label">Next →</div>
+          <div class="title">EAS Workflows</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

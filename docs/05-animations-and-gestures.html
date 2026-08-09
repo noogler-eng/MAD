@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animations & Gestures — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link active" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Animations &amp; Gestures</div>
+      <div class="progress-pill">Chapter 5 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Reanimated 3 · Gesture Handler v2</span>
+      <h1>Animations &amp; Gestures</h1>
+      <p class="subtitle">
+        Ye chapter React Native mein smooth 60fps/120fps animations aur native-feeling gestures banana sikhata hai —
+        UI thread, worklets, JSI, aur Reanimated 3 + Gesture Handler v2 ke internals ko root level pe samajhte hue.
+        Koi surface-level "bas ye prop laga do" wali baat nahi — hum ye dekhenge ki engine ke andar ho kya raha hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#fundamentals">1. Animation Fundamentals: Why RN Animations Are Different</a></li>
+          <li><a href="#core-concepts">2. Reanimated 3 Core Concepts</a></li>
+          <li><a href="#gesture-integration">3. Gesture Handler v2 + Reanimated Integration</a></li>
+          <li><a href="#composition">4. Composition &amp; Interaction Patterns</a></li>
+          <li><a href="#swipeable">5. Swipeable Components (Real Pattern)</a></li>
+          <li><a href="#performance">6. Performance Rules for 60fps</a></li>
+          <li><a href="#gotchas">7. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">9. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <h2 id="fundamentals" style="border-top:none; padding-top:0; margin-top:32px;">1. Animation Fundamentals: Why RN Animations Are Different</h2>
+
+      <p>
+        Chalo pehle samajhte hain ki React Native mein animations "different" kyun hote hain compared to web ya native iOS/Android
+        directly likhna. Iske liye pehle RN ki purani architecture ko samajhna padega — <strong>the Bridge</strong>.
+      </p>
+
+      <h3>Purana problem: the Bridge aur async messaging</h3>
+      <p>
+        Old React Native architecture mein teen "worlds" hote the: <strong>JS thread</strong> (jahan aapka React/JS code chalta hai),
+        <strong>Native/UI thread</strong> (jahan actual rendering, touch handling, aur platform views hote hain), aur inke beech mein
+        <strong>the Bridge</strong> — ek async, serialized (JSON stringify jaisa) messaging channel.
+      </p>
+      <p>
+        Jab aap old <code>Animated</code> API (bina <code>useNativeDriver</code>) use karte the, to har animation frame pe ye hota tha:
+      </p>
+      <ul>
+        <li>JS thread calculate karta hai naya value (e.g. translateX = 42.3)</li>
+        <li>Ye value serialize hoke bridge cross karti hai</li>
+        <li>Native side pe deserialize hoke actual view pe apply hoti hai</li>
+        <li>Ye poora cycle <strong>har single frame</strong> pe repeat hota hai — 60fps pe matlab har ~16ms mein</li>
+      </ul>
+      <p>
+        Problem ye hai ki agar JS thread kisi aur kaam mein busy hai — jaise ek heavy list re-render, ek API response process karna,
+        ya koi expensive computation — to wo animation frame updates bhi delay ho jaate hain. Result: <strong>jank</strong> (animation
+        stutter/frame drops), kyunki animation ka smoothness JS thread ki availability pe depend kar raha tha, jabki animation
+        khud ek purely visual/native concern hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 useNativeDriver: true — ek partial fix</div>
+        <p>
+          Facebook ne <code>useNativeDriver: true</code> add kiya jisme animation ki <em>poori sequence</em> (start value, end value,
+          easing curve, duration) ek baar bridge cross karke native side ko de di jaati thi, aur phir native thread khud hi
+          har frame calculate karta tha — JS thread ko baar baar involve kiye bina. Ye kaafi behtar tha, lekin limited tha:
+          sirf specific non-layout properties (transform, opacity) animate ho sakti thi, aur gesture-driven interactive
+          animations (jahan har frame ka value user ke finger position pe depend karta hai) is model mein fit nahi hoti thi
+          kyunki gesture data JS thread pe hi aata tha.
+        </p>
+      </div>
+
+      <h3>Reanimated ka solution: Worklets aur JSI</h3>
+      <p>
+        Reanimated (specially v2 aur v3) ne is problem ko fundamentally different tareeke se solve kiya — bridge ko
+        <strong>bypass</strong> karke. Iske liye do cheezein use hoti hain: <strong>JSI (JavaScript Interface)</strong> aur
+        <strong>Worklets</strong>.
+      </p>
+      <p>
+        <strong>JSI</strong> New Architecture ka core piece hai — ye ek C++ layer hai jo JS engine (Hermes/JSC) ko directly
+        native C++ objects ke saath talk karne deta hai, bina serialization/bridge ke. Isse JS values aur native functions
+        ke beech <em>synchronous, direct</em> calls possible hote hain.
+      </p>
+      <p>
+        Reanimated isi JSI ka use karke ek trick karta hai: jab aap koi function ke andar <code>'worklet'</code> directive likhte
+        ho (ya use karte ho <code>useAnimatedStyle</code>/<code>useAnimatedGestureHandler</code> jaise hooks ke andar, jo automatically
+        worklet-ize ho jaate hain via Babel plugin), Reanimated ka <strong>babel plugin</strong> us function ko compile-time pe
+        parse karta hai aur uska ek serializable representation banata hai (basically function ka source string + closure
+        variables). Runtime pe, ye worklet <strong>UI thread pe ek separate, chhota JS runtime</strong> (jise "UI runtime"
+        kehte hain) mein directly execute hota hai — bina JS thread ko touch kiye, bina bridge cross kiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>worklet-example.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye function 'worklet' directive ki wajah se</span>
+<span class="tok-com">// UI thread pe apna separate copy mein run hota hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">myWorklet</span>() {
+  <span class="tok-str">'worklet'</span>;
+  <span class="tok-com">// Ye code JS thread pe nahi, UI thread pe chalega</span>
+  <span class="tok-kw">console</span>.<span class="tok-fn">log</span>(<span class="tok-str">'Running on UI thread!'</span>);
+}</code></pre>
+      </div>
+
+      <p>
+        Matlab ab animation ka <em>poora logic</em> — calculation, interpolation, spring physics — UI thread pe hi chal
+        raha hai, jahan actual rendering bhi ho rahi hai. JS thread busy ho ya na ho, animation ka isse koi lena dena
+        nahi. Isi wajah se Reanimated animations 60fps (aur ProMotion devices pe 120fps tak) consistently maintain kar
+        paate hain even jab JS thread pe heavy work chal raha ho.
+      </p>
+
+      <div class="table" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Approach</th><th>Frame updates kahan calculate hote hain</th><th>Bridge dependency</th><th>JS thread block hone ka effect</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Animated API (JS driver)</td><td>JS thread, har frame</td><td>Har frame pe bridge cross</td><td>Jank guaranteed</td></tr>
+            <tr><td>Animated API + useNativeDriver</td><td>Native thread (ek baar config bhejke)</td><td>Sirf start pe ek baar</td><td>Kam impact, lekin limited properties</td></tr>
+            <tr><td>Reanimated 3 (worklets)</td><td>UI thread directly, via JSI</td><td>Koi bridge nahi</td><td>Zero impact — animation independent chalta hai</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Purana <code>Animated</code> API abhi bhi codebase mein kahin kahin milega (legacy code, ya simple cases jaha
+          bridge overhead matter nahi karta), aur usko samajhna important hai for history/context — lekin naye production
+          RN apps mein complex ya gesture-driven animations ke liye Reanimated hi default choice honi chahiye. Interview
+          mein bhi ye "why" wala explanation (bridge → JSI → worklets) senior-level differentiator hota hai.
+        </p>
+      </div>
+
+      <h2 id="core-concepts">2. Reanimated 3 Core Concepts</h2>
+
+      <p>
+        Ab hum Reanimated 3 ke building blocks dekhte hain — ye sab kuch upar wale worklet model ke upar bana hai.
+      </p>
+
+      <h3>useSharedValue — UI thread pe rehne wali value</h3>
+      <p>
+        <code>useSharedValue</code> ek special value banata hai jo <strong>UI thread aur JS thread dono</strong> se accessible
+        hai, lekin uska <em>storage</em> UI thread ke memory mein hota hai. Jab aap <code>.value</code> ko mutate karte ho,
+        React ka re-render trigger <strong>nahi</strong> hota — kyunki ye React state nahi hai, ye ek plain mutable
+        container hai jo dono threads ke beech synced rehta hai.
+      </p>
+      <p>
+        Ye bahut important hai samajhna: agar har animation frame pe React re-render trigger hota (jaise <code>useState</code>
+        se hota), to performance bahut kharab ho jaati — React reconciliation, diffing, ye sab heavy operations har frame
+        pe chalte. Shared values isse bypass karte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SharedValueBasics.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useSharedValue } <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">Example</span>() {
+  <span class="tok-com">// scale.value UI thread pe store hoti hai</span>
+  <span class="tok-kw">const</span> scale = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">1</span>);
+
+  <span class="tok-com">// Isse re-render trigger NAHI hoga</span>
+  scale.value = <span class="tok-num">1.2</span>;
+}</code></pre>
+      </div>
+
+      <h3>useAnimatedStyle — shared values ko style mein map karna</h3>
+      <p>
+        <code>useAnimatedStyle</code> khud ek worklet hai — ye ek function leta hai jo shared values read karke ek style
+        object return karta hai, aur ye poora mapping <strong>UI thread pe run hota hai</strong> har frame jab bhi
+        shared value change hoti hai. Kyunki ye directly UI thread pe chal raha hai, ye style directly native view pe
+        apply ho jaata hai — bina JS thread ke involvement ke.
+      </p>
+
+      <h3>Animation functions: withTiming, withSpring, withDecay</h3>
+      <ul>
+        <li><strong>withTiming</strong> — duration-based easing animation (jaise CSS transition), predictable time mein value A se B tak jaata hai.</li>
+        <li><strong>withSpring</strong> — physics-based spring simulation (mass, damping, stiffness), natural/organic feel deta hai, duration fixed nahi hoti.</li>
+        <li><strong>withDecay</strong> — velocity-based animation jo gradually decelerate hoti hai (jaise fling/scroll momentum) — gestures ke saath bahut use hota hai.</li>
+      </ul>
+      <p>Ye teeno functions worklets ke andar call kiye jaate hain aur UI thread pe hi apna calculation karte hain.</p>
+
+      <h3>runOnJS — worklet se wapas JS thread mein jaana</h3>
+      <p>
+        Worklets ek <strong>alag JS context/runtime</strong> mein run hote hain (UI runtime) — matlab wo aapke normal
+        JS thread ke regular functions, closures, ya React state setters ko <em>directly</em> call nahi kar sakte, kyunki
+        wo dusre runtime mein exist hi nahi karte. Agar aapko kisi worklet ke andar se koi normal JS function call karni
+        hai — jaise <code>setState</code>, ek API call trigger karna, ya navigation — to aapko <code>runOnJS()</code> use
+        karna padta hai. Ye Reanimated ko batata hai: "is function ko UI thread se JS thread pe schedule karke wahan run karo".
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          <code>runOnJS</code> khud ek async bridge-jaisi hop hai (though lightweight, JSI ke through) — matlab isko
+          <em>har frame</em> call karna phir se wahi bottleneck bana sakta hai jo hum avoid karne ki koshish kar rahe
+          the. Isliye <code>runOnJS</code> ko sirf discrete events pe use karo (gesture end, animation complete callback),
+          continuous frame updates ke liye nahi.
+        </p>
+      </div>
+
+      <h3>Full Example: Scale on Press Card</h3>
+      <p>Ab ek complete example dekhte hain — ek card jo press karne pe scale down hoti hai spring animation ke saath.</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>PressableCard.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">React</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> { Pressable, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">PressableCard</span>() {
+  <span class="tok-com">// UI thread pe rehne wali value, initial 1 (normal size)</span>
+  <span class="tok-kw">const</span> scale = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">1</span>);
+
+  <span class="tok-com">// Ye worklet hai — UI thread pe run hoga jab bhi scale.value change ho</span>
+  <span class="tok-kw">const</span> animatedStyle = <span class="tok-fn">useAnimatedStyle</span>(() => {
+    <span class="tok-kw">return</span> {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  <span class="tok-kw">const</span> <span class="tok-fn">handlePressIn</span> = () => {
+    <span class="tok-com">// withSpring ek worklet return karta hai jo UI thread pe animate hoga</span>
+    scale.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">0.92</span>, {
+      damping: <span class="tok-num">15</span>,
+      stiffness: <span class="tok-num">180</span>,
+    });
+  };
+
+  <span class="tok-kw">const</span> <span class="tok-fn">handlePressOut</span> = () => {
+    scale.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">1</span>);
+  };
+
+  <span class="tok-kw">return</span> (
+    &lt;<span class="tok-tag">Pressable</span> <span class="tok-attr">onPressIn</span>={handlePressIn} <span class="tok-attr">onPressOut</span>={handlePressOut}&gt;
+      &lt;<span class="tok-tag">Animated.View</span> <span class="tok-attr">style</span>={[styles.card, animatedStyle]}&gt;
+        &lt;<span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.text}&gt;Tap me&lt;/<span class="tok-tag">Text</span>&gt;
+      &lt;/<span class="tok-tag">Animated.View</span>&gt;
+    &lt;/<span class="tok-tag">Pressable</span>&gt;
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: {
+    padding: <span class="tok-num">24</span>,
+    borderRadius: <span class="tok-num">16</span>,
+    backgroundColor: <span class="tok-str">'#d97757'</span>,
+  },
+  text: { color: <span class="tok-str">'#fff'</span>, fontWeight: <span class="tok-str">'700'</span> },
+});</code></pre>
+      </div>
+
+      <p>
+        Notice karo: <code>Animated.View</code> (Reanimated ka export, plain RN Animated ka nahi) use ho raha hai —
+        ye ek special component hai jo <code>animatedStyle</code> ko directly UI thread se apni native view pe apply
+        kar sakta hai without going through React's render cycle.
+      </p>
+
+      <h2 id="gesture-integration">3. Gesture Handler v2 + Reanimated Integration</h2>
+
+      <h3>PanResponder ka purana problem</h3>
+      <p>
+        RN ka original gesture system, <code>PanResponder</code>, gesture recognition logic (touch start/move/end
+        detection, threshold calculation, conflict resolution between nested gestures) <strong>JS thread pe</strong>
+        chalata tha. Har touch move event JS thread tak bridge cross karke aata tha, JS logic decide karta tha
+        "ye pan hai ya tap", aur phir response wapas jaata tha. Isme bhi wahi latency/jank problem thi jo animations
+        mein thi.
+      </p>
+
+      <h3>Gesture Handler v2: native thread pe gesture recognition</h3>
+      <p>
+        <code>react-native-gesture-handler</code> (v2) is problem ko solve karta hai gesture recognition ko
+        <strong>native thread</strong> pe move karke. Touch events directly native gesture recognizers (iOS
+        UIGestureRecognizer / Android GestureDetector jaise concepts, but library ka apna unified system) handle karte
+        hain. Jab ye Reanimated ke saath combine hota hai, to gesture ka <em>pura pipeline</em> — recognition (native
+        thread) → value update (UI thread via shared values) → style update (UI thread) — kabhi bhi JS thread ko
+        touch hi nahi karta, matlab <strong>zero bridge crossings</strong> ek drag interaction ke during.
+      </p>
+
+      <h3>Naya Gesture API</h3>
+      <p>
+        Gesture Handler v2 ne ek naya declarative <code>Gesture</code> API diya hai (purane <code>PanGestureHandler</code>
+        jaise component-based API ki jagah, jo ab legacy consider hota hai):
+      </p>
+      <ul>
+        <li><code>Gesture.Pan()</code> — drag gestures ke liye</li>
+        <li><code>Gesture.Tap()</code> — tap detection ke liye</li>
+        <li><code>Gesture.Pinch()</code>, <code>Gesture.Rotation()</code>, <code>Gesture.LongPress()</code> — aur bhi types</li>
+        <li><code>Gesture.Simultaneous(g1, g2)</code> — multiple gestures ek saath recognize karne ke liye (e.g. pan + pinch)</li>
+        <li><code>Gesture.Race(g1, g2)</code> — jo pehle recognize ho jaaye wahi "win" kare, baaki cancel</li>
+        <li><code>Gesture.Exclusive(g1, g2)</code> — priority-based, g1 pehle try hota hai, fail hone pe g2</li>
+      </ul>
+      <p>
+        Har gesture object ke callbacks (<code>.onBegin()</code>, <code>.onUpdate()</code>, <code>.onEnd()</code>,
+        <code>.onFinalize()</code>) worklets hote hain — matlab inke andar directly shared values modify kar sakte ho,
+        aur ye UI thread pe hi execute hoga.
+      </p>
+      <p>
+        In gestures ko component tree mein attach karne ke liye <code>&lt;GestureDetector gesture={...}&gt;</code>
+        wrapper use hota hai, jo ek single child component ko wrap karta hai.
+      </p>
+
+      <h3>Full Example: Draggable Card</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>DraggableCard.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">React</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> { StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> { Gesture, GestureDetector } <span class="tok-kw">from</span> <span class="tok-str">'react-native-gesture-handler'</span>;
+<span class="tok-kw">import</span> Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">DraggableCard</span>() {
+  <span class="tok-kw">const</span> translateX = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+  <span class="tok-kw">const</span> translateY = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+
+  <span class="tok-com">// Context values taaki drag start se relative offset track ho sake</span>
+  <span class="tok-kw">const</span> startX = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+  <span class="tok-kw">const</span> startY = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+
+  <span class="tok-kw">const</span> panGesture = Gesture.<span class="tok-fn">Pan</span>()
+    .<span class="tok-fn">onStart</span>(() => {
+      <span class="tok-str">'worklet'</span>;
+      startX.value = translateX.value;
+      startY.value = translateY.value;
+    })
+    .<span class="tok-fn">onUpdate</span>((event) => {
+      <span class="tok-str">'worklet'</span>;
+      <span class="tok-com">// Ye pura UI thread pe chal raha hai — no bridge crossing</span>
+      translateX.value = startX.value + event.translationX;
+      translateY.value = startY.value + event.translationY;
+    })
+    .<span class="tok-fn">onEnd</span>(() => {
+      <span class="tok-str">'worklet'</span>;
+      <span class="tok-com">// Finger uthate hi origin pe wapas spring back</span>
+      translateX.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">0</span>);
+      translateY.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">0</span>);
+    });
+
+  <span class="tok-kw">const</span> animatedStyle = <span class="tok-fn">useAnimatedStyle</span>(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  <span class="tok-kw">return</span> (
+    &lt;<span class="tok-tag">GestureDetector</span> <span class="tok-attr">gesture</span>={panGesture}&gt;
+      &lt;<span class="tok-tag">Animated.View</span> <span class="tok-attr">style</span>={[styles.card, animatedStyle]} /&gt;
+    &lt;/<span class="tok-tag">GestureDetector</span>&gt;
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: {
+    width: <span class="tok-num">120</span>,
+    height: <span class="tok-num">120</span>,
+    borderRadius: <span class="tok-num">16</span>,
+    backgroundColor: <span class="tok-str">'#6fa8d8'</span>,
+  },
+});</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Notice karo — poore drag interaction mein (finger move se lekar card render hone tak) JS thread involved
+          hi nahi hai. Native gesture recognizer touch events capture kar raha hai, worklet UI thread pe values update
+          kar raha hai, aur <code>useAnimatedStyle</code> UI thread pe hi style laga raha hai. Yahi wo architecture hai
+          jo native-app-jaisa "1:1 finger tracking" feel deta hai, jo old PanResponder ke saath achieve karna mushkil tha.
+        </p>
+      </div>
+
+      <h2 id="composition">4. Composition &amp; Interaction Patterns</h2>
+
+      <h3>withSequence — animations ko chain karna</h3>
+      <p>
+        <code>withSequence</code> multiple animations ko ek ke baad ek run karta hai — jaise ek button jo pehle bada
+        ho, phir chhota ho ("bounce" effect):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>sequence-example.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code>scale.value = <span class="tok-fn">withSequence</span>(
+  <span class="tok-fn">withTiming</span>(<span class="tok-num">1.2</span>, { duration: <span class="tok-num">100</span> }),
+  <span class="tok-fn">withTiming</span>(<span class="tok-num">1</span>, { duration: <span class="tok-num">150</span> })
+);</code></pre>
+      </div>
+
+      <h3>Parallel animations</h3>
+      <p>
+        Multiple shared values ko independently assign karke aap effectively parallel animations chala sakte ho —
+        alag alag shared values apne apne timing pe animate hote rahenge, ek dusre ko block kiye bina:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>parallel-example.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye dono ek saath, parallel mein animate honge</span>
+opacity.value = <span class="tok-fn">withTiming</span>(<span class="tok-num">1</span>, { duration: <span class="tok-num">300</span> });
+translateY.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">0</span>);</code></pre>
+      </div>
+
+      <h3>interpolate() — ek range se dusri range mein map karna</h3>
+      <p>
+        <code>interpolate()</code> ek value (jaise scroll offset ya gesture progress) ko linearly ek input range se
+        output range mein map karta hai — bahut common use case hai scroll position ko opacity/scale mein convert
+        karna.
+      </p>
+
+      <h3>Full Example: Fading Header on Scroll</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>FadingHeader.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">React</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
+} <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>;
+
+<span class="tok-kw">const</span> HEADER_FADE_DISTANCE = <span class="tok-num">120</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">ScreenWithFadingHeader</span>({ children }: { children: <span class="tok-kw">React</span>.ReactNode }) {
+  <span class="tok-kw">const</span> scrollY = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+
+  <span class="tok-com">// Scroll handler bhi ek worklet hai — har scroll event UI thread pe process hota hai</span>
+  <span class="tok-kw">const</span> scrollHandler = <span class="tok-fn">useAnimatedScrollHandler</span>((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  <span class="tok-kw">const</span> headerStyle = <span class="tok-fn">useAnimatedStyle</span>(() => {
+    <span class="tok-kw">const</span> opacity = <span class="tok-fn">interpolate</span>(
+      scrollY.value,
+      [<span class="tok-num">0</span>, HEADER_FADE_DISTANCE],
+      [<span class="tok-num">1</span>, <span class="tok-num">0</span>],
+      Extrapolation.CLAMP
+    );
+    <span class="tok-kw">return</span> { opacity };
+  });
+
+  <span class="tok-kw">return</span> (
+    &lt;&gt;
+      &lt;<span class="tok-tag">Animated.View</span> <span class="tok-attr">style</span>={headerStyle}&gt;{<span class="tok-com">/* header content */</span>}&lt;/<span class="tok-tag">Animated.View</span>&gt;
+      &lt;<span class="tok-tag">Animated.ScrollView</span> <span class="tok-attr">onScroll</span>={scrollHandler} <span class="tok-attr">scrollEventThrottle</span>={<span class="tok-num">16</span>}&gt;
+        {children}
+      &lt;/<span class="tok-tag">Animated.ScrollView</span>&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h3>useDerivedValue — computed shared values</h3>
+      <p>
+        <code>useDerivedValue</code> ek naya shared value banata hai jo automatically recompute hoti hai jab bhi uske
+        andar use hone wali dependencies (dusri shared values) change hoti hain — <code>useMemo</code> ka UI-thread
+        equivalent soch lo:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>derived-value-example.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> progress = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+
+<span class="tok-com">// derivedOpacity automatically update hoga jab progress badlega</span>
+<span class="tok-kw">const</span> derivedOpacity = <span class="tok-fn">useDerivedValue</span>(() => {
+  <span class="tok-kw">return</span> <span class="tok-fn">interpolate</span>(progress.value, [<span class="tok-num">0</span>, <span class="tok-num">1</span>], [<span class="tok-num">0.3</span>, <span class="tok-num">1</span>]);
+});</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          <code>useDerivedValue</code> tab use karo jab ek computed value multiple jagah (multiple <code>useAnimatedStyle</code>
+          calls) mein use ho rahi ho — isse duplicate calculation avoid hoti hai aur code cleaner rehta hai.
+        </p>
+      </div>
+
+      <h2 id="swipeable">5. Swipeable Components (Real Pattern)</h2>
+
+      <p>
+        Ab hum sab kuch combine karke ek real production pattern banate hain — <strong>swipe-to-delete list item</strong>,
+        jo almost har chat app (WhatsApp, Gmail) mein milta hai. Logic: user card ko horizontally drag kare, agar
+        threshold distance/velocity cross ho jaaye to card poori tarah swipe out ho jaaye aur delete callback fire ho,
+        warna card wapas snap back ho jaaye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SwipeToDeleteItem.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">React</span> <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> { StyleSheet, Text, Dimensions } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> { Gesture, GestureDetector } <span class="tok-kw">from</span> <span class="tok-str">'react-native-gesture-handler'</span>;
+<span class="tok-kw">import</span> Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+} <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>;
+
+<span class="tok-kw">const</span> SCREEN_WIDTH = Dimensions.<span class="tok-fn">get</span>(<span class="tok-str">'window'</span>).width;
+<span class="tok-kw">const</span> SWIPE_THRESHOLD = SCREEN_WIDTH * <span class="tok-num">0.35</span>;
+<span class="tok-kw">const</span> VELOCITY_THRESHOLD = <span class="tok-num">800</span>;
+
+<span class="tok-kw">type</span> Props = {
+  label: <span class="tok-kw">string</span>;
+  onDelete: () => <span class="tok-kw">void</span>;
+};
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">SwipeToDeleteItem</span>({ label, onDelete }: Props) {
+  <span class="tok-kw">const</span> translateX = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);
+  <span class="tok-kw">const</span> itemHeight = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">60</span>); <span class="tok-com">// collapse ke liye</span>
+
+  <span class="tok-com">// Delete confirm hone ke BAAD hi JS thread pe callback fire karna hai —</span>
+  <span class="tok-com">// isliye runOnJS sirf animation complete hone ke baad, gesture ke andar nahi</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">triggerDelete</span> = () => {
+    onDelete();
+  };
+
+  <span class="tok-kw">const</span> panGesture = Gesture.<span class="tok-fn">Pan</span>()
+    .<span class="tok-fn">onUpdate</span>((event) => {
+      <span class="tok-str">'worklet'</span>;
+      <span class="tok-com">// Sirf left swipe allow karna hai is example mein</span>
+      translateX.value = Math.<span class="tok-fn">min</span>(<span class="tok-num">0</span>, event.translationX);
+    })
+    .<span class="tok-fn">onEnd</span>((event) => {
+      <span class="tok-str">'worklet'</span>;
+      <span class="tok-kw">const</span> shouldDelete =
+        translateX.value &lt; -SWIPE_THRESHOLD || event.velocityX &lt; -VELOCITY_THRESHOLD;
+
+      <span class="tok-kw">if</span> (shouldDelete) {
+        <span class="tok-com">// Card ko poori tarah screen se bahar animate karo</span>
+        translateX.value = <span class="tok-fn">withTiming</span>(-SCREEN_WIDTH, { duration: <span class="tok-num">200</span> });
+        <span class="tok-com">// Height collapse karo taaki list mein gap na dikhe</span>
+        itemHeight.value = <span class="tok-fn">withTiming</span>(<span class="tok-num">0</span>, { duration: <span class="tok-num">200</span> }, (finished) => {
+          <span class="tok-com">// Ye callback bhi worklet context mein chalta hai —</span>
+          <span class="tok-com">// isliye asli JS function call karne ke liye runOnJS zaroori hai</span>
+          <span class="tok-kw">if</span> (finished) {
+            <span class="tok-fn">runOnJS</span>(triggerDelete)();
+          }
+        });
+      } <span class="tok-kw">else</span> {
+        <span class="tok-com">// Threshold cross nahi hua — wapas origin pe spring back</span>
+        translateX.value = <span class="tok-fn">withSpring</span>(<span class="tok-num">0</span>);
+      }
+    });
+
+  <span class="tok-kw">const</span> animatedStyle = <span class="tok-fn">useAnimatedStyle</span>(() => ({
+    transform: [{ translateX: translateX.value }],
+    height: itemHeight.value,
+    opacity: itemHeight.value === <span class="tok-num">0</span> ? <span class="tok-num">0</span> : <span class="tok-num">1</span>,
+  }));
+
+  <span class="tok-kw">return</span> (
+    &lt;<span class="tok-tag">GestureDetector</span> <span class="tok-attr">gesture</span>={panGesture}&gt;
+      &lt;<span class="tok-tag">Animated.View</span> <span class="tok-attr">style</span>={[styles.row, animatedStyle]}&gt;
+        &lt;<span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.label}&gt;{label}&lt;/<span class="tok-tag">Text</span>&gt;
+      &lt;/<span class="tok-tag">Animated.View</span>&gt;
+    &lt;/<span class="tok-tag">GestureDetector</span>&gt;
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  row: {
+    justifyContent: <span class="tok-str">'center'</span>,
+    paddingHorizontal: <span class="tok-num">16</span>,
+    backgroundColor: <span class="tok-str">'#262524'</span>,
+    borderBottomWidth: <span class="tok-num">1</span>,
+    borderBottomColor: <span class="tok-str">'#3a3835'</span>,
+    overflow: <span class="tok-str">'hidden'</span>,
+  },
+  label: { color: <span class="tok-str">'#e8e4dd'</span>, fontSize: <span class="tok-num">16</span> },
+});</code></pre>
+      </div>
+
+      <p>
+        Yaha decision logic — distance threshold <em>ya</em> velocity threshold — dono check ho rahe hain, jo real
+        apps mein important hai: agar user tez fling kare lekin bahut door tak drag na kare, phir bhi wo "intentional
+        delete" count hona chahiye. Aur <code>runOnJS</code> sirf ek jagah, animation complete hone ke <em>baad</em> ka
+        callback mein use ho raha hai — har frame pe nahi.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          <code>withTiming</code>/<code>withSpring</code> ka teesra argument (completion callback) khud bhi ek worklet hai —
+          agar aapko uske andar se JS function call karni hai (jaise state update ya parent callback), to wahan bhi
+          <code>runOnJS</code> hi lagana padega, direct call nahi chalega.
+        </p>
+      </div>
+
+      <h2 id="performance">6. Performance Rules for 60fps</h2>
+
+      <p>
+        Ab kuch practical rules jo production mein jank avoid karne ke liye follow karne chahiye.
+      </p>
+
+      <h3>console.log worklets ke andar carefully use karo</h3>
+      <p>
+        Worklets ke andar <code>console.log</code> kaam karta hai (Reanimated isko special handle karta hai taaki
+        output Metro console mein dikhe), lekin isme overhead hai — har call UI thread se JS thread tak ek message
+        bhejta hai. Agar aap isse har animation frame pe (jaise <code>onUpdate</code> ke andar) chhod doge debugging
+        ke baad, to ye silently performance degrade karega. Debug karne ke baad hamesha remove/comment karo.
+      </p>
+
+      <h3>runOnJS ko sparingly use karo — sirf gesture end pe, har frame pe nahi</h3>
+      <p>
+        Jaisa upar dekha, <code>onUpdate</code> (jo har frame fire hota hai during drag) ke andar <code>runOnJS</code>
+        call karna — jaise React state update trigger karna har pixel move pe — poori purpose defeat kar deta hai jo
+        hum achieve karna chahte the. Sirf discrete moments (gesture start/end, animation complete) pe hi JS thread
+        involve karo.
+      </p>
+
+      <h3>useAnimatedStyle sirf shared values reference kare, regular state nahi</h3>
+      <p>
+        <code>useAnimatedStyle</code> ke andar agar aap koi regular React state ya prop use karte ho (non-shared-value),
+        to worklet ko wo value capture karne ke liye JS thread se sync karna padega — jo phir se bridge-jaisa overhead
+        introduce karta hai aur re-render bhi trigger kar sakta hai. Best practice: <code>useAnimatedStyle</code> ke andar
+        sirf <code>useSharedValue</code> se aayi values use karo.
+      </p>
+
+      <h3>Layout animations — entering/exiting/Layout</h3>
+      <p>
+        Reanimated 3 layout animations bhi provide karta hai — <code>entering</code> aur <code>exiting</code> props
+        (component mount/unmount pe automatic animation) aur <code>layout</code> prop (jab component ki position/size
+        change ho, jaise list reorder). Ye bhi native thread pe hi chalte hain. Limitation: ye sab components ke saath
+        consistently kaam nahi karte — kuch complex native components (jaise certain third-party wrapped views, ya
+        <code>Text</code> ke kuch edge cases) mein layout animations properly apply nahi hoti, aur nested nested
+        `Animated.View` ke saath conflicts ho sakte hain. Production mein use karne se pehle target components pe
+        test zaroor karo.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Performance debugging ke liye Reanimated ka <code>_WORKLET</code> global variable check kar sakte ho ye
+          confirm karne ke liye ki code UI thread pe run ho raha hai ya JS thread pe. Aur agar list mein bahut saare
+          swipeable items hain, to har item apna independent <code>useSharedValue</code> rakhega — koi shared/global
+          state mat use karo warna sab items ek dusre ko affect karenge.
+        </p>
+      </div>
+
+      <h2 id="gotchas">7. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Babel plugin order matters</div>
+        <p>
+          Reanimated ka babel plugin (<code>react-native-reanimated/plugin</code>) <strong>hamesha plugins array mein
+          sabse last</strong> hona chahiye <code>babel.config.js</code> mein. Agar ye last nahi hai, to worklets
+          properly transform nahi hote aur aapko cryptic runtime errors milenge (jaise "value.value undefined" ya
+          silent failures jahan animation bilkul kaam hi nahi karti) — ye ek bahut common setup mistake hai jo
+          naye developers ko ghanto debug karwa deta hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>babel.config.js</span><button class="copy-btn">Copy</button></div>
+        <pre><code>module.<span class="tok-fn">exports</span> = <span class="tok-kw">function</span>(api) {
+  api.<span class="tok-fn">cache</span>(<span class="tok-kw">true</span>);
+  <span class="tok-kw">return</span> {
+    presets: [<span class="tok-str">'babel-preset-expo'</span>],
+    plugins: [
+      <span class="tok-com">// dusre plugins yaha upar</span>
+      <span class="tok-str">'react-native-reanimated/plugin'</span>, <span class="tok-com">// ⚠️ YE HAMESHA LAST HONA CHAHIYE</span>
+    ],
+  };
+};</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 GestureHandlerRootView zaroori hai</div>
+        <p>
+          Poori app ke root pe (ya kam se kam wahan jahan bhi gestures use ho rahe hain) <code>GestureHandlerRootView</code>
+          se wrap karna <strong>mandatory</strong> hai. Agar aap ye bhool jaate ho, to gestures <em>silently</em> kaam
+          nahi karte — koi error nahi aata, bas <code>onUpdate</code>/<code>onEnd</code> callbacks fire hi nahi hote,
+          jo debug karna bahut frustrating hota hai kyunki koi clear signal nahi milta ki problem kya hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>App.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { GestureHandlerRootView } <span class="tok-kw">from</span> <span class="tok-str">'react-native-gesture-handler'</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">App</span>() {
+  <span class="tok-kw">return</span> (
+    &lt;<span class="tok-tag">GestureHandlerRootView</span> <span class="tok-attr">style</span>={{ flex: <span class="tok-num">1</span> }}&gt;
+      {<span class="tok-com">/* poori app yaha */</span>}
+    &lt;/<span class="tok-tag">GestureHandlerRootView</span>&gt;
+  );
+}</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Worklets closures ke saath careful raho</div>
+        <p>
+          Worklets non-worklet regular functions ko directly call nahi kar sakte (sirf <code>runOnJS</code> ke through),
+          aur complex objects (class instances, functions with their own closures) ko worklet ke andar capture karna
+          issues create kar sakta hai kyunki babel plugin ko unhe serialize karna padta hai UI thread pe bhejne ke
+          liye. Plain objects, primitives, aur dusre shared values capture karna safe hai — class instances ya complex
+          nested closures avoid karo.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Debugging worklets normal debugger se mushkil hai</div>
+        <p>
+          Kyunki worklets UI thread pe ek separate JS runtime mein chalte hain, Chrome DevTools ya standard React
+          Native debugger breakpoints inke andar reliably kaam nahi karte jaise regular JS code mein karte hain.
+          Practical approach: <code>console.log</code> sparingly use karo (jaisa upar discuss kiya), ya Reanimated
+          ke logger utilities, aur agar deeply stuck ho to logic ko temporarily <code>runOnJS</code> se JS thread pe
+          move karke normal debugging tools se verify karo, phir wapas worklet mein daalo.
+        </p>
+      </div>
+
+      <h2 id="advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne <em>use kaise karna hai</em> dekha. Ab hum ek level aur neeche jaake dekhte hain ki engine ke
+        andar actually chal kya raha hai — ye wahi depth hai jo senior interviews mein differentiate karti hai.
+      </p>
+
+      <h3>Worklet transformation internals — Babel plugin actually karta kya hai</h3>
+      <p>
+        Upar humne bola tha ki <code>'worklet'</code> directive wale functions UI thread pe run hote hain — lekin
+        <em>mechanism</em> kya hai ye achieve karne ka? Ye sab compile-time pe hota hai, Reanimated ke Babel plugin
+        (<code>react-native-reanimated/plugin</code>) ke through, aur process roughly ye steps follow karta hai:
+      </p>
+      <ul>
+        <li>
+          <strong>Static analysis:</strong> Build time pe (Metro bundling ke dauraan) Babel plugin poori source code
+          ko AST (Abstract Syntax Tree) ke form mein parse karta hai aur dhoondta hai un functions ko jinke body ka
+          pehla statement <code>'worklet'</code> string hai — <em>ya</em> jo kisi "worklet-izing" hook (jaise
+          <code>useAnimatedStyle</code>, <code>useDerivedValue</code>, <code>useAnimatedGestureHandler</code>, ya
+          <code>Gesture.Pan().onUpdate(...)</code> jaisi callback) ke andar pass kiye gaye hain — in hooks ke
+          arguments ko plugin <em>implicitly</em> worklet mark kar deta hai, aapko manually <code>'worklet'</code>
+          likhne ki zaroorat nahi padti.
+        </li>
+        <li>
+          <strong>Serialization:</strong> Jo function worklet identify ho jaata hai, uska Babel plugin do cheezein
+          extract karta hai — (1) function ka <em>source code as a string</em> (basically function ko stringify kar
+          diya jaata hai), aur (2) uska <strong>closure</strong> — matlab outer scope ki wo variables jo function ke
+          andar reference ho rahi hain (jaise <code>useSharedValue</code> se aayi values, constants, etc).
+        </li>
+        <li>
+          <strong>Re-creation on UI runtime:</strong> Runtime pe, jab worklet ko actually call karna hota hai, Reanimated
+          us serialized string ko UI thread pe chal rahe ek <strong>separate, chhote JS runtime</strong> (JSC/Hermes ka
+          ek dusra instance jo sirf UI thread ke liye hai) mein bhejta hai JSI ke through, wahan us string se function
+          <em>re-construct</em> hota hai (basically <code>eval</code> jaisa kuch, lekin controlled), aur closure
+          variables inject kiye jaate hain.
+        </li>
+      </ul>
+      <p>
+        Yahi wajah hai ki worklets ke andar <strong>arbitrary outside functions ya complex objects casually reference
+        nahi kiye ja sakte</strong> — kyunki ek function/object sirf tab UI thread pe available hoga jab wo bhi
+        serializable ho (plain function jo khud worklet ho, ya primitive/plain-object closure variable). Agar aap
+        kisi regular (non-worklet) JS function ko worklet ke andar directly call karne ki koshish karoge, wo function
+        UI runtime pe exist hi nahi karta — isliye crash ya silent failure milega. Isi gap ko explicitly bridge karne
+        ke liye do functions hain:
+      </p>
+      <ul>
+        <li><code>runOnJS(fn)</code> — UI thread se JS thread pe schedule karke ek regular function call karta hai (jo humne swipe-to-delete example mein dekha).</li>
+        <li><code>runOnUI(fn)</code> — iska ulta: JS thread se explicitly UI thread pe ek worklet schedule karta hai (kam common, lekin useful jab aapko JS thread se manually ek imperative worklet trigger karni ho, jaise ek button press pe bina gesture ke).</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title"><span>worklet-boundary.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { runOnJS, runOnUI, useSharedValue } <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>; <span class="tok-com">// dono direction ke bridge functions import</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">Example</span>() {
+  <span class="tok-kw">const</span> progress = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>); <span class="tok-com">// UI thread pe rehne wali shared value</span>
+
+  <span class="tok-kw">function</span> <span class="tok-fn">logToAnalytics</span>(value: <span class="tok-kw">number</span>) { <span class="tok-com">// ye ek NORMAL JS function hai — worklet nahi</span>
+    <span class="tok-kw">console</span>.<span class="tok-fn">log</span>(<span class="tok-str">'Analytics event:'</span>, value); <span class="tok-com">// isko JS thread pe hi chalna hai (analytics SDK JS thread pe rehta hai)</span>
+  }
+
+  <span class="tok-kw">function</span> <span class="tok-fn">jsToUiExample</span>() { <span class="tok-com">// ye function JS thread pe call hota hai (e.g. button onPress se)</span>
+    <span class="tok-fn">runOnUI</span>(() => { <span class="tok-com">// runOnUI: JS thread se UI thread pe ek worklet schedule kar rahe hain</span>
+      <span class="tok-str">'worklet'</span>; <span class="tok-com">// ye arrow function khud worklet hai, isliye UI thread pe run hoga</span>
+      progress.value = <span class="tok-num">1</span>; <span class="tok-com">// UI thread pe directly shared value set — imperative trigger, bina gesture ke</span>
+    })(); <span class="tok-com">// runOnUI ek function return karta hai jise turant invoke kar rahe hain</span>
+  }
+
+  <span class="tok-kw">function</span> <span class="tok-fn">uiToJsExample</span>() { <span class="tok-com">// ye function worklet context se call hoga (e.g. gesture callback se)</span>
+    <span class="tok-str">'worklet'</span>; <span class="tok-com">// ye poora function UI thread pe worklet hai</span>
+    <span class="tok-fn">runOnJS</span>(logToAnalytics)(progress.value); <span class="tok-com">// runOnJS: UI thread se JS thread pe wapas jump, non-worklet fn call ke liye</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interview mein agar puchha jaaye "worklet kya hai runtime pe" — sabse weak answer hai "ek function jo UI
+          thread pe chalta hai". Strong answer ye include karega ki babel plugin compile-time pe static analysis
+          karta hai, function ko string + closure ke roop mein serialize karta hai, aur runtime pe ek dusre JS engine
+          instance (UI runtime) mein re-hydrate karta hai JSI ke through — aur isi wajah se worklets "sandboxed"
+          feel hote hain (arbitrary closures/class instances allowed nahi).
+        </p>
+      </div>
+
+      <h3>Fabric + Reanimated layout animations — internals aur limitations</h3>
+      <p>
+        New Architecture ka renderer, <strong>Fabric</strong>, React tree changes ko ek "commit" lifecycle ke through
+        process karta hai — jab bhi kuch mount/unmount/reposition hota hai, Fabric ek naya "shadow tree" commit karta
+        hai jisme layout changes calculate hoti hain (Yoga layout engine se) native side pe, bina JS thread ko block
+        kiye.
+      </p>
+      <p>
+        Reanimated ke <code>entering</code>, <code>exiting</code>, aur <code>layout</code> props isi commit lifecycle
+        ke saath hook karte hain: jab Fabric detect karta hai ki ek component tree mein add ho raha hai, remove ho
+        raha hai, ya uska layout (position/size) change ho raha hai, Reanimated ko ek callback milta hai <em>before</em>
+        aur <em>after</em> values ke saath (purani position/size vs nayi), aur phir Reanimated in dono ke beech
+        native thread pe ek transition animate kar deta hai — bina JS ko involve kiye, matlab list reorder ya
+        conditional render bhi smoothly animate ho sakta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>LayoutAnimationExample.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> Animated, { FadeIn, FadeOut, Layout } <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>; <span class="tok-com">// pre-built layout animation presets</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ListItem</span>({ id, label }: { id: <span class="tok-kw">string</span>; label: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">return</span> (
+    &lt;<span class="tok-tag">Animated.View</span>
+      <span class="tok-attr">entering</span>={FadeIn} <span class="tok-com">{/* mount hote hi Fabric commit ke saath fade-in animate karega, native thread pe */}</span>
+      <span class="tok-attr">exiting</span>={FadeOut} <span class="tok-com">{/* unmount se pehle Fabric ko ye animation complete hone tak wait karwata hai */}</span>
+      <span class="tok-attr">layout</span>={<span class="tok-fn">Layout</span>.<span class="tok-fn">springify</span>()} <span class="tok-com">{/* position/size change (e.g. list reorder) pe spring transition */}</span>
+    &gt;
+      &lt;<span class="tok-tag">Text</span>&gt;{label}&lt;/<span class="tok-tag">Text</span>&gt; <span class="tok-com">{/* actual content, isse koi lena dena nahi animation logic se */}</span>
+    &lt;/<span class="tok-tag">Animated.View</span>&gt;
+  );
+}</code></pre>
+      </div>
+
+      <p>
+        <strong>Limitations jo production mein zaroor test karo:</strong>
+      </p>
+      <ul>
+        <li>Sab native component types equally support nahi karte — kuch third-party wrapped native views (jaise kuch complex map/video components) layout animations ko honor nahi karte kyunki unka native commit lifecycle Fabric ke expectations se match nahi karta.</li>
+        <li><code>FlatList</code>/<code>FlashList</code> jaisi virtualized lists ke saath interplay issues hote hain — jab items recycle hote hain (virtualization ki wajah se), unka "identity" Fabric/Reanimated ke liye ambiguous ho sakti hai, isliye entering/exiting animations kabhi kabhi galat item pe fire hoti dikhti hain ya skip ho jaati hain.</li>
+        <li>Nested <code>Animated.View</code> jinke apne independent layout animations hain, ek dusre ke commit timing ko conflict kar sakte hain — deeply nested layout animations ko simple rakho.</li>
+      </ul>
+
+      <h3>Shared element transitions — screens ke beech "flying" element</h3>
+      <p>
+        Polished apps (jaise Instagram profile photo tap karne pe full-screen jaana, ya product list se product detail
+        pe jaana) mein aksar ek element visually ek screen se dusre screen mein "fly" karta hua dikhta hai navigation
+        ke dauraan — isse <strong>shared element transition</strong> kehte hain. Concept simple lagta hai: same
+        element dono screens pe render ho, aur transition ke dauraan uske position/size ko interpolate karo.
+      </p>
+      <p>
+        Practically iske do approaches hain: dedicated library <code>react-native-shared-element</code> (jo native
+        side pe screenshot/snapshot technique use karta hai transition ke dauraan), ya Reanimated-based manual
+        approach jahan aap khud dono screens ke element ki measurements (<code>measure()</code>) track karke ek
+        shared <code>useSharedValue</code>-driven animation drive karte ho jo navigation transition ke saath sync
+        chale.
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ye genuinely hard kyun hai</div>
+        <p>
+          Problem ye hai ki shared element transition ke liye aapko <strong>do alag screens</strong> (jo apne apne
+          independent render/measure lifecycle pe hain, aur navigation library ka apna transition timing hai) ke
+          beech coordination chahiye — screen A ka element unmount ho raha hai jabki screen B ka element mount ho
+          raha hai, aur in dono ke measurements (position, size on screen) transition ke exact start/end frame pe
+          accurately known hone chahiye. Timing thodi bhi off ho (jaise ek screen ka layout measure late aaya) to
+          "jump" ya "flicker" dikhta hai. Yahi wajah hai ki production apps mein shared element transitions aksar
+          buggy feel hoti hain edge cases mein (fast back-and-forth navigation, orientation change ke dauraan) —
+          ye ek genuinely hard cross-screen synchronization problem hai, sirf ek animation prop laga dena kaafi
+          nahi hota.
+        </p>
+      </div>
+
+      <h3>Gesture composition deep-dive — old imperative props vs naya declarative Gesture API</h3>
+      <p>
+        Purane <code>PanGestureHandler</code>/<code>TapGestureHandler</code> component-based API mein multiple
+        gestures ko compose karne ke liye <code>simultaneousHandlers</code> aur <code>waitFor</code> props use hote
+        the — jinme aapko har handler ko ek <code>ref</code> assign karke, dusre handler ki ref ko in props mein pass
+        karna padta tha:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>old-imperative-composition.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> panRef = <span class="tok-fn">useRef</span>(<span class="tok-kw">null</span>); <span class="tok-com">// pan handler ka ref — isko dusre handler mein reference karna padega</span>
+<span class="tok-kw">const</span> pinchRef = <span class="tok-fn">useRef</span>(<span class="tok-kw">null</span>); <span class="tok-com">// pinch handler ka ref — same reason</span>
+
+<span class="tok-com">// Ye legacy component-based API hai — ab officially "legacy" consider hoti hai</span>
+&lt;<span class="tok-tag">PinchGestureHandler</span> <span class="tok-attr">ref</span>={pinchRef} <span class="tok-attr">simultaneousHandlers</span>={panRef}&gt; <span class="tok-com">{/* imperative: ref ke through dusre handler ko point karna */}</span>
+  &lt;<span class="tok-tag">PanGestureHandler</span> <span class="tok-attr">ref</span>={panRef} <span class="tok-attr">simultaneousHandlers</span>={pinchRef}&gt; <span class="tok-com">{/* dono taraf refs pass karne padte the — error-prone */}</span>
+    &lt;<span class="tok-tag">Animated.View</span> /&gt; <span class="tok-com">{/* actual animatable content, do handlers ke beech nested */}</span>
+  &lt;/<span class="tok-tag">PanGestureHandler</span>&gt;
+&lt;/<span class="tok-tag">PinchGestureHandler</span>&gt;</code></pre>
+      </div>
+
+      <p>
+        Is approach mein problem: refs manually manage karna padta hai, dono directions mein wire karna padta hai
+        (bhool jaane pe silent bug), aur nesting deep ho jaane pe (3+ gestures) ye combinatorially messy ho jaata hai
+        — kaunsa handler kis dusre ke saath simultaneous hai, ye trace karna mushkil ho jaata hai.
+      </p>
+      <p>
+        Naya <code>Gesture</code> API isko <strong>declarative composition functions</strong> se solve karta hai —
+        koi refs nahi, seedha gesture objects ko compose karo:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>new-declarative-composition.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> pan = Gesture.<span class="tok-fn">Pan</span>() <span class="tok-com">// pan gesture object bana rahe hain</span>
+  .<span class="tok-fn">onUpdate</span>((e) => { <span class="tok-com">// jab finger move ho</span>
+    <span class="tok-str">'worklet'</span>; <span class="tok-com">// UI thread pe run hoga</span>
+    translateX.value = e.translationX; <span class="tok-com">// pan se translation apply</span>
+    translateY.value = e.translationY; <span class="tok-com">// dono axes update</span>
+  });
+
+<span class="tok-kw">const</span> pinch = Gesture.<span class="tok-fn">Pinch</span>() <span class="tok-com">// pinch gesture object bana rahe hain</span>
+  .<span class="tok-fn">onUpdate</span>((e) => { <span class="tok-com">// jab do fingers zoom karein</span>
+    <span class="tok-str">'worklet'</span>; <span class="tok-com">// UI thread pe run hoga</span>
+    scale.value = e.scale; <span class="tok-com">// pinch scale factor apply</span>
+  });
+
+<span class="tok-com">// Gesture.Simultaneous: dono gestures ek saath active reh sakte hain — koi ref, koi manual wiring nahi</span>
+<span class="tok-kw">const</span> composed = Gesture.<span class="tok-fn">Simultaneous</span>(pan, pinch);
+
+<span class="tok-kw">return</span> (
+  &lt;<span class="tok-tag">GestureDetector</span> <span class="tok-attr">gesture</span>={composed}&gt; <span class="tok-com">{/* single detector, composed gesture pass kiya */}</span>
+    &lt;<span class="tok-tag">Animated.View</span> <span class="tok-attr">style</span>={animatedStyle} /&gt; <span class="tok-com">{/* pan aur pinch dono ka combined effect yahan apply hoga */}</span>
+  &lt;/<span class="tok-tag">GestureDetector</span>&gt;
+);</code></pre>
+      </div>
+
+      <p>
+        Available composition functions: <code>Gesture.Simultaneous(...)</code> (sab ek saath active), <code>Gesture.Race(...)</code>
+        (jo pehle recognize ho jaaye wahi win kare, baaki cancel — jaise tap vs long-press disambiguation), aur
+        <code>Gesture.Exclusive(...)</code> (priority order — pehla try hota hai, fail hone pe agla).
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Naya <code>Gesture</code> API maintainable isliye hai kyunki composition <em>data ke through express hoti
+          hai</em> (gesture objects ko compose karke ek naya gesture object banta hai) na ki <em>imperative
+          side-channel refs</em> ke through. Isse code review mein bhi clearly dikhta hai ki kaunse gestures
+          related hain, aur complex multi-gesture interactions (jaise photo viewer mein pinch-to-zoom + pan +
+          double-tap-to-reset, teeno ek saath) likhna aur debug karna kaafi simpler ho jaata hai — ek common senior
+          interview question bhi yahi hai: "pinch-to-zoom ke saath pan simultaneously kaise implement karoge" —
+          answer <code>Gesture.Simultaneous()</code> hona chahiye, refs-based legacy approach nahi.
+        </p>
+      </div>
+
+      <h2 id="interview-questions">9. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level RN interviews mein animations aur gestures
+        ke topic pe commonly puchhe jaate hain — internals, trade-offs, debugging approach, aur "why" wale questions.
+      </p>
+
+      <h3>1. Ek worklet actually runtime pe kya hai? Kya ye ek normal JS function hi hai?</h3>
+      <p>
+        Nahi, ye ek regular JS function nahi hai jahan tak runtime behavior ka sawaal hai — although source code mein
+        ye ek normal function jaisa hi dikhta hai. Compile time pe Babel plugin isko static analysis se identify
+        karta hai (<code>'worklet'</code> directive, ya kisi worklet-izing hook ke andar hone ki wajah se), function
+        ko <em>source string + captured closure</em> mein serialize karta hai, aur runtime pe UI thread pe chal rahe
+        ek <strong>separate JS runtime instance</strong> mein re-construct karta hai. Matlab ek hi function ke
+        effectively <em>do copies</em> exist karte hain — ek JS thread ke normal runtime mein (agar wahan se bhi call
+        ho raha ho), ek UI thread ke worklet runtime mein — aur ye dono independent hain, closures share nahi karte
+        live reference se, sirf serialized snapshot share karte hain.
+      </p>
+
+      <h3>2. Aap kab abhi bhi purana Animated API use karoge, Reanimated ki jagah?</h3>
+      <p>
+        Kuch legitimate cases hain: (1) Bahut simple, one-off animations jaha performance-critical gesture-driven
+        interaction nahi hai — jaise ek modal ka simple fade-in jo <code>useNativeDriver: true</code> ke saath already
+        smooth hai, wahan Reanimated add karna extra dependency/complexity ho sakta hai bina real benefit ke. (2)
+        Legacy codebase jaha already Animated API se heavily invested code hai aur migration cost/risk immediate
+        benefit se zyada hai. (3) Kuch bahut chhote libraries/components jo sirf ek simple animated value expose
+        karte hain aur Reanimated install karna unnecessary overhead lagta hai project size ke hisaab se. Lekin koi
+        bhi <em>gesture-driven</em> ya <em>complex/chained</em> animation ke liye Reanimated hi default choice honi
+        chahiye — ye trade-off samajhna, na ki blindly ek tool choose karna, senior thinking dikhata hai.
+      </p>
+
+      <h3>3. Ek animation sirf Android pe frames drop kar rahi hai, iOS pe nahi — diagnostic approach kya hoga?</h3>
+      <p>
+        Systematic approach: (1) Pehle confirm karo ki animation truly UI thread pe chal rahi hai — <code>useAnimatedStyle</code>
+        ke andar koi non-shared-value (regular state/prop) to nahi use ho raha jo silently JS thread sync force kar
+        raha ho. (2) Android-specific overdraw check karo — agar view hierarchy deep hai ya complex shadows/elevation
+        use ho rahe hain, Android ka rendering pipeline (especially older devices, software rendering fallback) iOS
+        se zyada expensive ho sakta hai same visual ke liye. (3) Hermes bytecode/JIT differences check karo — kabhi
+        kabhi Android pe Hermes configuration (bytecode precompilation on/off) different hoti hai jo cold-start pe
+        pehle few frames slow kar sakti hai. (4) Flipper/Android Studio Profiler se actual native-side frame timing
+        dekho — confirm karo ki bottleneck UI thread (worklet execution) mein hai ya native rendering (Android's
+        View hierarchy measure/layout/draw) mein hai — dono ka fix alag hoga. (5) Check karo ki koi heavy synchronous
+        native module call (jaise bridge-based legacy native module) us gesture/animation ke saath overlap to nahi
+        ho raha.
+      </p>
+
+      <h3>4. setState ko directly worklet ke andar call kyun nahi kar sakte? runOnJS actually kya kar raha hai?</h3>
+      <p>
+        <code>setState</code> (aur uska setter function) React ke JS thread runtime mein define hota hai — worklet
+        ke UI thread runtime mein wo function exist hi nahi karta (serialize/re-create process sirf worklets ke liye
+        hota hai, arbitrary React internals ke liye nahi). Agar aap directly call karne ki koshish karoge, ya to
+        build-time error milega (agar Babel plugin detect kar paaye) ya runtime pe "function is not defined" jaisi
+        error. <code>runOnJS(fn)</code> actually karta hai ye: UI thread se ek message JSI ke through JS thread ko
+        schedule karta hai ("is function ko is argument ke saath JS thread pe call karo"), JS thread apni normal
+        event loop mein us call ko process karta hai — jahan <code>setState</code> jaise React APIs safely accessible
+        hain kyunki hum wapas JS thread ke context mein hain. Ye ek explicit, lightweight one-way hop hai (JSI ke
+        through, bridge jaisa heavy serialization nahi), lekin phir bhi ek async scheduling step hai — isliye ise
+        per-frame use karna avoid karna chahiye.
+      </p>
+
+      <h3>5. Fabric ke New Architecture mein aane se pehle vs baad mein, Reanimated ka behavior kaise different tha?</h3>
+      <p>
+        Old architecture (Bridge-based) mein bhi Reanimated 2/3 JSI ka use kar leta tha worklets ke liye (JSI old
+        architecture mein bhi available tha, sirf components ka rendering pipeline bridge-based tha) — matlab
+        worklets already UI thread pe chal rahe the even bina Fabric ke. Fabric specifically <em>layout animations</em>
+        (<code>entering</code>/<code>exiting</code>/<code>layout</code>) ke liye important hai kyunki inko component
+        ke mount/unmount/layout-change ka accurate native-side signal chahiye hota hai jo Fabric ke commit lifecycle
+        se milta hai — old architecture mein layout animations ka support limited/hacky tha. General shared-value
+        animations aur gesture-driven interactions Fabric se pehle bhi kaafi had tak UI-thread-native the.
+      </p>
+
+      <h3>6. useSharedValue aur useState mein fundamental difference kya hai — sirf "re-render trigger nahi karta" ke alawa?</h3>
+      <p>
+        Storage location bhi different hai — <code>useState</code> ki value JS thread ke React fiber mein store hoti
+        hai, jabki <code>useSharedValue</code> ki value ek native/UI-thread-accessible memory location mein store
+        hoti hai jo JSI ke through dono runtimes se readable/writable hai. Isliye <code>useSharedValue.value</code>
+        ko UI thread pe worklet ke andar read/write karna <em>synchronous aur zero-overhead</em> hai, jabki agar aap
+        <code>useState</code> ki value ko kisi tarah UI thread pe use karna chahte (jo directly possible nahi hai),
+        wo ek cross-thread sync operation hoga. Dusra difference: <code>useSharedValue</code> mutation React's
+        render cycle se completely bypass hoti hai — koi reconciliation, koi diffing — jabki <code>useState</code>
+        ka har update poore React reconciliation pipeline se guzarta hai.
+      </p>
+
+      <h3>7. Gesture Handler v2 mein GestureDetector sirf ek child accept karta hai — is design constraint ka reasoning kya hai?</h3>
+      <p>
+        Ye constraint isliye hai kyunki <code>GestureDetector</code> apne single child ke underlying native view
+        (native host component) ko directly gesture recognizer se attach karta hai — native gesture recognition
+        (UIGestureRecognizer-jaisa concept) ek specific view instance pe register hota hai, multiple views pe ek
+        saath ambiguous hota. Agar multiple elements pe gesture chahiye, unko ek common parent View mein wrap karke
+        us parent ko single child banao, ya multiple <code>GestureDetector</code>s use karo (nested ya sibling) with
+        composed gestures jahan zaroorat ho.
+      </p>
+
+      <h3>8. withTiming vs withSpring — kab kaunsa choose karoge, aur inke completion callback ka behavior kya hai?</h3>
+      <p>
+        <code>withTiming</code> deterministic duration ke saath chalta hai — use karo jab exact timing predictable
+        honi chahiye (jaise ek fixed 200ms fade transition jo kisi dusre timed event, jaise navigation, ke saath
+        sync honi hai). <code>withSpring</code> physics-simulated hai (mass/damping/stiffness parameters) — use karo
+        jaha organic, "alive" feel chahiye (jaise drag-release ke baad snap-back, jahan exact duration matter nahi
+        karta, natural deceleration curve matter karta hai). Dono ka teesra argument ek optional completion callback
+        hai jo khud bhi ek worklet context mein invoke hota hai (UI thread pe) — isliye uske andar se agar JS-side
+        effect chalana hai (state update, analytics, navigation), wahan bhi <code>runOnJS</code> zaroori hai, jaisa
+        humne swipe-to-delete example mein dekha tha.
+      </p>
+
+      <h3>9. Ek nested ScrollView ke andar ek horizontal Pan gesture properly work nahi kar raha — konsa concept isse related hai, aur fix kaise karoge?</h3>
+      <p>
+        Ye classic <strong>gesture conflict / responder clash</strong> scenario hai — parent <code>ScrollView</code>
+        (jo khud ek vertical pan gesture handle kar raha hai internally) aur child ka custom horizontal
+        <code>Gesture.Pan()</code> dono touch events claim karne ki koshish karte hain. Fix approach: (1)
+        <code>Gesture.Pan().activeOffsetX([-10, 10])</code> jaisa "activation offset" set karo taaki gesture sirf
+        tab activate ho jab horizontal movement ek threshold cross kare — isse vertical scroll intent clash nahi
+        karta. (2) Agar dono simultaneously chalne chahiye (rare case), <code>Gesture.Simultaneous()</code> use karo.
+        (3) Agar priority based behavior chahiye (pehle scroll try ho, fail hone pe pan), <code>Gesture.Race()</code>
+        ya <code>simultaneousWithExternalGesture()</code> API use karo jo <code>ScrollView</code> ke internal native
+        gesture ko reference kar sake. Ye samajhna ki gesture "activation" aur "recognition" alag concepts hain
+        (activate hone se pehle offset thresholds check hote hain) senior-level gesture debugging ka core hai.
+      </p>
+
+      <h3>10. Reanimated worklets memory/GC ke perspective se kya consideration create karte hain?</h3>
+      <p>
+        Kyunki closures serialize hoke UI runtime pe copy hoti hain, agar worklet ke closure mein galti se ek bada
+        object (jaise poori list ka data, ya ek large image buffer reference) capture ho jaaye jab sirf ek chhota
+        primitive chahiye tha, to har worklet re-creation/re-registration pe wo poora closure duplicate/retain hota
+        hai UI runtime ki memory mein bhi — do runtimes mein effectively do copies. Best practice: worklets ke closures
+        ko minimal rakho — sirf jo shared values/primitives chahiye unhi ko reference karo, poore objects/props ko
+        blindly capture mat karo. Ye especially list ke andar bahut saare items ke liye worklets banate waqt (jaise
+        FlatList ke har row mein ek gesture) matter karta hai, jaha closures multiply ho jaate hain item count ke
+        saath.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="04-expo-router.html">
+          <div class="label">← Previous</div>
+          <div class="title">Expo Router</div>
+        </a>
+        <a class="next" href="06-expo-ui.html">
+          <div class="label">Next →</div>
+          <div class="title">Expo UI</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

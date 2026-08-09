@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EAS Build — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link active" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> EAS Build</div>
+      <div class="progress-pill">Chapter 10 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 10 · Build &amp; Release</span>
+      <h1>EAS Build — Cloud Native Builds, Profiles aur Credentials</h1>
+      <p class="subtitle">
+        Is chapter mein hum dekhenge ki EAS Build actually root level pe kya karta hai (sirf "cloud pe build hota
+        hai" nahi — <em>kyun</em> aur <em>kaise</em>), <code>eas.json</code> profiles kaise design karte hain
+        (development/preview/production), credentials (signing certs, provisioning profiles, keystores) kaun
+        manage karta hai aur kaise, version code automation, aur wo real-world gotchas jo har senior dev ne kabhi
+        na kabhi jhela hai jab "local pe chal raha tha, EAS pe fail ho gaya".
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#what-eas-build-does">1. What EAS Build Actually Does</a></li>
+          <li><a href="#eas-json-profiles">2. eas.json aur Build Profiles</a></li>
+          <li><a href="#dev-builds">3. Development Builds</a></li>
+          <li><a href="#preview-builds">4. Preview Builds</a></li>
+          <li><a href="#production-builds">5. Production Builds</a></li>
+          <li><a href="#credentials">6. Credentials Management</a></li>
+          <li><a href="#version-automation">7. Automating App Version Code</a></li>
+          <li><a href="#gotchas">8. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">10. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="what-eas-build-does" style="border-top:none; padding-top:0; margin-top:28px;">What EAS Build Actually Does</h2>
+
+      <p>
+        Sabse pehle ek fundamental confusion clear karte hain jo bahut logo ko hoti hai: <strong>EAS Build koi
+        magic cloud service nahi hai jo "kuch alag tarah se" app banata hai</strong> — ye literally wahi native
+        build process run karta hai jo aap apne local machine pe karte, bas ek remote server pe. iOS ke liye ye
+        cloud mein ek macOS machine spin karta hai, us par <code>xcodebuild</code> chalata hai (exactly wahi Xcode
+        toolchain jo aapke Mac pe chalta), aur ek signed <code>.ipa</code> file generate karta hai. Android ke
+        liye ye ek Linux (ya macOS) machine pe <code>./gradlew</code> chalata hai (Gradle build, wahi jo Android
+        Studio internally chalata hai), aur ek <code>.apk</code> ya <code>.aab</code> (Android App Bundle) file
+        generate karta hai.
+      </p>
+
+      <p>
+        To phir isme naya kya hai? Root level pe iska matlab ye hai ki <strong>aapko compile-time native toolchain
+        ki zaroorat nahi</strong> — aur ye ek bahut bada practical unlock hai:
+      </p>
+      <ul>
+        <li><strong>iOS build ke liye Mac ki zaroorat nahi</strong> — ye sabse bada reason hai jo log EAS Build
+          use karte hain. Xcode sirf macOS pe chalta hai (Apple ki licensing restriction), to agar aap Windows ya
+          Linux pe develop kar rahe ho, local pe iOS build banana literally impossible tha pehle. EAS ka macOS
+          cloud runner ye problem solve karta hai — aap kahin se bhi <code>eas build --platform ios</code> chala
+          sakte ho, real Apple-signed hardware pe nahi, lekin Apple ke required macOS environment mein.</li>
+        <li><strong>Consistent, reproducible build environment</strong> — "works on my machine" ka native version
+          bhi hota hai: alag Xcode version, alag CocoaPods version, alag Android SDK/NDK version — sab alag
+          results de sakte hain. EAS ek pinned, versioned build image use karta hai (aap <code>eas.json</code> mein
+          <code>image</code> field se specific version bhi pin kar sakte ho), to poori team — aur CI — same
+          environment mein build karti hai, "mere pe kaam kar raha tha" wali class of bugs kaafi kam ho jaati hai.</li>
+        <li><strong>Credentials aur signing centrally handle hote hain</strong> — iOS signing certificates,
+          provisioning profiles, Android keystores — ye sab sensitive files hain jo normally har developer ke
+          local machine pe manually manage karne padte the (aur aksar galat tarike se — Slack pe bhej diya,
+          <code>.gitignore</code> bhool gaye). EAS in credentials ko securely apne server pe store kar sakta hai
+          aur build ke time automatically apply kar deta hai — hum ise Section 6 mein detail se dekhenge.</li>
+        <li><strong>Aapka local machine free rehta hai</strong> — native builds CPU aur RAM heavy hote hain
+          (especially iOS builds jo 10-20 min tak le sakte hain). Cloud pe offload karne se aap us waqt kaam
+          continue kar sakte ho, aur team ke saare developers parallel builds trigger kar sakte hain bina apne
+          laptops ko heat kiye.</li>
+      </ul>
+
+      <p>
+        Ab isko contrast karte hain local native build commands se — <code>expo run:ios</code> aur
+        <code>expo run:android</code>. Ye commands bhi native build hi karte hain, lekin <strong>completely local
+        machine pe</strong> — matlab aapke paas Xcode (macOS pe) ya Android Studio + SDK/NDK (kisi bhi OS pe)
+        installed hona zaroori hai. Ye tab useful hote hain jab aap active development kar rahe ho aur fast
+        iteration chahiye (native module add kiya, turant test karna hai, cloud round-trip ka wait nahi karna),
+        ya jab aap offline/restricted-network environment mein ho. Lekin ye aapke local environment pe depend
+        karte hain — agar aapka Xcode outdated hai ya kisi teammate ka Android SDK config alag hai, results
+        differ kar sakte hain.
+      </p>
+
+      <table>
+        <tr><th>Aspect</th><th>Local (<code>expo run:ios/android</code>)</th><th>EAS Build (cloud)</th></tr>
+        <tr><td>Requirement</td><td>Xcode / Android Studio installed locally</td><td>Sirf internet + EAS CLI</td></tr>
+        <tr><td>iOS pe kaam</td><td>Sirf macOS machine se</td><td>Kisi bhi OS se (Windows/Linux bhi)</td></tr>
+        <tr><td>Speed</td><td>Fast iteration (no queue, no upload)</td><td>Build queue + upload/download time</td></tr>
+        <tr><td>Consistency</td><td>Aapke local env pe depend karta hai</td><td>Pinned, versioned cloud image</td></tr>
+        <tr><td>Credentials</td><td>Manually manage karne padte hain</td><td>EAS securely store + auto-apply karta hai</td></tr>
+        <tr><td>Best for</td><td>Active native dev iteration</td><td>Shareable builds, CI/CD, store submission</td></tr>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Practical senior workflow ye hota hai: <strong>local native build</strong> use karo jab aap active
+          native module development kar rahe ho (fast iteration chahiye), aur <strong>EAS Build</strong> use karo
+          jab build ko share karna hai (QA, stakeholders), CI pipeline mein automate karna hai, ya store pe submit
+          karna hai. Dono mutually exclusive nahi hain — same project mein dono use hote hain, alag purpose ke
+          liye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="eas-json-profiles">eas.json aur Build Profiles</h2>
+
+      <p>
+        <code>eas.json</code> project ke root mein rehta hai aur ye define karta hai ki <strong>build profiles</strong>
+        kya hain — har profile ek named configuration hai jo batata hai ki us build ka distribution type kya hoga,
+        dev client include hoga ya nahi, environment variables kya honge, aur build kis platform ke liye ho raha
+        hai. Jab aap <code>eas build --profile production</code> chalate ho, EAS us naam ke profile ko
+        <code>eas.json</code> mein dhoondta hai aur uski settings apply karta hai. Ye concept powerful isliye hai
+        kyunki ek hi command (<code>eas build</code>) se aap completely different tarah ke builds generate kar
+        sakte ho — bas profile ka naam badal ke.
+      </p>
+
+      <p>
+        Standard convention teen profiles rakhne ka hai: <strong><code>development</code></strong> (local iteration
+        ke liye dev-client wala build), <strong><code>preview</code></strong> (QA/stakeholders ke liye internal
+        distribution, production jaisi native config), aur <strong><code>production</code></strong> (store submission
+        ke liye final build). Neeche ek fully annotated example hai:
+      </p>
+
+      <p style="font-size:0.8rem; color:var(--text-faint); margin-bottom:6px;">
+        (comments added for teaching — remove them in your real <code>eas.json</code> since JSON doesn't support comments)
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>eas.json</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"cli"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "cli" block — EAS CLI ke behaviour ko control karta hai</span>
+    <span class="tok-attr">"version"</span>: <span class="tok-str">">= 12.0.0"</span><span class="tok-punc">,</span> <span class="tok-com">// Minimum EAS CLI version jo is config ke saath compatible hai</span>
+    <span class="tok-attr">"appVersionSource"</span>: <span class="tok-str">"remote"</span> <span class="tok-com">// Version state EAS servers pe track hoga, local app.json mein nahi (Section 7 mein detail)</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// cli block close</span>
+  <span class="tok-attr">"build"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "build" key ke andar saare named build profiles define hote hain</span>
+    <span class="tok-attr">"development"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "development" profile — local dev/testing ke liye</span>
+      <span class="tok-attr">"developmentClient"</span>: <span class="tok-kw">true</span><span class="tok-punc">,</span> <span class="tok-com">// expo-dev-client wala build banega (custom native code allowed + fast refresh)</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"internal"</span><span class="tok-punc">,</span> <span class="tok-com">// Sirf directly install hoga (link/QR se), App Store/Play Store review nahi</span>
+      <span class="tok-attr">"ios"</span>: <span class="tok-punc">{</span> <span class="tok-com">// iOS-specific overrides is profile ke liye</span>
+        <span class="tok-attr">"simulator"</span>: <span class="tok-kw">false</span> <span class="tok-com">// false = real device ke liye build banega (true karo to Simulator build milta hai, code-signing skip hoti hai)</span>
+      <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// ios override close</span>
+      <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Android-specific overrides</span>
+        <span class="tok-attr">"buildType"</span>: <span class="tok-str">"apk"</span> <span class="tok-com">// APK generate hoga (directly installable), AAB nahi (jo sirf Play Store ke liye hota hai)</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// android override close</span>
+    <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// development profile close</span>
+    <span class="tok-attr">"preview"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "preview" profile — QA/stakeholder testing ke liye, production-like</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"internal"</span><span class="tok-punc">,</span> <span class="tok-com">// Store review ke bina directly share hota hai (link se install)</span>
+      <span class="tok-attr">"channel"</span>: <span class="tok-str">"preview"</span><span class="tok-punc">,</span> <span class="tok-com">// EAS Update channel bind hota hai isi naam se (future OTA updates iss build ko target karenge)</span>
+      <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Android override for preview</span>
+        <span class="tok-attr">"buildType"</span>: <span class="tok-str">"apk"</span> <span class="tok-com">// Testers ko direct APK deni hai, easy install ke liye</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// android override close</span>
+    <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// preview profile close</span>
+    <span class="tok-attr">"production"</span>: <span class="tok-punc">{</span> <span class="tok-com">// "production" profile — store submission ke liye final build</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"store"</span><span class="tok-punc">,</span> <span class="tok-com">// App Store / Play Store submission ke liye configured</span>
+      <span class="tok-attr">"autoIncrement"</span>: <span class="tok-kw">true</span><span class="tok-punc">,</span> <span class="tok-com">// Har production build pe versionCode/buildNumber apne aap bump hoga (Section 7)</span>
+      <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Android override for production</span>
+        <span class="tok-attr">"buildType"</span>: <span class="tok-str">"app-bundle"</span> <span class="tok-com">// AAB format — Play Store ab isi format ko mandatory require karta hai</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// android override close</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// production profile close (no trailing comma — last key)</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// build key close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <p>Key-by-key legend agar upar ka JSON confusing laga:</p>
+      <ul>
+        <li><strong><code>cli.version</code></strong> — CLI version constraint, taaki purana CLI galat config na apply kare.</li>
+        <li><strong><code>cli.appVersionSource</code></strong> — <code>"remote"</code> matlab EAS version numbers ko apne server pe track karta hai (team-safe), <code>"local"</code> matlab <code>app.json</code> mein manually maintain karna hoga.</li>
+        <li><strong><code>developmentClient</code></strong> — <code>true</code> hone par build mein <code>expo-dev-client</code> bundle hota hai, jisse custom native modules ke saath bhi fast-refresh JS iteration milta rehta hai.</li>
+        <li><strong><code>distribution</code></strong> — <code>"internal"</code> (direct install, no store review) vs <code>"store"</code> (App Store/Play Store submission ke liye packaged).</li>
+        <li><strong><code>channel</code></strong> — EAS Update se link hota hai; batata hai ki ye build kaunse OTA update channel ko subscribe karega.</li>
+        <li><strong><code>autoIncrement</code></strong> — production builds mein version/build number automatically bump karta hai.</li>
+        <li><strong><code>ios.simulator</code></strong> — <code>true</code> karne par Simulator-compatible build banta hai jo bina code-signing ke chal jaata hai (quick local testing ke liye handy).</li>
+        <li><strong><code>android.buildType</code></strong> — <code>"apk"</code> (directly installable file) vs <code>"app-bundle"</code> (Play Store-only optimized format).</li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Profile ka naam kuch bhi ho sakta hai — "development", "preview", "production" sirf convention hain,
+          EAS ko koi special meaning nahi pata inki. Aap chahe to <code>"staging"</code> ya
+          <code>"client-demo"</code> jaisa custom profile bhi bana sakte ho — bas <code>eas build --profile
+          &lt;naam&gt;</code> se usko reference karna hoga.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="dev-builds">Development Builds</h2>
+
+      <p>
+        Development build wo build hai jisme <code>developmentClient: true</code> set hota hai — iska matlab ye
+        build mein <strong><code>expo-dev-client</code></strong> package bundled hota hai, jo essentially ek custom
+        Expo Go jaisa hai lekin <em>aapke apne native code ke saath compiled</em>. Yaad rakho Expo Go ek generic
+        app hai jo Expo store se download hoti hai aur usme sirf wahi native modules hote hain jo Expo pehle se
+        bundle karta hai — agar aapko koi third-party native module (jaise <code>react-native-ble-plx</code> ya
+        koi custom native module) chahiye jo Expo Go mein included nahi hai, Expo Go usse load nahi kar sakta.
+        Development build isi limitation ko todta hai: ye <em>aapka khud ka native binary</em> hai jisme aapke
+        saare native dependencies compiled hain, lekin phir bhi JS bundle Metro se live load hota hai — matlab
+        aapko har native change ke baad rebuild nahi karna padta, sirf naya native module add karne par.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Development build create karne ke liye expo-dev-client install karna zaroori hai pehle</span>
+npx expo install expo-dev-client <span class="tok-com"># Ye dependency development client ka runtime add karti hai</span>
+
+<span class="tok-com"># Android ke liye development profile se build trigger karo</span>
+eas build --profile development --platform android <span class="tok-com"># eas.json ke "development" profile ki settings use hongi</span>
+
+<span class="tok-com"># iOS ke liye bhi same profile, alag platform</span>
+eas build --profile development --platform ios <span class="tok-com"># Real device ke liye signed .ipa banega (kyunki simulator:false set hai)</span>
+
+<span class="tok-com"># Build complete hone ke baad, JS bundler ko separately start karo</span>
+npx expo start --dev-client <span class="tok-com"># Development build isi Metro server se connect hoke JS load karega</span></code></pre>
+      </div>
+
+      <p>
+        Build complete hone ke baad EAS aapko ek <strong>download link + QR code</strong> deta hai. Android pe ye
+        direct <code>.apk</code> hoti hai jo aap seedha device pe install kar sakte ho (Play Store ki zaroorat
+        nahi). iOS pe ye ek <code>.ipa</code> hoti hai — lekin iOS pe internal distribution ke liye device ko
+        pehle "registered" hona padta hai EAS credentials ke through (ad-hoc provisioning profile ki wajah se —
+        iOS by design kisi bhi random device pe app install nahi hone deta bina explicit registration ke, chahe
+        wo App Store se bahar hi kyun na ho). Ye artifact ek <strong>installable binary</strong> hai — end user
+        (aap, ya QA teammate) isse directly apne phone pe install karta hai, koi store review involved nahi.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ distribution: internal ka matlab</div>
+        <p>
+          <code>"distribution": "internal"</code> ka matlab hai build App Store/Play Store review process se
+          bilkul bypass ho jata hai — sirf un logo ko milta hai jinke paas download link/QR hai. Team ke andar
+          share karne ke liye perfect hai, lekin end users tak isse distribute nahi kar sakte (wo store-only hota hai).
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="preview-builds">Preview Builds</h2>
+
+      <p>
+        Preview build bhi <code>distribution: "internal"</code> use karta hai (matlab store review nahi lagta,
+        directly install hoti hai) — lekin isme sabse bada difference ye hai ki <strong>ye dev client
+        include nahi karta</strong>. Preview build production ke bilkul kareeb ka native configuration use karta
+        hai — no dev menu, no fast refresh, JS bundle build-time pe hi permanently embed ho jata hai (Metro se
+        live connect nahi hota). Isliye preview build ka behaviour <em>exactly</em> wahi hota hai jo end user ko
+        milega, sirf distribution channel alag hai (link se milta hai, store se nahi).
+      </p>
+
+      <p>
+        Ye QA aur stakeholder testing ke liye ideal profile hai — jab aapko client ko "yaha dekho feature X kaisa
+        dikh raha hai" dikhana ho bina App Store review ka wait kiye (jo 1-3 din le sakta hai), ya jab QA team ko
+        ek stable, production-jaisa build test karna ho jisme dev-only cheezein (dev menu, red-box errors,
+        Reactotron connections) na dikhein.
+      </p>
+
+      <table>
+        <tr><th>Aspect</th><th>Development Build</th><th>Preview Build</th></tr>
+        <tr><td>Dev Client</td><td>Included (<code>expo-dev-client</code>)</td><td>Not included</td></tr>
+        <tr><td>JS Source</td><td>Live Metro server se</td><td>Embedded at build time</td></tr>
+        <tr><td>Dev Menu</td><td>Available (shake to open)</td><td>Not available</td></tr>
+        <tr><td>Fast Refresh</td><td>Haan</td><td>Nahi</td></tr>
+        <tr><td>Purpose</td><td>Active native iteration</td><td>QA / stakeholder demo</td></tr>
+        <tr><td>Distribution</td><td>Internal</td><td>Internal</td></tr>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Bahut teams galti se sirf development build banate hain aur QA ko wahi de dete hain — problem ye hai ki
+          dev client ka behaviour (extra JS bridge overhead, dev-only warnings, red-box crashes on JS errors
+          jo production mein silently handle hote) production se differ karta hai. Preview build banane mein
+          extra 5 minute lagta hai, lekin isse QA "real" bugs pakadta hai, dev-environment-only artifacts nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="production-builds">Production Builds</h2>
+
+      <p>
+        Production profile wo hai jo actually App Store aur Play Store pe submit hota hai. Ismein
+        <code>distribution: "store"</code> set hota hai — jiska matlab hai build store submission format mein
+        packaged hota hai (Android ke liye <code>.aab</code>/App Bundle, jo Play Store ab mandatory require karta
+        hai; iOS ke liye distribution-certificate-signed <code>.ipa</code>). Iske saath <code>autoIncrement: true</code>
+        rakhna almost hamesha zaroori hota hai (Section 7 mein detail se dekhenge kyun).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>eas.json (production block only)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">"production"</span>: <span class="tok-punc">{</span> <span class="tok-com">// production profile ka poora block</span>
+  <span class="tok-attr">"distribution"</span>: <span class="tok-str">"store"</span><span class="tok-punc">,</span> <span class="tok-com">// App Store / Play Store submission ke format mein package hoga</span>
+  <span class="tok-attr">"autoIncrement"</span>: <span class="tok-kw">true</span><span class="tok-punc">,</span> <span class="tok-com">// versionCode (Android) / buildNumber (iOS) auto-bump har build pe</span>
+  <span class="tok-attr">"env"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Production-only environment variables yahan define kar sakte ho</span>
+    <span class="tok-attr">"APP_ENV"</span>: <span class="tok-str">"production"</span> <span class="tok-com">// Runtime pe app.config.ts ye value read karke prod-specific settings use karega</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// env block close</span>
+  <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Android-specific production overrides</span>
+    <span class="tok-attr">"buildType"</span>: <span class="tok-str">"app-bundle"</span> <span class="tok-com">// Play Store ke liye mandatory AAB format</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// android override close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// production profile close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Dono platforms ke liye production build ek saath trigger karna (agar dono ready hain)</span>
+eas build --profile production --platform all <span class="tok-com"># "all" iOS aur Android dono queue mein daal deta hai</span>
+
+<span class="tok-com"># Ya sirf ek platform ke liye alag se</span>
+eas build --profile production --platform ios <span class="tok-com"># Sirf iOS distribution-signed .ipa banega</span>
+
+<span class="tok-com"># Build ka status non-interactively check karna (CI mein useful)</span>
+eas build:list --limit 1 --json <span class="tok-com"># Latest build ka JSON status output milta hai, scripting ke liye</span></code></pre>
+      </div>
+
+      <p>
+        Ye output — signed <code>.aab</code> ya <code>.ipa</code> — hi wo file hai jo aap (ya EAS Submit,
+        Chapter 11 mein) Play Console / App Store Connect pe upload karte ho for review.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="credentials">Credentials Management</h2>
+
+      <p>
+        Har mobile platform apni app ko cryptographically "sign" karwana mandatory karta hai — taaki OS aur store
+        dono verify kar sakein ki app ka publisher legit hai aur binary tamper nahi hui hai. iOS mein isme do
+        cheezein lagte hain: ek <strong>signing certificate</strong> (aapki developer identity prove karta hai)
+        aur ek <strong>provisioning profile</strong> (batata hai kaunse devices/capabilities is build ke saath
+        allowed hain). Android mein ek hi cheez lagti hai — ek <strong>keystore</strong> (ek file jisme signing
+        key store hoti hai, password-protected).
+      </p>
+
+      <p>
+        Traditionally ye sab manually manage karna padta tha — Xcode mein certificates generate karna, Apple
+        Developer portal pe provisioning profiles banana, keystores ko securely kahin store karna. EAS iska poora
+        lifecycle automate kar sakta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Interactive credentials manager kholta hai — view/generate/remove certs & keystores</span>
+eas credentials <span class="tok-com"># CLI aapse platform (iOS/Android) aur profile poochega, phir options dikhayega</span>
+
+<span class="tok-com"># Specific platform ke credentials directly manage karna</span>
+eas credentials --platform android <span class="tok-com"># Sirf Android keystore-related options dikhega</span></code></pre>
+      </div>
+
+      <p>
+        <code>eas credentials</code> chalane par aapke paas do options hote hain: <strong>"Expo manages
+        credentials for me"</strong> (recommended default — EAS certificates/keystores generate karta hai aur
+        apne encrypted servers pe securely store karta hai, aur automatically har build mein apply karta hai), ya
+        <strong>"I want to handle my own credentials"</strong> (aap apna existing certificate/keystore upload
+        karte ho, ya local <code>credentials.json</code> file se reference karte ho jab aapko full manual control
+        chahiye — jaise enterprise environments jahan certificates ek central security team issue karti hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>credentials.json (local credentials pattern)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Android ke liye local keystore reference</span>
+    <span class="tok-attr">"keystore"</span>: <span class="tok-punc">{</span> <span class="tok-com">// keystore file ki details</span>
+      <span class="tok-attr">"keystorePath"</span>: <span class="tok-str">"credentials/release.keystore"</span><span class="tok-punc">,</span> <span class="tok-com">// Repo ke andar (gitignored) local path</span>
+      <span class="tok-attr">"keystorePassword"</span>: <span class="tok-str">"$ANDROID_KEYSTORE_PASSWORD"</span><span class="tok-punc">,</span> <span class="tok-com">// Env var se resolve hota hai, plaintext nahi rakhte</span>
+      <span class="tok-attr">"keyAlias"</span>: <span class="tok-str">"my-app-key"</span><span class="tok-punc">,</span> <span class="tok-com">// Keystore ke andar specific key ka alias name</span>
+      <span class="tok-attr">"keyPassword"</span>: <span class="tok-str">"$ANDROID_KEY_PASSWORD"</span> <span class="tok-com">// Us specific key ka password, phir se env var se</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// keystore block close</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// android block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Android Keystore Loss = Catastrophic</div>
+        <p>
+          Ye sabse critical warning hai is poore chapter mein: <strong>agar aap apni production Android keystore
+          kho dete ho, aap kabhi bhi us hi package name ke under app ko update nahi kar sakte</strong>. Google
+          Play strictly enforce karta hai ki har update <em>same signing key</em> se signed ho jisse original
+          app submit hui thi — ye ek security measure hai taaki koi attacker aapki app ka fake update na push kar
+          sake. Agar keystore lost ho gaya (koi backup nahi, EAS-managed hone ke bawajood agar aapne kabhi export
+          nahi kiya, ya self-managed tha aur disk crash ho gaya), sirf ek hi option bachta hai —
+          <strong>naye package name ke saath bilkul nayi app listing banao</strong> — matlab aapke saare existing
+          users, reviews, aur ranking history permanently kho jaate hain. Senior dev practice: <code>eas
+          credentials</code> se keystore ko download karke encrypted backup (jaise ek password manager ya secure
+          vault) mein multiple jagah store karo — sirf ek insaan ke laptop pe nahi.
+        </p>
+      </div>
+
+      <p>
+        iOS mein consequence thoda kam severe hai (Apple certificate revoke/regenerate karna aasan hai, provided
+        aapke paas Apple Developer account ka access hai), lekin phir bhi agar poori team ka access lost ho jaye
+        (jaise jisne account banaya wo company chhod de aur 2FA recovery na ho), signing chain rebuild karne mein
+        significant downtime lag sakta hai. Isliye EAS-managed credentials generally recommended hain — Expo
+        infrastructure encrypted storage + team-level access control provide karta hai, jo "ek developer ke
+        laptop pe pdf/file" se zyada reliable hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="version-automation">Automating App Version Code</h2>
+
+      <p>
+        Har app store ek unique, monotonically-increasing internal version number require karta hai har build ke
+        liye — Android mein ise <strong><code>versionCode</code></strong> kehte hain (ek integer, user ko kabhi
+        nahi dikhta), aur iOS mein <strong><code>buildNumber</code></strong> (usually incrementing string). Ye
+        <code>versionName</code>/<code>CFBundleShortVersionString</code> (jo "1.2.0" jaisa human-readable version
+        hai, users ko dikhta hai) se alag hai — versionCode/buildNumber sirf stores ke liye internal bookkeeping
+        hai, lekin ismein duplicate value use karna <strong>store submission ko fail kar deta hai</strong>
+        ("this version code has already been used" jaisi error).
+      </p>
+
+      <p>
+        Manually inko track karna — especially jab team mein multiple developers builds trigger kar rahe hon —
+        error-prone hai. Isi liye <code>eas.json</code> ke production profile mein <code>autoIncrement: true</code>
+        set karte hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>eas.json (version automation snippet)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">"cli"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Top-level cli config</span>
+  <span class="tok-attr">"appVersionSource"</span>: <span class="tok-str">"remote"</span> <span class="tok-com">// Version state EAS ke servers pe centrally track hota hai, app.json mein nahi</span>
+<span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// cli block close</span>
+<span class="tok-attr">"build"</span>: <span class="tok-punc">{</span> <span class="tok-com">// build profiles block</span>
+  <span class="tok-attr">"production"</span>: <span class="tok-punc">{</span> <span class="tok-com">// production profile</span>
+    <span class="tok-attr">"autoIncrement"</span>: <span class="tok-kw">true</span> <span class="tok-com">// Har production build trigger hone par versionCode/buildNumber +1 ho jayega</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// production block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// build block close</span></code></pre>
+      </div>
+
+      <p>
+        <code>appVersionSource: "remote"</code> ka concept samajhna zaroori hai: iska matlab hai EAS <em>khud</em>
+        latest version numbers ko apne server pe track karta hai (per project, per platform) — matlab agar
+        developer A ne subah ek production build banayi (versionCode 42 → EAS ne use bump karke 43 kar diya
+        server pe), aur developer B shaam ko dusre laptop se build banaye, EAS use pata hai last value 43 thi, to
+        wo 44 se start karega. Agar aap iske bajaye <code>"local"</code> use karte (purana default), version
+        number <code>app.json</code>/<code>app.config.ts</code> mein manually maintain hota — aur do developers
+        ka concurrent build trigger karna easily version collision create kar sakta tha (dono ne apne local repo
+        se same base version padha, dono ne alag builds banayi, dono same versionCode ke saath submit karne ki
+        koshish ki). Remote tracking is race condition ko poori tarah eliminate karta hai — multi-developer teams
+        ke liye ye hamesha safer choice hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Current remote version state check karne ke liye <code>eas build:version:get</code> chala sakte ho, aur
+          agar kabhi manually override karna ho (jaise migration ke baad) to
+          <code>eas build:version:set</code> use hota hai. Normal flow mein inko touch karne ki zaroorat nahi
+          padti — <code>autoIncrement</code> khud sab handle kar leta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Version code bump bhool jaana</div>
+        <p>
+          Sabse common submission-blocking mistake: agar aap <code>autoIncrement</code> use nahi kar rahe aur
+          manually version bump karna bhool jaate ho, App Store Connect ya Play Console submission ko seedha
+          reject kar dega ("This version code has already been used, try another one"). Fix simple hai —
+          <code>autoIncrement: true</code> production profile mein permanently set kar do, aur is problem class
+          ko permanently khatam kar do.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Build queue wait times — free vs paid tier</div>
+        <p>
+          EAS ke free tier pe builds ek shared queue mein jaate hain, aur peak hours mein wait time 20-40+ minutes
+          tak ja sakta hai — especially iOS builds (macOS runners limited hote hain, expensive infra hai). Paid
+          plans (Production/Enterprise) <strong>priority builds</strong> dete hain jo queue skip karte hain aur
+          almost immediately start hote hain. Agar aapki team CI mein frequently builds trigger karti hai (jaise
+          har PR pe preview build), free tier ka queue time development velocity ko sensibly slow kar sakta hai —
+          ye budget planning mein factor karna senior-level consideration hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Works locally, fails on EAS Build"</div>
+        <p>
+          Ye sabse frustrating class of bugs hai. Expo Go mein aapka app perfectly chal raha tha, local
+          <code>expo run:android</code> bhi pass hua — lekin EAS Build fail ho gaya native compile step pe.
+          Common causes: (1) ek native dependency ka version aapke local <code>node_modules</code> cache mein
+          purana pinned tha lekin fresh EAS environment ne latest resolve kiya jo incompatible nikla, (2) koi
+          native module jisko <strong>config plugin</strong> setup chahiye (jaise Android permissions ya iOS
+          Info.plist entries add karna) — Expo Go usse silently ignore kar deta hai kyunki wo prebuild step run
+          hi nahi karta, lekin EAS Build prebuild zaroor chalata hai aur missing config ki wajah se native compile
+          fail ho jaata hai. Root cause: <strong>Expo Go aapko native layer se fully insulate karta hai</strong> —
+          isliye native-level misconfigurations sirf real native build (local ya EAS) ke time surface hoti hain,
+          Expo Go mein kabhi nahi.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Local vs EAS config drift</div>
+        <p>
+          Agar aapne apne local machine pe manually <code>ios/</code>/<code>android/</code> native folders edit
+          kar diye (bina config plugin banaye), wo changes sirf aapke local prebuild output mein exist karte
+          hain. EAS Build har baar fresh prebuild chalata hai <code>app.json</code>/<code>app.config.ts</code> +
+          config plugins se — matlab aapke manual native edits EAS build mein completely gayab ho jayenge. Sahi
+          approach: koi bhi native-level change ek proper <strong>config plugin</strong> ke through express karo
+          (ya <code>expo-build-properties</code> jaisi existing plugin use karo), taaki wo change deterministically
+          har build (local ho ya EAS) mein reproduce ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne dekha ki EAS Build <em>kya</em> karta hai — profiles, credentials, version automation. Ab
+        thoda root level neeche jaate hain aur dekhte hain ki cloud pe build <em>kaise</em> fast hota hai (caching
+        internals), bade monorepo setups mein isko kaise configure karte hain, build lifecycle ke beech custom
+        logic kaise inject karte hain (hooks), aur sabse important — jab native dependency resolution fail hoti hai
+        to ek senior dev systematically debug kaise karta hai (na ki panic mein <code>node_modules</code> delete
+        karke pray karta hai).
+      </p>
+
+      <!-- ---------------------------------------------------------- -->
+      <h3>Build Caching Internals</h3>
+
+      <p>
+        Pehli baar jab aap koi build trigger karte ho, EAS ek completely fresh virtual machine pe
+        <code>npm install</code> / <code>yarn install</code> (JS dependencies ke liye) aur iOS ke liye
+        <code>pod install</code> (CocoaPods native dependencies ke liye) chalata hai — dono hi steps slow hote hain
+        kyunki packages registry se download ho rahe hote hain. Speed improve karne ke liye EAS ek
+        <strong>remote cache</strong> maintain karta hai jisme wo <code>node_modules</code> aur CocoaPods'
+        <code>Pods/</code> directory ko (aur kuch cases mein Gradle ka dependency cache bhi) build ke baad upload
+        kar deta hai, key ke against.
+      </p>
+
+      <p>
+        Cache <strong>key</strong> lockfile ke hash se derive hoti hai — matlab <code>package-lock.json</code>,
+        <code>yarn.lock</code>, ya <code>Podfile.lock</code> jab tak byte-for-byte same rehte hain, agli build usi
+        cached <code>node_modules</code>/<code>Pods</code> ko restore kar leti hai aur poora install step skip ho
+        jaata hai — sirf naye/changed packages hi resolve hote hain. Jaise hi aap koi dependency add/remove/upgrade
+        karte ho, lockfile ka hash change ho jaata hai, aur EAS automatically samajh jaata hai ki purani cache ab
+        <strong>invalid</strong> hai — fresh install trigger hota hai us build ke liye (sirf us build ke liye, next
+        build phir se naye lockfile hash pe cache banayegi).
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Jab caching hi problem ban jaaye — stale dependency issue</div>
+        <p>
+          Kabhi kabhi ek edge case hoti hai: aapne koi native config change kiya (jaise ek config plugin add kiya
+          jo <code>Podfile</code> ko indirectly affect karta hai) lekin lockfile khud nahi badla — is case mein
+          cache key same rehti hai aur EAS purani, ab-stale <code>Pods/</code> directory restore kar deta hai, jo
+          aapke naye native config ke saath mismatch ho sakti hai. Symptom aksar ek confusing CocoaPods error hota
+          hai jo "makes no sense" lagta hai kyunki aapne to koi dependency change nahi ki. Fix: build ko explicitly
+          <strong>clean cache</strong> ke saath force karo.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Ye flag EAS ko batata hai ki is build ke liye remote dependency cache ignore karo</span>
+eas build --profile production --platform ios --clear-cache <span class="tok-com"># Fresh pod install + npm install poori tarah se hoga, cache-related staleness eliminate ho jaati hai</span></code></pre>
+      </div>
+
+      <p>
+        Senior-level heuristic: agar build fail ho raha hai kisi aisi error ke saath jo "impossible" lagti hai
+        (jaise "module not found" jab module clearly <code>package.json</code> mein hai), <code>--clear-cache</code>
+        ke saath ek retry pehla cheap diagnostic step hona chahiye — isse aap turant reject kar dete ho ki ye
+        stale-cache issue hai ya actual code/config problem.
+      </p>
+
+      <!-- ---------------------------------------------------------- -->
+      <h3>Monorepo Builds with EAS</h3>
+
+      <p>
+        Agar aapka Expo app repo ke root pe nahi hai — jaise ek Turborepo/Yarn Workspaces monorepo mein
+        <code>apps/mobile/</code> ke andar, aur <code>packages/ui/</code>, <code>packages/api-client/</code> jaise
+        shared packages sibling directories mein hain — EAS Build isko handle kar sakta hai, lekin senior-level
+        consideration ye hai ki <strong>build ka "working directory" kya hai</strong> aur <strong>dependency
+        installation kahan se resolve hoti hai</strong>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Repo structure (monorepo)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>my-monorepo/                     <span class="tok-com">// Repo ka root — yahan pe workspace-level lockfile (yarn.lock) rehta hai jo saare packages ki versions lock karta hai</span>
+├── apps/                         <span class="tok-com">// Saare deployable apps yahan group hain — packages/ se alag isliye taaki "kya publish/deploy hota hai" clearly separate ho "kya shared logic hai" se</span>
+│   └── mobile/                   <span class="tok-com">// Actual Expo RN app — EAS CLI isi directory ke andar se chalega, root se nahi</span>
+│       ├── eas.json              <span class="tok-com">// eas.json app directory ke andar rehta hai (root mein nahi) kyunki build profiles is specific app ke liye hain, poore monorepo ke liye nahi</span>
+│       ├── app.json              <span class="tok-com">// Is app ka Expo config — sirf mobile app ko affect karta hai</span>
+│       └── package.json          <span class="tok-com">// Is app ke direct dependencies + workspace ke shared packages ka reference (jaise "ui": "workspace:*")</span>
+├── packages/                     <span class="tok-com">// Shared code jo multiple apps use kar sakte hain — separate isliye taaki reusability enforce ho aur app-specific logic yahan leak na ho</span>
+│   ├── ui/                       <span class="tok-com">// Shared design-system components — mobile app aur (agar ho) web app dono isse import karte hain</span>
+│   └── api-client/                <span class="tok-com">// Shared API/networking layer — ek jagah maintain, sab jagah reuse, taaki API contract drift na ho alag implementations ke beech</span>
+└── package.json                  <span class="tok-com">// Root package.json — workspaces field define karta hai ("workspaces": ["apps/*", "packages/*"]), poore monorepo ki dependency graph ka entry point</span></code></pre>
+      </div>
+
+      <p>
+        Senior consideration #1 — <strong>working directory</strong>: EAS CLI ko app directory ke andar se hi run
+        karna chahiye (<code>cd apps/mobile &amp;&amp; eas build ...</code>), taaki uska local <code>eas.json</code>
+        aur <code>app.json</code> pick ho. Senior consideration #2 — <strong>dependency installation ka context</strong>:
+        yarn/npm workspaces mein dependencies ka actual resolution root lockfile ke through hota hai (hoisting) —
+        matlab EAS ko root lockfile tak "climb up" karna padta hai correct versions install karne ke liye, sirf
+        app directory ke <code>package.json</code> se kaafi nahi hota. Modern EAS CLI ye automatically detect kar
+        leta hai (workspace root ka lockfile dhoond ke), lekin agar aapka CI runner ya custom Docker setup involved
+        hai, ye assumption explicitly verify karna senior-level due diligence hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>apps/mobile/eas.json (monorepo-aware profile)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"cli"</span>: <span class="tok-punc">{</span> <span class="tok-com">// CLI-level config, app directory ke andar hi scoped</span>
+    <span class="tok-attr">"version"</span>: <span class="tok-str">">= 12.0.0"</span> <span class="tok-com">// Monorepo workspace resolution ke liye recent CLI version zaroori hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// cli block close</span>
+  <span class="tok-attr">"build"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Build profiles — inka scope sirf is "mobile" app tak limited hai</span>
+    <span class="tok-attr">"production"</span>: <span class="tok-punc">{</span> <span class="tok-com">// production profile</span>
+      <span class="tok-attr">"distribution"</span>: <span class="tok-str">"store"</span><span class="tok-punc">,</span> <span class="tok-com">// Store submission format</span>
+      <span class="tok-attr">"env"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Env vars is build ke liye</span>
+        <span class="tok-attr">"EXPO_MONOREPO_ROOT"</span>: <span class="tok-str">"../.."</span> <span class="tok-com">// Custom hook scripts ko batane ke liye monorepo root kitna upar hai (relative path), agar koi shared asset copy karna ho hooks mein</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// env block close</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// production profile close</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// build block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Bade monorepos mein sabse common mistake ye hai ki team CI system (jaise GitHub Actions) ko root se
+          <code>eas build</code> chalane deti hai bina explicitly app directory mein <code>cd</code> kiye — CLI
+          confusing errors deta hai ya galat <code>eas.json</code> pick karne ki koshish karta hai. Senior practice:
+          CI job ke pehle hi step mein explicitly <code>cd apps/mobile</code> karo, aur agar shared
+          <code>packages/</code> mein koi change hua hai jisse app affect hota hai, CI ko turborepo/nx jaisa tool
+          use karke pehle detect karna chahiye "kya mobile app rebuild trigger karna zaroori hai" — taaki har
+          unrelated commit pe unnecessary EAS build queue mein na jaye (paid build minutes bachte hain).
+        </p>
+      </div>
+
+      <!-- ---------------------------------------------------------- -->
+      <h3>Custom Build Hooks / Scripts</h3>
+
+      <p>
+        EAS Build lifecycle ke specific points pe automatically kuch reserved npm script names ko detect karke run
+        kar deta hai, agar wo aapke <code>package.json</code> ke <code>scripts</code> mein defined hon — inhe
+        <strong>build hooks</strong> kehte hain. Sabse commonly used do hain <code>eas-build-pre-install</code>
+        (dependencies install hone <em>se pehle</em> chalta hai) aur <code>eas-build-post-install</code>
+        (install hone <em>ke baad</em>, lekin native compile shuru hone se pehle). Inke alawa
+        <code>eas-build-pre-build</code>, <code>eas-build-post-build</code>, aur
+        <code>eas-build-on-success</code>/<code>eas-build-on-error</code> bhi available hain, jo respectively native
+        build se pehle/baad aur build ke final outcome pe chalte hain.
+      </p>
+
+      <p>
+        Real-world use case: maan lo aapko ek build-time-generated file chahiye — jaise ek <code>version.json</code>
+        jisme exact git commit hash aur build timestamp embed ho (crash reports mein "kaunsi build thi ye" trace
+        karne ke liye), ya ek custom code-signing step jo third-party enterprise MDM tool ke saath integrate karta
+        hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>package.json (hook scripts)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"scripts"</span>: <span class="tok-punc">{</span> <span class="tok-com">// npm scripts block — EAS in reserved naamon ko dhoondta hai</span>
+    <span class="tok-attr">"eas-build-pre-install"</span>: <span class="tok-str">"echo 'Starting install for commit '$EAS_BUILD_GIT_COMMIT_HASH"</span><span class="tok-punc">,</span> <span class="tok-com">// Install se pehle chalta hai — EAS built-in env vars (jaise commit hash) yahan available hote hain</span>
+    <span class="tok-attr">"eas-build-post-install"</span>: <span class="tok-str">"node ./scripts/generate-build-info.js"</span> <span class="tok-com">// Install ke baad, native compile se pehle — custom Node script chalata hai jo version.json generate karta hai</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// scripts block close (baaki scripts jaise "start", "test" yahan already hote hain, ye do naye add hue)</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>scripts/generate-build-info.js</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye script eas-build-post-install hook se automatically chalta hai, native compile se theek pehle</span>
+<span class="tok-kw">const</span> fs = require(<span class="tok-str">"fs"</span>); <span class="tok-com">// Node ka built-in filesystem module — file likhne ke liye chahiye</span>
+
+<span class="tok-kw">const</span> buildInfo = { <span class="tok-com">// Object jo hum JSON file mein serialize karenge</span>
+  commit: process.env.EAS_BUILD_GIT_COMMIT_HASH, <span class="tok-com">// EAS automatically ye env var inject karta hai — current commit ka full hash</span>
+  profile: process.env.EAS_BUILD_PROFILE, <span class="tok-com">// Kaunsa build profile use ho raha hai (development/preview/production) — EAS-injected env var</span>
+  builtAt: new Date().toISOString(), <span class="tok-com">// Build ka exact UTC timestamp, human-readable ISO format mein</span>
+}; <span class="tok-com">// buildInfo object complete</span>
+
+fs.writeFileSync( <span class="tok-com">// Synchronous write use kiya kyunki hook script ko complete hone tak build agla step start nahi karega</span>
+  "./assets/version.json", <span class="tok-com">// App bundle ke andar accessible location — runtime pe app isse import/require kar sakti hai</span>
+  JSON.stringify(buildInfo, null, 2) <span class="tok-com">// Object ko pretty-printed JSON string mein convert kiya (2-space indent, readability ke liye)</span>
+); <span class="tok-com">// writeFileSync call complete — file ab native build ke andar bundle hogi</span>
+
+console.log("Generated version.json for build:", buildInfo); <span class="tok-com">// EAS build logs mein ye print hoga — debugging ke liye useful confirmation</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Hooks silently fail ho sakte hain</div>
+        <p>
+          Agar hook script mein error throw hoti hai (non-zero exit code), EAS poori build ko fail kar deta hai —
+          ye good hai (silent corruption se better hai), lekin error message kabhi kabhi build logs mein bahut
+          neeche scroll karne ke baad milta hai. Senior habit: hook scripts ko <code>eas build --local</code> se
+          pehle apne local machine pe hi manually test karo, taaki cloud queue mein wait karke fail hone ka cycle
+          avoid ho.
+        </p>
+      </div>
+
+      <!-- ---------------------------------------------------------- -->
+      <h3>Troubleshooting Native Dependency Resolution Failures</h3>
+
+      <p>
+        Ye wo skill hai jo actually "senior" React Native developer ko differentiate karti hai — jab build ek
+        CocoaPods (iOS) ya Gradle (Android) dependency conflict ke saath fail ho, panic mein
+        <code>rm -rf node_modules && npm install</code> chala ke "shayad theek ho jaayega" wali approach lena
+        <strong>anti-pattern</strong> hai. Systematic approach ye hoti hai:
+      </p>
+
+      <ol>
+        <li><strong>Actual error line dhoondo, poora stack trace scroll mat karo bas.</strong> EAS build logs mein
+          CocoaPods error ka format aksar hota hai <code>"[!] CocoaPods could not find compatible versions for pod
+          'X'"</code> — ye exact bata deta hai kaunsi library aur kaunse do version constraints conflict kar rahe
+          hain (jaise ek dependency <code>X ~> 2.0</code> chahti hai, dusri <code>X ~> 3.0</code>). Gradle mein
+          similarly <code>"Could not resolve com.example:lib:1.2.0"</code> ya
+          <code>"Duplicate class found"</code> jaisi specific error milti hai.</li>
+        <li><strong>Check karo ki ye ek known issue hai kisi specific package version ka.</strong> Us library ke
+          GitHub repo pe "Issues" tab search karo exact error message ke saath — native dependency conflicts
+          extremely common hain jab ek library kisi outdated peer dependency pe pin hoti hai. Expo GitHub
+          discussions aur Stack Overflow bhi first stop honi chahiye, dobara research se pehle.</li>
+        <li><strong><code>npx expo install --check</code> chalao.</strong> Ye command Expo SDK ke against saare
+          installed packages ki versions verify karti hai aur flag karti hai koi bhi jo known-incompatible hai us
+          SDK version ke saath — bahut saari native conflicts root cause mein "galat Expo SDK ke liye galat library
+          version" hoti hain, aur ye tool exactly wahi catch karne ke liye bana hai.</li>
+        <li><strong>Local repro try karo (agar possible ho).</strong> Agar Mac available hai, <code>npx expo
+          prebuild --clean</code> chala ke local <code>ios</code>/<code>android</code> folders fresh generate karo
+          aur wahi error locally reproduce karne ki koshish karo — local pe iteration cycle EAS build queue se kaafi
+          fast hota hai, debugging loop tez ho jaata hai.</li>
+        <li><strong>Sabse last resort: caches clear karo.</strong> <code>eas build --clear-cache</code> (EAS-side
+          cache), aur locally <code>cd ios && pod deintegrate && pod install</code> ya
+          <code>cd android && ./gradlew clean</code> — lekin ye tab try karo jab pehle 4 steps se root cause samajh
+          mein aa chuka ho ki ye ek stale-state issue hai, na ki blindly hoping ki "kuch delete karne se theek ho
+          jaayega".</li>
+      </ol>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 "Delete node_modules and pray" anti-pattern</div>
+        <p>
+          Blindly <code>node_modules</code>, lockfile, aur caches delete karke reinstall karna kabhi kabhi
+          <em>accidentally</em> problem "fix" kar deta hai (naya lockfile alag versions resolve kar deta hai) —
+          lekin isse aapko root cause kabhi pata nahi chalta, aur wahi issue future mein kisi aur teammate ke
+          machine pe ya CI mein phir se surface ho sakta hai bina warning ke. Senior debugging discipline ka core
+          principle: <strong>samjho pehle, fix baad mein</strong> — chahe fix simple ho, understanding shortcut
+          nahi lena chahiye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Neeche wo interview questions hain jo senior React Native / mobile infra roles mein EAS Build ke topic pe
+        commonly poochhe jaate hain — internals, debugging scenarios, aur architecture trade-offs ka mix.
+      </p>
+
+      <h3>1. Walk me through the full lifecycle of an EAS Build — from running <code>eas build</code> to an installable binary existing.</h3>
+      <p>
+        Sabse pehle EAS CLI local project ko <strong>tarball mein compress</strong> karta hai (aapki source code,
+        <code>.gitignore</code>-respecting — matlab <code>node_modules</code> jaisi cheezein exclude hoti hain) aur
+        ise EAS ke servers pe upload karta hai. Server side pe ek <strong>build job queue</strong> mein jaata hai —
+        agar aapka tier priority builds support karta hai, ye queue jaldi clear hoti hai, warna shared queue mein
+        wait hota hai. Ek baar worker machine assign hone par (iOS ke liye macOS runner, Android ke liye
+        Linux/macOS), EAS pehle project ko unpack karta hai, phir <strong>prebuild</strong> chalata hai (agar
+        managed workflow hai) — ye <code>app.json</code>/config plugins se native <code>ios/</code>/<code>android</code>
+        folders generate karta hai from scratch. Uske baad <code>eas-build-pre-install</code> hook (agar defined
+        hai), phir dependency install (<code>npm/yarn install</code> + iOS ke liye <code>pod install</code>, cache
+        se ya fresh), phir <code>eas-build-post-install</code> hook, phir actual native compile step
+        (<code>xcodebuild</code> ya <code>./gradlew</code>), phir credentials apply karke binary ko
+        <strong>code-sign</strong> kiya jaata hai, aur finally output artifact (<code>.ipa</code>/<code>.apk</code>/<code>.aab</code>)
+        EAS ke storage pe upload hota hai aur aapko download link + QR code mil jaata hai.
+      </p>
+
+      <h3>2. "Prebuild" step exactly kya karta hai, aur ye Expo Go vs EAS Build ke behaviour mein difference kyun create karta hai?</h3>
+      <p>
+        Prebuild (<code>npx expo prebuild</code>, jo EAS internally automatically chalata hai managed projects ke
+        liye) <code>app.json</code>/<code>app.config.ts</code> aur installed <strong>config plugins</strong> ko
+        read karke actual native <code>ios/</code> aur <code>android/</code> source folders generate karta hai —
+        <code>Info.plist</code>, <code>AndroidManifest.xml</code>, Xcode project files, Gradle build files, sab
+        kuch is step mein banta hai. Expo Go ye step <em>kabhi nahi chalata</em> — Expo Go ek pre-built generic app
+        hai jo already store se install hoti hai, isliye wo <code>app.json</code> ke custom permissions, custom
+        native config plugins, ya kisi bhi native-level customization ko silently ignore kar deta hai (kyunki uska
+        native layer already fixed hai, build-time pe generate nahi ho raha). Isi wajah se ek bug jo purely native
+        config-level hai (jaise missing camera permission entry) sirf real native build (local ya EAS) ke prebuild
+        step ke baad hi surface hota hai, Expo Go mein kabhi dikhega hi nahi.
+      </p>
+
+      <h3>3. Build <code>expo run:ios</code> se local machine pe pass ho raha hai, lekin EAS Build pe dependency error ke saath fail ho raha hai — environments mein kya different ho sakta hai, aur aap kaise debug karoge?</h3>
+      <p>
+        Sabse common root causes: (1) <strong>Local <code>node_modules</code>/<code>Pods</code> stale ho gaye hain</strong>
+        — aapke local machine pe purani resolved versions cached hain jo kabhi kaam kar rahi thi, lekin fresh EAS
+        environment lockfile se re-resolve karta hai aur ek naya incompatible version le aata hai (ye tab hota hai
+        jab lockfile properly commit nahi hua ya <code>^</code>/<code>~</code> range use ho rahi hai kisi
+        dependency mein). (2) <strong>Xcode/CocoaPods/Android SDK version mismatch</strong> — aapke local machine
+        pe alag toolchain version installed hai jo EAS ke pinned build image se differ karta hai. (3) <strong>Env
+        variables missing</strong> hain EAS side pe jo local <code>.env</code> file mein the (EAS Secrets set nahi
+        kiye gaye). Debug approach: pehle exact error message compare karo (Gradle/CocoaPods dono verbose error
+        dete hain), phir <code>eas.json</code> mein <code>image</code> field check karo ki kaunsa build image pin
+        hai aur uska Xcode/SDK version apne local se match karo, phir lockfile commit-status verify karo
+        (<code>git status</code> se dekho ki <code>package-lock.json</code>/<code>Podfile.lock</code> committed
+        aur up-to-date hai), aur agar sab match kar raha hai to <code>eas build --clear-cache</code> se ek fresh
+        retry lo taaki stale cache eliminate ho.
+      </p>
+
+      <h3>4. Build caching internally kaam kaise karta hai, aur aap kab explicitly cache clear karoge?</h3>
+      <p>
+        EAS <code>node_modules</code> aur CocoaPods' <code>Pods/</code> ko ek remote cache mein store karta hai,
+        key lockfile ke content-hash se derived hoti hai. Jab tak lockfile same rehta hai, agli build cached
+        dependencies restore kar leti hai aur install step largely skip ho jaata hai — bahut faster. Cache clear
+        karne ka legitimate use case tab hota hai jab aapko <strong>lockfile-independent</strong> koi cheez change
+        hui ho jo dependency resolution ko affect kar sakti hai — jaise ek naya config plugin add kiya jo
+        <code>Podfile</code> generation ko change karta hai, ya aapko suspect hai ki cached state corrupt/stale hai
+        aur error "impossible" lag raha hai given current code. Command: <code>eas build --clear-cache</code>.
+        Isko habitually har build pe use karna anti-pattern hai — isse aap caching ka poora speed benefit chhod
+        dete ho; ye ek targeted diagnostic/fix tool hai, default behaviour nahi.
+      </p>
+
+      <h3>5. Aapki team ek Turborepo monorepo mein migrate kar rahi hai jisme Expo app root pe nahi, <code>apps/mobile/</code> ke andar hai. EAS Build setup mein aap kya consider karoge?</h3>
+      <p>
+        Sabse pehle, <code>eas.json</code> ko app directory ke andar rakhna hoga (root mein nahi), kyunki build
+        profiles is specific app ke liye scoped hain. CI pipeline ko explicitly app directory mein
+        <code>cd</code> karke <code>eas build</code> chalana hoga, root se nahi. Dependency resolution ke liye —
+        yarn/npm workspaces hoisting ki wajah se actual versions root lockfile se resolve hoti hain, isliye ye
+        ensure karna hoga ki EAS ka build environment monorepo root tak "climb up" kar sake lockfile dhoondne ke
+        liye (modern EAS CLI ye automatically karta hai). Ek aur important consideration:
+        <strong>selective triggering</strong> — agar sirf <code>packages/ui</code> mein ek unrelated change hui hai
+        jo mobile app ko affect nahi karta, CI ko Turborepo ke dependency graph analysis (<code>turbo run build
+        --filter=mobile...[HEAD^1]</code> jaisa) use karke decide karna chahiye ki actually EAS build trigger
+        karna zaroori hai ya nahi — warna paid build minutes waste hote hain har unrelated commit pe.
+      </p>
+
+      <h3>6. Build hooks (<code>eas-build-pre-install</code>, <code>eas-build-post-install</code>) kya hote hain, aur ek real use case do jaha ye zaroori ho?</h3>
+      <p>
+        Ye reserved npm script names hain jo <code>package.json</code> ke <code>scripts</code> block mein define
+        karne par EAS automatically build lifecycle ke specific points pe chala deta hai —
+        <code>eas-build-pre-install</code> dependency install se pehle, <code>eas-build-post-install</code>
+        install ke baad lekin native compile se pehle. Real use case: build-time pe ek <code>version.json</code>
+        file generate karna jisme exact git commit hash (<code>EAS_BUILD_GIT_COMMIT_HASH</code> env var se) aur
+        timestamp embed ho — production mein crash reports ko exact build ke saath correlate karne ke liye
+        extremely useful (Sentry jaisa crash reporting tool isse tag kar sakta hai). Ek aur real scenario:
+        enterprise apps jinhe custom internal code-signing step chahiye hota hai jo standard EAS credentials flow
+        se bahar hai — wo logic <code>eas-build-post-install</code> hook mein inject kiya ja sakta hai.
+      </p>
+
+      <h3>7. Ek team kab apni khud ki self-hosted build infrastructure choose karegi, EAS Build ke cloud service ke bajaye?</h3>
+      <p>
+        Ye ek classic build-vs-buy trade-off hai. Self-hosting (jaise apne CI runners pe macOS machines rakhna,
+        Fastlane ke saath) tab justify hota hai jab: (1) <strong>Build volume extremely high hai</strong> — agar
+        team roz sainkdon builds trigger karti hai, EAS ke usage-based pricing se apna khud ka infra (fixed cost)
+        cheaper pad sakta hai break-even ke baad. (2) <strong>Extreme compliance/security requirements</strong> —
+        kuch enterprise/regulated industries (banking, healthcare) source code ko kisi third-party cloud pe bhejne
+        ki policy allow hi nahi karti, chahe wo encrypted/ephemeral hi kyun na ho. (3) <strong>Highly custom build
+        pipeline</strong> jo standard EAS hooks se bahar hai — jaise multi-stage internal artifact signing
+        workflows jo bahut specific internal tools pe depend karte hain. (4) <strong>Queue time is a hard
+        blocker</strong> aur paid EAS priority tier bhi acceptable nahi lag raha given cost structure. Trade-off
+        ye hai ki self-hosting ke saath aapko khud macOS machine provisioning, OS/Xcode updates, credential
+        security, aur scaling manage karni padti hai — jo non-trivial ongoing engineering cost hai. Zyadatar teams
+        (especially mid-size tak) ke liye EAS Build ka managed convenience is cost se zyada value deta hai; self-hosting
+        sirf specific scale/compliance triggers pe hi senior-level justified choice banta hai.
+      </p>
+
+      <h3>8. Android production keystore lost ho gaya hai aur koi backup nahi hai. Kya options hain, aur is scenario ko prevent karne ke liye aap kya architecture set karte?</h3>
+      <p>
+        Agar keystore permanently lost hai aur EAS-managed bhi tha lekin kabhi export/backup nahi kiya gaya, sirf
+        ek hi option bachta hai: <strong>naye package name ke saath bilkul nayi Play Store listing</strong> banana
+        — jiska matlab hai saare existing users, ratings, reviews, aur search ranking history permanently kho jaate
+        hain (users ko manually naye app pe migrate karna padega, jo bahut users lose karwa deta hai). Prevention
+        architecture: EAS-managed credentials use karo (Expo ka encrypted, access-controlled storage manual laptop
+        storage se zyada reliable hai), aur additionally <code>eas credentials</code> se keystore ko periodically
+        export karke ek team-level secure vault (jaise 1Password/Vault, sirf senior engineers/leads access ke
+        saath) mein encrypted backup rakho — single point of failure (ek insaan ka laptop) kabhi na ho. Agar
+        Google Play App Signing enroll kiya hai (jo ab Play Store naye apps ke liye mandatory bhi karta hai), Google
+        khud aapki "app signing key" securely manage karta hai aur aap sirf ek "upload key" use karte ho jise agar
+        kho bhi diya, Google ke identity-verification process se reset karwaya ja sakta hai — ye legacy pure-manual
+        keystore management se significantly safer architecture hai.
+      </p>
+
+      <h3>9. EAS build image pinning (<code>eas.json</code> ke <code>image</code> field) kyun matter karta hai, aur agar aap ise pin nahi karte to kya risk hai?</h3>
+      <p>
+        <code>image</code> field specific karta hai ki build kis versioned combination of Xcode/Android SDK/Node/CocoaPods
+        (aur baaki toolchain) pe chalegi — EAS periodically naye default images release karta hai jab Apple/Google
+        naye Xcode/SDK versions release karte hain. Agar aap image explicitly pin nahi karte, aapki build silently
+        EAS ke current default image use karti hai — jo <strong>kabhi bhi EAS ki taraf se change ho sakta hai</strong>
+        (naya default rollout hone par), bina aapke <code>eas.json</code> mein kuch change kiye. Isse ek subtle risk
+        create hota hai: aaj jo build successfully pass ho rahi thi, kal EAS ka default image update hone ke baad
+        (naya Xcode version jo koi behavior change laaya) wahi build fail ho sakti hai — bina aapke codebase mein
+        koi change kiye. Senior practice: <code>eas.json</code> mein explicitly <code>image</code> pin karo (jaise
+        <code>"image": "latest"</code> ki jagah ek specific tagged version), aur upgrade ko ek deliberate, tested
+        step banao — na ki EAS ki taraf se ek silent, untested toolchain change ho jaaye production build pipeline
+        mein.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="09-backend-supabase.html">
+          <div class="label">← Previous</div>
+          <div class="title">Backend + Supabase</div>
+        </a>
+        <a class="next" href="11-eas-submit.html">
+          <div class="label">Next →</div>
+          <div class="title">EAS Submit</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

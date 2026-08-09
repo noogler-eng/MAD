@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style &amp; Design — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link active" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Style &amp; Design</div>
+      <div class="progress-pill">Chapter 3 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Expo · TypeScript</span>
+      <h1>Style &amp; Design</h1>
+      <p class="subtitle">
+        StyleSheet internally kaam kaise karta hai, Flexbox RN mein web se kaise alag hai, design tokens se
+        ek proper design system kaise banate hain, dark mode ki real architecture, Figma se code tak ka
+        practical workflow, aur wo gotchas jo har team pehli baar production mein hit karti hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#stylesheet-internals">1. StyleSheet.create Internally Kaise Kaam Karta Hai</a></li>
+          <li><a href="#flexbox-mastery">2. Flexbox Mastery in React Native</a></li>
+          <li><a href="#design-tokens">3. Design Tokens &amp; Building a Design System</a></li>
+          <li><a href="#dark-mode">4. Dark Mode Architecture</a></li>
+          <li><a href="#figma-to-code">5. Figma to Code Workflow</a></li>
+          <li><a href="#real-world-gotchas">6. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">8. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- =========================================================
+           SECTION 1 — StyleSheet.create internals
+      ========================================================== -->
+      <h2 id="stylesheet-internals" style="border-top:none; padding-top:0; margin-top:28px;">1. StyleSheet.create Internally Kaise Kaam Karta Hai</h2>
+
+      <p>
+        Bahut saare developers <code>StyleSheet.create</code> ko sirf ek "organize karne ka syntax sugar" samajh
+        lete hain — jaise CSS-in-JS ka koi wrapper ho. Lekin senior level pe samajhna zaroori hai ki ye actually
+        karta kya hai under the hood, kyunki iska design decision purani React Native bridge architecture se
+        directly juda hua hai.
+      </p>
+
+      <h3>Old Architecture (Bridge) mein kya hota tha</h3>
+      <p>
+        Old architecture mein JS thread aur Native (UI) thread ke beech communication ek <strong>asynchronous,
+        serialized bridge</strong> ke through hoti thi — matlab har message JSON mein serialize hoke batches mein
+        native side bheja jaata tha. Agar aap render pe har baar ek naya inline style object bana rahe ho
+        (<code>{'{'}{'{'} backgroundColor: 'red', padding: 10 {'}'}{'}'}</code>), toh React Native ko har render pe
+        wo poora object bridge ke through native side serialize karke bhejna padta — even agar values same hi
+        hain.
+      </p>
+      <p>
+        <code>StyleSheet.create()</code> is problem ko solve karta hai ek clever trick se: ye style object ko
+        register karke usko ek <strong>numeric ID (a "style sheet reference")</strong> return karta hai, poora
+        object nahi. Jab component render hota hai, JS side sirf ye chhota sa number bridge ke through bhejta hai,
+        aur native side already jaanta hai ki us ID ka matlab kaunsa style object hai — kyunki registration ke
+        time hi ek baar poora object native side resolve/cache ho chuka tha.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>styles-internal-idea.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  container: {
+    <span class="tok-attr">flex</span>: <span class="tok-num">1</span>,
+    <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#1a1918'</span>,
+    <span class="tok-attr">padding</span>: <span class="tok-num">16</span>,
+  },
+});
+
+<span class="tok-com">// Conceptually, styles.container is NOT the object { flex: 1, ... }</span>
+<span class="tok-com">// Old architecture mein ye ek OPAQUE NUMBER hota tha, e.g. 42</span>
+<span class="tok-com">// console.log(styles.container) -> 42 (roughly, in classic bridge mode)</span>
+<span class="tok-com">// Native side ne already 42 -> { flex: 1, backgroundColor: '#1a1918', padding: 16 }</span>
+<span class="tok-com">// ka mapping register/cache kar rakha tha</span></code></pre>
+      </div>
+
+      <p>
+        Isse fayda ye hota tha ki agar same style ID baar baar use ho raha hai (jaise ek FlatList ke 500 items sab
+        same card style use kar rahe hain), toh bridge pe har item ke liye poora style object nahi bhejna padta —
+        sirf ek chhota reference. Ye ek classic <strong>"pay once, reuse many times"</strong> optimization hai.
+      </p>
+
+      <h3>New Architecture (JSI) mein kya badal gaya</h3>
+      <p>
+        New Architecture mein Fabric renderer aur JSI (JavaScript Interface) ke through JS aur native code same
+        memory ko directly access kar sakte hain — async JSON-serialized bridge ki zaroorat nahi rehti. Isliye
+        raw performance cost jo pehle bridge serialization ki wajah se hoti thi, wo kaafi kam ho gayi hai. Lekin
+        iska matlab ye nahi ki inline styles ab "free" ho gaye.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Chahe JSI ho ya bridge, inline style objects <strong>har render pe naya JS object allocate</strong>
+          karte hain — ye garbage collector pe extra pressure daalta hai aur agar wo style prop kisi child
+          component ko pass ho raha hai jo <code>React.memo</code> se wrapped hai, toh reference-equality check
+          fail ho jaati hai (naya object === purane object false hoga), matlab memoization defeat ho jaata hai
+          aur unnecessary re-render hota hai. Isliye <code>StyleSheet.create</code> (ya module-level constant
+          object) abhi bhi best practice hai — performance ke liye kam, lekin <strong>readability, type-safety,
+          aur stable object references</strong> ke liye zyada important ho gaya hai.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Approach</th><th>Object Identity Per Render</th><th>Bridge Cost (Old Arch)</th><th>Recommended?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Inline <code>style={'{'}{'{'}...{'}'}{'}'}</code></td><td>Naya object har render</td><td>High (full object serialize)</td><td>Avoid in hot paths (lists)</td></tr>
+            <tr><td><code>StyleSheet.create</code></td><td>Stable reference (created once)</td><td>Low (numeric ID reused)</td><td>Yes, default choice</td></tr>
+            <tr><td>Module-level plain object</td><td>Stable reference</td><td>Same as inline object cost</td><td>Fine, but no dev-mode validation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Ek extra fayda jo log miss kar jaate hain: <code>StyleSheet.create</code> dev mode mein style keys ko
+        validate karta hai aur TypeScript ke saath combine hone pe autocomplete + type errors deta hai (galat
+        property name ya invalid value pe compile time pe hi pakad lega). Ye "just an object" se strictly better
+        hai even agar runtime perf difference chhota ho gaya ho.
+      </p>
+
+      <!-- =========================================================
+           SECTION 2 — Flexbox Mastery
+      ========================================================== -->
+      <h2 id="flexbox-mastery">2. Flexbox Mastery in React Native</h2>
+
+      <p>
+        Agar aap web se aaye ho toh ye sabse bada mental-model shift hai: React Native mein layout <strong>hamesha
+        Flexbox</strong> use karta hai (Yoga engine ke through), aur usme kuch defaults web ke bilkul opposite
+        hain.
+      </p>
+
+      <h3>Sabse bada gotcha: default flexDirection</h3>
+      <table class="table">
+        <thead><tr><th></th><th>Web (CSS)</th><th>React Native</th></tr></thead>
+        <tbody>
+          <tr><td>Default <code>flexDirection</code></td><td><code>row</code></td><td><code>column</code></td></tr>
+          <tr><td>Default <code>display</code></td><td><code>block</code> (flex opt-in)</td><td>Sab kuch flex hai by default</td></tr>
+          <tr><td>Default <code>flexShrink</code></td><td><code>0</code></td><td><code>1</code> (RN &gt;= 0.7x behavior)</td></tr>
+          <tr><td>CSS cascade / inheritance</td><td>Haan, parent se child ko style inherit hota hai</td><td>Nahi — sirf kuch specific props (jaise fontFamily/color) <code>&lt;Text&gt;</code> nesting ke through inherit hote hain</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          Web developers muh se bolte hain "container ko flex-direction row set karna padta hai for a horizontal
+          row" — but jo cheez unhe surprise karti hai wo ye hai ki RN mein <code>&lt;View&gt;</code> stack karne ke
+          liye by default already column hai, matlab agar aapne kuch bhi set nahi kiya, children top-to-bottom
+          stack honge — web ke opposite jahan default block-level elements bhi top-to-bottom hi stack hote hain
+          lekin flex container ka default row hota hai. Bahut se log ye confuse kar dete hain "RN mein toh sab
+          flex hai na, toh row hi hoga" — galat hai, column hi default hai.
+        </p>
+      </div>
+
+      <h3>No CSS cascade — har component apne aap style hota hai</h3>
+      <p>
+        Web pe agar parent pe <code>font-family</code> set kar do, sab descendant elements automatically usko
+        inherit kar lete hain — poori DOM tree cascade follow karti hai. React Native mein <strong>koi CSS cascade
+        nahi hai</strong>. Har component ka style completely independent hai — koi bhi style parent se child tak
+        automatically propagate nahi hota, <strong>except</strong> kuch specific text-related properties jab
+        <code>&lt;Text&gt;</code> components ek dusre ke andar nested hote hain (jaise fontFamily, fontSize, color
+        — ye ek nested <code>&lt;Text&gt;</code> apne parent <code>&lt;Text&gt;</code> se inherit kar sakta hai,
+        lekin ye Text-specific behavior hai, general layout ke liye nahi).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>NoInheritance.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">Example</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.parent}<span class="tok-punc">&gt;</span>
+      {<span class="tok-com">/* Ye View ko parent ka backgroundColor ya kuch bhi INHERIT nahi hoga */</span>}
+      <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.child} <span class="tok-punc">/&gt;</span>
+
+      {<span class="tok-com">/* Sirf Text -> Text nesting mein kuch props inherit hote hain */</span>}
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span> <span class="tok-attr">style</span>={{ <span class="tok-attr">fontFamily</span>: <span class="tok-str">'Inter'</span>, <span class="tok-attr">color</span>: <span class="tok-str">'red'</span> }}<span class="tok-punc">&gt;</span>
+        Parent text
+        <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span> Nested text — ye bhi red aur Inter font mein aayega <span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <h3><code>flex: 1</code> ka actual matlab</h3>
+      <p>
+        <code>flex: 1</code> shorthand hai <code>flexGrow: 1, flexShrink: 1, flexBasis: 0%</code> ke liye (roughly —
+        RN ka Yoga engine CSS spec se thoda simplified behavior deta hai). Practically: ye component ko batata hai
+        "available remaining space mein se apna proportional share le lo". Agar ek container mein 2 children hain
+        aur dono ka <code>flex: 1</code> hai, dono equal space lenge. Agar ek ka <code>flex: 2</code> aur dusre ka
+        <code>flex: 1</code> hai, pehla dusre se double space lega.
+      </p>
+
+      <h3>justifyContent vs alignItems vs alignSelf</h3>
+      <p>
+        Ye teeno ka confusion sabse common hai. Simple mental model: <strong>justifyContent</strong> main axis pe
+        kaam karta hai (jo flexDirection decide karta hai — column mein main axis vertical hai), aur
+        <strong>alignItems</strong> cross axis pe (column mein cross axis horizontal hai). <strong>alignSelf</strong>
+        same as alignItems hai lekin sirf ek individual child ke liye override karta hai, parent ke alignItems ko
+        ignore karke.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>CardLayout.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">ProfileCard</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.card}<span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.header}<span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.title}<span class="tok-punc">&gt;</span>Sharad Poddar<span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.badge}<span class="tok-punc">&gt;</span>
+          <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.badgeText}<span class="tok-punc">&gt;</span>Pro<span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+
+      <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.body}<span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.bodyText}<span class="tok-punc">&gt;</span>
+          DevOps engineer, learner ka bhi teacher. React Native seekh raha hai root-level depth ke saath.
+        <span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+
+      <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.footer}<span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">Text</span> <span class="tok-attr">style</span>={styles.footerLabel}<span class="tok-punc">&gt;</span>Joined 2023<span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={styles.footerActions} <span class="tok-punc">/&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: {
+    <span class="tok-attr">flexDirection</span>: <span class="tok-str">'column'</span>,   <span class="tok-com">// default hi hai, explicit likhna readability ke liye achha</span>
+    <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#262524'</span>,
+    <span class="tok-attr">borderRadius</span>: <span class="tok-num">12</span>,
+    <span class="tok-attr">padding</span>: <span class="tok-num">16</span>,
+    <span class="tok-attr">gap</span>: <span class="tok-num">12</span>,             <span class="tok-com">// modern RN mein gap fully supported hai — margin hacks ki zaroorat nahi</span>
+  },
+  header: {
+    <span class="tok-attr">flexDirection</span>: <span class="tok-str">'row'</span>,      <span class="tok-com">// main axis ab HORIZONTAL hai is container ke liye</span>
+    <span class="tok-attr">justifyContent</span>: <span class="tok-str">'space-between'</span>, <span class="tok-com">// main axis (row) pe title left, badge right</span>
+    <span class="tok-attr">alignItems</span>: <span class="tok-str">'center'</span>,      <span class="tok-com">// cross axis (column) pe dono vertically centered</span>
+  },
+  title: { <span class="tok-attr">fontSize</span>: <span class="tok-num">18</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'700'</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#fff'</span> },
+  badge: {
+    <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#d9775722'</span>,
+    <span class="tok-attr">paddingHorizontal</span>: <span class="tok-num">8</span>,
+    <span class="tok-attr">paddingVertical</span>: <span class="tok-num">3</span>,
+    <span class="tok-attr">borderRadius</span>: <span class="tok-num">999</span>,
+    <span class="tok-attr">alignSelf</span>: <span class="tok-str">'flex-start'</span>,  <span class="tok-com">// override parent alignItems — content ke barabar hi width le</span>
+  },
+  badgeText: { <span class="tok-attr">fontSize</span>: <span class="tok-num">11</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#d97757'</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'600'</span> },
+  body: { <span class="tok-attr">flexGrow</span>: <span class="tok-num">1</span> },  <span class="tok-com">// available vertical space le, footer ko neeche push kar de</span>
+  bodyText: { <span class="tok-attr">color</span>: <span class="tok-str">'#b3aca1'</span>, <span class="tok-attr">lineHeight</span>: <span class="tok-num">20</span> },
+  footer: {
+    <span class="tok-attr">flexDirection</span>: <span class="tok-str">'row'</span>,
+    <span class="tok-attr">justifyContent</span>: <span class="tok-str">'space-between'</span>,
+    <span class="tok-attr">alignItems</span>: <span class="tok-str">'center'</span>,
+  },
+  footerLabel: { <span class="tok-attr">fontSize</span>: <span class="tok-num">12</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#7d766c'</span> },
+  footerActions: { <span class="tok-attr">width</span>: <span class="tok-num">60</span>, <span class="tok-attr">height</span>: <span class="tok-num">24</span> },
+});</code></pre>
+      </div>
+
+      <p>
+        Layout math step by step: <code>card</code> ek column container hai, so header/body/footer top-to-bottom
+        stack honge. <code>header</code> apna khud ka row container banata hai — is-liye uske andar justifyContent
+        aur alignItems ka reference axis flip ho jaata hai (main = horizontal, cross = vertical). <code>body</code>
+        pe <code>flexGrow: 1</code> ka matlab hai "jitni bhi extra vertical space available hai (header aur footer
+        ki height ke baad jo bacha), wo body le legi" — isi wajah se footer hamesha bottom pe dikhega chahe body
+        text chhota ho ya bada.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          <code>gap</code> property RN 0.71+ mein natively supported hai — ab margin-based spacing hacks
+          (<code>marginRight</code> sab items pe except last child) likhne ki zaroorat nahi. Flexbox container pe
+          seedha <code>gap</code>, <code>rowGap</code>, ya <code>columnGap</code> use karo.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 3 — Design Tokens
+      ========================================================== -->
+      <h2 id="design-tokens">3. Design Tokens &amp; Building a Design System</h2>
+
+      <p>
+        Jab app chhota hai, hardcoded hex codes aur magic numbers (<code>padding: 13</code>, <code>color:
+        '#3a7bd5'</code>) chalte rehte hain. Lekin jaise hi team badhti hai ya app ka scope badhta hai, ye approach
+        break ho jaata hai — same "primary blue" 6 different shades mein scattered mil jaayega poore codebase mein.
+        <strong>Design tokens</strong> is problem ka solution hain: colors, spacing, typography, radius jaisi
+        values ko ek hi jagah define karo (single source of truth), aur poore app mein sirf un tokens ko reference
+        karo, raw values ko nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>theme/theme.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ----------------------------------------------------------------
+// Spacing scale — 4px base unit. spacing(n) = n * 4
+// Isse har jagah consistent multiples of 4 use hote hain
+// (jo most design systems — Material, iOS HIG — bhi follow karte hain)
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> <span class="tok-fn">spacing</span> = (n: <span class="tok-kw">number</span>) =&gt; n * <span class="tok-num">4</span>;
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Color palette — semantic naming, not just raw hex list
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> palette = {
+  <span class="tok-attr">neutral</span>: {
+    <span class="tok-num">50</span>: <span class="tok-str">'#f7f5f2'</span>,
+    <span class="tok-num">100</span>: <span class="tok-str">'#e8e4dd'</span>,
+    <span class="tok-num">500</span>: <span class="tok-str">'#7d766c'</span>,
+    <span class="tok-num">900</span>: <span class="tok-str">'#1a1918'</span>,
+  },
+  <span class="tok-attr">accent</span>: {
+    <span class="tok-num">500</span>: <span class="tok-str">'#d97757'</span>,
+    <span class="tok-num">600</span>: <span class="tok-str">'#c2603f'</span>,
+  },
+  <span class="tok-attr">success</span>: <span class="tok-str">'#7fb069'</span>,
+  <span class="tok-attr">danger</span>: <span class="tok-str">'#d9756c'</span>,
+  <span class="tok-attr">warning</span>: <span class="tok-str">'#d9b957'</span>,
+} <span class="tok-kw">as const</span>;
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Semantic theme layer — palette raw values ko meaning deta hai
+// Ye layer light/dark ke beech swap hota hai (Section 4 mein dekhenge)
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> lightTheme = {
+  <span class="tok-attr">colors</span>: {
+    <span class="tok-attr">background</span>: palette.neutral[<span class="tok-num">50</span>],
+    <span class="tok-attr">surface</span>: <span class="tok-str">'#ffffff'</span>,
+    <span class="tok-attr">text</span>: palette.neutral[<span class="tok-num">900</span>],
+    <span class="tok-attr">textMuted</span>: palette.neutral[<span class="tok-num">500</span>],
+    <span class="tok-attr">primary</span>: palette.accent[<span class="tok-num">500</span>],
+    <span class="tok-attr">border</span>: <span class="tok-str">'#e2ddd5'</span>,
+  },
+};
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Typography scale — sirf fontSize nahi, poora "variant" object
+// (fontSize + lineHeight + fontWeight ek saath, taaki consistent
+// vertical rhythm maintain rahe)
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> typography = {
+  <span class="tok-attr">h1</span>: { <span class="tok-attr">fontSize</span>: <span class="tok-num">28</span>, <span class="tok-attr">lineHeight</span>: <span class="tok-num">34</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'700'</span> <span class="tok-kw">as const</span> },
+  <span class="tok-attr">h2</span>: { <span class="tok-attr">fontSize</span>: <span class="tok-num">22</span>, <span class="tok-attr">lineHeight</span>: <span class="tok-num">28</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'700'</span> <span class="tok-kw">as const</span> },
+  <span class="tok-attr">body</span>: { <span class="tok-attr">fontSize</span>: <span class="tok-num">15</span>, <span class="tok-attr">lineHeight</span>: <span class="tok-num">22</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'400'</span> <span class="tok-kw">as const</span> },
+  <span class="tok-attr">caption</span>: { <span class="tok-attr">fontSize</span>: <span class="tok-num">12</span>, <span class="tok-attr">lineHeight</span>: <span class="tok-num">16</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'400'</span> <span class="tok-kw">as const</span> },
+};
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Radius scale — consistent corner rounding across the app
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> radius = {
+  <span class="tok-attr">sm</span>: <span class="tok-num">6</span>,
+  <span class="tok-attr">md</span>: <span class="tok-num">10</span>,
+  <span class="tok-attr">lg</span>: <span class="tok-num">16</span>,
+  <span class="tok-attr">full</span>: <span class="tok-num">999</span>,
+};</code></pre>
+      </div>
+
+      <p>Ab actual components sirf tokens use karenge, raw values kahin bhi nahi likhenge:</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/Button.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Pressable, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> { spacing, radius, typography, lightTheme } <span class="tok-kw">from</span> <span class="tok-str">'../theme/theme'</span>;
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  button: {
+    <span class="tok-attr">paddingVertical</span>: <span class="tok-fn">spacing</span>(<span class="tok-num">3</span>),      <span class="tok-com">// 12px</span>
+    <span class="tok-attr">paddingHorizontal</span>: <span class="tok-fn">spacing</span>(<span class="tok-num">5</span>),    <span class="tok-com">// 20px</span>
+    <span class="tok-attr">borderRadius</span>: radius.md,
+    <span class="tok-attr">backgroundColor</span>: lightTheme.colors.primary,
+  },
+  label: { ...typography.body, <span class="tok-attr">color</span>: <span class="tok-str">'#fff'</span> },
+});</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Senior teams design tokens ko centralize kyun karte hain — teen practical reasons: (1)
+          <strong>Consistency</strong> — designer Figma mein jo spacing scale use kar raha hai wahi exact scale
+          code mein hai, koi "eyeballing" nahi. (2) <strong>Rebranding ki ease</strong> — agar company ka brand
+          color change ho jaaye, ek jagah <code>palette.accent</code> update karo, poori app automatically update
+          ho jaati hai — 200 files mein hex code dhoondhna nahi padta. (3) <strong>Dark mode support</strong> —
+          jaisa Section 4 mein dekhenge, semantic tokens (<code>colors.background</code>, <code>colors.text</code>)
+          hi wo abstraction layer hai jo light/dark switch ko possible banati hai bina har component ko touch kiye.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 4 — Dark Mode Architecture
+      ========================================================== -->
+      <h2 id="dark-mode">4. Dark Mode Architecture</h2>
+
+      <p>
+        Dark mode ko sahi se implement karna sirf "colors invert karna" nahi hai — ye ek proper architecture hai
+        jisme system preference detect karna, user ka manual override respect karna, aur us preference ko persist
+        karna sab shaamil hai.
+      </p>
+
+      <h3>Step 1 — useColorScheme() se system preference detect karna</h3>
+      <div class="code-block">
+        <div class="code-title"><span>hooks/useSystemScheme.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useColorScheme } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-com">// useColorScheme() OS-level dark/light setting return karta hai:
+// 'light' | 'dark' | null (null jab detect na ho paaye)
+// Ye automatically re-render trigger karta hai jab user OS settings
+// se switch karta hai (app background mein hone pe bhi)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">SomeComponent</span>() {
+  <span class="tok-kw">const</span> systemScheme = <span class="tok-fn">useColorScheme</span>(); <span class="tok-com">// 'light' | 'dark' | null</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>;
+}</code></pre>
+      </div>
+
+      <h3>Step 2 — Theme Context/Provider jo tokens swap kare</h3>
+      <div class="code-block">
+        <div class="code-title"><span>theme/ThemeProvider.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-fn">React</span>, { createContext, useContext, useEffect, useMemo, useState } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> { useColorScheme } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> AsyncStorage <span class="tok-kw">from</span> <span class="tok-str">'@react-native-async-storage/async-storage'</span>;
+<span class="tok-kw">import</span> { lightTheme, darkTheme } <span class="tok-kw">from</span> <span class="tok-str">'./theme'</span>;
+
+<span class="tok-kw">type</span> ThemePreference = <span class="tok-str">'system'</span> | <span class="tok-str">'light'</span> | <span class="tok-str">'dark'</span>;
+<span class="tok-kw">const</span> STORAGE_KEY = <span class="tok-str">'@theme_preference'</span>;
+
+<span class="tok-kw">const</span> ThemeContext = <span class="tok-fn">createContext</span>({
+  <span class="tok-attr">theme</span>: lightTheme,
+  <span class="tok-attr">preference</span>: <span class="tok-str">'system'</span> <span class="tok-kw">as</span> ThemePreference,
+  <span class="tok-attr">setPreference</span>: (_: ThemePreference) =&gt; {},
+});
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">ThemeProvider</span>({ children }: { children: <span class="tok-fn">React</span>.ReactNode }) {
+  <span class="tok-kw">const</span> systemScheme = <span class="tok-fn">useColorScheme</span>(); <span class="tok-com">// OS ka current scheme</span>
+  <span class="tok-kw">const</span> [preference, setPreferenceState] = <span class="tok-fn">useState</span>&lt;ThemePreference&gt;(<span class="tok-str">'system'</span>);
+  <span class="tok-kw">const</span> [hydrated, setHydrated] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>);
+
+  <span class="tok-com">// App start pe saved preference AsyncStorage se load karo</span>
+  <span class="tok-fn">useEffect</span>(() =&gt; {
+    AsyncStorage.<span class="tok-fn">getItem</span>(STORAGE_KEY).<span class="tok-fn">then</span>((saved) =&gt; {
+      <span class="tok-kw">if</span> (saved === <span class="tok-str">'light'</span> || saved === <span class="tok-str">'dark'</span> || saved === <span class="tok-str">'system'</span>) {
+        <span class="tok-fn">setPreferenceState</span>(saved);
+      }
+      <span class="tok-fn">setHydrated</span>(<span class="tok-kw">true</span>);
+    });
+  }, []);
+
+  <span class="tok-kw">const</span> <span class="tok-fn">setPreference</span> = (next: ThemePreference) =&gt; {
+    <span class="tok-fn">setPreferenceState</span>(next);
+    AsyncStorage.<span class="tok-fn">setItem</span>(STORAGE_KEY, next); <span class="tok-com">// persist manual override</span>
+  };
+
+  <span class="tok-com">// Resolve: agar user ne 'system' chuna hai toh OS scheme follow karo,
+  // warna user ka explicit choice use karo</span>
+  <span class="tok-kw">const</span> resolvedScheme = preference === <span class="tok-str">'system'</span> ? (systemScheme ?? <span class="tok-str">'light'</span>) : preference;
+  <span class="tok-kw">const</span> theme = <span class="tok-fn">useMemo</span>(
+    () =&gt; (resolvedScheme === <span class="tok-str">'dark'</span> ? darkTheme : lightTheme),
+    [resolvedScheme]
+  );
+
+  <span class="tok-kw">if</span> (!hydrated) <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// ya ek splash screen, taaki flash of wrong theme na ho</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>ThemeContext.Provider <span class="tok-attr">value</span>={{ theme, preference, setPreference }}<span class="tok-punc">&gt;</span>
+      {children}
+    <span class="tok-punc">&lt;/</span>ThemeContext.Provider<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> <span class="tok-fn">useTheme</span> = () =&gt; <span class="tok-fn">useContext</span>(ThemeContext);</code></pre>
+      </div>
+
+      <p>
+        Yahan teen states carefully handle ho rahe hain: <strong>system</strong> (OS follow karo — default aur
+        best UX for most users), <strong>light</strong> aur <strong>dark</strong> (user ka explicit manual
+        override). Ye teeno preference AsyncStorage mein persist hoti hai taaki app restart ke baad bhi user ka
+        choice yaad rahe — nahi toh har app open pe wapas system default pe reset ho jaayega, jo ek frustrating UX
+        bug hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Critical Gotcha</div>
+        <p>
+          Sabse common mistake jo teams karti hain jab app already bana hua hai aur baad mein dark mode
+          "retrofit" karna padta hai: components mein hardcoded colors likhe hote hain
+          (<code>backgroundColor: '#ffffff'</code>, <code>color: '#000'</code>) instead of theme tokens
+          (<code>theme.colors.background</code>). Jab dark mode add karte waqt ye realize hota hai, poori codebase
+          mein hardcoded hex codes dhoondh dhoondh ke replace karna padta hai — kabhi kabhi 100+ files mein. Isliye
+          dark mode ko day-1 se architecture mein sochna chahiye, chahe abhi launch sirf light mode mein ho — sirf
+          <strong>token references</strong> use karo, kabhi raw hex values components mein mat likho.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/Card.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-kw">import</span> { useTheme } <span class="tok-kw">from</span> <span class="tok-str">'../theme/ThemeProvider'</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">Card</span>({ children }: { children: <span class="tok-kw">React</span>.ReactNode }) {
+  <span class="tok-kw">const</span> { theme } = <span class="tok-fn">useTheme</span>();
+
+  <span class="tok-com">// ❌ GALAT — hardcoded, dark mode mein kabhi update nahi hoga
+  // style={{ backgroundColor: '#ffffff', borderColor: '#e2ddd5' }}</span>
+
+  <span class="tok-com">// ✅ SAHI — theme se aa raha hai, scheme switch pe automatically update hoga</span>
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">View</span>
+      <span class="tok-attr">style</span>={[
+        styles.card,
+        { <span class="tok-attr">backgroundColor</span>: theme.colors.surface, <span class="tok-attr">borderColor</span>: theme.colors.border },
+      ]}
+    <span class="tok-punc">&gt;</span>
+      {children}
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">View</span><span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: { <span class="tok-attr">borderRadius</span>: <span class="tok-num">12</span>, <span class="tok-attr">borderWidth</span>: <span class="tok-num">1</span>, <span class="tok-attr">padding</span>: <span class="tok-num">16</span> },
+});</code></pre>
+      </div>
+
+      <!-- =========================================================
+           SECTION 5 — Figma to Code Workflow
+      ========================================================== -->
+      <h2 id="figma-to-code">5. Figma to Code Workflow</h2>
+
+      <p>
+        Ek senior frontend/RN developer ka kaam sirf "design jaisa dikhta hai" bana dena nahi hai — usse pixel
+        level pe match karna important hota hai, kyunki design QA usko literally overlay karke check karega.
+      </p>
+
+      <h3>Inspect panel se exact values nikaalna</h3>
+      <p>
+        Figma ke Inspect panel (right sidebar, "Code" ya measurement tab) se aap exact spacing, colors, font sizes
+        directly copy kar sakte ho — <strong>eyeballing karke guess mat karo</strong>. Agar designer ne padding
+        14px rakhi hai aur aapne "lagbhag same dikh raha hai" bolke 12px daal diya, chhota sa difference hai lekin
+        design QA process mein ye flag ho jaayega, aur agar ye ek reusable component hai toh ye difference poori
+        app mein multiply ho jaata hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Jab Figma se values nikaalo, unhe seedha component mein hardcode mat karo — unhe apne design tokens
+          (Section 3) se map karo. Agar Figma spacing 16px hai, dekho ki wo aapke <code>spacing(4)</code> ke
+          barabar hai ya nahi. Agar designer ki spacing scale aapke code ke scale se match nahi karti, ye ek
+          conversation hai designer ke saath — dono jagah same scale honi chahiye.
+        </p>
+      </div>
+
+      <h3>Screen densities — @1x/@2x/@3x vs SVG</h3>
+      <p>
+        Mobile devices alag-alag pixel densities pe chalte hain (iPhone SE se leke iPhone Pro Max tak, alag alag
+        Android devices). Raster images (PNG/JPG) ke liye aapko multiple resolutions provide karni padti hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>assets/ folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>assets/
+  icons/
+    logo.png       <span class="tok-com">// @1x — base density</span>
+    logo@2x.png     <span class="tok-com">// @2x — most common phones</span>
+    logo@3x.png     <span class="tok-com">// @3x — high density phones</span>
+
+<span class="tok-com">// React Native automatically sahi density wali image pick karta hai
+// based on device's pixel ratio — aapko manually kuch select nahi karna</span></code></pre>
+      </div>
+
+      <p>
+        Lekin senior teams jahan possible ho <strong>SVG icons</strong> prefer karti hain (via
+        <code>react-native-svg</code> ya <code>react-native-svg-transformer</code>), kyunki SVG vector-based hai —
+        ek hi file <strong>infinitely scale</strong> hoti hai bina quality loss ke, chahe density kuch bhi ho.
+        Isse asset management bhi simple ho jaata hai — teen alag files maintain nahi karni padtin, aur icon
+        color/size runtime pe props se control kiya ja sakta hai (jo PNG ke saath possible nahi).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/Icon.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> Svg, { Path } <span class="tok-kw">from</span> <span class="tok-str">'react-native-svg'</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">HeartIcon</span>({ size = <span class="tok-num">24</span>, color = <span class="tok-str">'#d97757'</span> }: { size?: <span class="tok-kw">number</span>; color?: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>Svg <span class="tok-attr">width</span>={size} <span class="tok-attr">height</span>={size} <span class="tok-attr">viewBox</span>=<span class="tok-str">"0 0 24 24"</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span>Path
+        <span class="tok-attr">d</span>=<span class="tok-str">"M12 21s-6.7-4.35-9.3-8.2C.6 9.2 2 5.5 5.5 5c2-.3 3.7.8 4.5 2.3.8-1.5 2.5-2.6 4.5-2.3 3.5.5 4.9 4.2 2.8 7.8C18.7 16.65 12 21 12 21z"</span>
+        <span class="tok-attr">fill</span>={color}
+      <span class="tok-punc">/&gt;</span>
+    <span class="tok-punc">&lt;/</span>Svg<span class="tok-punc">&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Extra Context</div>
+        <p>
+          Bahut se design tools (Figma, Iconify plugins) SVG icons ko directly export karne ka option dete hain,
+          aur unhe <code>react-native-svg-transformer</code> ke through directly React components ki tarah import
+          kiya ja sakta hai — <code>import Logo from './logo.svg'</code> — bilkul waise hi jaise web pe SVGR ke
+          saath hota hai.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 6 — Real-World Gotchas
+      ========================================================== -->
+      <h2 id="real-world-gotchas">6. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #1 — Shadows are platform-specific</div>
+        <p>
+          iOS aur Android mein shadow styling <strong>completely different</strong> hai. iOS
+          <code>shadowColor</code>, <code>shadowOffset</code>, <code>shadowOpacity</code>, <code>shadowRadius</code>
+          use karta hai. Android in properties ko poori tarah <strong>ignore</strong> karta hai — usko sirf
+          <code>elevation</code> chahiye (jo Material Design ka concept hai, elevation height simulate karta hai
+          shadow ke through). Agar aapne sirf iOS shadow properties likhi, Android pe koi shadow dikhega hi nahi.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>PlatformShadow.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Platform, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: {
+    <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#262524'</span>,
+    <span class="tok-attr">borderRadius</span>: <span class="tok-num">12</span>,
+    ...Platform.<span class="tok-fn">select</span>({
+      <span class="tok-attr">ios</span>: {
+        <span class="tok-attr">shadowColor</span>: <span class="tok-str">'#000'</span>,
+        <span class="tok-attr">shadowOffset</span>: { <span class="tok-attr">width</span>: <span class="tok-num">0</span>, <span class="tok-attr">height</span>: <span class="tok-num">4</span> },
+        <span class="tok-attr">shadowOpacity</span>: <span class="tok-num">0.25</span>,
+        <span class="tok-attr">shadowRadius</span>: <span class="tok-num">8</span>,
+      },
+      <span class="tok-attr">android</span>: {
+        <span class="tok-attr">elevation</span>: <span class="tok-num">6</span>,
+      },
+      <span class="tok-attr">default</span>: {},
+    }),
+  },
+});</code></pre>
+      </div>
+
+      <p>
+        <code>Platform.select()</code> pattern general purpose bhi hai — sirf shadows ke liye nahi, kisi bhi
+        property ke liye jo platform ke hisaab se differ karti hai (font weight rendering differences, elevation
+        vs shadow, statusbar height handling, etc.) use ho sakta hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #2 — Percentage-based dimensions</div>
+        <p>
+          <code>width: '100%'</code> parent ke resolved width ke against calculate hota hai — agar parent ki khud
+          ki width defined nahi hai (ya <code>flex</code> se aa rahi hai jo abhi tak resolve nahi hua), percentage
+          unpredictable ho sakta hai. Especially nested Views mein jahan koi ancestor explicit width nahi de raha,
+          percentage-based layouts kabhi kabhi 0 collapse ho jaate hain ya layout thrash create karte hain. Jahan
+          possible ho, <code>flex</code> properties prefer karo percentage ke over container-relative sizing ke
+          liye — zyada predictable hota hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #3 — Text truncation differs Android vs iOS</div>
+        <p>
+          <code>numberOfLines</code> aur <code>ellipsizeMode</code> dono platforms pe supported hain, lekin edge
+          cases mein behavior differ karta hai — jaise jab text ek single emoji ya combining characters pe truncate
+          ho raha ho, ya jab <code>ellipsizeMode="middle"</code> ka use ho (Android pe kabhi kabhi middle truncation
+          properly render nahi hota purane RN versions mein). Production mein hamesha real devices pe (dono OS)
+          test karo jab long/dynamic text (user-generated content, translations) involved ho — simulator pe sahi
+          dikh sakta hai lekin real device pe font rendering thoda differ kar sakta hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>TruncatedText.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">Text</span>
+  <span class="tok-attr">numberOfLines</span>={<span class="tok-num">2</span>}
+  <span class="tok-attr">ellipsizeMode</span>=<span class="tok-str">"tail"</span>
+  <span class="tok-attr">style</span>={styles.description}
+<span class="tok-punc">&gt;</span>
+  {longDynamicDescription}
+<span class="tok-punc">&lt;/</span><span class="tok-tag">Text</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Practical rule of thumb: har style ka jo platform-dependent behavior ho sakta hai (shadows, text
+          truncation edge cases, keyboard avoiding behavior, safe area handling) — inhe ek dedicated
+          <code>platform/</code> ya <code>utils/platformStyles.ts</code> file mein centralize karo, taaki
+          <code>Platform.OS === 'ios'</code> checks poore codebase mein scatter na hon. Isse debugging aur future
+          maintenance dono easy ho jaate hain.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 7 — Advanced Deep-Dive
+      ========================================================== -->
+      <h2 id="advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak jo cover hua wo "day-to-day production" level tha. Ye section un topics ko touch karta hai jo
+        senior/staff level interviews mein aur bade codebases mein aksar poocha/expect kiya jaata hai — Yoga engine
+        ke internals se leke ek proper responsive design system banane tak.
+      </p>
+
+      <h3>7.1 — Yoga Layout Engine: RN ka flexbox actually kaise resolve hota hai</h3>
+      <p>
+        Jab aap koi <code>style</code> likhte ho (flex, padding, alignItems, etc.), React Native khud wo layout
+        math nahi karta JS mein. Ye kaam <strong>Yoga</strong> ko diya jaata hai — ek open-source, cross-platform
+        <strong>C++ flexbox layout engine</strong> jo Meta ne banaya hai specifically is problem ke liye. Yoga CSS
+        Flexbox spec ka implementation hai, lekin ek standalone library ke roop mein — RN, Litho (Android), aur kai
+        internal Meta systems isi ek engine ko reuse karte hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Same engine, sab platforms pe</div>
+        <p>
+          Ye samajhna important hai: web pe Chrome ka flexbox implementation, Safari ka, aur Firefox ka — teeno
+          <strong>alag-alag engines</strong> hain jo independently CSS spec ko implement karte hain. Isliye kabhi
+          kabhi subtle cross-browser flexbox differences dikhte hain (rounding, min-content edge cases). React
+          Native mein aisa nahi hota — iOS aur Android dono, <strong>literal same Yoga C++ binary</strong> use
+          karte hain (JSI ke through JS se bind hota hai, ya purane arch mein bridge ke through). Matlab jo layout
+          math iOS pe chal raha hai wahi exact math Android pe bhi chal raha hai — koi "per-platform
+          reimplementation" nahi hai. Yahi wajah hai ki RN ka flexbox behavior itna predictable/consistent hai
+          dono platforms pe — ye ek accident nahi hai, ye deliberate architecture choice hai.
+        </p>
+      </div>
+
+      <h3>Measure pass → Layout pass</h3>
+      <p>
+        Jab RN ek screen render karta hai, Yoga do broad phases mein kaam karta hai:
+      </p>
+      <ol>
+        <li>
+          <strong>Measure pass</strong> — Yoga tree ke har node ka "intrinsic size" nikaalta hai (agar node ka size
+          uske content pe depend karta hai — jaise <code>&lt;Text&gt;</code> jiski height uske text content aur
+          available width par depend karti hai). Kuch components (Text, Image bina explicit dimensions ke) custom
+          "measure functions" register karte hain jo native side text-measurement APIs (iOS: NSString sizing,
+          Android: Paint.measureText) ko call karte hain.
+        </li>
+        <li>
+          <strong>Layout pass</strong> — Measure pass ke results aur flexbox rules (flexGrow/flexShrink/flexBasis,
+          justifyContent, alignItems, etc.) use karke Yoga poore tree ka final <code>x, y, width, height</code> har
+          node ke liye compute karta hai — root se leaf tak recursively.
+        </li>
+      </ol>
+      <p>
+        Ye final computed frames (x/y/width/height) phir native side (Fabric renderer, new arch mein) ko diye jaate
+        hain jo actual native views ko un exact positions/sizes pe render karta hai. JS thread is poore process se
+        largely disconnected hai — ek baar style commit ho gaya, layout calculation native/C++ side pe hoti hai,
+        jo hi ek reason hai ki RN layout JS thread block hone pe bhi (kuch extent tak) responsive reh sakta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>yoga-mental-model.txt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Conceptual pipeline — actual code Yoga C++ mein hai, ye sirf mental model hai</span>
+<span class="tok-com">// Step 1: JS style objects (StyleSheet.create output) Yoga node tree mein map hote hain</span>
+JSStyle { flex: 1, flexDirection: 'row', padding: 16 }
+  <span class="tok-com">// -> ek YGNode banta hai jisme ye properties set hoti hain (YGNodeStyleSetFlex, etc.)</span>
+
+<span class="tok-com">// Step 2: MEASURE PASS — leaf nodes jinka size content-dependent hai unka size nikalta hai</span>
+<span class="tok-com">// e.g. <Text>Hello World</Text> -> measure function call -> { width: 78, height: 20 }</span>
+
+<span class="tok-com">// Step 3: LAYOUT PASS — YGNodeCalculateLayout() poore tree ko traverse karta hai</span>
+<span class="tok-com">// har node ke liye final { left, top, width, height } compute hota hai</span>
+<span class="tok-com">// flex rules (grow/shrink/basis), justify/align sab isi pass mein resolve hote hain</span>
+
+<span class="tok-com">// Step 4: Computed frames Fabric/native renderer ko diye jaate hain</span>
+<span class="tok-com">// jo actual UIView (iOS) / android.view.View (Android) ko wahi frame assign karta hai</span></code></pre>
+      </div>
+
+      <h3>7.2 — Style resolution aur array styles: <code>style={'{'}[a, b, c && d]{'}'}</code> kaise resolve hota hai</h3>
+      <p>
+        Aapne upar (Section 4, <code>Card.tsx</code>) ye pattern dekha: <code>style={'{'}[styles.card, {'{'}
+        backgroundColor: theme.colors.surface {'}'}]{'}'}</code>. Ye array syntax RN ka built-in style-merging
+        mechanism hai, aur senior interviews mein iske exact resolution rules poocha jaata hai.
+      </p>
+      <p>
+        Rule simple hai: RN array ko <strong>left se right traverse</strong> karta hai aur ek flat merged object
+        banata hai — jaise <code>Object.assign({'{'}{'}'}, styleA, styleB, styleC)</code>. Iska matlab: agar do
+        styles mein same property define hai (jaise dono mein <code>backgroundColor</code>), toh
+        <strong>array mein baad wali style jeetegi</strong> — "later wins" rule, exactly jaise CSS specificity ties
+        mein source-order tie-breaker kaam karta hai. Aur <code>false</code>, <code>null</code>, <code>undefined</code>
+        — ye sab falsy entries array mein safely <strong>skip/ignore</strong> ho jaate hain, error nahi throw karte.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ArrayStyleResolution.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// core imports</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">Chip</span>({ selected, disabled }: { selected: <span class="tok-kw">boolean</span>; disabled: <span class="tok-kw">boolean</span> }) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">View</span>
+      <span class="tok-attr">style</span>={[
+        styles.base,                              <span class="tok-com">// 1. base style hamesha apply hoti hai — padding, borderRadius, etc.</span>
+        selected &amp;&amp; styles.selected,             <span class="tok-com">// 2. agar selected false hai, ye 'false' hai — array mein skip ho jaayega</span>
+        disabled &amp;&amp; styles.disabled,             <span class="tok-com">// 3. agar disabled true hai, iski backgroundColor selected wali ko OVERRIDE karegi</span>
+                                                    <span class="tok-com">//    kyunki ye array mein baad mein aata hai (order matters!)</span>
+      ]}
+    <span class="tok-punc">/&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  base:     { <span class="tok-attr">padding</span>: <span class="tok-num">10</span>, <span class="tok-attr">borderRadius</span>: <span class="tok-num">999</span>, <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#333'</span> }, <span class="tok-com">// default look</span>
+  selected: { <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#d97757'</span> },                                <span class="tok-com">// wins over base.backgroundColor jab selected true</span>
+  disabled: { <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#555'</span>, <span class="tok-attr">opacity</span>: <span class="tok-num">0.5</span> },                <span class="tok-com">// wins over BOTH agar disabled true — order isliye critical hai</span>
+});</code></pre>
+      </div>
+
+      <p>
+        Ye pattern <strong>ternary se better kyun hai</strong>: agar aap
+        <code>style={'{'}disabled ? styles.disabled : selected ? styles.selected : styles.base{'}'}</code> jaisa
+        nested ternary likhte, aapko <strong>ek hi style</strong> mil sakti hai kabhi bhi — combine nahi ho sakti
+        (jaise "base ka padding + selected ka color + disabled ka opacity" ek saath). Array syntax composable hai —
+        multiple independent concerns (base look, selection state, disabled state) ko independently define karke
+        conditionally stack kar sakte ho, bina ek combinatorial-explosion wali single style object banaye har
+        possible state combination ke liye.
+      </p>
+
+      <h3>7.3 — Animatable properties: UI thread vs JS thread (Reanimated context)</h3>
+      <p>
+        Chapter 5 mein Reanimated worklets cover hue the — ye unhi concepts ko style/layout ke lens se extend karta
+        hai. Sab style properties equally "animatable" nahi hain jab performance ki baat aati hai.
+      </p>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Property Type</th><th>Examples</th><th>Requires Layout Pass?</th><th>Runs On</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Transform properties</td><td><code>transform: [{'{'}translateX{'}'}, {'{'}scale{'}'}, {'{'}rotate{'}'}]</code>, <code>opacity</code></td><td>Nahi</td><td>UI thread directly (GPU compositor layer)</td></tr>
+            <tr><td>Layout-affecting properties</td><td><code>width</code>, <code>height</code>, <code>padding</code>, <code>margin</code>, <code>flex</code></td><td>Haan — poore subtree ka Yoga re-layout</td><td>UI thread, lekin Yoga layout pass ke through (zyada expensive)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "Non-layout" vs "layout" animatable properties</div>
+        <p>
+          <code>transform</code> aur <code>opacity</code> "cheap" hain kyunki ye sirf ek existing, already-laid-out
+          native layer ko GPU pe transform/composite karte hain — jaise ek texture ko move/scale/fade karna, bina
+          us layer ke neighbours ko touch kiye. Yoga ko dobara layout tree calculate karne ki zaroorat hi nahi
+          padti. Lekin <code>width</code>/<code>height</code>/<code>padding</code> jaisi properties animate karna
+          matlab <strong>har animation frame pe Yoga ko poore affected subtree ka layout dobara calculate karna
+          padta hai</strong> — kyunki ek node ki width badalne se uske siblings, parent, aur unke siblings tak ka
+          layout shift ho sakta hai (flexbox mein sab connected hai). Ye reflow cost hai — 60fps target ke liye ye
+          bahut expensive ho sakta hai especially complex/deep view trees mein.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>CheapVsExpensiveAnim.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-fn">Animated</span>, { useSharedValue, useAnimatedStyle, withTiming } <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>; <span class="tok-com">// Reanimated 3 imports</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ExpandCard</span>({ expanded }: { expanded: <span class="tok-kw">boolean</span> }) {
+  <span class="tok-kw">const</span> scale = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">1</span>);       <span class="tok-com">// UI-thread value — cheap to animate</span>
+  <span class="tok-kw">const</span> boxHeight = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">100</span>); <span class="tok-com">// layout-affecting value — expensive to animate</span>
+
+  <span class="tok-com">// ✅ CHEAP: transform-based "grow" illusion — koi Yoga re-layout nahi hoti</span>
+  <span class="tok-kw">const</span> cheapStyle = <span class="tok-fn">useAnimatedStyle</span>(() =&gt; ({
+    <span class="tok-attr">transform</span>: [{ <span class="tok-attr">scale</span>: <span class="tok-fn">withTiming</span>(expanded ? <span class="tok-num">1.2</span> : <span class="tok-num">1</span>) }], <span class="tok-com">// GPU compositor sirf existing layer ko scale karta hai</span>
+  }));
+
+  <span class="tok-com">// ⚠️ EXPENSIVE: height animate karne se HAR FRAME pe Yoga re-layout trigger hota hai</span>
+  <span class="tok-kw">const</span> expensiveStyle = <span class="tok-fn">useAnimatedStyle</span>(() =&gt; ({
+    <span class="tok-attr">height</span>: <span class="tok-fn">withTiming</span>(expanded ? <span class="tok-num">300</span> : <span class="tok-num">100</span>), <span class="tok-com">// har intermediate frame pe poore subtree ka layout recalc</span>
+  }));
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// demo purpose — actual JSX omit kiya gaya hai brevity ke liye</span>
+}</code></pre>
+      </div>
+
+      <p>
+        Practical takeaway: agar "expand/collapse" jaisa effect chahiye, jahan possible ho
+        <code>transform: [{'{'}scaleY{'}'}]</code> ya <code>maxHeight</code> ke saath ek fixed overflow container
+        prefer karo, ya phir <code>LayoutAnimation</code>/Reanimated ke <code>Layout</code> transitions use karo jo
+        internally optimize kiye gaye hain — raw <code>height</code> ko directly per-frame animate karna avoid
+        karo jahan performance-critical ho (jaise list items ke andar).
+      </p>
+
+      <h3>7.4 — Ek fully responsive design system banana (tablets, foldables, alag aspect ratios)</h3>
+      <p>
+        "Responsive" RN mein sirf "phone pe theek dikhna" nahi hai — production apps ko iPhone SE se leke iPad Pro
+        tak, chhote Android phones se leke foldables (jo runtime pe apna aspect ratio change kar sakte hain jab
+        unfold hote hain) tak sab handle karna padta hai.
+      </p>
+
+      <h4><code>useWindowDimensions()</code> — reactive dimensions</h4>
+      <p>
+        <code>Dimensions.get('window')</code> ek static snapshot deta hai — agar device rotate ho jaaye ya foldable
+        unfold ho jaaye, ye value stale ho jaati hai jab tak manually listener na lagao. <code>useWindowDimensions()</code>
+        hook is problem ko solve karta hai — ye automatically re-render trigger karta hai jab bhi window dimensions
+        change hoti hain (rotation, split-screen resize, fold/unfold), bina manual event listener setup ke.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/useBreakpoint.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useWindowDimensions } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// reactive dimensions hook</span>
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Breakpoint tokens — ek design token jaisa treat karo, magic numbers nahi
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> breakpoints = {
+  <span class="tok-attr">compact</span>: <span class="tok-num">0</span>,    <span class="tok-com">// phones (portrait) — default/base breakpoint</span>
+  <span class="tok-attr">medium</span>: <span class="tok-num">600</span>,  <span class="tok-com">// small tablets, phones in landscape, foldables unfolded</span>
+  <span class="tok-attr">expanded</span>: <span class="tok-num">840</span>, <span class="tok-com">// large tablets, iPad landscape</span>
+} <span class="tok-kw">as const</span>;
+
+<span class="tok-kw">type</span> Breakpoint = <span class="tok-kw">keyof</span> <span class="tok-kw">typeof</span> breakpoints; <span class="tok-com">// 'compact' | 'medium' | 'expanded'</span>
+
+<span class="tok-com">// ----------------------------------------------------------------
+// useBreakpoint — current width ke hisaab se sahi breakpoint return karta hai
+// Ye hook re-run hota hai automatically jab window resize/rotate/fold hoti hai
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useBreakpoint</span>(): Breakpoint {
+  <span class="tok-kw">const</span> { width } = <span class="tok-fn">useWindowDimensions</span>(); <span class="tok-com">// reactive — Dimensions.get() static hota, ye nahi</span>
+
+  <span class="tok-kw">if</span> (width &gt;= breakpoints.expanded) <span class="tok-kw">return</span> <span class="tok-str">'expanded'</span>; <span class="tok-com">// large tablets ke liye</span>
+  <span class="tok-kw">if</span> (width &gt;= breakpoints.medium) <span class="tok-kw">return</span> <span class="tok-str">'medium'</span>;     <span class="tok-com">// tablets / landscape phones ke liye</span>
+  <span class="tok-kw">return</span> <span class="tok-str">'compact'</span>;                                        <span class="tok-com">// default — most phones portrait mein</span>
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>screens/ProductGrid.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { FlatList, View } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;      <span class="tok-com">// list + layout primitives</span>
+<span class="tok-kw">import</span> { useBreakpoint } <span class="tok-kw">from</span> <span class="tok-str">'../hooks/useBreakpoint'</span>; <span class="tok-com">// custom reactive breakpoint hook</span>
+
+<span class="tok-kw">const</span> COLUMNS_BY_BREAKPOINT = {
+  <span class="tok-attr">compact</span>: <span class="tok-num">2</span>,   <span class="tok-com">// phone — 2 column grid</span>
+  <span class="tok-attr">medium</span>: <span class="tok-num">3</span>,    <span class="tok-com">// tablet portrait / landscape phone — 3 columns</span>
+  <span class="tok-attr">expanded</span>: <span class="tok-num">4</span>,  <span class="tok-com">// large tablet landscape — 4 columns, better space usage</span>
+} <span class="tok-kw">as const</span>;
+
+<span class="tok-kw">function</span> <span class="tok-fn">ProductGrid</span>({ data }: { data: <span class="tok-kw">unknown</span>[] }) {
+  <span class="tok-kw">const</span> breakpoint = <span class="tok-fn">useBreakpoint</span>();                    <span class="tok-com">// 'compact' | 'medium' | 'expanded'</span>
+  <span class="tok-kw">const</span> numColumns = COLUMNS_BY_BREAKPOINT[breakpoint];    <span class="tok-com">// breakpoint ke hisaab se column count map karo</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>FlatList
+      <span class="tok-attr">data</span>={data}                                     <span class="tok-com">// list data</span>
+      <span class="tok-attr">key</span>={numColumns}                               <span class="tok-com">// IMPORTANT: numColumns badalne pe FlatList ko force remount karna padta hai</span>
+      <span class="tok-attr">numColumns</span>={numColumns}                       <span class="tok-com">// FlatList apna internal grid layout khud handle karta hai</span>
+      <span class="tok-attr">renderItem</span>={() =&gt; <span class="tok-punc">&lt;</span><span class="tok-tag">View</span> <span class="tok-attr">style</span>={{ <span class="tok-attr">flex</span>: <span class="tok-num">1</span>, <span class="tok-attr">aspectRatio</span>: <span class="tok-num">1</span> }} <span class="tok-punc">/&gt;</span>} <span class="tok-com">// flex: 1 = column ke andar equal share</span>
+    <span class="tok-punc">/&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — FlatList <code>numColumns</code> runtime change</div>
+        <p>
+          <code>FlatList</code> ka <code>numColumns</code> internally list ko chunks mein divide karta hai render
+          time pe — agar aap runtime pe <code>numColumns</code> change karte ho (jaise upar wale example mein
+          rotation pe 2 se 3 columns), FlatList ko force-remount karna padta hai (<code>key={'{'}numColumns{'}'}</code>
+          trick), warna internal row-chunking stale reh jaati hai aur layout broken dikhega.
+        </p>
+      </div>
+
+      <h4>Hardcoded pixels avoid karna — accessibility aur scale-factor sizing</h4>
+      <p>
+        Ek aur senior-level concern: sirf screen-size responsiveness nahi, <strong>font scaling accessibility</strong>
+        bhi important hai. Users apne OS settings mein font size badha sakte hain (visually impaired users ke liye
+        critical feature) — agar aapne <code>fontSize: 14</code> jaisa hardcoded number diya, RN by default us
+        value ko OS ke font-scale setting ke hisaab se automatically scale karta hai (jab tak
+        <code>allowFontScaling={'{'}false{'}'}</code> explicitly set na ho — jo generally avoid karna chahiye,
+        kyunki ye accessibility break karta hai). Lekin agar aapka <strong>layout</strong> (containers, fixed
+        heights) hardcoded pixels pe based hai bina font scaling account kiye, text container se overflow/clip ho
+        sakta hai jab user ne font size badhaya ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>utils/scale.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useWindowDimensions, PixelRatio } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// dimensions + density utils</span>
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Baseline design width — Figma file jis width pe designed hui thi
+// (e.g. designer ne 375px (iPhone standard) width pe design banaya)
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">const</span> BASE_WIDTH = <span class="tok-num">375</span>;
+
+<span class="tok-com">// ----------------------------------------------------------------
+// scaleSize — current device width ke proportion mein ek px value ko scale karta hai
+// Isse chhote phones pe cheezein zyada bhi chhoti nahi lagti, aur tablets pe
+// zyada bhi bikhri hui nahi lagti — proportional scaling milta hai
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useScale</span>() {
+  <span class="tok-kw">const</span> { width } = <span class="tok-fn">useWindowDimensions</span>();          <span class="tok-com">// reactive current window width</span>
+  <span class="tok-kw">const</span> factor = width / BASE_WIDTH;                     <span class="tok-com">// e.g. tablet pe 768/375 = 2.04x factor</span>
+
+  <span class="tok-kw">return</span> (size: <span class="tok-kw">number</span>) =&gt; {
+    <span class="tok-kw">const</span> clampedFactor = <span class="tok-fn">Math</span>.<span class="tok-fn">min</span>(factor, <span class="tok-num">1.3</span>);   <span class="tok-com">// cap scaling — bahut zyada scale hone se UI ajeeb na lage tablets pe</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">PixelRatio</span>.<span class="tok-fn">roundToNearestPixel</span>(size * clampedFactor); <span class="tok-com">// device pixel grid pe round karo — blurry edges avoid</span>
+  };
+}</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Absolute rule nahi hai ki "kabhi bhi raw pixel number mat likho" — chhote fixed cheezein (border width
+          1px, icon size 24) generally theek hain raw rehne mein. Lekin jo values <strong>screen ke proportion mein
+          bade dikhne chahiye</strong> (container padding jo screen edge se related ho, ek hero image ki height),
+          unke liye <code>useWindowDimensions()</code> percentage ya scale-factor approach prefer karo — aur font
+          sizes ke liye kabhi <code>allowFontScaling={'{'}false{'}'}</code> mat lagao bina strong accessibility
+          justification ke.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 8 — Interview Questions
+      ========================================================== -->
+      <h2 id="interview-questions">8. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye questions un cheezon pe based hain jo actual senior/staff RN interviews mein poochi jaati hain — sirf
+        "syntax kya hai" nahi, balki "kyun aisa design hua" aur "production mein ye kaise break hota hai" wale
+        questions.
+      </p>
+
+      <h3>Q1. Yoga kya hai, aur React Native isse kyun use karta hai instead of directly har platform ka native layout system use karne ke?</h3>
+      <p>
+        <strong>Answer:</strong> Yoga ek open-source, standalone <strong>C++ flexbox layout engine</strong> hai jo
+        Meta ne banaya hai. RN Yoga use karta hai instead of native layout systems (iOS ka Auto Layout, Android ka
+        ConstraintLayout/LinearLayout) kyunki us case mein har platform ke liye <strong>alag layout DSL</strong>
+        maintain karna padta — matlab RN developer ko dono platforms ka layout system seekhna padta, aur cross-
+        platform layout consistency guarantee karna almost impossible hota (Auto Layout constraints aur
+        ConstraintLayout constraints conceptually kaafi different hain). Yoga ek <strong>single, shared C++
+        engine</strong> hai jo dono platforms pe (JSI/bridge binding ke through) same exact layout math run karta
+        hai. Isse RN developer sirf ek mental model (CSS-like flexbox) seekhta hai, aur ye guarantee milti hai ki
+        layout behavior pixel-consistent hoga iOS aur Android dono pe — kyunki ye literally same code path hai, do
+        alag implementations nahi.
+      </p>
+
+      <h3>Q2. <code>style={'{'}[styles.a, styles.b, condition &amp;&amp; styles.c]{'}'}</code> — is array ka resolution order kya hai, aur agar <code>styles.a</code> aur <code>styles.b</code> dono mein <code>backgroundColor</code> define ho toh kya hoga?</h3>
+      <p>
+        <strong>Answer:</strong> RN array ko left-to-right traverse karke ek flattened merged object banata hai —
+        jaise sequential <code>Object.assign()</code>. Agar dono mein <code>backgroundColor</code> hai, toh
+        <strong>array mein baad wali (styles.b) jeetegi</strong> kyunki wo baad mein merge hoti hai aur pehli value
+        ko overwrite kar deti hai. Falsy entries (<code>condition</code> false hone pe <code>false</code> value)
+        array mein safely skip ho jaati hain — RN unhe silently ignore karta hai, error throw nahi karta. Ye ordering
+        rule hi hai jo conditional styling patterns (base + state overrides) ko predictable banata hai.
+      </p>
+
+      <h3>Q3. Ek design perfect dikh raha hai aapke iPhone simulator pe, lekin ek chhote Android device pe broken hai. Aapka debugging process kya hoga?</h3>
+      <p>
+        <strong>Answer:</strong> Systematic elimination approach: (1) Pehle check karo kya ye ek
+        <strong>shadow/elevation</strong> issue hai — iOS <code>shadowColor/shadowOffset/shadowOpacity/shadowRadius</code>
+        use karta hai, Android inhe completely ignore karta hai aur sirf <code>elevation</code> chahiye — agar
+        sirf iOS shadow props likhi hain, Android pe shadow gayab hoga. (2) Check karo kya
+        <strong>hardcoded pixel dimensions</strong> use ho rahe hain jo chhote screen pe overflow/clip kar rahe
+        hain — <code>useWindowDimensions()</code> se actual device width verify karo. (3)
+        <strong>Font scaling</strong> check karo — Android devices pe often OS-level font scale setting different
+        hoti hai default se, jo text ko clip kar sakti hai fixed-height containers mein. (4)
+        <strong>Text truncation</strong> edge cases — <code>numberOfLines</code>/<code>ellipsizeMode</code> ka
+        behavior platform ke beech thoda differ karta hai. (5) Last resort: React DevTools ya
+        <code>console.log</code> se actual computed layout values (onLayout callback) compare karo dono platforms
+        pe side by side, taaki exact numeric difference pinpoint ho — guess karne ke bajaye data se debug karo.
+      </p>
+
+      <h3>Q4. Kyun <code>width</code>/<code>height</code> animate karna zyada expensive hai <code>transform: scale</code> se, chahe visually dono similar dikh sakte hain?</h3>
+      <p>
+        <strong>Answer:</strong> <code>transform</code> aur <code>opacity</code> "compositor-only" properties hain
+        — inhe animate karne ke liye Yoga ko koi layout recalculation nahi karni padti, GPU sirf existing rendered
+        layer ko transform/fade karta hai (jaise ek pehle se render hui texture ko move/scale karna). Lekin
+        <code>width</code>/<code>height</code> layout-affecting properties hain — inhe change karne ka matlab hai
+        Yoga ko <strong>har animation frame pe poore affected subtree ka flexbox layout dobara calculate karna</strong>
+        (kyunki flexbox mein ek node ka size uske siblings aur parent ke layout ko bhi affect kar sakta hai). Ye
+        reflow cost hai jo har frame pe accumulate hoti hai — complex view trees mein ye 60fps target miss karne
+        ka common reason hai. Visual result similar lag sakta hai (ek box bada ho raha hai) lekin underlying cost
+        bahut different hai.
+      </p>
+
+      <h3>Q5. <code>elevation</code> (Android) vs manually iOS shadow properties replicate karna — trade-offs kya hain, aur visual differences kya hain?</h3>
+      <p>
+        <strong>Answer:</strong> iOS shadow properties (<code>shadowColor/Offset/Opacity/Radius</code>) aapko
+        <strong>fine-grained control</strong> dete hain — custom shadow color, precise offset direction, custom
+        blur radius — ye Material Design ke bahar bhi kaam karta hai. Android ka <code>elevation</code> Material
+        Design ka concept hai jo ek simulated "height above surface" model follow karta hai — ye hamesha ek
+        <strong>neutral gray/black shadow niche ki taraf</strong> generate karta hai based on elevation value, aur
+        aap iska color/direction customize nahi kar sakte (kuch newer RN versions mein <code>shadowColor</code>
+        Android pe bhi partial support hai, lekin control iOS jitna granular nahi hai). Trade-off: agar aapko
+        brand-specific colored shadows chahiye (jaise ek orange-tinted glow), Android pe true replication mushkil
+        hai — often teams ek workaround use karte hain: ek semi-transparent colored border/background layer add
+        karna shadow illusion ke liye, ya third-party library (<code>react-native-shadow-2</code>) jo SVG-based
+        custom shadows render karti hai dono platforms pe consistently.
+      </p>
+
+      <h3>Q6. <code>useWindowDimensions()</code> aur <code>Dimensions.get('window')</code> mein kya difference hai, aur responsive design ke liye kaunsa prefer karoge?</h3>
+      <p>
+        <strong>Answer:</strong> <code>Dimensions.get('window')</code> ek <strong>static, one-time snapshot</strong>
+        return karta hai — agar device rotate ho, split-screen resize ho, ya foldable unfold ho, ye value automatically
+        update nahi hogi jab tak aap manually <code>Dimensions.addEventListener('change', ...)</code> lagake apna
+        khud ka re-render trigger na karo. <code>useWindowDimensions()</code> ek <strong>React hook</strong> hai jo
+        internally ye listener already register karta hai aur automatically component ko re-render karta hai jab
+        bhi dimensions change hoti hain. Production responsive components ke liye <code>useWindowDimensions()</code>
+        hamesha prefer karna chahiye — kam boilerplate, aur foldables/tablets/rotation jaise dynamic scenarios
+        correctly handle karta hai bina manual listener cleanup ki zimmedari ke.
+      </p>
+
+      <h3>Q7. Explain karo <code>StyleSheet.create</code> object ki identity behavior — ye <code>React.memo</code> ke saath kaise interact karta hai?</h3>
+      <p>
+        <strong>Answer:</strong> <code>StyleSheet.create()</code> se return hua object ek <strong>stable
+        reference</strong> hota hai — ek baar create hone ke baad, wahi reference har render pe reuse hoti hai
+        (module load time pe ek hi baar banta hai). Ye important hai jab wo style prop ek <code>React.memo</code>-wrapped
+        child ko pass ho raha ho: memo shallow comparison (<code>===</code>) karta hai props pe — agar style ek
+        naya inline object hai har render pe (jaise <code>style={'{'}{'{'} padding: 10 {'}'}{'}'}</code>), memo ki
+        comparison hamesha fail hogi (naya object !== purana object), matlab child hamesha re-render hoga chahe
+        actual style values same hi hon. <code>StyleSheet.create</code> object ki stable reference isse bachati
+        hai — agar values same hain, reference bhi same hai, memo comparison pass hoti hai, child re-render skip
+        hota hai.
+      </p>
+
+      <h3>Q8. Dark mode ko "day 1 se architecture mein sochna chahiye" — iska practical matlab kya hai code level pe, aur agar retrofit karna pade toh sabse bada risk kya hai?</h3>
+      <p>
+        <strong>Answer:</strong> Practical matlab hai: components mein kabhi raw hex values (<code>backgroundColor:
+        '#fff'</code>) hardcode mat karo — hamesha semantic theme tokens use karo (<code>theme.colors.background</code>)
+        jo ek central theme object se resolve hote hain. Agar ye discipline day-1 se nahi follow hui, sabse bada
+        retrofit risk ye hai: hardcoded hex codes poori codebase mein scatter ho jaate hain (kabhi kabhi 100+
+        files), aur unhe dhoondh-dhoondh ke theme references se replace karna ek massive, error-prone refactor ban
+        jaata hai — aur is process mein visual regressions introduce hone ka risk bhi hota hai (ek jagah galat
+        token map ho gaya toh ek chhota area wrong color mein reh jaata hai jo QA mein easily miss ho sakta hai).
+        Isliye semantic token layer (colors.background/colors.text, not palette.neutral[50] directly in components)
+        hi wo abstraction hai jo future dark-mode (ya kisi bhi future theming — white-label apps, seasonal themes)
+        ko cheap banati hai.
+      </p>
+
+      <h3>Q9. <code>flex: 1</code> ka pura expansion kya hai, aur agar ek container mein ek child <code>flex: 2</code> aur dusra <code>flex: 1</code> ho, exact space distribution kaise calculate hoga (assume container height 300px, no other content)?</h3>
+      <p>
+        <strong>Answer:</strong> <code>flex: 1</code> shorthand hai <code>flexGrow: 1, flexShrink: 1, flexBasis: 0%</code>
+        (RN ka Yoga is CSS spec ka simplified version follow karta hai). <code>flexBasis: 0</code> ka matlab hai
+        dono children apna initial size 0 se start karte hain, aur phir available space
+        <code>flexGrow</code> ratio ke hisaab se distribute hoti hai. Agar container 300px hai aur ek child
+        <code>flex: 2</code> aur dusra <code>flex: 1</code> hai, total flexGrow units = 3 hain — pehla child
+        (2/3) * 300 = <strong>200px</strong> lega, dusra (1/3) * 300 = <strong>100px</strong> lega. Ratio hamesha
+        relative units ke sum ke against calculate hota hai, absolute values ke against nahi.
+      </p>
+
+      <h3>Q10. Agar aap ek design system lead ho aur aapki team foldable devices support karna chahti hai — architecture level pe kya decisions lene padenge sirf "responsive breakpoints" add karne ke alawa?</h3>
+      <p>
+        <strong>Answer:</strong> Kuch layers pe sochna padega: (1) <strong>Reactive dimension tracking</strong> —
+        <code>useWindowDimensions()</code> everywhere, kabhi static <code>Dimensions.get()</code> cached values
+        store mat karo, kyunki fold/unfold runtime event hai jaise rotation. (2) <strong>Breakpoint tokens</strong>
+        jo sirf phone/tablet binary na ho, balki ek scale (compact/medium/expanded jaisa Material's window size
+        classes) jo intermediate states (unfolded-but-narrow) ko bhi handle kare. (3) <strong>List/grid components
+        ka remount strategy</strong> — jaisa <code>FlatList numColumns</code> gotcha mein dekha, kuch components
+        ko key-based remount chahiye hota hai jab layout dimensions drastically change hon. (4)
+        <strong>Aspect-ratio-sensitive assets</strong> — hero images/videos jo full-bleed hote hain unhe
+        <code>aspectRatio</code> style se define karo, fixed height se nahi, taaki wide-unfolded state mein
+        distort na ho. (5) <strong>Testing infrastructure</strong> — foldable emulator profiles (Android Studio
+        mein available) ko CI/manual QA process mein include karna, kyunki ye ek edge case hai jo easily missed ho
+        jaata hai agar sirf standard phone/tablet simulators pe test ho raha ho.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="02-components-and-apis.html">
+          <div class="label">← Previous</div>
+          <div class="title">Components &amp; APIs</div>
+        </a>
+        <a class="next" href="04-expo-router.html">
+          <div class="label">Next →</div>
+          <div class="title">Expo Router</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backend + Supabase — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link active" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Backend + Supabase</div>
+      <div class="progress-pill">Chapter 9 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Expo Router API Routes · Supabase · Postgres · RLS</span>
+      <h1>Backend + Supabase — API Keys, API Routes &amp; Row Level Security</h1>
+      <p class="subtitle">
+        Ye chapter Expo Router (ch.4) ke saath saath sabse zyada <strong>security-critical</strong> hai — is baar
+        backend side se. Yahan hum dekhenge ki env vars production mein actually kaise expose hote hain, Expo
+        Router ka API routes feature server-side secrets ko kaise hide karta hai, aur Supabase use karte waqt
+        Row Level Security kyun literally tumhari database ki last line of defense hai. Agar tumne RLS enable
+        karna bhool diya, toh tumhari poori production database publicly readable/writable ho sakti hai — isliye
+        is chapter ko dhyan se padhna.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#env-vars">1. Environment Variables in Production — The Full Picture</a></li>
+          <li><a href="#api-routes">2. Expo Router API Routes</a></li>
+          <li><a href="#streaming">3. Streaming Data with Expo Fetch</a></li>
+          <li><a href="#eas-hosting">4. Deploying with EAS Hosting</a></li>
+          <li><a href="#supabase-overview">5. Supabase Overview and UI Tour</a></li>
+          <li><a href="#creating-tables">6. Creating Tables</a></li>
+          <li><a href="#crud">7. Installation and CRUD Operations</a></li>
+          <li><a href="#rls">8. Row Level Security (RLS) — The Core Security Model</a></li>
+          <li><a href="#key-patterns">9. Client vs Server-Side API Key Patterns — Senior Summary</a></li>
+          <li><a href="#gotchas">10. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">11. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">12. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="env-vars" style="border-top:none; padding-top:0; margin-top:28px;">1. Environment Variables in Production — The Full Picture</h2>
+
+      <p>
+        Chapter 1 mein humne ek line mein mention kiya tha ki <code>EXPO_PUBLIC_</code> prefix wale env vars
+        client mein bundle ho jaate hain, secret nahi hote. Ab is baat ko poori depth se samajhte hain, kyunki
+        yehi galatfahmi production mein sabse zyada security incidents create karti hai.
+      </p>
+
+      <h3>Build-time inlining — actually hota kya hai</h3>
+      <p>
+        Jab tum <code>app.config.ts</code> ya kisi component mein <code>process.env.EXPO_PUBLIC_SOMETHING</code>
+        likhte ho, Metro bundler build-time pe is expression ko <strong>literally replace</strong> kar deta hai
+        uski actual string value se — bilkul waise jaise ek find-and-replace. Iska matlab ye value ab tumhari
+        JS bundle file (<code>.hbc</code> Hermes bytecode ya plain JS bundle) ke andar <strong>plain text/bytecode
+        ke roop mein permanently baked</strong> ho jaati hai. Runtime pe koi "environment" query nahi ho rahi —
+        RN apps ke paas web ke Node.js jaisa server environment hota hi nahi hai jisse runtime pe env vars read
+        ho sakein.
+      </p>
+
+      <p>
+        Iska practical result: koi bhi jo tumhari <code>.ipa</code>/<code>.apk</code> file ko decompile/unzip
+        karega (jaise <code>unzip app.apk</code>, ya <code>npx react-native-bundle-visualizer</code> jaisa tool,
+        ya sirf network traffic ko Charles Proxy/mitmproxy se inspect karega), wo tumhare saare
+        <code>EXPO_PUBLIC_*</code> values plain text mein dekh sakta hai. Ye koi "hack" nahi hai — ye bas
+        JS bundle padhna hai, jo har RN app ke liye technically possible hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — EXPO_PUBLIC_ Secrets Kabhi Mat Rakho</div>
+        <p>
+          <strong>Kabhi bhi ek true secret ko <code>EXPO_PUBLIC_</code> prefix ke saath mat rakho.</strong> Concrete
+          examples jo bahut common mistakes hain:
+        </p>
+        <ul>
+          <li>
+            <strong>Stripe secret key</strong> (<code>sk_live_...</code>) — agar ye
+            <code>EXPO_PUBLIC_STRIPE_SECRET_KEY</code> ban gayi, toh koi bhi attacker isse nikal ke tumhare
+            Stripe account se seedha charges create kar sakta hai, refunds issue kar sakta hai, ya customer
+            data dekh sakta hai. (Stripe ki <em>publishable</em> key — <code>pk_live_...</code> — public hone
+            ke liye hi design hui hai, wo alag baat hai aur wo <code>EXPO_PUBLIC_</code> mein theek hai.)
+          </li>
+          <li>
+            <strong>Unrestricted Google Maps/Cloud billing key</strong> — agar API key ko Google Cloud Console
+            mein restrict nahi kiya (application restrictions + API restrictions dono), toh attacker isse
+            nikal ke apne khud ke projects mein use kar sakta hai aur tumhare billing account pe charges
+            daal sakta hai. Bundle se key nikalna trivial hai, isliye restriction hi asli defense hai — key
+            ko "chupana" defense nahi hai.
+          </li>
+          <li>
+            <strong>Database admin/root credentials</strong>, third-party API keys jinke paas write ya
+            billing-level access hai — ye sab client app mein kabhi bhi, kisi bhi prefix ke saath nahi jaane
+            chahiye. In sabko sirf server-side code touch karna chahiye.
+          </li>
+        </ul>
+      </div>
+
+      <h3>Do tarah ke "secrets" — differentiate karna seekho</h3>
+      <p>
+        Senior mental model ye hai ki har env var ko in do categories mein classify karo:
+      </p>
+
+      <table>
+        <thead><tr><th>Category</th><th>Example</th><th>Kahan rakhein</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Client-safe public identifiers</strong></td>
+            <td>Supabase URL, Supabase anon key, Stripe publishable key, analytics write-only key</td>
+            <td><code>EXPO_PUBLIC_*</code> — bundle mein jaana hi is design ka part hai, protection kisi aur layer
+            (RLS, backend validation) se aata hai</td>
+          </tr>
+          <tr>
+            <td><strong>True server-side secrets</strong></td>
+            <td>Stripe secret key, Supabase service_role key, unrestricted third-party API keys, DB admin creds</td>
+            <td>App binary mein <strong>kabhi nahi</strong> — sirf server (Expo Router API route, separate backend,
+            ya EAS Secret jo sirf build-server pe expose ho)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>EAS Secrets — build-time secrets jo git mein nahi jaane chahiye</h3>
+      <p>
+        Kabhi kabhi tumhe ek value build ke waqt chahiye hoti hai (jaise ek native config file generate karne
+        ke liye, ya app.config.ts ke andar kisi calculation ke liye) lekin wo git repo mein commit nahi honi
+        chahiye (jaise ek self-hosted Sentry auth token). Iske liye EAS ka <strong>secrets</strong> system hai —
+        ye alag hai <code>EXPO_PUBLIC_*</code> client-safe vars se.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — EAS secret create karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># EAS account pe ek naya build-time secret create kar rahe hain</span>
+eas secret:create <span class="tok-punc">\</span>
+  --scope project <span class="tok-com"># sirf isi project ke liye scoped hai, doosre projects nahi dekh sakte</span> <span class="tok-punc">\</span>
+  --name SENTRY_AUTH_TOKEN <span class="tok-com"># secret ka naam, build ke andar isi naam se accessible hoga</span> <span class="tok-punc">\</span>
+  --value <span class="tok-str">"sntrys_xxxxxxxxxxxx"</span> <span class="tok-com"># actual secret value, ye kabhi git mein commit nahi hoga</span> <span class="tok-punc">\</span>
+  --type string <span class="tok-com"># plain string secret (file bhi ho sakta hai --type file se)</span>
+
+<span class="tok-com"># saare configured secrets list karna, values hidden rehti hain</span>
+eas secret:list</code></pre>
+      </div>
+
+      <p>
+        Ye secret sirf EAS ke <strong>cloud build servers</strong> pe available hota hai build ke waqt (jaise
+        <code>app.config.ts</code> ke andar Sentry source maps upload karne ke liye) — ye final app bundle mein
+        khud automatically nahi jaata jab tak tum explicitly usse <code>EXPO_PUBLIC_</code> var mein assign na
+        karo. Yehi difference samajhna zaroori hai: <strong>EAS Secret ek build-time-only value store hai</strong>,
+        jabki <code>EXPO_PUBLIC_*</code> ek <strong>runtime-client-visible</strong> value hai. Dono alag purpose
+        solve karte hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Ek common confusion: log kehte hain "maine EAS secret bana diya toh secure hai". Nahi — agar tumne
+          us secret ko <code>app.config.ts</code> ke andar <code>EXPO_PUBLIC_API_KEY</code> jaisi variable mein
+          assign kiya, toh wo build process ke through phir bhi final client bundle mein bake ho jaayega. EAS
+          Secret sirf ye guarantee karta hai ki value <strong>git history mein plaintext nahi hai</strong> —
+          ye client-side exposure se protect nahi karta. Wo do alag problems hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="api-routes">2. Expo Router API Routes</h2>
+
+      <p>
+        Ab jab humne dekh liya ki true secrets client app mein nahi ja sakte, sawaal ye hai — agar app ko
+        kisi third-party API ko secret key ke saath call karna hai (jaise OpenAI, ya ek payment provider),
+        toh wo call kahan se ho? Traditional answer hai "alag backend banao" (Express/Node server). Expo
+        Router iske liye ek lightweight built-in solution deta hai: <strong>API Routes</strong>.
+      </p>
+
+      <h3>+api.ts convention — server function, same project mein</h3>
+      <p>
+        Agar tum <code>app/</code> folder ke andar ek file banao jiska naam <code>+api.ts</code> pe end hota
+        hai (jaise <code>app/api/hello+api.ts</code>), Expo Router use ek <strong>server route</strong> ke
+        roop mein treat karta hai — matlab ye file Metro bundle mein client ke liye include hi nahi hoti.
+        Ye sirf server (Node.js runtime) pe run hota hai, jab is route ka koi HTTP request aata hai. Yehi
+        wajah hai ki secrets ko yahan safely use kar sakte ho — client bundle ise kabhi dekhta hi nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/hello+api.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye file client bundle mein nahi jaati — sirf server (Node runtime) pe execute hoti hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">GET</span>(request: Request) {
+  <span class="tok-com">// "GET" naam ka export HTTP GET method ko handle karta hai — POST/PUT/DELETE bhi isi tarah export ho sakte hain</span>
+  <span class="tok-kw">const</span> secretKey = process.env.OPENAI_SECRET_KEY; <span class="tok-com">// server-only secret, yahan process.env se seedha readable hai (Node runtime hai)</span>
+
+  <span class="tok-kw">if</span> (!secretKey) {
+    <span class="tok-com">// agar server pe env var missing hai (misconfiguration), fail fast karo</span>
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>(
+      { error: <span class="tok-str">"Server misconfigured"</span> }, <span class="tok-com">// client ko generic error, internal detail leak nahi karte</span>
+      { status: <span class="tok-num">500</span> } <span class="tok-com">// 500 = internal server error status code</span>
+    );
+  }
+
+  <span class="tok-kw">const</span> upstream = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"https://api.openai.com/v1/models"</span>, {
+    <span class="tok-com">// third-party API ko yahan call kar rahe hain, secret key ke saath — client ye key kabhi nahi dekhta</span>
+    headers: { Authorization: <span class="tok-str">`Bearer ${secretKey}`</span> }, <span class="tok-com">// secret key sirf server-to-server request mein use ho rahi hai</span>
+  });
+
+  <span class="tok-kw">const</span> data = <span class="tok-kw">await</span> upstream.<span class="tok-fn">json</span>(); <span class="tok-com">// upstream response ko JSON mein parse kiya</span>
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ models: data.data }); <span class="tok-com">// sirf safe/needed fields client ko wapas bhej rahe hain, poora upstream response nahi</span>
+}</code></pre>
+      </div>
+
+      <p>
+        Client side se is route ko call karna bilkul normal <code>fetch</code> jaisa hai — koi special client
+        library nahi chahiye, kyunki ye ek standard HTTP endpoint hai jo tumhare hi app ke saath deploy hota hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>calling the API route from a component</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur lifecycle hooks import kiye</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">ModelsScreen</span>() {
+  <span class="tok-kw">const</span> [models, setModels] = <span class="tok-fn">useState</span>([]); <span class="tok-com">// fetched models ko local state mein store karenge</span>
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/hello"</span>) <span class="tok-com">// same-app API route ko relative path se call kar rahe hain, secret client mein kahin nahi hai</span>
+      .then((res) => res.<span class="tok-fn">json</span>()) <span class="tok-com">// response body ko JSON mein parse kiya</span>
+      .then((data) => <span class="tok-fn">setModels</span>(data.models)); <span class="tok-com">// safe data ko state mein daal diya</span>
+  }, []); <span class="tok-com">// empty deps — sirf mount pe ek baar chalega</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// yahan render logic simplified rakha hai, real UI baad mein add hoga</span>
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — BFF Pattern</div>
+        <p>
+          Ye exactly <strong>Backend-for-Frontend (BFF)</strong> pattern hai — ek thin server layer jo client
+          aur asli third-party services ke beech baithta hai, sirf isliye taaki secrets client se door rahein
+          aur client ko sirf wahi minimal, safe data mile jiski use zaroorat hai. Expo Router API Routes iska
+          sabse lightweight version hai — na alag repo chahiye, na alag deployment pipeline (agla section EAS
+          Hosting dekhega), sab kuch ek hi Expo project ke andar colocated hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="streaming">3. Streaming Data with Expo Fetch</h2>
+
+      <p>
+        React Native ka default <code>fetch</code> (jo <code>whatwg-fetch</code> polyfill pe based hai)
+        historically <strong>poora response buffer</strong> karta tha before resolve karne — matlab agar
+        server chunk-by-chunk data bhej raha hai (jaise ek LLM streaming response), RN app ko tab tak kuch
+        nahi milta jab tak poora response complete na ho jaaye. Ye ek badi limitation thi jab AI/LLM streaming
+        UIs (jaise ChatGPT-style token-by-token typing effect) RN mein banane the.
+      </p>
+
+      <h3>expo/fetch — true streaming support</h3>
+      <p>
+        Expo SDK ka <code>expo/fetch</code> module ek naya fetch implementation deta hai jo native networking
+        stack (iOS pe <code>URLSession</code>, Android pe <code>OkHttp</code>) ko directly use karta hai, jisse
+        <code>Response.body</code> ek actual <strong>streamable <code>ReadableStream</code></strong> ban jaata
+        hai — chunks aate hi turant JS ko deliver hote hain, poora response wait nahi karna padta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>streaming a response token-by-token</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { fetch } <span class="tok-kw">from</span> <span class="tok-str">"expo/fetch"</span>; <span class="tok-com">// RN ke default fetch ki jagah streaming-capable fetch import kiya</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">streamResponse</span>(prompt: <span class="tok-kw">string</span>, onToken: (text: <span class="tok-kw">string</span>) =&gt; <span class="tok-kw">void</span>) {
+  <span class="tok-kw">const</span> response = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/chat"</span>, {
+    method: <span class="tok-str">"POST"</span>, <span class="tok-com">// hum ek Expo Router API route ko POST kar rahe hain jo LLM ko proxy karta hai</span>
+    headers: { <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span> }, <span class="tok-com">// JSON body bhej rahe hain, isliye content-type set kiya</span>
+    body: JSON.<span class="tok-fn">stringify</span>({ prompt }), <span class="tok-com">// prompt ko JSON string mein serialize kiya</span>
+  });
+
+  <span class="tok-kw">const</span> reader = response.body<span class="tok-punc">?.</span><span class="tok-fn">getReader</span>(); <span class="tok-com">// response body se ek stream reader nikaala (optional chaining kyunki body null ho sakta hai)</span>
+  <span class="tok-kw">if</span> (!reader) <span class="tok-kw">return</span>; <span class="tok-com">// agar body hi nahi mila (kabhi kabhi edge case), silently return</span>
+
+  <span class="tok-kw">const</span> decoder = <span class="tok-kw">new</span> <span class="tok-fn">TextDecoder</span>(); <span class="tok-com">// raw bytes (Uint8Array chunks) ko readable text mein convert karne ke liye decoder</span>
+
+  <span class="tok-kw">while</span> (<span class="tok-kw">true</span>) {
+    <span class="tok-kw">const</span> { done, value } = <span class="tok-kw">await</span> reader.<span class="tok-fn">read</span>(); <span class="tok-com">// stream se agla chunk read kiya, "done" batata hai stream khatam hui ya nahi</span>
+    <span class="tok-kw">if</span> (done) <span class="tok-kw">break</span>; <span class="tok-com">// stream complete ho gayi, loop exit karo</span>
+
+    <span class="tok-kw">const</span> chunkText = decoder.<span class="tok-fn">decode</span>(value, { stream: <span class="tok-kw">true</span> }); <span class="tok-com">// is chunk ke bytes ko text mein decode kiya, stream:true partial multi-byte chars handle karta hai</span>
+    <span class="tok-fn">onToken</span>(chunkText); <span class="tok-com">// caller ko naya text chunk turant de diya — UI isse turant render kar sakta hai</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Is <code>streamResponse</code> function ka <code>onToken</code> callback typically ek
+          <code>setState</code> call karega jo existing text mein naya chunk append karta hai — isse UI mein
+          wahi "typing effect" milta hai jo LLM chat apps mein dikhta hai, bina poore response ka wait kiye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="eas-hosting">4. Deploying with EAS Hosting</h2>
+
+      <p>
+        Agar tumne section 2 mein dekhe gaye Expo Router API routes use kiye hain, unhe production mein kahin
+        na kahin <strong>run</strong> hona padega — sirf apne phone/emulator pe local Metro server pe nahi.
+        Iske liye Expo <strong>EAS Hosting</strong> deta hai — ek managed deployment target jo tumhare Expo
+        Router project ke web output (jisme API routes bhi shamil hain) ko production servers pe deploy kar
+        deta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — EAS Hosting pe deploy karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># pehle project ko web ke liye export karte hain (static + server output dono generate hote hain)</span>
+npx expo export -p web <span class="tok-com"># -p web = web platform target, API routes bhi is output mein include hoti hain</span>
+
+<span class="tok-com"># phir EAS Hosting pe deploy karte hain</span>
+eas deploy <span class="tok-com"># build ke exported output ko EAS ke hosting infra pe upload + deploy karta hai</span>
+
+<span class="tok-com"># production alias ke saath deploy karna (stable production URL ke liye)</span>
+eas deploy --prod <span class="tok-com"># --prod flag production environment/URL alias ko update karta hai</span></code></pre>
+      </div>
+
+      <p>
+        Ye kab matter karta hai, kab nahi — ye samajhna important hai:
+      </p>
+      <ul>
+        <li>
+          Agar tumhara app sirf ek <strong>external backend</strong> (jaise Supabase, ya tumhara apna alag Node/
+          Django server) ko directly hit karta hai, aur tumne koi <code>+api.ts</code> route nahi likha, toh
+          <strong>EAS Hosting ki zaroorat hi nahi hai</strong> — tumhara "backend" already kahin aur host ho
+          raha hai.
+        </li>
+        <li>
+          Agar tumne Expo Router API routes use kiye hain (BFF pattern, secrets hide karne ke liye), toh unhe
+          production mein kaam karne ke liye <strong>zaroor</strong> kisi server pe deploy hona padega —
+          EAS Hosting sabse straightforward built-in option hai, kyunki wahi project structure jo dev mein
+          local chal raha tha, wahi seedha deploy ho jaata hai bina extra config ke.
+        </li>
+      </ul>
+
+      <!-- ============================================================ -->
+      <h2 id="supabase-overview">5. Supabase Overview and UI Tour</h2>
+
+      <p>
+        Supabase ek <strong>open-source Firebase alternative</strong> hai — lekin core difference ye hai ki
+        Supabase ke peeche ek real <strong>Postgres database</strong> hai (Firebase ke proprietary NoSQL Firestore
+        ki jagah), jo senior devs ko SQL, joins, foreign keys, aur relational integrity jaisi cheezein deta hai
+        jo Firestore mein natively nahi milti.
+      </p>
+
+      <p>Supabase ek hi platform mein ye sab bundle karta hai:</p>
+      <ul>
+        <li><strong>Postgres Database</strong> — full relational SQL database, extensions (PostGIS, pgvector) ke saath</li>
+        <li><strong>Auth</strong> — email/password, magic links, OAuth (Google/Apple/GitHub), phone OTP — sab built-in</li>
+        <li><strong>Storage</strong> — file/image uploads, bucket-level access policies</li>
+        <li><strong>Realtime</strong> — Postgres changes (insert/update/delete) ko WebSocket ke through live subscribe kar sakte ho</li>
+        <li><strong>Auto-generated REST + GraphQL API</strong> — table banate hi turant ek REST endpoint (PostgREST ke through) aur GraphQL schema mil jaata hai, koi backend code likhne ki zaroorat nahi</li>
+      </ul>
+
+      <h3>Dashboard — senior dev daily-use sections</h3>
+      <table>
+        <thead><tr><th>Section</th><th>Kaam</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Table Editor</strong></td><td>Spreadsheet-jaisa UI jisme tables/rows dekh/edit sakte ho bina SQL likhe — quick debugging ke liye useful</td></tr>
+          <tr><td><strong>SQL Editor</strong></td><td>Raw SQL queries chalane ke liye — table creation, migrations, ad-hoc data fixes yahan se karte hain</td></tr>
+          <tr><td><strong>Authentication → Users</strong></td><td>Saare registered users ki list, unke provider (email/OAuth), aur manually user ban/delete karne ka option</td></tr>
+          <tr><td><strong>API Docs (auto-generated)</strong></td><td>Har table ke liye auto-generated REST/GraphQL usage examples — apni hi table select karo, ready-made <code>curl</code>/JS snippets mil jaate hain</td></tr>
+          <tr><td><strong>Database → Policies</strong></td><td>Row Level Security policies dekhne/banane ke liye visual editor — section 8 mein deep dive karenge</td></tr>
+          <tr><td><strong>Logs</strong></td><td>API requests, Postgres logs, auth events — production debugging ke liye first stop</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="creating-tables">6. Creating Tables</h2>
+
+      <p>
+        Table banane ka sabse reliable tareeka SQL Editor mein raw SQL likhna hai (Table Editor UI bhi
+        available hai, lekin SQL version-controllable hai — tum ise migration file ke roop mein git mein
+        commit kar sakte ho, jo production discipline ke liye zaroori hai). Ek typical <code>todos</code>
+        table:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — todos table create karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">create table</span> todos ( <span class="tok-com">-- naya table "todos" bana rahe hain public schema mein</span>
+  id uuid <span class="tok-kw">primary key</span> <span class="tok-kw">default</span> gen_random_uuid(), <span class="tok-com">-- har row ka unique id, Postgres khud generate karega</span>
+  user_id uuid <span class="tok-kw">references</span> auth.users(id) <span class="tok-kw">on delete cascade</span> <span class="tok-kw">not null</span>, <span class="tok-com">-- kis user ka todo hai, Supabase Auth ke internal users table se foreign key link; user delete ho toh todos bhi delete ho jaayein</span>
+  title text <span class="tok-kw">not null</span> <span class="tok-kw">check</span> (char_length(title) > <span class="tok-num">0</span>), <span class="tok-com">-- todo ka text, empty string allow nahi karenge (constraint check)</span>
+  is_completed boolean <span class="tok-kw">not null</span> <span class="tok-kw">default</span> <span class="tok-kw">false</span>, <span class="tok-com">-- naya todo default false (incomplete) state mein banega</span>
+  created_at timestamptz <span class="tok-kw">not null</span> <span class="tok-kw">default</span> now() <span class="tok-com">-- kab bana, default current timestamp (with timezone)</span>
+); <span class="tok-com">-- statement close</span>
+
+<span class="tok-kw">create index</span> todos_user_id_idx <span class="tok-kw">on</span> todos(user_id); <span class="tok-com">-- user_id pe index banaya, taaki "mere todos dikhao" query fast rahe (RLS filter bhi isi column pe hoga)</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo <code>user_id references auth.users(id)</code> — Supabase Auth internally apne users ko
+        <code>auth.users</code> naam ke ek special (protected) schema/table mein store karta hai. Apni tables
+        ko isse foreign-key link karna Supabase ka standard pattern hai — isse Postgres khud enforce karta hai
+        ki koi bhi <code>todos</code> row kisi non-existent user ko point nahi kar sakta.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="crud">7. Installation and CRUD Operations</h2>
+
+      <h3>Client setup</h3>
+      <p>
+        Sabse pehle SDK install karte hain aur client instance banate hain. Notice karo — yahan hum
+        <code>EXPO_PUBLIC_SUPABASE_ANON_KEY</code> use kar rahe hain, jo section 1 ke danger callout ke against
+        contradict nahi karta, kyunki ye key <strong>design se hi public/client-safe</strong> hai — iski
+        protection RLS policies se aati hai, hiding se nahi (section 8 mein detail).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install @supabase/supabase-js <span class="tok-com"># Supabase ka official JS client, expo install version-compatibility resolve karta hai</span>
+npx expo install @react-native-async-storage/async-storage <span class="tok-com"># Supabase session ko persist karne ke liye storage adapter chahiye</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/supabase.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { createClient } <span class="tok-kw">from</span> <span class="tok-str">"@supabase/supabase-js"</span>; <span class="tok-com">// Supabase client banane ke liye function import kiya</span>
+<span class="tok-kw">import</span> AsyncStorage <span class="tok-kw">from</span> <span class="tok-str">"@react-native-async-storage/async-storage"</span>; <span class="tok-com">// session token persist karne ke liye storage adapter import kiya</span>
+
+<span class="tok-kw">const</span> supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL<span class="tok-punc">!</span>; <span class="tok-com">// Supabase project ka URL env var se le rahe hain, ! se TS ko bata rahe hain ye undefined nahi hoga</span>
+<span class="tok-kw">const</span> supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY<span class="tok-punc">!</span>; <span class="tok-com">// public "anon" key le rahe hain — ye client mein expose karna safe hai, RLS isse protect karta hai</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> supabase = <span class="tok-fn">createClient</span>(supabaseUrl, supabaseAnonKey, { <span class="tok-com">// client instance bana ke export kar rahe hain, poori app mein reuse hoga</span>
+  auth: { <span class="tok-com">// auth-specific config block</span>
+    storage: AsyncStorage, <span class="tok-com">// session (refresh token) yahan persist hogi taaki app restart pe login na todna pade</span>
+    autoRefreshToken: <span class="tok-kw">true</span>, <span class="tok-com">// expired access token ko background mein automatically refresh karega</span>
+    persistSession: <span class="tok-kw">true</span>, <span class="tok-com">// session ko disk pe persist karega, memory-only nahi</span>
+    detectSessionInUrl: <span class="tok-kw">false</span>, <span class="tok-com">// ye web-only feature hai (magic link URL parsing), RN mein false rakhte hain</span>
+  },
+});</code></pre>
+      </div>
+
+      <h3>CRUD — full example component</h3>
+      <p>
+        Ab ek complete component dekhte hain jo <strong>Create, Read, Update, Delete</strong> — chaaron
+        operations demonstrate karta hai ek <code>todos</code> list ke saath:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/TodoList.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur lifecycle hooks</span>
+<span class="tok-kw">import</span> { View, Text, TextInput, Button, FlatList } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> { supabase } <span class="tok-kw">from</span> <span class="tok-str">"../lib/supabase"</span>; <span class="tok-com">// hamara shared Supabase client instance</span>
+
+<span class="tok-kw">type</span> Todo = { id: <span class="tok-kw">string</span>; title: <span class="tok-kw">string</span>; is_completed: <span class="tok-kw">boolean</span> }; <span class="tok-com">// row shape ka TypeScript type</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">TodoList</span>() {
+  <span class="tok-kw">const</span> [todos, setTodos] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>Todo[]<span class="tok-punc">&gt;</span>([]); <span class="tok-com">// fetched todos ki list local state mein</span>
+  <span class="tok-kw">const</span> [newTitle, setNewTitle] = <span class="tok-fn">useState</span>(<span class="tok-str">""</span>); <span class="tok-com">// naya todo type karne ke liye input state</span>
+
+  <span class="tok-com">// ---------- READ ----------</span>
+  <span class="tok-kw">const</span> fetchTodos = <span class="tok-kw">async</span> () => {
+    <span class="tok-kw">const</span> { data, error } = <span class="tok-kw">await</span> supabase
+      .<span class="tok-fn">from</span>(<span class="tok-str">"todos"</span>) <span class="tok-com">// "todos" table target kiya</span>
+      .<span class="tok-fn">select</span>(<span class="tok-str">"id, title, is_completed"</span>) <span class="tok-com">// sirf zaroori columns select kiye, "*" se better practice</span>
+      .<span class="tok-fn">order</span>(<span class="tok-str">"created_at"</span>, { ascending: <span class="tok-kw">false</span> }); <span class="tok-com">// naye todos sabse upar dikhenge</span>
+
+    <span class="tok-kw">if</span> (error) { <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(error); <span class="tok-kw">return</span>; } <span class="tok-com">// error ho toh log karo aur aage mat badho</span>
+    <span class="tok-fn">setTodos</span>(data ?? []); <span class="tok-com">// state update, data null ho toh empty array fallback</span>
+  };
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-fn">fetchTodos</span>(); <span class="tok-com">// component mount hote hi todos fetch karo</span>
+  }, []); <span class="tok-com">// empty deps — sirf ek baar mount pe chalega</span>
+
+  <span class="tok-com">// ---------- CREATE ----------</span>
+  <span class="tok-kw">const</span> addTodo = <span class="tok-kw">async</span> () => {
+    <span class="tok-kw">const</span> { data: { user } } = <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">getUser</span>(); <span class="tok-com">// current logged-in user nikaala</span>
+    <span class="tok-kw">if</span> (!user) <span class="tok-kw">return</span>; <span class="tok-com">// safety check — logged out user todo add nahi kar sakta</span>
+
+    <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> supabase
+      .<span class="tok-fn">from</span>(<span class="tok-str">"todos"</span>) <span class="tok-com">// "todos" table target kiya</span>
+      .<span class="tok-fn">insert</span>({ title: newTitle, user_id: user.id }); <span class="tok-com">// naya row insert kiya, user_id explicitly current user ka set kiya</span>
+
+    <span class="tok-kw">if</span> (error) { <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(error); <span class="tok-kw">return</span>; } <span class="tok-com">// insert fail hua toh log karo</span>
+    <span class="tok-fn">setNewTitle</span>(<span class="tok-str">""</span>); <span class="tok-com">// input field clear kiya</span>
+    <span class="tok-fn">fetchTodos</span>(); <span class="tok-com">// list ko refresh kiya taaki naya todo turant dikhe</span>
+  };
+
+  <span class="tok-com">// ---------- UPDATE ----------</span>
+  <span class="tok-kw">const</span> toggleTodo = <span class="tok-kw">async</span> (todo: Todo) => {
+    <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> supabase
+      .<span class="tok-fn">from</span>(<span class="tok-str">"todos"</span>) <span class="tok-com">// "todos" table target kiya</span>
+      .<span class="tok-fn">update</span>({ is_completed: !todo.is_completed }) <span class="tok-com">// completed status flip kiya</span>
+      .<span class="tok-fn">eq</span>(<span class="tok-str">"id"</span>, todo.id); <span class="tok-com">// sirf isi specific id wali row update ho, WHERE id = todo.id ke barabar</span>
+
+    <span class="tok-kw">if</span> (error) { <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(error); <span class="tok-kw">return</span>; } <span class="tok-com">// update fail hua toh log karo</span>
+    <span class="tok-fn">fetchTodos</span>(); <span class="tok-com">// list refresh</span>
+  };
+
+  <span class="tok-com">// ---------- DELETE ----------</span>
+  <span class="tok-kw">const</span> deleteTodo = <span class="tok-kw">async</span> (id: <span class="tok-kw">string</span>) => {
+    <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> supabase
+      .<span class="tok-fn">from</span>(<span class="tok-str">"todos"</span>) <span class="tok-com">// "todos" table target kiya</span>
+      .<span class="tok-fn">delete</span>() <span class="tok-com">// delete operation</span>
+      .<span class="tok-fn">eq</span>(<span class="tok-str">"id"</span>, id); <span class="tok-com">// sirf isi id wali row delete ho</span>
+
+    <span class="tok-kw">if</span> (error) { <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(error); <span class="tok-kw">return</span>; } <span class="tok-com">// delete fail hua toh log karo</span>
+    <span class="tok-fn">fetchTodos</span>(); <span class="tok-com">// list refresh</span>
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;TextInput</span> <span class="tok-attr">value</span>=<span class="tok-punc">{</span>newTitle<span class="tok-punc">}</span> <span class="tok-attr">onChangeText</span>=<span class="tok-punc">{</span>setNewTitle<span class="tok-punc">}</span> <span class="tok-attr">placeholder</span>=<span class="tok-str">"Naya todo..."</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-str">"Add"</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>addTodo<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;FlatList</span>
+        <span class="tok-attr">data</span>=<span class="tok-punc">{</span>todos<span class="tok-punc">}</span>
+        <span class="tok-attr">keyExtractor</span>=<span class="tok-punc">{</span>(item) =&gt; item.id<span class="tok-punc">}</span>
+        <span class="tok-attr">renderItem</span>=<span class="tok-punc">{</span>({ item }) =&gt; (
+          <span class="tok-tag">&lt;View&gt;</span>
+            <span class="tok-tag">&lt;Text</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() =&gt; <span class="tok-fn">toggleTodo</span>(item)<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+              {item.is_completed ? <span class="tok-str">"✅ "</span> : <span class="tok-str">"⬜ "</span>}{item.title}
+            <span class="tok-tag">&lt;/Text&gt;</span>
+            <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-str">"Delete"</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() =&gt; <span class="tok-fn">deleteTodo</span>(item.id)<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+          <span class="tok-tag">&lt;/View&gt;</span>
+        )<span class="tok-punc">}</span>
+      <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> TodoList; <span class="tok-com">// component export kiya reuse ke liye</span></code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="rls">8. Row Level Security (RLS) — The Core Security Model</h2>
+
+      <p>
+        Ab is chapter ka sabse important concept — jo samajh liya, wo Supabase ke saath production-ready ban
+        jaata hai; jo nahi samjha, uski app ek data breach hai bas waiting to happen.
+      </p>
+
+      <h3>Traditional backend vs Supabase ka model — fundamental difference</h3>
+      <p>
+        Ek traditional architecture mein (jaise apna Express/Django backend), client <strong>kabhi database ko
+        directly touch nahi karta</strong>. Har request pehle backend API se guzarti hai, jahan tum manually
+        <code>if (todo.user_id !== req.user.id) throw new Error("forbidden")</code> jaisa authorization check
+        likhte ho, phir hi database query chalti hai. Database khud "blindly trust" karta hai ki jo query aayi
+        hai wo authorized hai — permission logic poora application code mein hoti hai.
+      </p>
+      <p>
+        Supabase ka model fundamentally different hai — hamare CRUD example mein React Native app
+        <strong>directly Postgres ko query kar raha tha</strong> (via auto-generated REST API), koi custom
+        backend beech mein nahi tha. Iska matlab agar database khud permission enforce nahi karti, toh
+        <strong>koi bhi cheez enforce nahi kar rahi</strong> — client-side code ko toh trivially bypass kiya
+        ja sakta hai (jaise Postman se seedha anon key ke saath request bhej ke).
+      </p>
+
+      <p>
+        Yahi gap <strong>Row Level Security (RLS)</strong> bharta hai — ye Postgres ka native feature hai jo
+        table-level pe policies define karne deta hai: "kaunsi rows kaun dekh/edit/delete kar sakta hai". Jab
+        RLS enabled ho, Postgres <em>har single query</em> pe automatically ye policies apply karta hai —
+        chahe query REST API se aayi ho, GraphQL se, ya seedha SQL Editor se — koi bypass nahi hai (service_role
+        key ke alawa, jo section 9 mein cover karenge).
+      </p>
+
+      <h3>RLS enable karna aur policy likhna</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — RLS enable + policies</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">alter table</span> todos <span class="tok-kw">enable row level security</span>; <span class="tok-com">-- is table pe RLS enforcement ON kar diya — ab default sabkuch DENY hai jab tak policy na ho</span>
+
+<span class="tok-kw">create policy</span> <span class="tok-str">"Users can view their own todos"</span> <span class="tok-com">-- policy ka descriptive naam</span>
+<span class="tok-kw">on</span> todos <span class="tok-com">-- kis table pe apply hogi</span>
+<span class="tok-kw">for select</span> <span class="tok-com">-- ye policy sirf SELECT (read) operations pe apply hogi</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- condition: row tabhi visible hogi jab row ka user_id == current logged-in user ka id ho</span>
+
+<span class="tok-kw">create policy</span> <span class="tok-str">"Users can insert their own todos"</span> <span class="tok-com">-- doosri policy, insert ke liye</span>
+<span class="tok-kw">on</span> todos <span class="tok-com">-- same table</span>
+<span class="tok-kw">for insert</span> <span class="tok-com">-- ye INSERT operations pe apply hogi</span>
+<span class="tok-kw">with check</span> (auth.uid() = user_id); <span class="tok-com">-- naya row tabhi insert ho sakta hai jab uska user_id current user ke barabar ho (koi doosre ke naam se todo nahi bana sakta)</span>
+
+<span class="tok-kw">create policy</span> <span class="tok-str">"Users can update their own todos"</span> <span class="tok-com">-- teesri policy, update ke liye</span>
+<span class="tok-kw">on</span> todos <span class="tok-com">-- same table</span>
+<span class="tok-kw">for update</span> <span class="tok-com">-- UPDATE operations pe apply hogi</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id) <span class="tok-com">-- kis row ko update karne ki permission hai (existing row check)</span>
+<span class="tok-kw">with check</span> (auth.uid() = user_id); <span class="tok-com">-- update ke baad bhi user_id same rehna chahiye (koi apna todo kisi aur ko transfer nahi kar sakta)</span>
+
+<span class="tok-kw">create policy</span> <span class="tok-str">"Users can delete their own todos"</span> <span class="tok-com">-- chauthi policy, delete ke liye</span>
+<span class="tok-kw">on</span> todos <span class="tok-com">-- same table</span>
+<span class="tok-kw">for delete</span> <span class="tok-com">-- DELETE operations pe apply hogi</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- sirf apni khud ki row delete kar sakta hai</span></code></pre>
+      </div>
+
+      <p>
+        <code>auth.uid()</code> ek Postgres function hai jo Supabase provide karta hai — ye current request ke
+        JWT (jo client ne apne login session se automatically bheja) se decode karke logged-in user ka id
+        return karta hai. Isi wajah se ye check <strong>server-side (database ke andar)</strong> ho raha hai —
+        client isko fake/bypass nahi kar sakta, kyunki JWT cryptographically signed hai aur Postgres khud isse
+        verify karke <code>auth.uid()</code> derive karta hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — RLS Bhoolna Sabse Common Real Bug Hai</div>
+        <p>
+          Agar tum ek table banate ho aur <strong>RLS enable karna bhool jaate ho</strong> (ya enable karke
+          policies add karna bhool jaate ho), toh default Postgres/Supabase behavior ye hai:
+        </p>
+        <ul>
+          <li>
+            RLS <em>disabled</em> table pe — <strong>koi bhi jiske paas anon key hai</strong> (jo hum already
+            client bundle mein daal chuke hain, kyunki wo public hone ke liye design hui hai) us table ke
+            <strong>saare rows read/write/delete</strong> kar sakta hai, chahe wo koi bhi ho, authenticated ho
+            ya na ho.
+          </li>
+          <li>
+            Ye koi theoretical risk nahi hai — ye Supabase ke saath sabse common, real-world reported security
+            incident hai. Multiple companies ne production mein apni poori users table, orders table, ya
+            payment-related data publicly exposed kar diya sirf isliye kyunki naya table banaya aur RLS
+            enable karna bhool gaye.
+          </li>
+          <li>
+            <strong>Rule of thumb:</strong> jaise hi <code>create table</code> chalao, agle hi statement mein
+            <code>alter table ... enable row level security;</code> chalao — isse ek habit bana lo, kabhi
+            "baad mein karunga" mat socho.
+          </li>
+        </ul>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          RLS enable karne ke baad agar tum <em>koi bhi policy nahi</em> banate, toh default deny-all lagu ho
+          jaata hai — matlab table completely inaccessible ho jaayegi (khud apne liye bhi, service_role key ke
+          alawa). Ye "RLS enable = fail-safe by default" design hai — ek missing policy sirf ek confusing empty
+          result deti hai (jo debugging mein frustrating ho sakta hai, section 10 mein iska gotcha dekhenge),
+          lekin ye galti se data leak hone se hamesha better hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="key-patterns">9. Client vs Server-Side API Key Patterns — Senior Architecture Summary</h2>
+
+      <p>
+        Ab poore chapter ko ek single mental model mein tie karte hain — ye table tumhara "cheat sheet" hai jab
+        bhi confusion ho ki koi key kahan jaani chahiye:
+      </p>
+
+      <table>
+        <thead><tr><th>Key / Credential</th><th>Kahan use ho</th><th>Kyun safe/unsafe</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>SUPABASE_ANON_KEY</code></td>
+            <td>Client (RN app), <code>EXPO_PUBLIC_*</code> mein</td>
+            <td>Client-safe by design — ye sirf ek "identity" hai ki request kis project se aa rahi hai. Actual
+            protection RLS policies deti hain (section 8). Bina RLS ke ye key khatarnak ban jaati hai.</td>
+          </tr>
+          <tr>
+            <td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+            <td><strong>Sirf server-side</strong> (Expo Router API route, ya alag backend) — <strong>kabhi client mein nahi</strong></td>
+            <td>Ye key <strong>RLS ko completely bypass</strong> karti hai — matlab is key ke saath koi bhi query
+            saari rows access kar sakti hai, policies ignore karke. Agar ye client bundle mein chali gayi,
+            poori database ka access attacker ko mil jaata hai.</td>
+          </tr>
+          <tr>
+            <td>Third-party API secret keys (Stripe secret, OpenAI key, etc.)</td>
+            <td>Hamesha Expo Router API route ya separate backend ke peeche, <strong>kabhi RN app se direct nahi</strong></td>
+            <td>Client se direct call karne ka matlab hai key bundle mein bake honi padegi (section 1) —
+            isliye BFF pattern (section 2) use karke server-side layer se hide karte hain.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — service_role Key</div>
+        <p>
+          <code>service_role</code> key ko treat karo jaise ek database root password — kyunki practically wahi
+          hai. Isse sirf apne API route/backend ke environment variables mein rakho (server-only, kabhi
+          <code>EXPO_PUBLIC_</code> prefix mat lagao), aur isse tab use karo jab tumhe genuinely RLS ko
+          intentionally bypass karna ho (jaise ek admin dashboard operation, ya ek background cron job jo
+          saare users ke liye kuch process karta hai).
+        </p>
+      </div>
+
+      <p>
+        Yehi unifying mental model hai jo poora chapter connect karta hai: <strong>client jitna kam trust
+        karo utna acha</strong> — jo bhi cheez client bundle mein jaati hai wo effectively public hai (section 1),
+        isliye true secrets ko ya toh server-side API routes ke peeche chupao (section 2), ya database-level
+        pe RLS se protect karo (section 8) jahan client-side direct access unavoidable hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">10. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ .env file git mein commit ho jaana</div>
+        <p>
+          Sabse basic lekin sabse common mistake — <code>.env</code> file ko <code>.gitignore</code> mein daalna
+          bhool jaana, jisse <code>service_role</code> key ya third-party secrets git history mein permanently
+          commit ho jaate hain (aur ek baar git history mein aa gaye toh sirf file delete karna kaafi nahi,
+          history rewrite karni padti hai). Har naye project mein sabse pehla step: <code>.gitignore</code> mein
+          <code>.env</code>, <code>.env.local</code> confirm karo. Production teams <code>git-secrets</code> ya
+          <code>gitleaks</code> jaisa pre-commit hook bhi use karte hain jo commit hone se pehle hi pattern-match
+          karke secret-looking strings ko block kar deta hai — ek accidental commit se bhi bachne ka extra layer.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ RLS policy legitimate query ko silently block kar rahi hai</div>
+        <p>
+          Ye ek bahut confusing dev-time bug pattern hai: tumne query sahi likhi hai, data database mein
+          exist bhi karta hai, lekin app mein <strong>empty result</strong> aa raha hai — koi error bhi nahi
+          throw ho raha. 99% cases mein ye "empty data" nahi hai, ye ek <strong>missing ya galat RLS policy</strong>
+          hai jo silently rows ko filter kar rahi hai (Postgres RLS policy fail hone pe error nahi deti, bas row
+          ko result set se exclude kar deti hai). Debug karne ka fastest tareeka: Supabase dashboard ke SQL
+          Editor mein (jo <code>service_role</code>-level access rakhta hai) wahi query chala ke check karo ki
+          data actually exist karta hai ya nahi — agar SQL Editor mein data dikhta hai but app mein nahi, toh
+          confirm ho gaya ki ye RLS issue hai, data issue nahi.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Free-tier connection limits production mein fail hona</div>
+        <p>
+          Supabase ka free tier (aur lower-paid tiers) Postgres connections ki ek hard limit rakhte hain
+          (typically kaafi kam, jaise ~60 direct connections). Agar tumhara app scale karta hai aur bahut saare
+          concurrent users/serverless function invocations directly Postgres se connect karne lagte hain
+          (especially agar tum server-side se bhi connect kar rahe ho, jaise ek serverless API route jo har
+          request pe naya Postgres client banata hai), toh production mein achanak
+          <code>"too many connections"</code> jaisa error milna shuru ho jaata hai. Solution: Supabase ka
+          built-in <strong>connection pooler (PgBouncer, transaction mode)</strong> use karo server-side
+          connections ke liye, aur client-side se hamesha REST API (jo already pooled hai) use karo, raw
+          Postgres connection client app se kabhi mat banao.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">11. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne CRUD, RLS, aur key management dekh liya — ye woh cheezein hain jo har Supabase app mein
+        chahiye hoti hain. Ye section wahan se aage jaata hai: jab app <em>real users</em> ke saath production
+        mein chalti hai, tab realtime updates, flaky mobile networks, aur duplicate requests jaisi problems
+        surface hoti hain jo ek senior RN dev ko architecturally solve karni padti hain — sirf "code likhna"
+        kaafi nahi hota, "kis trade-off ke saath likhna hai" samajhna padta hai.
+      </p>
+
+      <h3>11.1 Realtime subscriptions — actually kaam kaise karti hain</h3>
+      <p>
+        Jab tum <code>supabase.channel(...).on("postgres_changes", ...)</code> likhte ho, ek "magic" jaisa
+        feature lagta hai, lekin under the hood ye ek well-defined pipeline hai:
+      </p>
+      <ul>
+        <li>
+          Postgres har change (insert/update/delete) ko apni <strong>Write-Ahead Log (WAL)</strong> mein likhta
+          hai — ye WAL Postgres ki crash-recovery aur replication ki backbone hai, har commit se pehle isi log
+          mein durably likha jaata hai.
+        </li>
+        <li>
+          Supabase Realtime server Postgres ke <strong>logical replication</strong> protocol (WAL2JSON/pgoutput
+          jaisa decoder plugin) ko subscribe karta hai — ye server khud ko Postgres ka ek "replica" jaisa present
+          karta hai taaki har WAL entry usse stream ho.
+        </li>
+        <li>
+          Realtime server har WAL change-event ko ek structured JSON payload mein convert karta hai, phir check
+          karta hai kaunse connected clients us table/row ke liye subscribed hain (RLS policies yahan bhi respect
+          hoti hain — ek user ko sirf wahi realtime events milte hain jo uski apni RLS policy allow karti hai).
+        </li>
+        <li>
+          Matching clients ko ye event ek <strong>persistent WebSocket connection</strong> ke through push kiya
+          jaata hai — isliye latency bahut kam hoti hai (polling ki tarah har few seconds mein request nahi
+          bhejni padti), aur update near-instant feel hota hai.
+        </li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/LiveTodos.tsx — realtime subscription</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur lifecycle hooks</span>
+<span class="tok-kw">import</span> { supabase } <span class="tok-kw">from</span> <span class="tok-str">"../lib/supabase"</span>; <span class="tok-com">// hamara shared Supabase client instance</span>
+
+<span class="tok-kw">type</span> Todo = { id: <span class="tok-kw">string</span>; title: <span class="tok-kw">string</span>; is_completed: <span class="tok-kw">boolean</span> }; <span class="tok-com">// row shape ka type</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">LiveTodos</span>() {
+  <span class="tok-kw">const</span> [todos, setTodos] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>Todo[]<span class="tok-punc">&gt;</span>([]); <span class="tok-com">// realtime-synced list local state mein</span>
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-kw">const</span> channel = supabase
+      .<span class="tok-fn">channel</span>(<span class="tok-str">"todos-changes"</span>) <span class="tok-com">// ek naam se channel bana rahe hain, ye sirf ek grouping label hai client-side</span>
+      .<span class="tok-fn">on</span>(
+        <span class="tok-str">"postgres_changes"</span>, <span class="tok-com">// Supabase Realtime ka special event type jo Postgres WAL changes ko wrap karta hai</span>
+        { event: <span class="tok-str">"*"</span>, schema: <span class="tok-str">"public"</span>, table: <span class="tok-str">"todos"</span> }, <span class="tok-com">// "*" = INSERT+UPDATE+DELETE teeno sunenge, sirf public.todos table pe scoped</span>
+        (payload) => {
+          <span class="tok-com">// payload.eventType batata hai konsa operation hua, payload.new/payload.old mein actual row data hota hai</span>
+          <span class="tok-kw">if</span> (payload.eventType === <span class="tok-str">"INSERT"</span>) {
+            <span class="tok-fn">setTodos</span>((prev) => [payload.new <span class="tok-kw">as</span> Todo, ...prev]); <span class="tok-com">// naya row list ke top pe prepend kiya</span>
+          } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (payload.eventType === <span class="tok-str">"UPDATE"</span>) {
+            <span class="tok-fn">setTodos</span>((prev) => prev.<span class="tok-fn">map</span>((t) => (t.id === payload.new.id ? (payload.new <span class="tok-kw">as</span> Todo) : t))); <span class="tok-com">// matching id wale row ko naye data se replace kiya</span>
+          } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (payload.eventType === <span class="tok-str">"DELETE"</span>) {
+            <span class="tok-fn">setTodos</span>((prev) => prev.<span class="tok-fn">filter</span>((t) => t.id !== payload.old.id)); <span class="tok-com">// deleted row ko list se hata diya</span>
+          }
+        }
+      )
+      .<span class="tok-fn">subscribe</span>(); <span class="tok-com">// yahi call actually WebSocket connection open karti hai aur listening start karti hai</span>
+
+    <span class="tok-kw">return</span> () => {
+      supabase.<span class="tok-fn">removeChannel</span>(channel); <span class="tok-com">// CRITICAL: unmount pe unsubscribe karo, warna connection leak ho jaata hai (neeche senior note dekho)</span>
+    };
+  }, []); <span class="tok-com">// empty deps — subscription sirf ek baar mount pe set hoti hai</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// render logic simplified rakha, real UI FlatList se banega jaisa CRUD section mein dikha</span>
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> LiveTodos; <span class="tok-com">// export kiya reuse ke liye</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Over-Subscribing Mat Karo</div>
+        <p>
+          Har active realtime subscription ek <strong>persistent open connection</strong> hoti hai — Supabase
+          project pe simultaneous realtime connections ki hard limit hoti hai (tier ke hisaab se), aur har naya
+          channel server-side memory/CPU consume karta hai. Common mistake: har screen pe naya
+          <code>.channel()</code> bana dena aur cleanup function bhool jaana — result: jaise-jaise user app mein
+          navigate karta hai, purani subscriptions zombie ban ke background mein khuli reh jaati hain
+          (memory leak + wasted connection quota). Rule of thumb: <strong>jitni zaroorat ho utni hi granular
+          subscriptions rakho</strong> (poore table ke bajaye specific filter jaise <code>filter: "user_id=eq.${userId}"</code>
+          use karo), aur <code>useEffect</code> ke cleanup mein hamesha <code>removeChannel</code> call karo —
+          bina exception ke.
+        </p>
+      </div>
+
+      <h3>11.2 Offline-first sync strategies aur conflict resolution</h3>
+      <p>
+        Mobile apps ka fundamental problem — network hamesha available nahi hota. Agar user offline edit karta
+        hai (jaise flight mode mein ek todo edit kiya), aur usi row ko kisi doosre device/user ne meanwhile
+        online edit kar diya, toh jab pehla device wapas online aata hai, dono edits ko reconcile karna padta
+        hai. Ye "conflict resolution" ka core problem hai, aur teen mainstream approaches hain:
+      </p>
+
+      <table>
+        <thead><tr><th>Strategy</th><th>Kaise kaam karti hai</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Last-Write-Wins (LWW)</strong></td>
+            <td>Jo edit sabse aakhri mein server pe pahunchti hai (timestamp ke hisaab se), wahi final truth
+            ban jaati hai — purani conflicting edit silently discard ho jaati hai</td>
+            <td>Implement karna sabse simple hai, lekin <strong>silently data loss</strong> ho sakta hai — user
+            ko pata bhi nahi chalta ki uska edit overwrite ho gaya</td>
+          </tr>
+          <tr>
+            <td><strong>Operational Transforms (OT) / CRDTs</strong></td>
+            <td>Har edit ko ek mathematically composable operation ki tarah treat karte hain jo kisi bhi order
+            mein apply ho toh bhi same final state deta hai (CRDT = Conflict-free Replicated Data Type) — Google
+            Docs, Figma jaise collaborative editors isi pe based hain</td>
+            <td>Zero data loss aur automatic merge milta hai, lekin implementation <strong>bahut complex</strong>
+            hai — poori data model ko CRDT-compatible design karna padta hai, aur libraries (Yjs, Automerge)
+            integrate karna non-trivial hai for a typical CRUD app</td>
+          </tr>
+          <tr>
+            <td><strong>Pragmatic middle ground</strong> (most mobile apps)</td>
+            <td>Optimistic local writes turant UI mein reflect karo, ek <code>updated_at</code>/<code>version</code>
+            column har row pe rakho, aur sync ke waqt agar server ka version local version se newer hai (matlab
+            koi aur change hua tha), sirf <strong>tabhi</strong> user ko conflict dikhao (merge UI ya "keep mine /
+            keep theirs" prompt) — warna silently sync ho jaao</td>
+            <td>Poora CRDT jitna robust nahi, lekin implementation cost bahut kam hai aur real-world mein 95%+
+            cases mein koi actual conflict hota hi nahi (do log rarely same row edit karte hain exact same
+            window mein) — isliye conflict-handling sirf edge case ke liye reserve hoti hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — version column add karna conflict detection ke liye</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">alter table</span> todos <span class="tok-kw">add column</span> version <span class="tok-kw">integer</span> <span class="tok-kw">not null</span> <span class="tok-kw">default</span> <span class="tok-num">1</span>; <span class="tok-com">-- har row ka monotonically increasing version number, naya row version 1 se start hoga</span>
+
+<span class="tok-kw">create</span> <span class="tok-kw">or replace function</span> increment_version() <span class="tok-com">-- ek trigger function bana rahe hain jo har update pe version auto-bump karega</span>
+<span class="tok-kw">returns trigger</span> <span class="tok-kw">as</span> $$ <span class="tok-com">-- PL/pgSQL function body ka opening delimiter</span>
+<span class="tok-kw">begin</span> <span class="tok-com">-- function body start</span>
+  new.version = old.version + <span class="tok-num">1</span>; <span class="tok-com">-- update hone se pehle version ko purane version se 1 zyada set kar do</span>
+  <span class="tok-kw">return</span> new; <span class="tok-com">-- modified "new" row return karo, yahi actually save hogi</span>
+<span class="tok-kw">end</span>; <span class="tok-com">-- function body end</span>
+$$ <span class="tok-kw">language</span> plpgsql; <span class="tok-com">-- closing delimiter, batata hai ye PL/pgSQL language mein likha function hai</span>
+
+<span class="tok-kw">create trigger</span> todos_version_trigger <span class="tok-com">-- trigger ka naam</span>
+<span class="tok-kw">before update on</span> todos <span class="tok-com">-- todos table pe har UPDATE se pehle chalega</span>
+<span class="tok-kw">for each row</span> <span class="tok-kw">execute function</span> increment_version(); <span class="tok-com">-- har affected row ke liye upar wala function invoke hoga</span></code></pre>
+      </div>
+
+      <p>
+        Client side pe sync logic ye check karta hai: local edit bhejte waqt apna last-known
+        <code>version</code> bhi bhejo (<code>update ... where id = X and version = local_version</code>);
+        agar update ki row-count 0 aati hai, iska matlab koi aur already newer version likh chuka hai — yehi
+        signal hai user ko conflict prompt dikhane ka, warna silently proceed karo.
+      </p>
+
+      <h3>11.3 Optimistic updates with rollback</h3>
+      <p>
+        Har action pe server round-trip ka wait karna (spinner dikhana, phir UI update karna) app ko slow
+        <em>feel</em> karata hai — chahe network fast bhi ho, human perception mein 200-500ms ka delay bhi
+        "laggy" lagta hai. <strong>Optimistic update</strong> ka pattern hai: UI ko turant update kar do jaise
+        server ne already success bola ho, request background mein bhejo, aur agar request fail ho jaaye toh
+        UI ko wapas purani state pe <strong>rollback</strong> kar do.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>optimistic toggle with rollback</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> toggleTodoOptimistic = <span class="tok-kw">async</span> (todo: Todo) => {
+  <span class="tok-kw">const</span> previousTodos = todos; <span class="tok-com">// rollback ke liye current (pre-change) state ko snapshot mein save kar liya</span>
+
+  <span class="tok-fn">setTodos</span>((prev) =>
+    prev.<span class="tok-fn">map</span>((t) => <span class="tok-com">// list mein sirf matching todo ko update karenge, baaki as-is rahenge</span>
+      t.id === todo.id ? { ...t, is_completed: !t.is_completed } : t <span class="tok-com">// UI turant flip ho gaya, server ka response wait nahi kiya</span>
+    )
+  ); <span class="tok-com">// yahi optimistic update hai — user ko instant feedback mila</span>
+
+  <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> supabase
+    .<span class="tok-fn">from</span>(<span class="tok-str">"todos"</span>) <span class="tok-com">// "todos" table target kiya</span>
+    .<span class="tok-fn">update</span>({ is_completed: !todo.is_completed }) <span class="tok-com">// actual server-side update, background mein chal raha hai</span>
+    .<span class="tok-fn">eq</span>(<span class="tok-str">"id"</span>, todo.id); <span class="tok-com">// sirf isi row ko target kiya</span>
+
+  <span class="tok-kw">if</span> (error) {
+    <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Update failed, rolling back:"</span>, error); <span class="tok-com">// debugging ke liye error log kiya</span>
+    <span class="tok-fn">setTodos</span>(previousTodos); <span class="tok-com">// ROLLBACK: UI ko exact pehle wali state pe wapas le aaye, user ko galat "success" nahi dikhega</span>
+    <span class="tok-com">// production mein yahan ek Toast/Snackbar bhi dikhana chahiye: "Update failed, try again"</span>
+  }
+};</code></pre>
+      </div>
+
+      <p>
+        Ye pattern instant feel isliye deta hai kyunki user ko round-trip latency (network + server processing)
+        kabhi <em>dikhti hi nahi</em> jab tak sab theek chal raha ho — sirf failure case mein hi thoda "flicker"
+        wapas hota hai, jo rare hota hai. Waiting-for-server approach mein har single action pe ye latency
+        <em>hamesha</em> visible hoti hai, chahe request succeed hi kyun na ho.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Optimistic Updates Ka Hidden Cost</div>
+        <p>
+          Agar tumhare paas ek saath multiple optimistic updates in-flight hain (jaise user ne fast-fast 3 todos
+          toggle kar diye before pehla response aaya), aur beech mein ek fail ho jaaye, toh naive rollback
+          (<code>previousTodos</code> wapas set karna) baaki successful updates ko bhi <strong>overwrite</strong>
+          kar sakta hai. Production-grade implementation is case mein sirf us specific failed item ko revert
+          karta hai, poori list ko nahi — TanStack Query jaisi library isi complexity ko
+          <code>onMutate</code>/<code>onError</code>/<code>onSettled</code> callbacks ke through cleanly handle
+          karti hai, isliye real apps mein raw <code>useState</code> ke bajaye aisi library use karna senior
+          choice hai jaise app scale karta hai.
+        </p>
+      </div>
+
+      <h3>11.4 Rate limiting aur idempotency — mobile APIs ke liye kyun zaroori hai</h3>
+      <p>
+        Mobile networks web ke mukable bahut zyada flaky hain — user tunnel mein chala jaata hai, WiFi se
+        cellular pe switch hota hai, ya app background mein chali jaati hai request ke beech mein. Client-side
+        retry logic (jaise ek automatic 3-retry-on-timeout wrapper) is unreliability ko handle karne ke liye
+        common hai — lekin agar wahi retry ek <strong>non-idempotent</strong> operation (jaise "create order")
+        pe hoti hai, toh possible hai ki pehla request actually server tak pahunch gaya ho aur order create ho
+        gaya ho, lekin response client tak wapas na pahuncha ho (timeout ki wajah se) — client retry karega,
+        aur ab <strong>duplicate order</strong> ban jaayega.
+      </p>
+
+      <p>
+        Iska standard solution <strong>idempotency key</strong> pattern hai: client ek unique key (UUID) generate
+        karta hai <em>ek hi baar</em> jab user action trigger hota hai (retry ke waqt wahi key reuse hoti hai,
+        naya key nahi banta), aur server usse dedupe karne ke liye use karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/orders+api.ts — idempotency key pattern</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">POST</span>(request: Request) {
+  <span class="tok-kw">const</span> idempotencyKey = request.headers.<span class="tok-fn">get</span>(<span class="tok-str">"Idempotency-Key"</span>); <span class="tok-com">// client ne ye key header mein bheji, retries pe same rehti hai</span>
+
+  <span class="tok-kw">if</span> (!idempotencyKey) {
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ error: <span class="tok-str">"Idempotency-Key required"</span> }, { status: <span class="tok-num">400</span> }); <span class="tok-com">// key ke bina non-idempotent request allow nahi karte</span>
+  }
+
+  <span class="tok-kw">const</span> { data: existing } = <span class="tok-kw">await</span> supabaseAdmin <span class="tok-com">// service_role client, RLS bypass karke idempotency table dekhne ke liye</span>
+    .<span class="tok-fn">from</span>(<span class="tok-str">"processed_requests"</span>) <span class="tok-com">// pehle-processed keys track karne wala table</span>
+    .<span class="tok-fn">select</span>(<span class="tok-str">"response_body"</span>) <span class="tok-com">// agar pehle process ho chuka hai, uska saved response wapas denge</span>
+    .<span class="tok-fn">eq</span>(<span class="tok-str">"idempotency_key"</span>, idempotencyKey) <span class="tok-com">// isi key se match dhoondo</span>
+    .<span class="tok-fn">maybeSingle</span>(); <span class="tok-com">// 0 ya 1 row expect karte hain, error nahi throw karega agar 0 mile</span>
+
+  <span class="tok-kw">if</span> (existing) {
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>(existing.response_body); <span class="tok-com">// ye request pehle already process ho chuki thi — same saved response wapas do, naya order mat banao</span>
+  }
+
+  <span class="tok-kw">const</span> body = <span class="tok-kw">await</span> request.<span class="tok-fn">json</span>(); <span class="tok-com">// request body parse kiya (jaise order details)</span>
+  <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> <span class="tok-fn">createOrder</span>(body); <span class="tok-com">// actual business logic — naya order create karna (helper function, definition yahan nahi dikhaya)</span>
+
+  <span class="tok-kw">await</span> supabaseAdmin
+    .<span class="tok-fn">from</span>(<span class="tok-str">"processed_requests"</span>) <span class="tok-com">// isi key ko future retries ke liye save kar rahe hain</span>
+    .<span class="tok-fn">insert</span>({ idempotency_key: idempotencyKey, response_body: order }); <span class="tok-com">// key + response dono store kiye taaki retry pe seedha wapas mil jaaye</span>
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>(order); <span class="tok-com">// pehli baar ka fresh response client ko bhej diya</span>
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Rate Limiting Bhi Isi Family Ka Problem Hai</div>
+        <p>
+          Idempotency duplicate-<em>writes</em> ko rokta hai; <strong>rate limiting</strong> alag problem solve
+          karta hai — ek client (buggy retry loop, ya malicious abuse) ko tumhare backend/database pe excessive
+          requests bhejne se rokna. Practical mobile pattern: Expo Router API route ke andar (ya Supabase Edge
+          Function mein) ek per-user/per-IP counter rakho (Redis ya Postgres ke <code>upstash/ratelimit</code>
+          jaise library se), aur limit cross hone pe <code>429 Too Many Requests</code> status return karo taaki
+          client ko pata chale ki ye rate-limit hai, generic server error nahi — client phir exponential backoff
+          ke saath retry kar sakta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">12. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level RN interviews mein backend integration,
+        Supabase, aur data-architecture ke around pooche jaate hain — sirf "syntax kya hai" nahi, "kyun aisa
+        design kiya" pe focus hai, jo hi senior-level differentiation hai.
+      </p>
+
+      <h3>Q1. Postgres Row Level Security query-level pe access control kaise enforce karta hai — ye application code hai ya database-level?</h3>
+      <p>
+        Ye purely <strong>database-level</strong> enforcement hai, application code nahi. Jab RLS enabled hota
+        hai ek table pe, Postgres har incoming query (SELECT/INSERT/UPDATE/DELETE) ko rewrite karta hai taaki
+        har policy ka <code>USING</code> (read-time filter) ya <code>WITH CHECK</code> (write-time validation)
+        expression uss query ke <code>WHERE</code> clause mein effectively AND ho jaaye — ye query planner ke
+        andar, execution se pehle hota hai. Iska matlab chahe query PostgREST (Supabase ka auto-REST layer) se
+        aayi ho, GraphQL se, ya seedha <code>psql</code> se — <strong>koi bhi client Postgres tak pahunchne wala
+        path</strong> isi rewrite se guzarta hai, sirf <code>service_role</code> (jo RLS ko explicitly bypass
+        karne ki permission rakhta hai, roughly Postgres ke <code>BYPASSRLS</code> role attribute jaisa) iska
+        exception hai. Isliye application code mein "if user owns this row" jaisa check duplicate karna zaroori
+        nahi hai — database khud hi non-matching rows ko query result se exclude kar deta hai, jaise wo exist
+        hi nahi karti.
+      </p>
+
+      <h3>Q2. Ek offline-first note-taking app design karo — kaunsa data model aur conflict-resolution approach choose karoge, aur kyun?</h3>
+      <p>
+        Main <strong>local-first writes + version/updated_at column + selective conflict surfacing</strong>
+        approach choose karunga (section 11.2 wala pragmatic middle ground), full CRDT nahi — yahan reasoning
+        hai: Note-taking app mein typical usage pattern ye hai ki ek hi user apne notes edit karta hai (rare hi
+        hota hai ki do log/devices simultaneously exact same note edit kar rahe hon), isliye true concurrent
+        collaborative editing (jahan CRDT/OT genuinely zaroori hote hain, jaise Google Docs) yahan overkill hai.
+        Data model: local SQLite (ya WatermelonDB/expo-sqlite) mein har note ka full copy rakhunga with
+        <code>updated_at</code> aur <code>synced_at</code> timestamps, ek background sync queue jo pending
+        writes ko track karta hai. Jab online ho, queue process hoti hai — server ka <code>updated_at</code>
+        check karke agar wo local <code>synced_at</code> se newer hai, matlab dusri jagah se bhi change aaya
+        tha, tab hi user ko ek simple "This note changed elsewhere — keep mine / keep server's / view both"
+        prompt dikhaunga, warna silently merge kar dunga. Agar future mein genuine real-time multi-device
+        simultaneous typing chahiye ho (jaise ek shared collaborative doc feature add ho), tabhi CRDT library
+        (Yjs) introduce karunga — YAGNI principle follow karte hue shuruaat simple se karna better hai.
+      </p>
+
+      <h3>Q3. Supabase anon key leak hone aur service_role key leak hone ke blast radius mein actual difference kya hai?</h3>
+      <p>
+        <strong>Anon key leak</strong> — practically koi naya risk nahi create karta, kyunki ye key already
+        client bundle mein publicly present hoti hai by design (section 1 dekha). Ye key sirf ek "identity
+        token" hai jo batata hai request kaunse Supabase project se aa rahi hai — actual access control poori
+        tarah RLS policies pe depend karta hai. Agar RLS sahi se configured hai, anon key ke saath attacker
+        wahi kar sakta hai jo ek legitimate unauthenticated/authenticated user kar sakta hai — kuch zyada nahi.
+      </p>
+      <p>
+        <strong>service_role key leak</strong> — ye catastrophic hai. Ye key RLS ko <em>completely bypass</em>
+        karti hai (Postgres ke andar <code>BYPASSRLS</code> attribute wale role jaisi), matlab is key ke saath
+        koi bhi table ki <strong>saari rows</strong> read/insert/update/delete ki ja sakti hain — chahe kitni
+        bhi strict RLS policies kyun na ho, ye unhe ignore kar deti hai. Ye practically database ka root
+        password hai. Isliye blast radius mein difference hai: anon key leak = "RLS jitna secure hai utna hi
+        risk" (potentially zero agar policies tight hain), service_role leak = "poori database exposed,
+        unconditionally".
+      </p>
+
+      <h3>Q4. Production mein ek query jo current user ka data return karni chahiye, empty aa rahi hai — lekin tumhare local testing mein kaam karti hai. Sabse pehle kya check karoge?</h3>
+      <p>
+        Ye classic RLS-silent-filtering symptom hai (section 10 gotcha), isliye systematic debugging order:
+      </p>
+      <ol>
+        <li>
+          <strong>Confirm karo data exist karta hai</strong> — Supabase Dashboard ke SQL Editor mein (jo
+          <code>service_role</code>-level access rakhta hai, RLS bypass hota hai) wahi query manually chalao.
+          Agar data yahan dikhta hai, confirm ho gaya ye RLS issue hai, "data missing" nahi.
+        </li>
+        <li>
+          <strong>Check karo production auth session valid hai</strong> — kabhi kabhi production build mein
+          token refresh fail ho raha hota hai (env mismatch, wrong Supabase URL project pointing to staging vs
+          prod), isliye <code>auth.uid()</code> null resolve ho raha hota hai server-side, jisse RLS policy
+          <code>auth.uid() = user_id</code> kabhi match hi nahi karti.
+        </li>
+        <li>
+          <strong>Diff karo local vs prod RLS policies</strong> — bahut common: local/staging Supabase project
+          pe manually ek policy add ki thi testing ke liye, lekin migration file mein commit nahi ki, isliye
+          production project mein wo policy exist hi nahi karti. SQL migrations ko version control mein rakhna
+          isi wajah se non-negotiable hai.
+        </li>
+        <li>
+          <strong>Check karo env vars sahi project ko point kar rahe hain</strong> — agar
+          <code>EXPO_PUBLIC_SUPABASE_URL</code> galti se staging project ka hai production build mein (ya vice
+          versa), query "successfully" chalegi lekin galat database se, jahan expected data hai hi nahi.
+        </li>
+      </ol>
+
+      <h3>Q5. Supabase Realtime WebSocket ke through data kaise deliver karta hai — poll karta hai ya push?</h3>
+      <p>
+        Push-based hai, poll-based nahi. Section 11.1 mein dekha — Realtime server Postgres ke logical
+        replication stream (WAL-based) ko continuously sunta hai, aur jaise hi koi matching change commit hoti
+        hai, wo event turant subscribed clients ko unke already-open WebSocket connection pe push kar deta hai.
+        Isse compare karo naive "polling" approach se (jahan client har N seconds pe <code>fetch</code> karke
+        khud check karta ki kuch naya hai) — polling mein latency N seconds tak ho sakti hai aur unnecessary
+        requests bhi bante hain jab kuch naya nahi hota; WebSocket push mein latency near-instant hoti hai aur
+        idle time mein koi extra request nahi jaati (connection khula rehta hai, lekin data tabhi flow hota hai
+        jab actual change ho).
+      </p>
+
+      <h3>Q6. Optimistic updates ka trade-off kya hai, aur kab isse avoid karna chahiye?</h3>
+      <p>
+        Benefit clear hai — instant perceived responsiveness (section 11.3). Trade-off ye hai ki UI temporarily
+        ek aisi state dikhati hai jo abhi <em>server-confirmed nahi</em> hai — agar request fail hoti hai, user
+        ne shayad already us "fake success" ke aage aur actions le liye ho (jaise ek delete ko optimistic dikha
+        ke user ne next screen navigate kar diya), rollback UX confusing ban sakta hai. Isliye main optimistic
+        updates avoid karta hoon jab: (a) operation genuinely destructive/irreversible hai server-side (jaise
+        payment processing — yahan galat "success" dikhana bahut costly hai), (b) success probability low hai
+        (jaise ek known-flaky third-party integration), ya (c) UI itni complex hai ki partial rollback
+        (multiple in-flight optimistic updates, jaisa section 11.3 ka warn callout tha) manage karna error-prone
+        ho jaaye without a proper library (TanStack Query) ka support.
+      </p>
+
+      <h3>Q7. Expo Router API Route aur ek traditional separate backend (Express/Django) mein architecturally kya farak hai?</h3>
+      <p>
+        Functionally dono same kaam karte hain — server-side code jo secrets/business-logic ko client se door
+        rakhta hai. Farak deployment aur ownership model mein hai: Expo Router API routes <strong>same
+        repo/same deploy</strong> mein colocated hote hain app code ke saath (<code>+api.ts</code> files),
+        deploy EAS Hosting se hota hai, aur ye best fit hai jab backend logic simple/thin hai (BFF pattern —
+        secret hide karna, ek third-party API ko proxy karna). Traditional separate backend better fit hai jab:
+        backend ko independently scale karna ho app se alag, backend ko multiple clients serve karne hon (web +
+        mobile + partner APIs), ya backend team/deployment-cadence app team se decoupled ho. Senior decision
+        yahan "complexity ke hisaab se right-size karo" hai — chhoti proxy-jaisi zaroorat ke liye poora alag
+        Express server spin karna over-engineering hai; genuinely complex backend logic ke liye Expo Router
+        routes mein sab kuch cram karna bhi galat hai.
+      </p>
+
+      <h3>Q8. Idempotency key ka lifecycle kya hona chahiye — kab generate hoti hai, kab reuse hoti hai?</h3>
+      <p>
+        Idempotency key <strong>user action trigger hone ke exact moment</strong> pe ek baar generate honi
+        chahiye (jaise "Place Order" button dabate hi ek UUID banao), aur usi ek key ko us specific action ke
+        <em>saare retries</em> ke liye reuse karna hai — chahe retry automatic ho (network timeout ke baad client
+        khud retry kare) ya manual (user ne dobara button dabaya kyunki UI stuck lag rahi thi). Galat pattern
+        ye hoga ki har retry pe naya UUID generate ho — isse idempotency ka poora purpose hi khatam ho jaata hai,
+        kyunki server ke liye har retry ek "naya" unique request dikhegi. Key ko component state/ref mein store
+        karo (jab tak action pending hai), aur success/definitive-failure ke baad hi discard karo.
+      </p>
+
+      <h3>Q9. Postgres ka <code>WITH CHECK</code> aur <code>USING</code> clause RLS policy mein kya alag kaam karte hain?</h3>
+      <p>
+        <code>USING</code> ek <strong>read-time filter</strong> hai — ye decide karta hai kaunsi <em>existing</em>
+        rows query ko visible hain (SELECT ke liye, aur UPDATE/DELETE mein bhi "kaunsi row touch kar sakte ho"
+        decide karne ke liye). <code>WITH CHECK</code> ek <strong>write-time validation</strong> hai — ye decide
+        karta hai ki jo naya/modified row data <em>ban raha hai</em> (INSERT ka naya row, ya UPDATE ke baad ka
+        resulting row) wo valid hai ya nahi. Yehi wajah hai ki humare <code>todos</code> UPDATE policy mein dono
+        the: <code>USING (auth.uid() = user_id)</code> — "tum sirf apni row update kar sakte ho", aur
+        <code>WITH CHECK (auth.uid() = user_id)</code> — "update ke baad bhi row ka owner tum hi raho, kisi aur
+        ko transfer nahi kar sakte". Agar sirf <code>USING</code> hota aur <code>WITH CHECK</code> na hota, user
+        apni row ko update karke uska <code>user_id</code> kisi aur ke id mein badal sakta tha (effectively apna
+        todo kisi aur ko "gift" kar dena), jo ek unintended privilege escalation hoti.
+      </p>
+
+      <h3>Q10. Realtime, polling, aur webhook — in teeno mein se ek "order status updates" feature ke liye kaunsa choose karoge?</h3>
+      <p>
+        Depends on requirement ke exact shape pe: agar update <strong>client ko turant dikhni chahiye</strong>
+        jab server-side kuch change ho (jaise "order out for delivery" status), <strong>Realtime</strong>
+        (Postgres changes subscription) best fit hai — low latency, aur Supabase already isse manage karta hai.
+        Agar update client ki activeness pe depend nahi karni chahiye aur ek external system (jaise payment
+        gateway) ko backend ko inform karna hai ki kuch hua, <strong>webhook</strong> (server-to-server HTTP
+        callback) sahi pattern hai — client isse directly involved nahi hota, backend hi webhook receive karke
+        apna database update karta hai (aur phir wahi update Realtime ke through client tak forward ho sakta
+        hai — dono patterns often saath use hote hain, alag layers pe). <strong>Polling</strong> ko main sirf
+        tab choose karta hoon jab infrastructure constraint ho (jaise ek third-party API jo webhooks support
+        hi nahi karta, aur WebSocket bhi available nahi), kyunki polling battery aur network dono waste karta
+        hai mobile pe — ye almost hamesha last-resort option honi chahiye, first choice nahi.
+      </p>
+
+      <!-- ============================================================ -->
+      <div class="prevnext">
+        <a class="prev" href="08-push-notifications.html">
+          <div class="label">← Previous</div>
+          <div class="title">Push Notifications</div>
+        </a>
+        <a class="next" href="10-eas-build.html">
+          <div class="label">Next →</div>
+          <div class="title">EAS Build</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

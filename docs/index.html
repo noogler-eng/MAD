@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAD Docs — React Native + Expo Handbook</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link active" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs</div>
+      <div class="progress-pill">21 / 21 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Expo · TypeScript</span>
+      <h1>React Native + Expo — Complete Handbook</h1>
+      <p class="subtitle">
+        Ye handbook React Native aur Expo ko basic se leke advanced/production-level tak cover karta hai —
+        sab kuch Hinglish mein, ek senior software developer ki tarah samjhaya gaya, real code ke saath.
+        Har chapter mein architecture, best practices, security aur scalability ke practical notes bhi milenge.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Is course ka structure</div>
+        <p>
+          Ye course <a href="https://codewithbeto.dev" target="_blank" rel="noopener">codewithbeto.dev's React Native course</a>
+          ke curriculum ko follow karta hai (17 topics, Intro se leke Publishing/Native Modules/Bonus tak),
+          plus <strong>4 extra chapters</strong> (18-21) jo course ke gaps fill karte hain — State Management,
+          Debugging &amp; Crash Analysis, Accessibility/i18n, aur ek end-to-end Capstone project jisme hum
+          poora free tier stack (Expo + Supabase + Razorpay/Stripe test mode + EAS free tier) use karke
+          ek real app banate hain, step-by-step. Saare <strong>21 topics</strong> deeply cover ho chuke hain.
+          Poora progress/summary <code>readme.md</code> mein bhi likha hai future reference ke liye.
+        </p>
+      </div>
+
+      <h2 style="border-top:none; padding-top:0; margin-top:32px;">Available Chapters</h2>
+      <div class="grid">
+
+        <a class="card" href="01-introduction.html">
+          <div class="card-num">1</div>
+          <h3>Introduction</h3>
+          <p>Dev environment setup, Expo vs bare RN, New Architecture (Fabric + TurboModules), Expo Go vs Dev Builds.</p>
+          <div class="topics"><span>Setup</span><span>New Architecture</span><span>Folder Structure</span><span>Env Vars</span></div>
+        </a>
+
+        <a class="card" href="02-components-and-apis.html">
+          <div class="card-num">2</div>
+          <h3>Components &amp; APIs</h3>
+          <p>Core components deep-dive, custom reusable components, compound components, performance patterns.</p>
+          <div class="topics"><span>FlatList</span><span>Custom Hooks</span><span>TypeScript</span><span>Memoization</span></div>
+        </a>
+
+        <a class="card" href="03-style-and-design.html">
+          <div class="card-num">3</div>
+          <h3>Style &amp; Design</h3>
+          <p>StyleSheet internals, Flexbox mastery, design tokens/design system, dark mode architecture.</p>
+          <div class="topics"><span>Flexbox</span><span>Design Tokens</span><span>Dark Mode</span><span>Figma → Code</span></div>
+        </a>
+
+        <a class="card" href="04-expo-router.html">
+          <div class="card-num">4</div>
+          <h3>Expo Router</h3>
+          <p>File-based routing, dynamic routes, auth flow, role-based access, deep linking, stacks/tabs.</p>
+          <div class="topics"><span>Deep Linking</span><span>Auth Flow</span><span>RBAC</span><span>Navigation</span></div>
+        </a>
+
+        <a class="card" href="05-animations-and-gestures.html">
+          <div class="card-num">5</div>
+          <h3>Animations &amp; Gestures</h3>
+          <p>Reanimated 3 worklets, Gesture Handler, swipeable components, 60fps performance rules.</p>
+          <div class="topics"><span>Reanimated</span><span>Gesture Handler</span><span>UI Thread</span><span>Worklets</span></div>
+        </a>
+
+        <a class="card" href="06-expo-ui.html">
+          <div class="card-num">6</div>
+          <h3>Expo UI</h3>
+          <p>Truly native interfaces — SwiftUI/Jetpack Compose mental model, universal components, native state.</p>
+          <div class="topics"><span>SwiftUI</span><span>Jetpack Compose</span><span>Native Views</span><span>Modifiers</span></div>
+        </a>
+
+        <a class="card" href="07-testing.html">
+          <div class="card-num">7</div>
+          <h3>Testing</h3>
+          <p>Jest unit testing, React Native Testing Library, Maestro E2E — testing pyramid for RN apps.</p>
+          <div class="topics"><span>Jest</span><span>RNTL</span><span>Maestro</span><span>Mocking</span></div>
+        </a>
+
+        <a class="card" href="08-push-notifications.html">
+          <div class="card-num">8</div>
+          <h3>Push Notifications</h3>
+          <p>Expo Notifications vs OneSignal, permission flows, tokens, Firebase (FCM) internals.</p>
+          <div class="topics"><span>Expo Notifications</span><span>OneSignal</span><span>FCM</span><span>APNs</span></div>
+        </a>
+
+        <a class="card" href="09-backend-supabase.html">
+          <div class="card-num">9</div>
+          <h3>Backend + Supabase</h3>
+          <p>API routes, env vars in prod, Supabase tables/CRUD/RLS, secure API key handling patterns.</p>
+          <div class="topics"><span>Supabase</span><span>RLS</span><span>API Routes</span><span>Security</span></div>
+        </a>
+
+        <a class="card" href="10-eas-build.html">
+          <div class="card-num">10</div>
+          <h3>EAS Build</h3>
+          <p>Dev/Preview/Production build profiles, credentials management, automating version codes.</p>
+          <div class="topics"><span>Build Profiles</span><span>Credentials</span><span>CI/CD</span><span>Automation</span></div>
+        </a>
+
+        <a class="card" href="11-eas-submit.html">
+          <div class="card-num">11</div>
+          <h3>EAS Submit</h3>
+          <p>Automating App Store + Play Store submission, signing/certificates, release pipelines.</p>
+          <div class="topics"><span>App Store</span><span>Play Store</span><span>Signing</span><span>Automation</span></div>
+        </a>
+
+        <a class="card" href="12-eas-update.html">
+          <div class="card-num">12</div>
+          <h3>EAS Update</h3>
+          <p>Over-the-air updates, update channels, deploying and safely reverting bad releases.</p>
+          <div class="topics"><span>OTA</span><span>Channels</span><span>Rollback</span><span>Runtime Versions</span></div>
+        </a>
+
+        <a class="card" href="13-eas-workflows.html">
+          <div class="card-num">13</div>
+          <h3>EAS Workflows</h3>
+          <p>CI/CD pipelines as YAML, automated build+test+submit flows, Maestro-in-workflow.</p>
+          <div class="topics"><span>CI/CD</span><span>YAML</span><span>Automation</span><span>Maestro</span></div>
+        </a>
+
+        <a class="card" href="14-publishing.html">
+          <div class="card-num">14</div>
+          <h3>Publishing</h3>
+          <p>Manual Xcode publishing, full App Store + Play Store submission checklists.</p>
+          <div class="topics"><span>Xcode</span><span>App Store Connect</span><span>Play Console</span></div>
+        </a>
+
+        <a class="card" href="15-payments.html">
+          <div class="card-num">15</div>
+          <h3>Payments</h3>
+          <p>Payment fundamentals, RevenueCat in-app purchases, Stripe, PCI-relevant security.</p>
+          <div class="topics"><span>RevenueCat</span><span>Stripe</span><span>IAP</span><span>PCI Security</span></div>
+        </a>
+
+        <a class="card" href="16-native-modules.html">
+          <div class="card-num">16</div>
+          <h3>Native Modules</h3>
+          <p>Expo Modules API — writing native modules and native views from scratch.</p>
+          <div class="topics"><span>Expo Modules API</span><span>Swift</span><span>Kotlin</span><span>Native Views</span></div>
+        </a>
+
+        <a class="card" href="17-bonus.html">
+          <div class="card-num">17</div>
+          <h3>Bonus</h3>
+          <p>Apple Widgets, Expo SDK upgrade strategy, Meta Ads/Facebook SDK integration.</p>
+          <div class="topics"><span>Widgets</span><span>SDK Upgrades</span><span>Facebook SDK</span></div>
+        </a>
+
+        <a class="card" href="18-state-management.html">
+          <div class="card-num">18</div>
+          <h3>State Management</h3>
+          <p>Redux Toolkit vs Zustand vs Jotai vs Context — senior trade-offs, persistence, selectors.</p>
+          <div class="topics"><span>Redux Toolkit</span><span>Zustand</span><span>Jotai</span><span>MMKV</span></div>
+        </a>
+
+        <a class="card" href="19-debugging-and-crashes.html">
+          <div class="card-num">19</div>
+          <h3>Debugging &amp; Crashes</h3>
+          <p>Sentry integration, crash symbolication, ANR debugging, Flipper, performance profiling.</p>
+          <div class="topics"><span>Sentry</span><span>Symbolication</span><span>ANR</span><span>Flipper</span></div>
+        </a>
+
+        <a class="card" href="20-accessibility-i18n.html">
+          <div class="card-num">20</div>
+          <h3>Accessibility &amp; i18n</h3>
+          <p>Screen reader support, a11y props, RTL layouts, internationalization libraries.</p>
+          <div class="topics"><span>a11y</span><span>Screen Readers</span><span>RTL</span><span>i18n</span></div>
+        </a>
+
+        <a class="card" href="21-capstone-free-app.html">
+          <div class="card-num">21</div>
+          <h3>Capstone: Free Full App</h3>
+          <p>End-to-end: build and ship a real app using only free tiers — Expo, Supabase, Razorpay/Stripe test mode, EAS free tier — with full debugging steps.</p>
+          <div class="topics"><span>Free Tier Stack</span><span>Razorpay Test Mode</span><span>Stripe Test Mode</span><span>Debugging</span></div>
+        </a>
+
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Notes kya hai?</div>
+        <p>
+          Har chapter mein <strong>"Senior Dev Note"</strong> callout boxes milti hain — inme security issues,
+          API keys handling, SSL pinning, Firebase gotchas, crash patterns aur real-world anomalies discuss
+          hoti hain jo topically us chapter se related hain. Notifications aur Firebase (ch.8), Payments
+          (ch.15), aur EAS ka poora pipeline (ch.10-13) — sab ke apne dedicated chapters ab available hain.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

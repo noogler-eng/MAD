@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accessibility &amp; i18n — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link active" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Accessibility &amp; i18n</div>
+      <div class="progress-pill">Chapter 20 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Expo · TypeScript</span>
+      <h1>Accessibility &amp; i18n</h1>
+      <p class="subtitle">
+        Screen reader support kaise implement karte hain (VoiceOver aur TalkBack dono ke liye), dynamic font
+        scaling aur layout resilience, color contrast ka senior-level awareness, aur internationalization ki
+        poori architecture — translation files, RTL layouts, pluralization, aur locale-aware formatting. Ye wo
+        chapter hai jo bataega ki accessibility aur i18n "nice to have" nahi hain — ye real users ke liye
+        "can use the app or not" ka difference banate hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#why-a11y-matters">1. Kyun Accessibility Ek "Nice to Have" Nahi Hai</a></li>
+          <li><a href="#core-a11y-props">2. Core Accessibility Props in React Native</a></li>
+          <li><a href="#testing-screen-reader">3. Testing with a Real Screen Reader</a></li>
+          <li><a href="#font-scaling">4. Dynamic Font Scaling and Layout Resilience</a></li>
+          <li><a href="#color-contrast">5. Color Contrast and Visual Accessibility</a></li>
+          <li><a href="#i18n-fundamentals">6. Internationalization (i18n) Fundamentals</a></li>
+          <li><a href="#rtl-support">7. RTL (Right-to-Left) Layout Support</a></li>
+          <li><a href="#pluralization-formatting">8. Pluralization and Locale-Aware Formatting</a></li>
+          <li><a href="#real-world-gotchas">9. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">11. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- =========================================================
+           SECTION 1 — Kyun Accessibility Ek Nice-to-Have Nahi Hai
+      ========================================================== -->
+      <h2 id="why-a11y-matters" style="border-top:none; padding-top:0; margin-top:28px;">1. Kyun Accessibility Ek "Nice to Have" Nahi Hai</h2>
+
+      <p>
+        Bahut saare teams accessibility ko ek compliance checkbox ki tarah treat karte hain — "launch ke baad
+        dekh lenge", ya "agar client ne specifically maanga toh add karenge". Ye mindset fundamentally galat hai,
+        aur senior level pe iski wajah samajhna zaroori hai.
+      </p>
+
+      <h3>Ye ek legal/compliance issue se zyada, ek real user base hai</h3>
+      <p>
+        Accessibility ka matlab hai: <strong>vision-impaired users</strong> jo screen reader (VoiceOver on iOS,
+        TalkBack on Android) use karke poora phone operate karte hain bina screen dekhe, <strong>motor-impaired
+        users</strong> jo switch control ya external switches use karte hain touch gestures ke bajaye, aur
+        <strong>low-vision users</strong> jinhe bada font size ya high contrast chahiye hota hai readable content
+        ke liye. Ye koi "edge case" nahi hai — WHO ke estimates ke hisaab se duniya ki population ka significant
+        percentage kisi na kisi form ki disability ke saath rehta hai, aur agar aapki app accessible nahi hai, ye
+        users literally aapki app <strong>use hi nahi kar sakte</strong> — koi workaround nahi hai unke liye, jaise
+        ek slow app ke liye "thoda wait kar lenge" wala workaround exist karta hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Extra Context — Store policies aur legal requirements</div>
+        <p>
+          Apple aur Google dono increasingly accessibility ko weigh kar rahe hain apne review guidelines aur
+          discovery algorithms mein — Apple ka App Store "Accessibility Nutrition Labels" jaisi initiatives
+          push kar raha hai. Kai countries (US mein ADA se related lawsuits, EU mein European Accessibility Act)
+          mein digital products ke liye accessibility ab legal requirement ban rahi hai, especially agar aap
+          public-facing services (banking, government, healthcare) bana rahe ho. Lekin ye chapter is legal angle
+          pe focus nahi karega — senior framing ye hai ki legal requirement se pehle, ye simply <strong>sahi kaam
+          hai</strong> aur ek real revenue-relevant user segment hai jo ignore ho raha hai.
+        </p>
+      </div>
+
+      <h3>Retrofit karna banane se kaafi zyada mehenga hai</h3>
+      <p>
+        Ye bilkul dark mode wale principle jaisa hai jo humne Chapter 3 mein dekha tha — agar aapne day-1 se
+        semantic theme tokens use nahi kiye, dark mode retrofit karna 100+ files touch karne jaisa massive
+        refactor ban jaata hai. Accessibility mein exactly wahi pattern hai: agar custom components bina
+        <code>accessibilityLabel</code>, bina proper <code>accessibilityRole</code> ke bana diye gaye, aur
+        gestures bina accessibility actions ke implement ho gaye, toh baad mein har ek component ko dobara
+        khol ke retrofit karna padta hai — aur is process mein naye bugs introduce hone ka risk bhi hota hai.
+        Jabki agar accessibility props shuru se hi component banate waqt add ho jaayein, incremental cost
+        <strong>almost zero</strong> hai — ek button banate waqt <code>accessibilityRole="button"</code> add
+        karna 2 second ka kaam hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Jis tarah senior teams "security by design" ki baat karti hain (security ko afterthought na banao,
+          architecture mein day-1 se socho), waise hi <strong>"accessibility by design"</strong> ek senior
+          engineering mindset hai. Ek accessible component library banana, aur phir har feature team ko usi
+          library ke top pe build karne dena — ye ek one-time investment hai jo poori app ko accessible bana deta
+          hai bina har individual developer ko accessibility expert banaye. Isliye design system (Chapter 3) aur
+          accessibility dono hath mein hath milake chalte hain — reusable, accessible primitives (Button, Card,
+          Input) banao ek baar, sab jagah reuse karo.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 2 — Core Accessibility Props
+      ========================================================== -->
+      <h2 id="core-a11y-props">2. Core Accessibility Props in React Native</h2>
+
+      <p>
+        React Native accessibility props ka ek set provide karta hai jo directly native accessibility APIs
+        (iOS ka UIAccessibility, Android ka AccessibilityNodeInfo) pe map hote hain. Inhe samajhna zaroori hai
+        kyunki ye "hint text" nahi hain — ye literally define karte hain ki screen reader user ko kya sunayi
+        dega aur wo element kaise interact ho sakta hai.
+      </p>
+
+      <table class="table">
+        <thead><tr><th>Prop</th><th>Kaam</th></tr></thead>
+        <tbody>
+          <tr><td><code>accessible</code></td><td>Batata hai ki ye View ek single accessibility element hai — screen reader isse ek unit ki tarah focus karega, andar ke children ko separately announce nahi karega</td></tr>
+          <tr><td><code>accessibilityLabel</code></td><td>Wo text jo screen reader actually bolke sunayega — agar nahi diya, RN kabhi kabhi child <code>Text</code> content guess karta hai, lekin icon-only buttons ke liye ye zaroori hai</td></tr>
+          <tr><td><code>accessibilityHint</code></td><td>Extra context ki ek line — "kya hoga agar user ye action perform kare" (e.g. "Double tap to delete this item")</td></tr>
+          <tr><td><code>accessibilityRole</code></td><td>Element ka semantic type — button, link, header, image, switch, etc. Screen reader isse batata hai user ko ki wo element kaisa "behave" karega</td></tr>
+          <tr><td><code>accessibilityState</code></td><td>Current state — <code>disabled</code>, <code>selected</code>, <code>checked</code>, <code>busy</code>, <code>expanded</code> — screen reader isse announce karta hai (e.g. "Add to cart, button, disabled")</td></tr>
+        </tbody>
+      </table>
+
+      <p>Ab ek full example — ek properly accessible custom card component jo touchable bhi hai:</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/AccessibleProductCard.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Pressable, View, Text, Image, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// core RN components</span>
+
+<span class="tok-com">// Product card ke props — id, name, price, image aur ek out-of-stock flag</span>
+<span class="tok-kw">type</span> ProductCardProps = {
+  <span class="tok-attr">id</span>: <span class="tok-kw">string</span>;                 <span class="tok-com">// unique product identifier</span>
+  <span class="tok-attr">name</span>: <span class="tok-kw">string</span>;               <span class="tok-com">// product display name</span>
+  <span class="tok-attr">price</span>: <span class="tok-kw">number</span>;              <span class="tok-com">// price in rupees, e.g. 1299</span>
+  <span class="tok-attr">imageUrl</span>: <span class="tok-kw">string</span>;           <span class="tok-com">// product thumbnail URL</span>
+  <span class="tok-attr">inStock</span>: <span class="tok-kw">boolean</span>;           <span class="tok-com">// stock availability — controls disabled state</span>
+  <span class="tok-attr">selected</span>: <span class="tok-kw">boolean</span>;          <span class="tok-com">// whether this card is currently selected (e.g. in a comparison list)</span>
+  <span class="tok-attr">onPress</span>: () =&gt; <span class="tok-kw">void</span>;        <span class="tok-com">// callback when card is tapped/activated</span>
+};
+
+<span class="tok-kw">function</span> <span class="tok-fn">AccessibleProductCard</span>({ id, name, price, imageUrl, inStock, selected, onPress }: ProductCardProps) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>Pressable
+      <span class="tok-attr">onPress</span>={inStock ? onPress : <span class="tok-kw">undefined</span>}          <span class="tok-com">// out-of-stock hone pe press disable karo</span>
+      <span class="tok-attr">style</span>={[styles.card, selected &amp;&amp; styles.cardSelected]} <span class="tok-com">// selected state ke liye visual highlight</span>
+      <span class="tok-attr">accessible</span>                                             <span class="tok-com">// pura card ek single accessibility element ban jaaye, andar ki 3 Text/Image alag se announce na ho</span>
+      <span class="tok-attr">accessibilityRole</span>=<span class="tok-str">"button"</span>                              <span class="tok-com">// screen reader batayega "button" — user samajh jaayega ye tap-able hai</span>
+      <span class="tok-attr">accessibilityLabel</span>={<span class="tok-str">`${name}, price ₹${price}`</span>}         <span class="tok-com">// actual spoken text — image alt-text jaisa concept</span>
+      <span class="tok-attr">accessibilityHint</span>={inStock ? <span class="tok-str">'Double tap to view product details'</span> : <span class="tok-kw">undefined</span>} <span class="tok-com">// extra context sirf jab actionable ho</span>
+      <span class="tok-attr">accessibilityState</span>={{ <span class="tok-attr">disabled</span>: !inStock, <span class="tok-attr">selected</span> }} <span class="tok-com">// screen reader "disabled"/"selected" bhi bolega automatically</span>
+    <span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* Ye Image decorative hai (info already accessibilityLabel mein hai), isliye screen reader se hide karo */}</span>
+      <span class="tok-punc">&lt;</span>Image
+        <span class="tok-attr">source</span>={{ <span class="tok-attr">uri</span>: imageUrl }}                        <span class="tok-com">// product image ka remote URL</span>
+        <span class="tok-attr">style</span>={styles.thumbnail}                          <span class="tok-com">// fixed thumbnail size</span>
+        <span class="tok-attr">importantForAccessibility</span>=<span class="tok-str">"no"</span>                     <span class="tok-com">// Android-specific — is image ko accessibility tree se poori tarah hata do (duplicate announcement avoid)</span>
+        <span class="tok-attr">accessibilityElementsHidden</span>                       <span class="tok-com">// iOS-specific equivalent — VoiceOver ko is image ko skip karne bolo</span>
+      <span class="tok-punc">/&gt;</span>
+
+      <span class="tok-com">{/* Parent card pe accessible=true set hai, isliye ye Text elements individually focus nahi honge — */}</span>
+      <span class="tok-com">{/* screen reader ke liye ye sirf visual content hain, spoken text upar accessibilityLabel se aa raha hai */}</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.name} <span class="tok-attr">numberOfLines</span>={<span class="tok-num">2</span>}<span class="tok-punc">&gt;</span>{name}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.price}<span class="tok-punc">&gt;</span>₹{price}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+
+      {!inStock &amp;&amp; (
+        <span class="tok-com">{/* Visual "out of stock" badge — spoken info already accessibilityState.disabled mein hai */}</span>
+        <span class="tok-punc">&lt;</span>View <span class="tok-attr">style</span>={styles.outOfStockBadge}<span class="tok-punc">&gt;</span>
+          <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.outOfStockText}<span class="tok-punc">&gt;</span>Out of Stock<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;/</span>View<span class="tok-punc">&gt;</span>
+      )}
+    <span class="tok-punc">&lt;/</span>Pressable<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  card: { <span class="tok-attr">borderRadius</span>: <span class="tok-num">12</span>, <span class="tok-attr">padding</span>: <span class="tok-num">12</span>, <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#262524'</span>, <span class="tok-attr">gap</span>: <span class="tok-num">6</span> }, <span class="tok-com">// base card look</span>
+  cardSelected: { <span class="tok-attr">borderWidth</span>: <span class="tok-num">2</span>, <span class="tok-attr">borderColor</span>: <span class="tok-str">'#d97757'</span> },              <span class="tok-com">// visual selected indicator</span>
+  thumbnail: { <span class="tok-attr">width</span>: <span class="tok-str">'100%'</span>, <span class="tok-attr">height</span>: <span class="tok-num">140</span>, <span class="tok-attr">borderRadius</span>: <span class="tok-num">8</span> },      <span class="tok-com">// thumbnail sizing</span>
+  name: { <span class="tok-attr">color</span>: <span class="tok-str">'#e8e4dd'</span>, <span class="tok-attr">fontSize</span>: <span class="tok-num">14</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'600'</span> },       <span class="tok-com">// product name styling</span>
+  price: { <span class="tok-attr">color</span>: <span class="tok-str">'#d97757'</span>, <span class="tok-attr">fontSize</span>: <span class="tok-num">15</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'700'</span> },      <span class="tok-com">// price styling</span>
+  outOfStockBadge: { <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#d9756c22'</span>, <span class="tok-attr">borderRadius</span>: <span class="tok-num">6</span>, <span class="tok-attr">padding</span>: <span class="tok-num">4</span> }, <span class="tok-com">// out-of-stock badge bg</span>
+  outOfStockText: { <span class="tok-attr">color</span>: <span class="tok-str">'#d9756c'</span>, <span class="tok-attr">fontSize</span>: <span class="tok-num">11</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'600'</span> }, <span class="tok-com">// out-of-stock text</span>
+});
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> AccessibleProductCard;                                   <span class="tok-com">// export the component</span></code></pre>
+      </div>
+
+      <p>
+        Screen reader user ke perspective se, jab wo is card pe focus karega, VoiceOver/TalkBack bolega kuch is
+        tarah: <em>"Nike Air Max, price ₹4999, button. Double tap to view product details."</em> — pura ek clean
+        single announcement, na ki 4 alag announcements (image, name text, price text, badge) jo confusing aur
+        redundant hote. Agar out of stock hai, ye <em>"Nike Air Max, price ₹4999, button, disabled"</em> bolega,
+        aur hint skip ho jaayega kyunki koi action possible nahi hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — <code>accessible</code> aur nested interactive elements</div>
+        <p>
+          <code>accessible={'{'}true{'}'}</code> set karne ka side effect ye hai ki iske andar agar koi separate
+          interactive element hai (jaise ek "Remove" button card ke andar), wo apna khud ka accessibility focus
+          nahi paayega — pura parent ek hi unit ban jaata hai. Agar card ke andar multiple independently tappable
+          actions chahiye (e.g. product card + ek chhota wishlist heart icon jo apna khud ka tap target hai), toh
+          <code>accessible</code> parent pe mat lagao — instead har interactive sub-element ko apna khud ka
+          <code>accessibilityRole</code>/<code>accessibilityLabel</code> do, aur parent ko plain View rehne do.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 3 — Testing with a Real Screen Reader
+      ========================================================== -->
+      <h2 id="testing-screen-reader">3. Testing with a Real Screen Reader</h2>
+
+      <p>
+        Ye sabse underrated senior practice hai: <strong>actually VoiceOver ya TalkBack on karke, screen band
+        karke ya aankh band karke, apni app navigate karna</strong>. Ye "extra QA step" nahi hai — ye <em>the</em>
+        real test hai. Automated linting tools sirf ek fraction of issues catch kar sakte hain; asli experience
+        sirf manually navigate karke pata chalta hai.
+      </p>
+
+      <h3>Device pe screen reader on karna</h3>
+      <table class="table">
+        <thead><tr><th>Platform</th><th>Kaise on karo</th><th>Basic gestures</th></tr></thead>
+        <tbody>
+          <tr><td>iOS (VoiceOver)</td><td>Settings → Accessibility → VoiceOver, ya Siri se "Hey Siri, turn on VoiceOver"</td><td>Swipe right/left = next/previous element, double-tap = activate, 3-finger swipe = scroll</td></tr>
+          <tr><td>Android (TalkBack)</td><td>Settings → Accessibility → TalkBack, ya volume-key shortcut (dono volume buttons hold)</td><td>Swipe right/left = next/previous, double-tap = activate, 2-finger swipe = scroll</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — screen off karke test karo</div>
+        <p>
+          Ek powerful practice: iOS pe VoiceOver on karke phone ka screen off kar do (side button dabao) —
+          VoiceOver kaam karta rehta hai, screen totally black hai. Ab apni app navigate karke dekho: kya aap
+          sirf audio se samajh sakte ho ki aap kahan ho, kya tap kar rahe ho, kya feedback mil raha hai. Ye
+          exactly wo experience hai jo ek blind user roz face karta hai. Agar aap khud confuse ho jaate ho ki
+          "main kis screen pe hoon", ya kaunsa button focus mein hai, samajh lo real users bhi confuse honge.
+        </p>
+      </div>
+
+      <h3>Automated linters — useful, lekin partial coverage</h3>
+      <p>
+        <code>eslint-plugin-react-native-a11y</code> jaisa ek ESLint plugin static analysis karke basic issues
+        catch kar sakta hai — jaise ek <code>TouchableOpacity</code> jispe koi <code>accessibilityLabel</code>
+        nahi hai, ya ek icon-only button jispe koi text alternative nahi hai. Ye CI mein wire karna valuable hai
+        (Chapter 7 ke testing pipeline mein ek extra lint step ki tarah), kyunki ye "obvious misses" ko commit
+        hone se pehle hi pakad leta hai.
+      </p>
+
+      <p>
+        Lekin linters sirf <strong>static, syntactic checks</strong> kar sakte hain — wo ye nahi bata sakte:
+      </p>
+      <ul>
+        <li><strong>Focus order</strong> — kya screen reader logically top-to-bottom, left-to-right navigate kar raha hai, ya kisi absolutely-positioned overlay ki wajah se focus order illogical hai (jump kar raha hai)</li>
+        <li><strong>Redundant ya missing context</strong> — kya ek label sirf "Button" bol raha hai, jo technically present hai (linter pass karega) lekin useless hai user ke liye</li>
+        <li><strong>Custom gesture components</strong> — jaise ek swipe-to-delete row jo visually kaam karti hai lekin screen reader user ke paas koi tareeka hi nahi hai swipe gesture perform karne ka (Advanced Deep-Dive mein detail se)</li>
+        <li><strong>Live announcements</strong> — jab koi async action complete hoti hai (e.g. "Item added to cart"), kya user ko wo pata chalta hai ya nahi bina screen dekhe</li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Practical senior workflow: naya feature ship karne se pehle, kam se kam ek baar poora flow VoiceOver/
+          TalkBack on karke navigate karo end-to-end (signup → checkout jaisa critical path). Isse "accessibility
+          QA" apna khud ka dedicated pass ban jaata hai, na ki visual QA ka side-effect (jo Section 9 mein
+          detail se discuss karenge).
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 4 — Dynamic Font Scaling
+      ========================================================== -->
+      <h2 id="font-scaling">4. Dynamic Font Scaling and Layout Resilience</h2>
+
+      <p>
+        iOS aur Android dono OS-level "text size" setting dete hain (Settings → Display/Accessibility → Text
+        Size), jo low-vision users ke liye critical hai. React Native by default har <code>fontSize</code> ko
+        is OS setting ke hisaab se automatically scale karta hai — <code>allowFontScaling</code> prop default
+        <code>true</code> hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Critical Anti-Pattern — <code>allowFontScaling={'{'}false{'}'}</code></div>
+        <p>
+          Bahut saari teams jab bada font size layout ko "todta" hai (text overflow ho raha hai, cards misaligned
+          dikh rahe hain), quick fix ke roop mein <code>allowFontScaling={'{'}false{'}'}</code> laga dete hain —
+          matlab "chalo text ko fix size pe force kar dete hain, layout waisa hi rahega". Ye ek genuine
+          <strong>accessibility violation</strong> hai, sirf design compromise nahi — aapne effectively wo user
+          jisne apne phone mein bada font isliye set kiya hai kyunki wo chhota text padh nahi paata, uske liye
+          text ko unreadable bana diya. Sahi fix ye hai ki layout ko is tarah design karo ki wo bade font ke
+          saath bhi gracefully reflow ho — text overflow ho, wrap ho, container grow ho — clip ya force-shrink
+          na ho.
+        </p>
+      </div>
+
+      <h3>Layout ko resilient banana — Chapter 3 ke Flexbox principles wapas kaam aa rahe hain</h3>
+      <p>
+        Yaad karo Chapter 3 mein humne dekha tha ki fixed pixel heights waale containers text overflow/clip kar
+        sakte hain jab font scale badhta hai. Solution wahi hai: <strong>fixed heights avoid karo text-containing
+        views pe</strong>, <code>flexGrow</code>/<code>minHeight</code> use karo instead of <code>height</code>,
+        aur <code>numberOfLines</code> ko thoughtfully use karo (truncate karna theek hai kuch jagah, lekin
+        critical info — jaise price, error messages — kabhi truncate mat karo).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/ResilientListItem.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// core components</span>
+
+<span class="tok-com">// Ek list item jo bade font-scale ke saath bhi break nahi hoga</span>
+<span class="tok-kw">function</span> <span class="tok-fn">ResilientListItem</span>({ title, subtitle }: { title: <span class="tok-kw">string</span>; subtitle: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-com">{/* height explicitly set NAHI hai — minHeight use kiya taaki content grow kar sake */}</span>
+    <span class="tok-punc">&lt;</span>View <span class="tok-attr">style</span>={styles.row}<span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* allowFontScaling explicitly true hi hai (default), yahan sirf clarity ke liye likha */}</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.title} <span class="tok-attr">allowFontScaling</span> <span class="tok-com">// OS font scale respect karo — kabhi false mat karo</span>
+      <span class="tok-punc">&gt;</span>
+        {title}
+      <span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* subtitle truncate ho sakta hai — non-critical info, lekin numberOfLines flexible hai */}</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.subtitle} <span class="tok-attr">numberOfLines</span>={<span class="tok-num">2</span>} <span class="tok-com">// 2 lines allow karo, 1 se bada font ke saath text turant cut ho jaata</span>
+      <span class="tok-punc">&gt;</span>
+        {subtitle}
+      <span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span>View<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  row: {
+    <span class="tok-attr">minHeight</span>: <span class="tok-num">64</span>,          <span class="tok-com">// GUIDELINE height, hard limit nahi — content isse bada ho sakta hai</span>
+    <span class="tok-attr">paddingVertical</span>: <span class="tok-num">10</span>,    <span class="tok-com">// breathing room jo bade text ke saath bhi maintain rahega</span>
+    <span class="tok-attr">justifyContent</span>: <span class="tok-str">'center'</span>, <span class="tok-com">// content vertically center, chahe row grow ho ya na ho</span>
+    <span class="tok-attr">gap</span>: <span class="tok-num">4</span>,                <span class="tok-com">// title-subtitle ke beech consistent spacing</span>
+  },
+  title: { <span class="tok-attr">fontSize</span>: <span class="tok-num">16</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'600'</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#e8e4dd'</span> }, <span class="tok-com">// fixed pixel fontSize theek hai — RN isse khud scale karega</span>
+  subtitle: { <span class="tok-attr">fontSize</span>: <span class="tok-num">13</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#b3aca1'</span> }, <span class="tok-com">// secondary text color</span>
+});</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Test karne ka fastest tareeka: iOS Settings → Accessibility → Display &amp; Text Size → Larger Text →
+          slider ko poora right maximum pe le jao ("Larger Accessibility Sizes" range), phir apni app kholo. Agar
+          kahin text clip ho raha hai, do lines ek dusre pe overlap ho rahi hain, ya buttons ka text cut ho raha
+          hai — ye pakadne ka sabse fast tareeka yahi hai, code review se pehle hi.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 5 — Color Contrast
+      ========================================================== -->
+      <h2 id="color-contrast">5. Color Contrast and Visual Accessibility</h2>
+
+      <p>
+        <strong>WCAG (Web Content Accessibility Guidelines)</strong> ek contrast ratio standard define karta hai
+        jo mobile apps pe bhi apply hota hai as best practice: normal text ke liye kam se kam
+        <strong>4.5:1</strong> contrast ratio (text color vs background color), aur large text (18pt+ ya bold
+        14pt+) ke liye <strong>3:1</strong>. Ye ek poori spec hai (AA vs AAA levels), lekin senior level pe
+        itna kaafi hai: agar aapka text apne background ke against low-contrast dikh raha hai (jaise light gray
+        text light background pe), low-vision users ke liye ye padhna mushkil ya impossible ho jaata hai.
+      </p>
+
+      <h3>Sirf color pe relying karna — colorblind users ke liye fails</h3>
+      <p>
+        Ek bahut common mistake: status ko sirf color se convey karna — jaise ek "success" row green text mein
+        aur "error" row red text mein, without koi aur visual indicator (icon, label, shape). Red-green color
+        blindness (deuteranopia/protanopia) sabse common form hai — aisi apps mein ye users literally difference
+        nahi dekh sakte red aur green ke beech.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/StatusRow.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// core components</span>
+
+<span class="tok-kw">type</span> Status = <span class="tok-str">'success'</span> | <span class="tok-str">'error'</span>; <span class="tok-com">// only two possible statuses in this example</span>
+
+<span class="tok-com">// ❌ GALAT — sirf color se status convey ho raha hai, colorblind user ko difference nahi dikhega</span>
+<span class="tok-kw">function</span> <span class="tok-fn">BadStatusRow</span>({ status, message }: { status: Status; message: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={{ <span class="tok-attr">color</span>: status === <span class="tok-str">'success'</span> ? <span class="tok-str">'#7fb069'</span> : <span class="tok-str">'#d9756c'</span> }}<span class="tok-punc">&gt;</span>
+      {message}
+    <span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-com">// ✅ SAHI — color + icon + accessibilityLabel teeno mil ke redundant signal dete hain</span>
+<span class="tok-kw">function</span> <span class="tok-fn">GoodStatusRow</span>({ status, message }: { status: Status; message: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">const</span> isSuccess = status === <span class="tok-str">'success'</span>;                    <span class="tok-com">// derive boolean once for readability</span>
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>View
+      <span class="tok-attr">style</span>={styles.row}
+      <span class="tok-attr">accessibilityRole</span>=<span class="tok-str">"text"</span>                                <span class="tok-com">// screen reader ko batao ye ek informational text block hai</span>
+      <span class="tok-attr">accessibilityLabel</span>={<span class="tok-str">`${isSuccess ? 'Success' : 'Error'}: ${message}`</span>} <span class="tok-com">// status word explicitly spoken, na ki sirf color implied</span>
+    <span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* Icon shape khud ek non-color signal hai — checkmark vs cross, colorblind users bhi shape se differentiate kar sakte hain */}</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.icon}<span class="tok-punc">&gt;</span>{isSuccess ? <span class="tok-str">'✓'</span> : <span class="tok-str">'✕'</span>}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* Color abhi bhi use ho raha hai — sighted users ke liye quick visual scan ke liye, lekin ab ye SOLE indicator nahi hai */}</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={[styles.message, { <span class="tok-attr">color</span>: isSuccess ? <span class="tok-str">'#7fb069'</span> : <span class="tok-str">'#d9756c'</span> }]}<span class="tok-punc">&gt;</span>
+        {message}
+      <span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span>View<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  row: { <span class="tok-attr">flexDirection</span>: <span class="tok-str">'row'</span>, <span class="tok-attr">alignItems</span>: <span class="tok-str">'center'</span>, <span class="tok-attr">gap</span>: <span class="tok-num">6</span> }, <span class="tok-com">// icon aur text ek row mein side by side</span>
+  icon: { <span class="tok-attr">fontSize</span>: <span class="tok-num">14</span>, <span class="tok-attr">fontWeight</span>: <span class="tok-str">'700'</span> },                    <span class="tok-com">// icon sizing</span>
+  message: { <span class="tok-attr">fontSize</span>: <span class="tok-num">14</span> },                                     <span class="tok-com">// message text sizing</span>
+});</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip — contrast testing tools</div>
+        <p>
+          Design phase mein hi contrast check karo — Figma plugins jaise "Stark" ya "Able" directly design file
+          ke andar contrast ratio calculate karke dikhate hain, aur automatically flag karte hain agar koi
+          text/background combo WCAG AA fail kar raha hai. Ye check karna developer ke haath mein aane se pehle,
+          design stage pe hi ho jaana chahiye — retrofit karna (jaisa humne dark mode aur accessibility dono mein
+          dekha) hamesha zyada expensive hota hai.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 6 — i18n Fundamentals
+      ========================================================== -->
+      <h2 id="i18n-fundamentals">6. Internationalization (i18n) Fundamentals</h2>
+
+      <p>
+        i18n (internationalization) ka core architecture principle simple hai: <strong>koi bhi user-facing
+        string kabhi directly component mein hardcode nahi honi chahiye</strong>. Har string ek translation file
+        (ya "resource bundle") se aani chahiye, key ke through referenced. Isse naya language add karna sirf ek
+        naya translation file add karne jaisa ho jaata hai — koi component code touch nahi karna padta.
+      </p>
+
+      <p>
+        Standard approach React Native/Expo ecosystem mein <strong><code>i18next</code></strong> plus
+        <strong><code>react-i18next</code></strong> hai (web se hi popular hai, RN mein bhi first-class support
+        hai), combined with <code>expo-localization</code> jo device ka current locale/language detect karta hai.
+      </p>
+
+      <h3>Translation file structure</h3>
+      <div class="code-block">
+        <div class="code-title"><span>project folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>src/
+  i18n/                          <span class="tok-com">// saara i18n-related code ek jagah — easy to find aur maintain</span>
+    index.ts                     <span class="tok-com">// i18next setup/config — app entry point pe ek baar import hota hai</span>
+    locales/                     <span class="tok-com">// har language ki apni JSON file, flat aur predictable structure</span>
+      en.json                    <span class="tok-com">// English — hamesha "source of truth"/fallback language hoti hai</span>
+      hi.json                    <span class="tok-com">// Hindi translations — same keys as en.json, translated values</span>
+      ar.json                    <span class="tok-com">// Arabic translations — RTL language, Section 7 mein iska layout impact dekhenge</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>src/i18n/locales/en.json</span><button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-com">// "common" namespace — buttons/labels jo poori app mein reuse hote hain</span>
+  <span class="tok-str">"common"</span>: {
+    <span class="tok-str">"save"</span>: <span class="tok-str">"Save"</span>,                          <span class="tok-com">// generic save button label</span>
+    <span class="tok-str">"cancel"</span>: <span class="tok-str">"Cancel"</span>,                      <span class="tok-com">// generic cancel button label</span>
+    <span class="tok-str">"loading"</span>: <span class="tok-str">"Loading..."</span>                  <span class="tok-com">// generic loading indicator text</span>
+  },
+  <span class="tok-com">// "cart" namespace — screen-specific strings, grouped for clarity</span>
+  <span class="tok-str">"cart"</span>: {
+    <span class="tok-str">"title"</span>: <span class="tok-str">"Your Cart"</span>,                    <span class="tok-com">// cart screen header</span>
+    <span class="tok-str">"empty"</span>: <span class="tok-str">"Your cart is empty"</span>,          <span class="tok-com">// empty state message</span>
+    <span class="tok-str">"itemCount_one"</span>: <span class="tok-str">"{{count}} item"</span>,      <span class="tok-com">// i18next pluralization convention — singular form (count === 1)</span>
+    <span class="tok-str">"itemCount_other"</span>: <span class="tok-str">"{{count}} items"</span>     <span class="tok-com">// plural form (count !== 1) — Section 8 mein detail se explain karenge</span>
+  }
+}</code></pre>
+      </div>
+
+      <p>
+        (Note: real JSON comments support nahi karta — upar wale JSON block mein teaching-purpose ke liye comments
+        dikhaye gaye hain samajhne ke liye, actual <code>en.json</code> file mein ye comments nahi honge, sirf
+        valid JSON hoga.)
+      </p>
+
+      <h3>i18next setup</h3>
+      <div class="code-block">
+        <div class="code-title"><span>src/i18n/index.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> i18n <span class="tok-kw">from</span> <span class="tok-str">'i18next'</span>;                                    <span class="tok-com">// core i18next library</span>
+<span class="tok-kw">import</span> { initReactI18next } <span class="tok-kw">from</span> <span class="tok-str">'react-i18next'</span>;                <span class="tok-com">// React bindings — hooks jaise useTranslation</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Localization <span class="tok-kw">from</span> <span class="tok-str">'expo-localization'</span>;          <span class="tok-com">// device locale detect karne ke liye</span>
+
+<span class="tok-kw">import</span> en <span class="tok-kw">from</span> <span class="tok-str">'./locales/en.json'</span>;                          <span class="tok-com">// English translations bundle</span>
+<span class="tok-kw">import</span> hi <span class="tok-kw">from</span> <span class="tok-str">'./locales/hi.json'</span>;                          <span class="tok-com">// Hindi translations bundle</span>
+<span class="tok-kw">import</span> ar <span class="tok-kw">from</span> <span class="tok-str">'./locales/ar.json'</span>;                          <span class="tok-com">// Arabic translations bundle</span>
+
+<span class="tok-com">// Device ki current locales list — first entry usually user ka preferred language hai</span>
+<span class="tok-kw">const</span> deviceLocales = Localization.<span class="tok-fn">getLocales</span>();               <span class="tok-com">// e.g. [{ languageCode: 'hi', ... }]</span>
+<span class="tok-kw">const</span> deviceLanguage = deviceLocales[<span class="tok-num">0</span>]?.languageCode ?? <span class="tok-str">'en'</span>; <span class="tok-com">// fallback to English agar detect na ho paaye</span>
+
+i18n
+  .<span class="tok-fn">use</span>(initReactI18next)                                    <span class="tok-com">// i18next ko React ke saath wire karo (hooks enable karta hai)</span>
+  .<span class="tok-fn">init</span>({
+    <span class="tok-attr">resources</span>: {                                        <span class="tok-com">// saare available languages ka translation bundle</span>
+      <span class="tok-attr">en</span>: { <span class="tok-attr">translation</span>: en },                             <span class="tok-com">// 'translation' default namespace hai i18next ka</span>
+      <span class="tok-attr">hi</span>: { <span class="tok-attr">translation</span>: hi },
+      <span class="tok-attr">ar</span>: { <span class="tok-attr">translation</span>: ar },
+    },
+    <span class="tok-attr">lng</span>: deviceLanguage,                                 <span class="tok-com">// initial language — device ki setting se auto-detect</span>
+    <span class="tok-attr">fallbackLng</span>: <span class="tok-str">'en'</span>,                                <span class="tok-com">// agar koi key kisi language mein missing ho, English use karo</span>
+    <span class="tok-attr">interpolation</span>: {
+      <span class="tok-attr">escapeValue</span>: <span class="tok-kw">false</span>,                              <span class="tok-com">// React already XSS-safe hai (JSX auto-escapes), i18next ki extra escaping ki zaroorat nahi</span>
+    },
+    <span class="tok-attr">compatibilityJSON</span>: <span class="tok-str">'v4'</span>,                            <span class="tok-com">// RN environment ke liye recommended JSON compatibility mode</span>
+  });
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> i18n;                                             <span class="tok-com">// app entry point (App.tsx/_layout.tsx) mein ek baar import karo taaki init chale</span></code></pre>
+      </div>
+
+      <h3><code>useTranslation</code> hook ka usage</h3>
+      <div class="code-block">
+        <div class="code-title"><span>screens/CartScreen.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;                     <span class="tok-com">// core components</span>
+<span class="tok-kw">import</span> { useTranslation } <span class="tok-kw">from</span> <span class="tok-str">'react-i18next'</span>;                <span class="tok-com">// hook jo current language ke translations deta hai</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CartScreen</span>({ itemCount }: { itemCount: <span class="tok-kw">number</span> }) {
+  <span class="tok-kw">const</span> { t } = <span class="tok-fn">useTranslation</span>();                            <span class="tok-com">// 't' function — key deke translated string nikalta hai</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>View<span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* Dot notation se nested JSON key access ho raha hai — "cart.title" */}</span>
+      <span class="tok-punc">&lt;</span>Text<span class="tok-punc">&gt;</span>{t(<span class="tok-str">'cart.title'</span>)}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+
+      {itemCount === <span class="tok-num">0</span> ? (
+        <span class="tok-com">{/* Empty state — simple key lookup, no interpolation needed */}</span>
+        <span class="tok-punc">&lt;</span>Text<span class="tok-punc">&gt;</span>{t(<span class="tok-str">'cart.empty'</span>)}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      ) : (
+        <span class="tok-com">{/* i18next automatically 'itemCount_one' vs 'itemCount_other' choose karega count ke basis pe */}</span>
+        <span class="tok-punc">&lt;</span>Text<span class="tok-punc">&gt;</span>{t(<span class="tok-str">'cart.itemCount'</span>, { <span class="tok-attr">count</span>: itemCount })}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      )}
+    <span class="tok-punc">&lt;/</span>View<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> CartScreen;                                          <span class="tok-com">// export the screen component</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Naming convention <code>itemCount_one</code>/<code>itemCount_other</code> koi arbitrary choice nahi
+          hai — ye i18next ka <strong>plural rules convention</strong> hai jo CLDR (Unicode Common Locale Data
+          Repository) standard follow karta hai. Har language apne plural categories khud define karti hai
+          (English mein sirf 2: one/other; Arabic mein 6: zero/one/two/few/many/other), aur i18next automatically
+          sahi form select karta hai based on the active language's rules — hum is detail ko Section 8 mein
+          expand karenge.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 7 — RTL Support
+      ========================================================== -->
+      <h2 id="rtl-support">7. RTL (Right-to-Left) Layout Support</h2>
+
+      <p>
+        Arabic, Hebrew, Urdu jaisi languages RTL (right-to-left) reading direction follow karti hain — matlab
+        poora UI mirror hona chahiye: navigation back-arrow left ki jagah right pe, text right-aligned, list items
+        right se start ho. React Native mein iske liye <strong>built-in support</strong> hai — lekin sirf tab jab
+        aapne styles correctly likhe hon.
+      </p>
+
+      <h3><code>I18nManager</code> aur automatic mirroring</h3>
+      <div class="code-block">
+        <div class="code-title"><span>src/i18n/rtl.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { I18nManager } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;    <span class="tok-com">// RN ka RTL management API</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Updates <span class="tok-kw">from</span> <span class="tok-str">'expo-updates'</span>;      <span class="tok-com">// RTL switch ke baad app reload karne ke liye</span>
+
+<span class="tok-com">// Ye function tab call hoga jab user language switch karke RTL language (jaise Arabic) select kare</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">applyRTLIfNeeded</span>(languageCode: <span class="tok-kw">string</span>) {
+  <span class="tok-kw">const</span> rtlLanguages = [<span class="tok-str">'ar'</span>, <span class="tok-str">'he'</span>, <span class="tok-str">'ur'</span>];             <span class="tok-com">// known RTL language codes — Arabic, Hebrew, Urdu</span>
+  <span class="tok-kw">const</span> shouldBeRTL = rtlLanguages.<span class="tok-fn">includes</span>(languageCode); <span class="tok-com">// determine target direction</span>
+
+  <span class="tok-kw">if</span> (I18nManager.isRTL !== shouldBeRTL) {                <span class="tok-com">// sirf tab kuch karo jab actual change ho raha ho</span>
+    I18nManager.<span class="tok-fn">allowRTL</span>(shouldBeRTL);                     <span class="tok-com">// RTL support ko app-level pe enable/disable karo</span>
+    I18nManager.<span class="tok-fn">forceRTL</span>(shouldBeRTL);                     <span class="tok-com">// actual layout direction ko force flip karo</span>
+
+    <span class="tok-com">// CRITICAL: I18nManager.forceRTL turant effect nahi karta — native layout engine ko
+    // fresh initialize hona padta hai, isliye app reload zaroori hai</span>
+    <span class="tok-kw">await</span> Updates.<span class="tok-fn">reloadAsync</span>();                          <span class="tok-com">// poori app ko reload karo taaki new direction se render ho</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — RTL switch ke liye app restart chahiye</div>
+        <p>
+          <code>I18nManager.forceRTL()</code> call karne ke turant baad layout apne aap flip nahi hota — RN ki
+          native layout engine (Yoga) sirf app launch ke time pe RTL/LTR direction decide karti hai. Isliye har
+          production app RTL toggle hone pe user ko ek reload/restart karwati hai (jaisa upar <code>expo-updates</code>
+          ke <code>reloadAsync()</code> se dikhaya). Ye ek one-time UX hiccup hai jo language-switch flow mein
+          account karna zaroori hai — agar aap ye miss karte ho, user language switch karega lekin layout wahi
+          LTR rahega jab tak wo manually app band-khol na kare.
+        </p>
+      </div>
+
+      <h3>Logical properties: <code>start</code>/<code>end</code> vs hardcoded <code>left</code>/<code>right</code></h3>
+      <p>
+        Jab RTL active hota hai, Flexbox automatically <code>flexDirection: 'row'</code> ko mirror kar deta hai
+        (row ka start ab right side hai, left nahi) — <strong>lekin sirf agar aap logical properties use kar rahe
+        ho</strong>. Agar aapne kahin explicitly <code>marginLeft</code>/<code>paddingRight</code>/
+        <code>left: 10</code> hardcode kiya hai, RN ko pata nahi chalega ki ye "start" ke liye hai ya literally
+        "left" ke liye — wo hardcoded value ko as-is treat karega, aur RTL mein layout completely broken dikhega
+        (spacing galat side pe chali jaayegi).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/RTLSafeRow.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet, Image } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// core components</span>
+
+<span class="tok-com">// Ek notification row — icon left mein (LTR) / right mein (RTL), text uske baad</span>
+<span class="tok-kw">function</span> <span class="tok-fn">RTLSafeRow</span>({ iconUrl, message }: { iconUrl: <span class="tok-kw">string</span>; message: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">return</span> (
+    <span class="tok-com">{/* flexDirection: 'row' RTL mein RN automatically mirror karega — icon apne aap right pe chala jaayega */}</span>
+    <span class="tok-punc">&lt;</span>View <span class="tok-attr">style</span>={styles.row}<span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span>Image <span class="tok-attr">source</span>={{ <span class="tok-attr">uri</span>: iconUrl }} <span class="tok-attr">style</span>={styles.icon} <span class="tok-punc">/&gt;</span>
+      <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.message}<span class="tok-punc">&gt;</span>{message}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span>View<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  row: { <span class="tok-attr">flexDirection</span>: <span class="tok-str">'row'</span>, <span class="tok-attr">alignItems</span>: <span class="tok-str">'center'</span>, <span class="tok-attr">padding</span>: <span class="tok-num">12</span> }, <span class="tok-com">// RN RTL mode mein isse automatically mirror karega</span>
+  icon: {
+    <span class="tok-attr">width</span>: <span class="tok-num">32</span>, <span class="tok-attr">height</span>: <span class="tok-num">32</span>, <span class="tok-attr">borderRadius</span>: <span class="tok-num">16</span>,
+    <span class="tok-attr">marginEnd</span>: <span class="tok-num">10</span>,        <span class="tok-com">// ✅ 'marginEnd' — LTR mein ye right margin hai, RTL mein ye automatically left margin ban jaata hai</span>
+    <span class="tok-com">// marginRight: 10,           // ❌ agar ye likha hota, RTL mein bhi hamesha "right" hi rehta — galat side</span>
+  },
+  message: { <span class="tok-attr">flex</span>: <span class="tok-num">1</span>, <span class="tok-attr">color</span>: <span class="tok-str">'#e8e4dd'</span>, <span class="tok-attr">textAlign</span>: <span class="tok-str">'left'</span> }, <span class="tok-com">// note: better hai 'start' bhi consider karna kuch cases mein, neeche dekho</span>
+});</code></pre>
+      </div>
+
+      <table class="table">
+        <thead><tr><th>Hardcoded (avoid)</th><th>Logical equivalent (use)</th></tr></thead>
+        <tbody>
+          <tr><td><code>marginLeft</code></td><td><code>marginStart</code></td></tr>
+          <tr><td><code>marginRight</code></td><td><code>marginEnd</code></td></tr>
+          <tr><td><code>paddingLeft</code></td><td><code>paddingStart</code></td></tr>
+          <tr><td><code>paddingRight</code></td><td><code>paddingEnd</code></td></tr>
+          <tr><td><code>left: n</code> (position)</td><td><code>start: n</code></td></tr>
+          <tr><td><code>textAlign: 'left'</code></td><td><code>textAlign: 'start'</code> (auto-flips per direction)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Gotcha</div>
+        <p>
+          Ek bahut common real-world mistake hai: team apni app poore development cycle mein sirf LTR (English)
+          mein test karti hai, sab jagah <code>marginLeft</code>/<code>marginRight</code> hardcode karke likhti
+          hai kyunki "abhi toh koi RTL language support nahi kar rahe" — aur phir jab 6 months baad Arabic market
+          expand hone ka decision hota hai, poori codebase mein ye hardcoded properties dhoondh dhoondh ke logical
+          properties se replace karni padti hain. Agar aap already jaante ho ki future mein RTL language support
+          karna pad sakta hai (Middle East market koi bhi consumer app ke liye realistic hai), <strong>logical
+          properties day-1 se use karna</strong> ek chhoti si habit hai jo bahut bada future refactor bacha deti
+          hai.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 8 — Pluralization and Locale-Aware Formatting
+      ========================================================== -->
+      <h2 id="pluralization-formatting">8. Pluralization and Locale-Aware Formatting</h2>
+
+      <h3>Pluralization: "1 item" vs "2 items" is not just an English swap</h3>
+      <p>
+        English mein plural rule simple hai: 1 = singular, baaki sab = plural. Lekin ye universal nahi hai. Kuch
+        examples:
+      </p>
+      <ul>
+        <li><strong>Russian</strong> — teen plural forms hain (one, few, many) based on complex number-ending rules</li>
+        <li><strong>Arabic</strong> — chhe forms hain: zero, one, two, few, many, other — each apne specific number ranges ke liye</li>
+        <li><strong>Japanese/Chinese</strong> — koi grammatical plural nahi hai — same word chahe count kuch bhi ho</li>
+      </ul>
+      <p>
+        Agar aap sirf string concatenation karke plurals handle karte ho (jaise <code>count + " item" + (count !== 1 ? "s" : "")</code>),
+        ye sirf English ke liye kaam karta hai — kisi bhi doosri language mein ye completely galat output dega.
+        Isiliye i18next jaisi library <code>_one</code>/<code>_other</code> (aur zyada complex languages ke liye
+        <code>_zero</code>/<code>_two</code>/<code>_few</code>/<code>_many</code>) suffix convention follow karti
+        hai — ye CLDR plural rules ke against automatically resolve hota hai based on active language, developer
+        ko manually if/else likhne ki zaroorat nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>src/i18n/locales/ar.json (partial — Arabic ke saare plural forms)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-str">"cart"</span>: {
+    <span class="tok-str">"itemCount_zero"</span>: <span class="tok-str">"لا توجد عناصر"</span>,     <span class="tok-com">// count === 0 ke liye</span>
+    <span class="tok-str">"itemCount_one"</span>: <span class="tok-str">"عنصر واحد"</span>,        <span class="tok-com">// count === 1 ke liye</span>
+    <span class="tok-str">"itemCount_two"</span>: <span class="tok-str">"عنصران"</span>,           <span class="tok-com">// count === 2 ke liye — Arabic mein "dual" ek alag grammatical form hai</span>
+    <span class="tok-str">"itemCount_few"</span>: <span class="tok-str">"{{count}} عناصر"</span>,  <span class="tok-com">// 3-10 range (approx) ke liye — CLDR rule Arabic ke liye ye range define karta hai</span>
+    <span class="tok-str">"itemCount_many"</span>: <span class="tok-str">"{{count}} عنصرًا"</span>, <span class="tok-com">// 11-99 range (approx) ke liye</span>
+    <span class="tok-str">"itemCount_other"</span>: <span class="tok-str">"{{count}} عنصر"</span>   <span class="tok-com">// baaki sab cases ke liye — i18next fallback</span>
+  }
+}</code></pre>
+      </div>
+
+      <p>
+        Developer ke code mein kuch change nahi karna padta — wahi <code>t('cart.itemCount', {'{'} count {'}'})</code>
+        call, i18next khud CLDR rules use karke sahi key resolve karta hai based on the active language. Ye poore
+        i18n architecture ka core value hai: <strong>business logic language-agnostic rehta hai</strong>, saara
+        language-specific complexity translation layer mein isolated hai.
+      </p>
+
+      <h3>Locale-aware date, number aur currency formatting</h3>
+      <p>
+        Sirf text translate karna kaafi nahi hai — numbers, dates, aur currency bhi region ke hisaab se differently
+        format hote hain. Example: <code>1,234.56</code> (US format) vs <code>1.234,56</code> (many European
+        countries) — same number, different separator convention. JavaScript ka built-in
+        <strong><code>Intl</code></strong> API (Hermes engine mein RN pe supported hai) ye handle karta hai bina
+        kisi extra library ke.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>utils/formatters.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ----------------------------------------------------------------
+// formatCurrency — locale ke hisaab se currency format karta hai
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">formatCurrency</span>(amount: <span class="tok-kw">number</span>, locale: <span class="tok-kw">string</span>, currency: <span class="tok-kw">string</span>) {
+  <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Intl</span>.<span class="tok-fn">NumberFormat</span>(locale, {         <span class="tok-com">// locale-specific formatter banao, e.g. 'hi-IN', 'ar-AE', 'en-US'</span>
+    <span class="tok-attr">style</span>: <span class="tok-str">'currency'</span>,                       <span class="tok-com">// currency mode — symbol/grouping/decimal rules apply honge</span>
+    <span class="tok-attr">currency</span>,                                <span class="tok-com">// ISO currency code — e.g. 'INR', 'USD', 'AED'</span>
+  }).<span class="tok-fn">format</span>(amount);                          <span class="tok-com">// actual formatted string return karo</span>
+}
+
+<span class="tok-com">// ----------------------------------------------------------------
+// formatDate — locale ke hisaab se date format karta hai
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">formatDate</span>(date: Date, locale: <span class="tok-kw">string</span>) {
+  <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Intl</span>.<span class="tok-fn">DateTimeFormat</span>(locale, {       <span class="tok-com">// locale-specific date formatter</span>
+    <span class="tok-attr">year</span>: <span class="tok-str">'numeric'</span>,                         <span class="tok-com">// e.g. 2026</span>
+    <span class="tok-attr">month</span>: <span class="tok-str">'long'</span>,                           <span class="tok-com">// e.g. "August" (en) ya "أغسطس" (ar)</span>
+    <span class="tok-attr">day</span>: <span class="tok-str">'numeric'</span>,                          <span class="tok-com">// e.g. 9</span>
+  }).<span class="tok-fn">format</span>(date);                            <span class="tok-com">// automatically sahi order/separators use karega (DD/MM vs MM/DD, etc.)</span>
+}
+
+<span class="tok-com">// Example usage:
+// formatCurrency(1299, 'en-IN', 'INR')  ->  "₹1,299.00"
+// formatCurrency(1299, 'ar-AE', 'AED')  ->  "١٬٢٩٩٫٠٠ د.إ.‏" (Arabic numerals + symbol placement)
+// formatDate(new Date(), 'en-US')       ->  "August 9, 2026"
+// formatDate(new Date(), 'hi-IN')       ->  "9 अगस्त 2026"</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Extra Context</div>
+        <p>
+          <code>Intl</code> API RN mein Hermes engine ke through natively supported hai (RN 0.66+ recent versions
+          mein full locale data bundled hai, purane versions mein kabhi kabhi polyfill — <code>@formatjs/intl-*</code>
+          — chahiye padta tha specific locale data ke liye). Agar aap complex date manipulation bhi chahte ho
+          (not just formatting — timezone math, relative time jaise "2 din pehle"), <code>date-fns</code> ya
+          <code>dayjs</code> apne locale plugins ke saath is <code>Intl</code> foundation ke upar additional
+          convenience layer provide karte hain.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 9 — Real-World Gotchas
+      ========================================================== -->
+      <h2 id="real-world-gotchas">9. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #1 — String concatenation breaks word order</div>
+        <p>
+          Ek common anti-pattern: sentence ko multiple translated pieces jodke banana — jaise
+          <code>t('userLikedYour') + ' ' + t('post')</code> to build "User liked your post". Ye English mein
+          kaam kar jaata hai, lekin languages jinka word order alag hai (verb-object order different hai), ye
+          grammatically broken sentence generate karega. Sahi approach: <strong>poora sentence ek hi translation
+          key mein rakho</strong> with interpolation — <code>t('userLikedYourPost', {'{'} name: 'Sharad' {'}'})</code>
+          jahan translation file mein poora <code>"{'{'}{'{'}name{'}'}{'}'} liked your post"</code> jaisa complete
+          sentence template define ho. Isse translator ko poora context milta hai aur word order sahi rehta hai
+          har language mein.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #2 — Text embedded in images/icons</div>
+        <p>
+          Ek bahut common oversight: marketing team se reused images/banners (jaise ek promotional banner jispe
+          "50% OFF" text image ke andar hi baked-in hai, separate <code>Text</code> component nahi hai) app mein
+          directly use ho jaate hain. Ye text translate <strong>nahi</strong> ho sakta — koi bhi translation key
+          isse fix nahi karegi kyunki text pixel data hai, string nahi. Jab app kisi doosre market mein launch ho,
+          ye banners English mein hi reh jaate hain jabki poori app translated hai — ek jarring inconsistency.
+          Solution: banners/promotional images ko hamesha layered banao (background image + overlay
+          <code>Text</code> component separately), taaki text translatable rahe.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Gotcha #3 — Accessibility regressions invisible in visual QA</div>
+        <p>
+          Ye sabse dangerous gotcha hai kyunki ye <strong>silently ship</strong> ho jaata hai: ek screen visually
+          perfectly fine dikhti hai (design QA pass ho jaata hai, screenshot tests pass ho jaate hain), lekin
+          screen reader ke liye completely broken hai — jaise ek naya icon button add hua bina
+          <code>accessibilityLabel</code> ke, ya ek custom modal jo focus trap nahi kar raha (screen reader user
+          modal ke "peeche" ke content ko bhi focus kar sakta hai jabki modal open hai). Chuki normal visual QA
+          isse kabhi pakad hi nahi sakta (sab kuch visually sahi hai), accessibility ko apna khud ka
+          <strong>dedicated QA pass</strong> chahiye — jaisa Section 3 mein discuss kiya, screen reader on karke
+          manually navigate karna, na ki sirf visual checklist tick karna.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha #4 — RTL testing as an afterthought</div>
+        <p>
+          Bahut si teams RTL support "add" toh kar deti hain (i18n library setup, translation files) lekin kabhi
+          actually Arabic/Hebrew locale set karke app test nahi karti until ek real user production mein broken
+          UI report karta hai — icons galat side pe, text overlapping, swipe gestures ulti direction mein kaam
+          kar rahe. RTL ek genuinely different layout mode hai, sirf "translation ka extension" nahi — isliye
+          isko apna khud ka QA checklist item banao: har major release se pehle, app ko <code>I18nManager.forceRTL(true)</code>
+          karke ek baar poora navigate karo, chahe aapki primary market abhi RTL na ho.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 10 — Advanced Deep-Dive
+      ========================================================== -->
+      <h2 id="advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <h3>10.1 — <code>AccessibilityInfo</code>: detecting a live screen reader and announcing dynamically</h3>
+      <p>
+        <code>AccessibilityInfo</code> API se aap runtime pe pata laga sakte ho ki screen reader currently
+        <strong>active</strong> hai ya nahi, aur us basis pe behavior adapt kar sakte ho — jaise ek animation
+        skip karna (kyunki screen reader users ke liye visual animation irrelevant hai aur unnecessary delay
+        create karti hai), ya ek custom announcement trigger karna jab koi async action complete ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/useScreenReaderStatus.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-kw">useEffect</span>, <span class="tok-kw">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;         <span class="tok-com">// React hooks</span>
+<span class="tok-kw">import</span> { AccessibilityInfo } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;         <span class="tok-com">// screen reader detection API</span>
+
+<span class="tok-com">// Hook jo current screen-reader status track karta hai reactively</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useScreenReaderStatus</span>() {
+  <span class="tok-kw">const</span> [isScreenReaderEnabled, setIsScreenReaderEnabled] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// initial default false</span>
+
+  <span class="tok-fn">useEffect</span>(() =&gt; {
+    <span class="tok-com">// Initial check — app load hote hi current status query karo</span>
+    AccessibilityInfo.<span class="tok-fn">isScreenReaderEnabled</span>().<span class="tok-fn">then</span>(setIsScreenReaderEnabled); <span class="tok-com">// Promise resolve hone pe state update</span>
+
+    <span class="tok-com">// Listener register karo — user runtime pe VoiceOver/TalkBack on/off kar sakta hai app khuli hone ke dauran bhi</span>
+    <span class="tok-kw">const</span> subscription = AccessibilityInfo.<span class="tok-fn">addEventListener</span>(
+      <span class="tok-str">'screenReaderChanged'</span>,                       <span class="tok-com">// event name jab screen reader status change ho</span>
+      setIsScreenReaderEnabled                             <span class="tok-com">// callback — naya boolean value directly state mein set karo</span>
+    );
+
+    <span class="tok-kw">return</span> () =&gt; subscription.<span class="tok-fn">remove</span>();                  <span class="tok-com">// cleanup — unmount pe listener hatao, memory leak avoid</span>
+  }, []);                                                    <span class="tok-com">// empty deps — sirf mount pe ek baar setup</span>
+
+  <span class="tok-kw">return</span> isScreenReaderEnabled;                            <span class="tok-com">// component isse use karke behavior adapt kar sakta hai</span>
+}
+
+<span class="tok-com">// ----------------------------------------------------------------
+// Custom live announcement — async action complete hone pe screen reader
+// user ko batana, bina unke current focus ko disturb kiye
+// ----------------------------------------------------------------</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">announceToScreenReader</span>(message: <span class="tok-kw">string</span>) {
+  AccessibilityInfo.<span class="tok-fn">announceForAccessibility</span>(message);      <span class="tok-com">// VoiceOver/TalkBack turant ye message bolega, jahan bhi focus ho</span>
+}
+
+<span class="tok-com">// Example usage — cart mein item add hone ke baad:
+// await addItemToCart(product);
+// announceToScreenReader(`${product.name} added to cart`);
+// Isse bina screen dekhe bhi user ko pata chal jaata hai action successful raha,
+// kyunki visually cart badge update hona sighted user ke liye kaafi hai, lekin
+// screen reader user ke liye ye silent, invisible change hai jab tak explicitly announce na ho</span></code></pre>
+      </div>
+
+      <h3>10.2 — Custom gesture-based components aur accessibility actions</h3>
+      <p>
+        Chapter 5 mein humne Gesture Handler se swipeable/draggable components banaye the — jaise ek
+        swipe-to-delete list row. Ye gestures visually intuitive hain sighted users ke liye, lekin ek screen
+        reader user swipe-to-delete gesture perform hi <strong>nahi kar sakta</strong> — jab VoiceOver/TalkBack
+        active hai, unke swipe gestures screen reader navigation ke liye reserved ho jaate hain (element se
+        element move karne ke liye), aapke custom app-level swipe gesture ke liye nahi.
+      </p>
+      <p>
+        Solution: <code>accessibilityActions</code> prop use karke explicit, discoverable actions expose karo jo
+        screen reader menu ke through trigger ho sakein (VoiceOver mein swipe-up/down se "actions rotor" khulta
+        hai jahan ye custom actions list hoti hain).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/AccessibleSwipeableRow.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;                <span class="tok-com">// core components</span>
+<span class="tok-kw">import</span> { Gesture, GestureDetector } <span class="tok-kw">from</span> <span class="tok-str">'react-native-gesture-handler'</span>; <span class="tok-com">// Chapter 5 se gesture system</span>
+<span class="tok-kw">import</span> <span class="tok-fn">Animated</span>, { useSharedValue, useAnimatedStyle } <span class="tok-kw">from</span> <span class="tok-str">'react-native-reanimated'</span>; <span class="tok-com">// worklet-driven animation</span>
+
+<span class="tok-kw">type</span> RowProps = { <span class="tok-attr">label</span>: <span class="tok-kw">string</span>; <span class="tok-attr">onDelete</span>: () =&gt; <span class="tok-kw">void</span> }; <span class="tok-com">// row text + delete callback</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">AccessibleSwipeableRow</span>({ label, onDelete }: RowProps) {
+  <span class="tok-kw">const</span> translateX = <span class="tok-fn">useSharedValue</span>(<span class="tok-num">0</span>);                       <span class="tok-com">// horizontal swipe offset — UI thread pe live</span>
+
+  <span class="tok-com">// Normal sighted-user swipe gesture — Chapter 5 pattern, sirf swipe-visible users ke liye kaam karta hai</span>
+  <span class="tok-kw">const</span> panGesture = Gesture.<span class="tok-fn">Pan</span>()
+    .<span class="tok-fn">onUpdate</span>((e) =&gt; { translateX.value = e.translationX; })    <span class="tok-com">// finger ke saath row move karo</span>
+    .<span class="tok-fn">onEnd</span>(() =&gt; {
+      <span class="tok-kw">if</span> (translateX.value &lt; -<span class="tok-num">100</span>) { onDelete(); }                <span class="tok-com">// threshold cross hua toh delete trigger</span>
+      translateX.value = <span class="tok-num">0</span>;                                    <span class="tok-com">// row wapas reset position pe</span>
+    });
+
+  <span class="tok-kw">const</span> animatedStyle = <span class="tok-fn">useAnimatedStyle</span>(() =&gt; ({
+    <span class="tok-attr">transform</span>: [{ <span class="tok-attr">translateX</span>: translateX.value }],               <span class="tok-com">// live translateX apply karo</span>
+  }));
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span>GestureDetector <span class="tok-attr">gesture</span>={panGesture}<span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* accessibilityActions gesture ka ek DISCOVERABLE alternative expose karta hai */}</span>
+      <span class="tok-punc">&lt;</span>Animated.View
+        <span class="tok-attr">style</span>={[styles.row, animatedStyle]}
+        <span class="tok-attr">accessible</span>                                           <span class="tok-com">// pura row ek accessibility element</span>
+        <span class="tok-attr">accessibilityLabel</span>={label}                           <span class="tok-com">// row content ka spoken label</span>
+        <span class="tok-attr">accessibilityActions</span>={[
+          { <span class="tok-attr">name</span>: <span class="tok-str">'delete'</span>, <span class="tok-attr">label</span>: <span class="tok-str">'Delete item'</span> }, <span class="tok-com">// screen reader actions-menu mein "Delete item" ka naam se dikhega</span>
+        ]}
+        <span class="tok-attr">onAccessibilityAction</span>={(event) =&gt; {                  <span class="tok-com">// jab user actions menu se koi action select kare</span>
+          <span class="tok-kw">if</span> (event.nativeEvent.actionName === <span class="tok-str">'delete'</span>) {   <span class="tok-com">// hamare "delete" action ka match check karo</span>
+            <span class="tok-fn">onDelete</span>();                                       <span class="tok-com">// same delete callback jo swipe se trigger hota — DUPLICATE logic nahi, same function reuse</span>
+          }
+        }}
+      <span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span>Text <span class="tok-attr">style</span>={styles.label}<span class="tok-punc">&gt;</span>{label}<span class="tok-punc">&lt;/</span>Text<span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;/</span>Animated.View<span class="tok-punc">&gt;</span>
+    <span class="tok-punc">&lt;/</span>GestureDetector<span class="tok-punc">&gt;</span>
+  );
+}
+
+<span class="tok-kw">const</span> styles = StyleSheet.<span class="tok-fn">create</span>({
+  row: { <span class="tok-attr">padding</span>: <span class="tok-num">16</span>, <span class="tok-attr">backgroundColor</span>: <span class="tok-str">'#262524'</span>, <span class="tok-attr">borderRadius</span>: <span class="tok-num">8</span> }, <span class="tok-com">// row visual style</span>
+  label: { <span class="tok-attr">color</span>: <span class="tok-str">'#e8e4dd'</span>, <span class="tok-attr">fontSize</span>: <span class="tok-num">15</span> },                       <span class="tok-com">// label text style</span>
+});
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> AccessibleSwipeableRow;                                    <span class="tok-com">// export component</span></code></pre>
+      </div>
+
+      <p>
+        Yahan key insight ye hai ki <code>onDelete</code> function ek hi jagah define hai aur <strong>dono paths
+        se reuse</strong> ho raha hai — swipe gesture se bhi, aur accessibility action se bhi. Ye ek important
+        senior pattern hai: gesture aur accessibility action ko sirf "alag entry point" treat karo jo same
+        underlying business logic ko trigger karte hain, code duplicate mat karo.
+      </p>
+
+      <h3>10.3 — Automated accessibility testing in CI</h3>
+      <p>
+        Poora accessibility coverage kabhi fully automate nahi ho sakta (jaisa Section 3 mein discuss kiya), lekin
+        Chapter 7 ke testing pipeline mein kuch checks add karna high-value hai, jo "obvious misses" catch karte
+        hain commit hone se pehle hi:
+      </p>
+      <ul>
+        <li><strong>ESLint</strong> — <code>eslint-plugin-react-native-a11y</code> CI lint step mein wire karo, missing <code>accessibilityLabel</code>/invalid role jaisi cheezein PR stage pe hi flag ho jaayengi</li>
+        <li><strong>React Native Testing Library</strong> — <code>getByRole</code>/<code>getByLabelText</code> queries use karke apne component tests likho (Chapter 7) — agar ye queries fail hoti hain, matlab element ka accessibility metadata missing/galat hai, jo apne aap ek regression test ban jaata hai</li>
+        <li><strong>Maestro E2E flows</strong> — kuch teams critical flows mein accessibility-id based selectors use karte hain (jo internally accessibilityLabel pe depend karte hain) — agar ye E2E test break ho, ye ek signal hai ki accessibility label change/missing ho gaya, feature test ke saath incidentally accessibility bhi verify ho jaati hai</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Automated CI checks ka goal "accessibility guarantee karna" nahi hai — goal hai <strong>regression
+          prevention</strong>. Ek baar manual screen-reader QA se ek component accessible verify ho gaya, CI
+          checks (lint + RNTL queries) ensure karte hain ki future refactors accidentally us accessibility ko
+          todh na dein (jaise koi developer <code>accessibilityLabel</code> hata de refactor karte waqt bina
+          realize kiye). Manual testing "naya accessible banana", automated testing "already accessible cheez ko
+          accessible bana kar rakhna" — dono complementary hain, ek dusre ka replacement nahi.
+        </p>
+      </div>
+
+      <!-- =========================================================
+           SECTION 11 — Interview Questions
+      ========================================================== -->
+      <h2 id="interview-questions">11. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye questions accessibility aur i18n ke un aspects pe focus karte hain jo senior/staff interviews mein
+        actually poochhe jaate hain — architecture decisions, trade-offs, aur "kyun" wale deep questions, sirf
+        API syntax nahi.
+      </p>
+
+      <h3>Q1. Ek custom swipe-to-delete gesture component hai jo screen reader user ke liye poori tarah inaccessible hai kyunki wo swipe gesture perform nahi kar sakta. Aap isse accessible kaise banaoge?</h3>
+      <p>
+        <strong>Answer:</strong> Screen reader active hone pe swipe gestures navigation ke liye reserved ho jaate
+        hain, isliye app-level swipe gesture unke liye discoverable nahi hai. Solution hai
+        <code>accessibilityActions</code> prop use karke ek explicit "Delete item" action expose karna, aur
+        <code>onAccessibilityAction</code> callback mein wahi delete logic call karna jo normal swipe gesture
+        trigger karta hai. Isse VoiceOver/TalkBack ka "actions rotor"/custom actions menu se user ye action
+        select kar sakta hai bina physically swipe kiye. Important cheez ye hai ki underlying delete logic ek hi
+        jagah define ho aur dono paths (gesture handler ka <code>onEnd</code>, aur accessibility action ka
+        callback) usi ko call karein — code duplicate nahi hona chahiye.
+      </p>
+
+      <h3>Q2. Kyun disabling font scaling (<code>allowFontScaling={'{'}false{'}'}</code>) ek real accessibility violation hai, sirf ek design compromise nahi?</h3>
+      <p>
+        <strong>Answer:</strong> OS-level text size setting specifically un users ke liye exist karti hai jinhe
+        low vision ki wajah se default text size padhna mushkil hai. Jab developer <code>allowFontScaling={'{'}false{'}'}</code>
+        lagata hai "layout todta hai" ki wajah se, ye effectively us user ki accessibility need ko override kar
+        deta hai — user ne explicitly apne phone mein bada font set kiya tha kyunki unhe wo chahiye tha, aur app
+        unhe force kar rahi hai chhota, unreadable text dekhne ke liye. Ye "design compromise" nahi hai kyunki
+        design ka koi bhi consideration ek user ko literally content read karne se rokne se zyada important nahi
+        ho sakta. Sahi fix hamesha layout ko resilient banana hai (flexible heights, wrap-friendly text), na ki
+        accessibility feature ko disable karna.
+      </p>
+
+      <h3>Q3. Design karo ek multi-language app ke translation system ka file/data structure jisme pluralization aur RTL dono support karna ho.</h3>
+      <p>
+        <strong>Answer:</strong> Structure kuch is tarah hoga: <code>src/i18n/index.ts</code> jo i18next ko
+        <code>expo-localization</code> se device locale detect karke initialize karta hai, aur
+        <code>src/i18n/locales/*.json</code> mein har language ki apni file (<code>en.json</code>,
+        <code>hi.json</code>, <code>ar.json</code>) — sab same key structure follow karte hain (namespace-based
+        grouping jaise <code>common</code>, <code>cart</code>, <code>checkout</code>). Pluralization ke liye har
+        countable string key ka multiple suffix variant hoga (<code>_zero</code>/<code>_one</code>/<code>_two</code>/
+        <code>_few</code>/<code>_many</code>/<code>_other</code>) jo language ke CLDR plural rules follow karta
+        hai — i18next automatically sahi form resolve karta hai <code>count</code> parameter ke basis pe. RTL
+        support translation files ka part nahi hai — ye ek separate concern hai jo <code>I18nManager</code> ke
+        through language code check karke (<code>['ar', 'he', 'ur'].includes(code)</code>) handle hota hai, aur
+        styling layer mein logical properties (<code>marginStart</code>/<code>marginEnd</code>) mandatory hain.
+        Ek language-metadata registry bhi rakhna chahiye (e.g. <code>{'{'} code: 'ar', isRTL: true, name: 'العربية' {'}'}</code>)
+        jo language-picker UI aur RTL-switch logic dono use kar sakein.
+      </p>
+
+      <h3>Q4. Ek PM kehta hai "accessibility launch ke baad add kar denge, abhi feature velocity zyada important hai" — aap kaise convince karoge ki isse abhi build karna chahiye?</h3>
+      <p>
+        <strong>Answer:</strong> Do angles se argue karna chahiye. Pehla, <strong>cost angle</strong> —
+        accessibility ko day-1 se build karna marginal cost hai (ek button banate waqt <code>accessibilityRole</code>
+        add karna 2 second ka kaam hai), jabki retrofit karna exponentially expensive hai kyunki har existing
+        component wapas khol ke fix karna padta hai, exactly jaisa dark mode retrofit ke saath hota hai. Dusra,
+        <strong>reach/revenue angle</strong> — accessibility koi niche edge case nahi hai, ye ek real, significant
+        user segment hai jo currently app use hi nahi kar pa raha agar accessible nahi hai — ye literal churn/lost
+        users hain, "nice to have" polish nahi. Concrete pitch: "hum ek naya button banate waqt 2 extra props add
+        kar sakte hain abhi, ya 6 mahine baad ek poori sprint dedicate kar sakte hain sirf retrofit ke liye — trade-off
+        clear hai."
+      </p>
+
+      <h3>Q5. <code>Dimensions</code>/hardcoded pixel layouts wale app mein RTL support add karna hai. Kya sirf <code>I18nManager.forceRTL(true)</code> call karna kaafi hoga?</h3>
+      <p>
+        <strong>Answer:</strong> Nahi. <code>forceRTL()</code> sirf Flexbox ke automatic mirroring ko enable karta
+        hai (row direction flip, aur logical <code>start</code>/<code>end</code> properties ka correct resolution)
+        — lekin ye kisi bhi hardcoded <code>marginLeft</code>/<code>marginRight</code>/<code>left</code>/<code>right</code>
+        style ko automatically fix nahi karega, kyunki RN ko pata nahi ki ye "start/end" ke intent se likha gaya
+        tha ya literally "left/right" ke intent se. Agar codebase mein ye hardcoded properties widely use ho rahe
+        hain, sabse pehla step hai unhe systematically logical properties (<code>marginStart</code>/<code>marginEnd</code>)
+        se replace karna, tabhi <code>forceRTL()</code> ka poora fayda milega. Iske alawa app ko reload/restart bhi
+        chahiye hota hai RTL switch ke baad — Yoga layout direction sirf app launch time pe resolve karta hai.
+      </p>
+
+      <h3>Q6. String concatenation se ek translated sentence banayi jaa rahi hai — <code>t('a') + ' ' + name + ' ' + t('b')</code>. Ye approach kyun break hoti hai, aur sahi tareeka kya hai?</h3>
+      <p>
+        <strong>Answer:</strong> Ye approach English ke word order pe implicitly depend karti hai — hardcoded
+        assume kar rahi hai ki subject-verb-object order har language mein same rahega. Languages jinka
+        grammatical structure different hai (word order, gendered nouns jo surrounding words ko affect karte hain),
+        is concatenation se ek grammatically broken ya confusing sentence generate hoga. Sahi approach hai poore
+        sentence ko ek single translation key mein template ki tarah define karna, interpolation values ke saath
+        — <code>t('userAction', {'{'} name {'}'})</code> jahan translation file mein poora sentence
+        <code>"{'{'}{'{'}name{'}'}{'}'} ne aapko like kiya"</code> jaisa likha ho. Isse translator ko poora sentence
+        context milta hai aur wo apni language ke natural word order mein translate kar sakta hai, na ki fixed
+        English structure follow karne ke liye majboor ho.
+      </p>
+
+      <h3>Q7. <code>AccessibilityInfo.announceForAccessibility()</code> kab use karoge, aur ye normal <code>accessibilityLabel</code> se kaise different hai?</h3>
+      <p>
+        <strong>Answer:</strong> <code>accessibilityLabel</code> ek <strong>static/semi-static</strong> property
+        hai — ye tab hi announce hoti hai jab user us element pe focus kare (swipe navigate karke ya tap karke).
+        <code>announceForAccessibility()</code> ek <strong>imperative, one-time announcement</strong> trigger karta
+        hai jo turant bolа jaata hai, chahe user ka current focus kahin bhi ho — ye un cases ke liye hai jahan
+        koi async event/state-change hui hai jo user ke current focus se unrelated hai lekin unhe pata chalna
+        chahiye, jaise "Item added to cart", "Network connection restored", ya "3 new messages received". Agar
+        aap sirf normal element focus pe depend karte, in async events ka koi natural "focus point" nahi hota,
+        isliye screen reader user ko wo change kabhi pata hi nahi chalta bina explicit announcement ke.
+      </p>
+
+      <h3>Q8. Colorblind users ke liye ek "success/error" indicator design karo jo sirf color pe depend na kare. Kya-kya considerations honge?</h3>
+      <p>
+        <strong>Answer:</strong> Core principle: color ko kabhi <strong>sole</strong> information carrier mat
+        banao — hamesha ek redundant, non-color signal saath do. Practical implementation: (1) Icon shape use karo
+        jo khud differentiate kare (checkmark vs cross, up-arrow vs down-arrow) — shape colorblind users ke liye
+        bhi clearly distinguishable hai. (2) Text label explicitly likho ("Success"/"Error"), sirf color-coded
+        text mat chhodo. (3) Screen reader ke liye <code>accessibilityLabel</code> mein status word explicitly
+        include karo (e.g. "Success: Order placed"), taaki blind users ko bhi pata chale — unke liye color ka toh
+        koi matlab hi nahi hai. (4) Agar possible ho, WCAG contrast ratio bhi maintain karo taaki low-vision users
+        (colorblind na hoke bhi) text easily padh sakein against background.
+      </p>
+
+      <h3>Q9. Aapki team ek accessible custom component library (Button, Card, Modal) already bana chuki hai. Ek naya developer join karta hai jo directly raw <code>Pressable</code>/<code>View</code> use karke naya feature bana raha hai bina library components ke. Iska accessibility impact kya hoga, aur aap process level pe isse kaise prevent karoge?</h3>
+      <p>
+        <strong>Answer:</strong> Impact ye hoga ki naya feature accessibility properties (labels, roles, states,
+        focus management jo library components mein already baked-in hain) se miss ho jaayega — ek "accessibility
+        gap" create hoga jo visual QA mein invisible rahega (Section 9 ka gotcha #3) lekin real screen-reader
+        users ke liye us feature ko unusable bana dega. Process level solutions: (1) <strong>ESLint custom rule</strong>
+        jo raw <code>Pressable</code>/<code>TouchableOpacity</code> import ko flag kare aur library
+        <code>Button</code> component suggest kare. (2) <strong>Code review checklist</strong> mein accessibility
+        ek explicit review item ho, na ki assume kiya jaaye ki "auto-handled hai". (3) <strong>Onboarding docs</strong>
+        mein explicitly likha ho ki custom interactive elements banane se pehle library components check karo. (4)
+        CI mein <code>eslint-plugin-react-native-a11y</code> jo missing labels catch kare bhale hi library
+        bypass ho gayi ho.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="19-debugging-and-crashes.html">
+          <div class="label">← Previous</div>
+          <div class="title">Debugging &amp; Crashes</div>
+        </a>
+        <a class="next" href="21-capstone-free-app.html">
+          <div class="label">Next →</div>
+          <div class="title">Capstone: Free Full App</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capstone: Free Full App — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link active" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Capstone: Free Full App</div>
+      <div class="progress-pill">Chapter 21 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Expo · Supabase · Razorpay Test Mode · EAS Free Tier</span>
+      <h1>Capstone — Ek Full App Banate Hain, Bilkul ₹0 Mein</h1>
+      <p class="subtitle">
+        Ye poori handbook ka final aur sabse hands-on chapter hai. Ab tak humne concepts alag-alag chapters
+        mein seekhe — Expo Router (ch.4), Supabase + RLS (ch.9), EAS Build (ch.10), Payments (ch.15). Is
+        chapter mein hum sab kuch ek saath jodenge aur ek <strong>real, chalne wala app</strong> banayenge,
+        step-by-step, jaise ek senior dev apne khud ke side-project ko weekend mein bootstrap karta hai —
+        bina ek rupaya kharch kiye. Har step ke saath uske common bugs aur unhe debug karne ka tareeka bhi
+        milega, kyunki real building mein cheezein pehli baar mein kabhi kaam nahi karti.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#stack">1. What We're Building and the Free Stack</a></li>
+          <li><a href="#setup">2. Step 1 — Project Setup</a></li>
+          <li><a href="#supabase-setup">3. Step 2 — Supabase Backend Setup (Free Tier)</a></li>
+          <li><a href="#auth-flow">4. Step 3 — Auth Flow</a></li>
+          <li><a href="#core-feature">5. Step 4 — Core Habit Tracking Feature</a></li>
+          <li><a href="#razorpay">6. Step 5 — Paid Premium Feature with Razorpay Test Mode</a></li>
+          <li><a href="#debugging">7. Step 6 — Debugging Steps at Each Stage</a></li>
+          <li><a href="#build-share">8. Step 7 — Building and Sharing for Free</a></li>
+          <li><a href="#free-vs-paid">9. What's Genuinely Free vs What Costs Money at Scale</a></li>
+          <li><a href="#closing">10. Closing — From Capstone to Production</a></li>
+          <li><a href="#interview-questions">11. 🎯 A Few Questions to Test Your Understanding</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="stack" style="border-top:none; padding-top:0; margin-top:28px;">1. What We're Building and the Free Stack</h2>
+
+      <p>
+        App ka naam: <strong>"Streaks" — a Habit Tracker with Premium Themes</strong>. Chhota app hai lekin
+        jaan-boojh ke choose kiya hai kyunki ye ek real product ke saare core pillars ko touch karta hai —
+        auth, ek relational database jisme per-user data hai, aur ek genuine paid feature. Feature list:
+      </p>
+      <ul>
+        <li><strong>Free tier:</strong> sign up/login, apne habits add karna (jaise "10 min padhna", "Paani piyo"), roz check-in maar ke complete mark karna, aur ek streak counter (kitne consecutive din se maintain kiya).</li>
+        <li><strong>Premium tier (paid, one-time unlock):</strong> extra themes (dark neon, pastel, etc.) aur ek extended stats screen (monthly heatmap jaisa view) unlock ho jaate hain.</li>
+      </ul>
+
+      <p>
+        Poore build mein hum sirf wahi tools use karenge jinka ek genuinely usable free tier hai — koi credit
+        card kahin bhi nahi maangi jaayegi (Razorpay/Stripe test mode ke liye toh bilkul nahi, wo permanently
+        free hai chahe app kitna bhi scale kare, kyunki usme real paisa kabhi move hi nahi hota).
+      </p>
+
+      <table>
+        <thead><tr><th>Tool</th><th>Role is app mein</th><th>Free tier limit (hobby scale ke liye kaafi hai)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Expo + EAS</strong></td>
+            <td>App framework, dev tooling, cloud builds</td>
+            <td>EAS free tier har month kuch build credits/build minutes deta hai (Android + iOS simulator builds ke liye kaafi), Expo CLI/SDK khud hamesha free hai</td>
+          </tr>
+          <tr>
+            <td><strong>Supabase</strong></td>
+            <td>Postgres DB + Auth (ch.9 se), habits/logs store karne ke liye</td>
+            <td>Free project: 500MB database, 50,000 monthly active users (Auth), 1GB file storage — ek solo hobby app ke liye years tak kaafi hai</td>
+          </tr>
+          <tr>
+            <td><strong>Razorpay (Test Mode)</strong></td>
+            <td>Premium unlock ka payment flow — India-focused</td>
+            <td>Test Mode <strong>hamesha, permanently free</strong> hai — koi real transaction hoti hi nahi, isliye koi "limit" hi nahi lagta</td>
+          </tr>
+          <tr>
+            <td><strong>Stripe (Test Mode) — alternative</strong></td>
+            <td>Same role, global audience ke liye (non-India readers)</td>
+            <td>Same — Test Mode hamesha free, no real money involved</td>
+          </tr>
+          <tr>
+            <td><strong>GitHub</strong></td>
+            <td>Code hosting, EAS Workflows (ch.13) ke liye trigger source</td>
+            <td>Unlimited free public/private repos for individuals</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Razorpay ya Stripe, kaise choose karein</div>
+        <p>
+          Ye chapter <strong>Razorpay Test Mode ko primary</strong> maan ke likha gaya hai, kyunki ye India
+          ke devs ke liye zyada relevant hai (UPI test flow, INR currency, local KYC/onboarding cheaper).
+          Agar tum global audience target kar rahe ho ya tumhara business US/EU-centric hai, <strong>Stripe
+          Test Mode ka bilkul same mental model</strong> apply hota hai — jahan bhi Razorpay-specific code
+          aayega, ek matching <code>.callout.info</code> box mein Stripe ka equivalent bhi diya gaya hai, taaki
+          tum apna stack switch kar sako bina logic dobara socho.
+        </p>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💰 Total Cost Check</div>
+        <p>
+          Is poore chapter ko follow karke tum ye app <strong>bana</strong> sakte ho, apne phone pe
+          <strong>chala</strong> sakte ho, aur ek dost ko <strong>test karne ke liye bhej</strong> sakte ho —
+          poora flow <strong>₹0 / $0</strong> mein. Sirf ek jagah cost aati hai (real iPhone pe install karna
+          bina Expo Go ke) — usko section 8 mein explicitly highlight karenge, chhupayenge nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="setup">2. Step 1 — Project Setup</h2>
+
+      <p>
+        Terminal kholo aur project create karte hain. Hum TypeScript template use karenge (jaisa poori
+        handbook mein consistently use kiya hai) aur Expo Router already isme included aata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — project create karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># "streaks" naam ka naya Expo project bana rahe hain, default template already Expo Router + TypeScript include karta hai</span>
+npx create-expo-app@latest streaks <span class="tok-com"># latest CLI use karke naya project scaffold kiya, "streaks" folder create hoga</span>
+
+<span class="tok-com"># naye project ke andar chalte hain</span>
+<span class="tok-kw">cd</span> streaks <span class="tok-com"># is folder ke andar hi baaki saare commands chalenge</span>
+
+<span class="tok-com"># zaroori extra packages ek saath install karte hain — Supabase client, storage adapter, aur env var support</span>
+npx expo install @supabase/supabase-js <span class="tok-com"># Supabase ka official JS client (ch.9 mein detail)</span>
+npx expo install @react-native-async-storage/async-storage <span class="tok-com"># Supabase session persist karne ke liye storage adapter</span>
+npx expo install expo-secure-store <span class="tok-com"># kuch sensitive local values (jaise cached premium flag) securely store karne ke liye</span></code></pre>
+      </div>
+
+      <p>
+        Ab project ka folder structure dekhte hain jo hum is app ke liye banayenge — Expo Router ke file-based
+        routing (ch.4) ko follow karte hue, aur ch.9/ch.15 ke BFF pattern ke liye ek <code>api/</code> folder
+        bhi already reserve kar lete hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>project ka folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>streaks/
+├── app/                          <span class="tok-com">// Expo Router ka root — har file yahan automatically ek route ban jaati hai (ch.4)</span>
+│   ├── _layout.tsx                <span class="tok-com">// root layout — yahan hum AuthProvider wrap karenge aur auth-guard logic dalenge (section 4)</span>
+│   ├── (auth)/                    <span class="tok-com">// route group sirf login/signup screens ke liye — grouped taaki inka apna alag layout ho, auth guard inhe easily detect kar sake</span>
+│   │   ├── _layout.tsx            <span class="tok-com">// (auth) group ka layout — sirf ek simple Stack, no tabs yahan</span>
+│   │   ├── login.tsx              <span class="tok-com">// email/password login screen</span>
+│   │   └── signup.tsx             <span class="tok-com">// naya account banane ki screen</span>
+│   ├── (app)/                     <span class="tok-com">// route group sirf logged-in area ke liye — auth guard yahan sirf authenticated users ko aane deta hai</span>
+│   │   ├── _layout.tsx            <span class="tok-com">// (app) group ka layout — bottom tabs yahan define honge (Habits / Premium)</span>
+│   │   ├── index.tsx              <span class="tok-com">// main habit list screen — app khulte hi ye default tab dikhega (section 5)</span>
+│   │   └── premium.tsx            <span class="tok-com">// premium unlock screen — Razorpay checkout yahan trigger hoga (section 6)</span>
+│   └── api/                       <span class="tok-com">// Expo Router API routes — server-only code, client bundle mein kabhi nahi jaata (ch.9)</span>
+│       ├── create-order+api.ts    <span class="tok-com">// Razorpay order server-side banane wala endpoint — secret key sirf yahan touch hoti hai</span>
+│       └── verify-payment+api.ts  <span class="tok-com">// payment signature verify karke DB mein is_premium set karne wala endpoint</span>
+├── context/
+│   └── AuthContext.tsx            <span class="tok-com">// global auth state (user, session, loading) — poori app isse consume karegi (section 4)</span>
+├── lib/
+│   ├── supabase.ts                <span class="tok-com">// shared Supabase client instance (ch.9 pattern)</span>
+│   └── streaks.ts                 <span class="tok-com">// streak-calculation business logic — pure function, UI se alag rakha taaki test/reuse ho sake (section 5)</span>
+├── .env                           <span class="tok-com">// local-only env vars (EXPO_PUBLIC_* keys) — git mein commit NAHI hota, .gitignore mein already excluded</span>
+├── app.json                       <span class="tok-com">// Expo config — app name, icon, EAS project id waghera</span>
+└── package.json                   <span class="tok-com">// dependencies aur scripts ki list</span></code></pre>
+      </div>
+
+      <p>
+        Ab git initialize karke GitHub pe push karte hain — ye zaroori hai kyunki aage EAS Build aur EAS
+        Workflows (ch.10/ch.13) dono GitHub-connected repo ke saath sabse smooth kaam karte hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — git + GitHub setup</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">git</span> init <span class="tok-com"># current folder ko ek git repository banaya</span>
+<span class="tok-kw">git</span> add <span class="tok-punc">.</span> <span class="tok-com"># saari files staging area mein daali</span>
+<span class="tok-kw">git</span> commit <span class="tok-punc">-m</span> <span class="tok-str">"chore: initial expo router setup"</span> <span class="tok-com"># pehla commit bana diya</span>
+
+<span class="tok-com"># GitHub website pe ek naya empty repo bana lo (naam "streaks"), phir yahan se link karo:</span>
+<span class="tok-kw">git</span> remote add origin https://github.com/<span class="tok-str">&lt;your-username&gt;</span>/streaks.git <span class="tok-com"># apne naye GitHub repo ka URL local repo se link kiya</span>
+<span class="tok-kw">git</span> branch <span class="tok-punc">-M</span> main <span class="tok-com"># default branch ka naam "main" set kiya</span>
+<span class="tok-kw">git</span> push <span class="tok-punc">-u</span> origin main <span class="tok-com"># code GitHub pe push kiya, -u future push/pull ke liye origin/main ko default set karta hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ .env ko .gitignore mein zaroor check karo</div>
+        <p>
+          <code>create-expo-app</code> default template mein <code>.gitignore</code> already <code>.env*</code>
+          pattern include karta hai, lekin ek baar khud confirm zaroor karo (<code>cat .gitignore</code>).
+          Agar galti se <code>.env</code> commit ho gaya aur usme koi secret aa gaya (aage Razorpay secret
+          key ke case mein important hoga), sirf file delete karna kaafi nahi — git history mein wo value
+          permanently reh jaayegi jab tak history rewrite na karo. Isliye shuru se hi disciplined raho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="supabase-setup">3. Step 2 — Supabase Backend Setup (Free Tier)</h2>
+
+      <h3>Supabase project banana</h3>
+      <ol>
+        <li><a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> pe jaake GitHub account se sign up karo (free, no card required).</li>
+        <li>Dashboard mein "New Project" click karo — organization select karo (default already ban jaata hai), project ka naam "streaks" do, ek strong database password generate karo (isse save karke rakho, DB-level admin access ke liye chahiye hoga kabhi kabhi).</li>
+        <li>Region wahi choose karo jo tumhare users ke sabse close ho (India ke liye Mumbai/Singapore region latency ke hisaab se better).</li>
+        <li>Project create hone mein 1-2 minute lagte hain (Postgres instance provision ho raha hota hai peeche).</li>
+        <li>Project ready hote hi, left sidebar mein <strong>Project Settings → API</strong> pe jaao — yahan se do cheezein note kar lo: <strong>Project URL</strong> (jaise <code>https://xxxxx.supabase.co</code>) aur <strong>anon public key</strong> (ek lambi JWT-jaisi string). Ye dono client-safe hain (ch.9 ka concept), inhe <code>.env</code> mein daalenge.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title"><span>.env</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Supabase project URL, dashboard ke Project Settings -> API se copy kiya, client-safe public identifier</span>
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
+<span class="tok-com"># Supabase anon key, same page se — RLS iski protection karta hai, isliye client mein rakhna safe hai (ch.9)</span>
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+      </div>
+
+      <h3>Tables banana — habits aur habit_logs</h3>
+      <p>
+        Do tables chahiye: <code>habits</code> (user ke defined habits, jaise "Paani piyo") aur
+        <code>habit_logs</code> (har din ka check-in record — ek row per habit per completed day). Ye
+        exactly ch.9 ke <code>todos</code> table pattern ka extension hai, bas ab ek relational child
+        table (<code>habit_logs</code>) bhi hai jo streak calculate karne ke liye zaroori hai. Supabase
+        dashboard mein <strong>SQL Editor</strong> khol ke ye chalao:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — habits + habit_logs tables</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">create table</span> habits ( <span class="tok-com">-- naya table "habits" — har row ek user ka ek habit represent karta hai</span>
+  id uuid <span class="tok-kw">primary key</span> <span class="tok-kw">default</span> gen_random_uuid(), <span class="tok-com">-- unique id, Postgres auto-generate karega</span>
+  user_id uuid <span class="tok-kw">references</span> auth.users(id) <span class="tok-kw">on delete cascade</span> <span class="tok-kw">not null</span>, <span class="tok-com">-- kis user ka habit hai — Supabase Auth ke internal users table se link (ch.9 pattern)</span>
+  title text <span class="tok-kw">not null</span> <span class="tok-kw">check</span> (char_length(title) > <span class="tok-num">0</span>), <span class="tok-com">-- habit ka naam, empty string allow nahi</span>
+  emoji text <span class="tok-kw">default</span> <span class="tok-str">'✅'</span>, <span class="tok-com">-- UI mein dikhane ke liye chhota emoji icon, default ek generic checkmark</span>
+  created_at timestamptz <span class="tok-kw">not null</span> <span class="tok-kw">default</span> now() <span class="tok-com">-- habit kab bana, list ko order karne ke liye kaam aayega</span>
+); <span class="tok-com">-- statement close</span>
+
+<span class="tok-kw">create index</span> habits_user_id_idx <span class="tok-kw">on</span> habits(user_id); <span class="tok-com">-- user_id pe index, "mere habits dikhao" query aur RLS filter dono fast rehte hain</span>
+
+<span class="tok-kw">create table</span> habit_logs ( <span class="tok-com">-- naya table "habit_logs" — har row ek "is din maine ye habit complete kiya" record hai</span>
+  id uuid <span class="tok-kw">primary key</span> <span class="tok-kw">default</span> gen_random_uuid(), <span class="tok-com">-- unique id</span>
+  habit_id uuid <span class="tok-kw">references</span> habits(id) <span class="tok-kw">on delete cascade</span> <span class="tok-kw">not null</span>, <span class="tok-com">-- kis habit ka log hai — habit delete ho toh uske saare logs bhi delete ho jaayein</span>
+  user_id uuid <span class="tok-kw">references</span> auth.users(id) <span class="tok-kw">on delete cascade</span> <span class="tok-kw">not null</span>, <span class="tok-com">-- redundant lekin jaan-boojh ke rakha — RLS policy ko habits table join kiye bina seedha check karne dega (performance + simplicity)</span>
+  completed_on date <span class="tok-kw">not null</span> <span class="tok-kw">default</span> current_date, <span class="tok-com">-- kis calendar din complete hua (date type, timestamp nahi, kyunki "din" hi matter karta hai, time nahi)</span>
+  <span class="tok-kw">unique</span> (habit_id, completed_on) <span class="tok-com">-- ek habit ek din mein sirf ek baar hi "complete" ho sakta hai — duplicate check-in DB level pe hi roka</span>
+); <span class="tok-com">-- statement close</span>
+
+<span class="tok-kw">create index</span> habit_logs_habit_id_idx <span class="tok-kw">on</span> habit_logs(habit_id); <span class="tok-com">-- ek habit ke saare logs jaldi fetch karne ke liye (streak calculation isi query pe based hai)</span>
+<span class="tok-kw">create index</span> habit_logs_user_id_idx <span class="tok-kw">on</span> habit_logs(user_id); <span class="tok-com">-- RLS filter aur "mere saare logs" query dono is index se fast honge</span></code></pre>
+      </div>
+
+      <p>
+        Ab ch.9 ke sabse important rule ko yaad karte hue, <strong>turant agle statement mein hi</strong> RLS
+        enable karte hain — table banate hi, "baad mein karunga" nahi sochna:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — RLS enable + policies</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">alter table</span> habits <span class="tok-kw">enable row level security</span>; <span class="tok-com">-- habits table pe RLS ON — ab default har query DENY hai jab tak policy match na kare</span>
+<span class="tok-kw">alter table</span> habit_logs <span class="tok-kw">enable row level security</span>; <span class="tok-com">-- habit_logs table pe bhi RLS ON, isi wajah se ye humesha table ke saath hi karte hain</span>
+
+<span class="tok-com">-- habits: user sirf apne khud ke habits dekh sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"select own habits"</span>
+<span class="tok-kw">on</span> habits <span class="tok-kw">for select</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- row tabhi visible jab habit ka user_id current logged-in user ke barabar ho</span>
+
+<span class="tok-com">-- habits: user sirf apne naam se naya habit insert kar sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"insert own habits"</span>
+<span class="tok-kw">on</span> habits <span class="tok-kw">for insert</span>
+<span class="tok-kw">with check</span> (auth.uid() = user_id); <span class="tok-com">-- naya row tabhi insert ho jab uska user_id current user ke barabar ho</span>
+
+<span class="tok-com">-- habits: user sirf apna khud ka habit delete kar sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"delete own habits"</span>
+<span class="tok-kw">on</span> habits <span class="tok-kw">for delete</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- sirf apni khud ki row delete kar sakta hai</span>
+
+<span class="tok-com">-- habit_logs: user sirf apne logs dekh sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"select own logs"</span>
+<span class="tok-kw">on</span> habit_logs <span class="tok-kw">for select</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- sirf apne user_id wale log rows dikhenge</span>
+
+<span class="tok-com">-- habit_logs: user sirf apne naam se check-in insert kar sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"insert own logs"</span>
+<span class="tok-kw">on</span> habit_logs <span class="tok-kw">for insert</span>
+<span class="tok-kw">with check</span> (auth.uid() = user_id); <span class="tok-com">-- koi doosre user ke naam se check-in nahi bana sakta</span>
+
+<span class="tok-com">-- habit_logs: user sirf apna khud ka check-in delete/undo kar sake</span>
+<span class="tok-kw">create policy</span> <span class="tok-str">"delete own logs"</span>
+<span class="tok-kw">on</span> habit_logs <span class="tok-kw">for delete</span>
+<span class="tok-kw">using</span> (auth.uid() = user_id); <span class="tok-com">-- "aaj ka check-in undo karo" feature ke liye chahiye hoga</span></code></pre>
+      </div>
+
+      <p>
+        Ek aur table — <code>profiles</code> — jisme <code>is_premium</code> flag rakhenge (section 6 mein
+        Razorpay payment iske through hi premium unlock karega):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SQL Editor — profiles table (premium status ke liye)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">create table</span> profiles ( <span class="tok-com">-- har user ke liye ek extra "profile" row, auth.users ko extend karne ka standard Supabase pattern</span>
+  id uuid <span class="tok-kw">primary key</span> <span class="tok-kw">references</span> auth.users(id) <span class="tok-kw">on delete cascade</span>, <span class="tok-com">-- profile ka id hi user ka id hai (1-to-1 relationship), user delete ho toh profile bhi delete</span>
+  is_premium boolean <span class="tok-kw">not null</span> <span class="tok-kw">default</span> <span class="tok-kw">false</span>, <span class="tok-com">-- premium unlock hua ya nahi — ye humara "paid feature gate" flag hai</span>
+  unlocked_at timestamptz <span class="tok-com">-- premium kab unlock hua, audit/debugging ke liye useful, nullable rakha kyunki free users ke liye ye set hi nahi hoga</span>
+); <span class="tok-com">-- statement close</span>
+
+<span class="tok-kw">alter table</span> profiles <span class="tok-kw">enable row level security</span>; <span class="tok-com">-- yahan bhi RLS turant ON, kyunki habit_id ki tarah ye bhi per-user sensitive data hai</span>
+
+<span class="tok-kw">create policy</span> <span class="tok-str">"select own profile"</span>
+<span class="tok-kw">on</span> profiles <span class="tok-kw">for select</span>
+<span class="tok-kw">using</span> (auth.uid() = id); <span class="tok-com">-- user sirf apni khud ki profile row dekh sakta hai</span>
+
+<span class="tok-com">-- NOTICE: yahan koi "update" policy client ke liye nahi banayi — is_premium ko client kabhi direct update nahi kar sakta</span>
+<span class="tok-com">-- ye jaan-boojh ke hai — is_premium sirf hamare server-side verify-payment+api.ts route se, service_role key se update hoga (section 6)</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — is_premium ko client-writable mat banao</div>
+        <p>
+          Notice karo <code>profiles</code> table pe humne koi <code>for update</code> policy client ke liye
+          nahi banayi. Ye accident nahi hai — agar humne <code>using (auth.uid() = id)</code> jaisi update
+          policy bana di, koi bhi authenticated user seedha apni row mein <code>is_premium = true</code>
+          set kar sakta tha bina kabhi payment kiye, sirf ek normal Supabase client call se
+          (<code>supabase.from("profiles").update({ is_premium: true })</code>). Isi wajah se ye update sirf
+          <strong>service_role key</strong> (ch.9) ke through, humare khud ke server-side API route se hoga —
+          section 6 mein ye poora dekhenge.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="auth-flow">4. Step 3 — Auth Flow</h2>
+
+      <p>
+        Ab Supabase email/password auth ko Expo Router ke auth-guard pattern (ch.4) ke saath jodte hain.
+        Pehle Supabase client:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/supabase.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { createClient } <span class="tok-kw">from</span> <span class="tok-str">"@supabase/supabase-js"</span>; <span class="tok-com">// Supabase client banane ka function</span>
+<span class="tok-kw">import</span> AsyncStorage <span class="tok-kw">from</span> <span class="tok-str">"@react-native-async-storage/async-storage"</span>; <span class="tok-com">// session ko disk pe persist karne ke liye storage adapter</span>
+
+<span class="tok-kw">const</span> supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL<span class="tok-punc">!</span>; <span class="tok-com">// .env se Supabase project URL liya, ! se TypeScript ko bataya ki ye undefined nahi hoga</span>
+<span class="tok-kw">const</span> supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY<span class="tok-punc">!</span>; <span class="tok-com">// .env se anon key liya — public/client-safe key hai, RLS isse protect karta hai</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> supabase = <span class="tok-fn">createClient</span>(supabaseUrl, supabaseAnonKey, { <span class="tok-com">// client instance bana ke export kiya, poori app isi ek instance ko reuse karegi</span>
+  auth: { <span class="tok-com">// auth-specific configuration</span>
+    storage: AsyncStorage, <span class="tok-com">// session/refresh-token yahan persist hoga, app restart pe dobara login nahi maangega</span>
+    autoRefreshToken: <span class="tok-kw">true</span>, <span class="tok-com">// expire hote access token ko background mein khud refresh karega</span>
+    persistSession: <span class="tok-kw">true</span>, <span class="tok-com">// session disk pe save hoga, memory-only nahi</span>
+    detectSessionInUrl: <span class="tok-kw">false</span>, <span class="tok-com">// ye web-only feature hai (URL se magic-link parse karna), RN mein false</span>
+  },
+});</code></pre>
+      </div>
+
+      <p>
+        Ab <code>AuthContext</code> — ye global state hai jo poori app ko batayega ki user logged in hai
+        ya nahi, aur ch.4 ke <code>useAuth()</code> pattern ko follow karta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>context/AuthContext.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { createContext, useContext, useEffect, useState, <span class="tok-kw">type</span> ReactNode } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// React context/state/lifecycle APIs, ReactNode children ke type ke liye</span>
+<span class="tok-kw">import</span> <span class="tok-kw">type</span> { Session, User } <span class="tok-kw">from</span> <span class="tok-str">"@supabase/supabase-js"</span>; <span class="tok-com">// Supabase ke TypeScript types, session/user shape ke liye</span>
+<span class="tok-kw">import</span> { supabase } <span class="tok-kw">from</span> <span class="tok-str">"../lib/supabase"</span>; <span class="tok-com">// humara shared Supabase client instance</span>
+
+<span class="tok-kw">type</span> AuthContextType = { <span class="tok-com">// context ka shape define kiya, taaki consumers ko autocomplete/type-safety mile</span>
+  user: User | <span class="tok-kw">null</span>; <span class="tok-com">// current logged-in user, ya null agar logged out</span>
+  session: Session | <span class="tok-kw">null</span>; <span class="tok-com">// current auth session (JWT + refresh token wrapper)</span>
+  isLoading: <span class="tok-kw">boolean</span>; <span class="tok-com">// initial session check abhi ho raha hai ya complete ho chuka</span>
+  signIn: (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) => Promise<span class="tok-punc">&lt;</span>{ error: <span class="tok-kw">string</span> | <span class="tok-kw">null</span> }<span class="tok-punc">&gt;</span>; <span class="tok-com">// login function, error string ya null return karega</span>
+  signUp: (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) => Promise<span class="tok-punc">&lt;</span>{ error: <span class="tok-kw">string</span> | <span class="tok-kw">null</span> }<span class="tok-punc">&gt;</span>; <span class="tok-com">// signup function, same shape</span>
+  signOut: () => Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span>; <span class="tok-com">// logout function</span>
+};
+
+<span class="tok-kw">const</span> AuthContext = <span class="tok-fn">createContext</span><span class="tok-punc">&lt;</span>AuthContextType | <span class="tok-kw">undefined</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">undefined</span>); <span class="tok-com">// context banaya, default undefined taaki galat use pe error mile (neeche hook mein check karenge)</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">AuthProvider</span>({ children }: { children: ReactNode }) {
+  <span class="tok-kw">const</span> [user, setUser] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>User | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>); <span class="tok-com">// current user state</span>
+  <span class="tok-kw">const</span> [session, setSession] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>Session | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>); <span class="tok-com">// current session state</span>
+  <span class="tok-kw">const</span> [isLoading, setIsLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// shuru mein true, jab tak humein pata na chale user logged in hai ya nahi</span>
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-com">// app khulte hi existing session (agar disk pe persist thi) fetch karo</span>
+    supabase.auth.<span class="tok-fn">getSession</span>().<span class="tok-fn">then</span>(({ data }) => {
+      <span class="tok-fn">setSession</span>(data.session); <span class="tok-com">// session state update — agar disk pe koi valid session mili toh yahan aa jaayegi</span>
+      <span class="tok-fn">setUser</span>(data.session?.user ?? <span class="tok-kw">null</span>); <span class="tok-com">// session ke andar se user nikaala, session null ho toh user bhi null</span>
+      <span class="tok-fn">setIsLoading</span>(<span class="tok-kw">false</span>); <span class="tok-com">// ab hume pata chal gaya user logged in hai ya nahi — loading complete</span>
+    });
+
+    <span class="tok-com">// future mein session change hone pe (login/logout/token-refresh) auto-listen karo</span>
+    <span class="tok-kw">const</span> { data: listener } = supabase.auth.<span class="tok-fn">onAuthStateChange</span>((_event, newSession) => {
+      <span class="tok-fn">setSession</span>(newSession); <span class="tok-com">// naya session state mein daala</span>
+      <span class="tok-fn">setUser</span>(newSession?.user ?? <span class="tok-kw">null</span>); <span class="tok-com">// naya user state mein daala</span>
+    });
+
+    <span class="tok-kw">return</span> () => listener.subscription.<span class="tok-fn">unsubscribe</span>(); <span class="tok-com">// cleanup — component unmount pe listener hata do, memory leak se bachne ke liye</span>
+  }, []); <span class="tok-com">// empty deps — sirf ek baar mount pe setup hoga</span>
+
+  <span class="tok-kw">const</span> <span class="tok-fn">signIn</span> = <span class="tok-kw">async</span> (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) => {
+    <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">signInWithPassword</span>({ email, password }); <span class="tok-com">// Supabase ka email/password login call</span>
+    <span class="tok-kw">return</span> { error: error?.message ?? <span class="tok-kw">null</span> }; <span class="tok-com">// caller ko readable error message ya null return kiya</span>
+  };
+
+  <span class="tok-kw">const</span> <span class="tok-fn">signUp</span> = <span class="tok-kw">async</span> (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) => {
+    <span class="tok-kw">const</span> { data, error } = <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">signUp</span>({ email, password }); <span class="tok-com">// naya account banane ka call</span>
+    <span class="tok-kw">if</span> (error) <span class="tok-kw">return</span> { error: error.message }; <span class="tok-com">// signup hi fail ho gaya (jaise weak password), turant return</span>
+
+    <span class="tok-kw">if</span> (data.user) { <span class="tok-com">// signup successful hua, ab isi user ke liye ek profile row bhi bana dete hain</span>
+      <span class="tok-kw">await</span> supabase.<span class="tok-fn">from</span>(<span class="tok-str">"profiles"</span>).<span class="tok-fn">insert</span>({ id: data.user.id }); <span class="tok-com">// is_premium default false ke saath naya profile row insert, id = user ka id</span>
+    }
+    <span class="tok-kw">return</span> { error: <span class="tok-kw">null</span> }; <span class="tok-com">// sab kuch successful</span>
+  };
+
+  <span class="tok-kw">const</span> <span class="tok-fn">signOut</span> = <span class="tok-kw">async</span> () => {
+    <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">signOut</span>(); <span class="tok-com">// Supabase session clear karo — onAuthStateChange listener khud user/session state ko null kar dega</span>
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;AuthContext.Provider</span> <span class="tok-attr">value</span>=<span class="tok-punc">{</span>{ user, session, isLoading, signIn, signUp, signOut }<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+      {children} <span class="tok-com">{/* poori app tree yahan wrap hoga, sab consume kar sakenge useAuth() se */}</span>
+    <span class="tok-tag">&lt;/AuthContext.Provider&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useAuth</span>() {
+  <span class="tok-kw">const</span> ctx = <span class="tok-fn">useContext</span>(AuthContext); <span class="tok-com">// context value nikaala</span>
+  <span class="tok-kw">if</span> (!ctx) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"useAuth must be used inside AuthProvider"</span>); <span class="tok-com">// safety check — Provider ke bahar use hua toh clear error, silent undefined nahi</span>
+  <span class="tok-kw">return</span> ctx; <span class="tok-com">// consumers ko poora auth state + actions milta hai</span>
+}</code></pre>
+      </div>
+
+      <p>
+        Ab root layout mein ch.4 ka wahi <code>useSegments</code>-based auth guard pattern lagate hain, bas
+        ab route groups <code>(auth)</code> aur <code>(app)</code> hamari is app ke names hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useEffect } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// lifecycle hook</span>
+<span class="tok-kw">import</span> { Slot, useRouter, useSegments } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>; <span class="tok-com">// Slot = child route render karta hai, useSegments current path ke segments deta hai, useRouter navigation ke liye</span>
+<span class="tok-kw">import</span> { AuthProvider, useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../context/AuthContext"</span>; <span class="tok-com">// humara auth context</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">RootLayoutNav</span>() {
+  <span class="tok-kw">const</span> { user, isLoading } = <span class="tok-fn">useAuth</span>(); <span class="tok-com">// current auth state nikaala</span>
+  <span class="tok-kw">const</span> segments = <span class="tok-fn">useSegments</span>(); <span class="tok-com">// current URL path ke segments, jaise ["(auth)", "login"]</span>
+  <span class="tok-kw">const</span> router = <span class="tok-fn">useRouter</span>(); <span class="tok-com">// programmatic navigation ke liye</span>
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-kw">if</span> (isLoading) <span class="tok-kw">return</span>; <span class="tok-com">// jab tak session check complete na ho, koi redirect decision mat lo — ye redirect-loop gotcha (ch.4) avoid karta hai</span>
+
+    <span class="tok-kw">const</span> inAuthGroup = segments[<span class="tok-num">0</span>] === <span class="tok-str">"(auth)"</span>; <span class="tok-com">// pehla segment check kiya — kya user abhi (auth) group ke andar hai</span>
+
+    <span class="tok-kw">if</span> (!user && !inAuthGroup) { <span class="tok-com">// user logged out hai lekin protected (app) area mein jaane ki koshish kar raha hai</span>
+      router.<span class="tok-fn">replace</span>(<span class="tok-str">"/(auth)/login"</span>); <span class="tok-com">// login screen pe bhej do, "replace" isliye taaki back button se wapas protected screen pe na aa sake</span>
+    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (user && inAuthGroup) { <span class="tok-com">// user already logged in hai lekin login/signup screen dekh raha hai</span>
+      router.<span class="tok-fn">replace</span>(<span class="tok-str">"/(app)"</span>); <span class="tok-com">// seedha main app area pe bhej do</span>
+    }
+    <span class="tok-com">// NOTICE: agar dono conditions false hain (jaise user null hai aur already (auth) mein hai), koi redirect nahi hota — yahi cheez infinite loop rokti hai</span>
+  }, [user, isLoading, segments]); <span class="tok-com">// in teeno mein se koi change ho toh dobara evaluate karo</span>
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Slot</span> <span class="tok-tag">/&gt;</span>; <span class="tok-com">// current matched route render karo — actual Stack/Tabs navigators (auth)/(app) ke apne _layout.tsx mein hain</span>
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">RootLayout</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;AuthProvider&gt;</span> <span class="tok-com">{/* poori app ko auth context se wrap kiya, taaki RootLayoutNav aur har child useAuth() use kar sake */}</span>
+      <span class="tok-tag">&lt;RootLayoutNav</span> <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/AuthProvider&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Redirect Loop Gotcha (ch.4 se recap)</div>
+        <p>
+          Agar <code>isLoading</code> check upar wale useEffect mein sabse pehle na ho, toh initial render pe
+          (jab session abhi fetch hi ho rahi hai aur <code>user</code> abhi <code>null</code> hai by default)
+          guard galti se "user logged out hai" samajh ke login pe redirect kar dega — chahe user actually
+          logged in ho aur session bas load ho rahi ho. Fir jab actual session load hoti hai, guard dobara
+          fire hoke wapas <code>(app)</code> pe bhejta hai — is flicker/race ko hi "redirect loop" kehte hain.
+          Fix wahi hai jo upar code mein hai: <code>if (isLoading) return;</code> sabse pehli line honi
+          chahiye is effect ke andar.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="core-feature">5. Step 4 — Core Habit Tracking Feature</h2>
+
+      <p>
+        Ab main feature — habits list dikhana, aaj ka check-in maarna, aur streak count calculate karna.
+        Pehle streak-calculation ko ek pure function ke roop mein alag <code>lib/streaks.ts</code> mein
+        likhte hain — UI logic se alag rakhne se ise easily test bhi kiya ja sakta hai (ch.7 ke testing
+        principles):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/streaks.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// "completed_on" dates ki ek list leke current streak (consecutive days including aaj/kal) calculate karta hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">calculateStreak</span>(completedDates: <span class="tok-kw">string</span>[]): <span class="tok-kw">number</span> {
+  <span class="tok-kw">if</span> (completedDates.length === <span class="tok-num">0</span>) <span class="tok-kw">return</span> <span class="tok-num">0</span>; <span class="tok-com">// koi log hi nahi hai toh streak zero</span>
+
+  <span class="tok-kw">const</span> uniqueSorted = <span class="tok-fn">Array</span>.<span class="tok-fn">from</span>(<span class="tok-kw">new</span> <span class="tok-fn">Set</span>(completedDates)) <span class="tok-com">// duplicate dates hata diye (Set) agar galti se aa gaye ho</span>
+    .<span class="tok-fn">sort</span>() <span class="tok-com">// "YYYY-MM-DD" format string sort se hi chronological order aa jaata hai</span>
+    .<span class="tok-fn">reverse</span>(); <span class="tok-com">// sabse naya date pehle chahiye, isliye reverse kiya</span>
+
+  <span class="tok-kw">const</span> today = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>(); <span class="tok-com">// aaj ki date object</span>
+  today.<span class="tok-fn">setHours</span>(<span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-num">0</span>); <span class="tok-com">// time-of-day zero kiya, taaki sirf calendar-day compare ho, hours/minutes se farak na pade</span>
+
+  <span class="tok-kw">const</span> mostRecent = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>(uniqueSorted[<span class="tok-num">0</span>]); <span class="tok-com">// sabse latest completed date ko Date object mein convert kiya</span>
+  <span class="tok-kw">const</span> daysSinceLast = <span class="tok-fn">Math</span>.<span class="tok-fn">round</span>((today.<span class="tok-fn">getTime</span>() - mostRecent.<span class="tok-fn">getTime</span>()) / (<span class="tok-num">1000</span> * <span class="tok-num">60</span> * <span class="tok-num">60</span> * <span class="tok-num">24</span>)); <span class="tok-com">// aaj aur sabse recent check-in ke beech kitne din, milliseconds-to-days conversion</span>
+
+  <span class="tok-kw">if</span> (daysSinceLast > <span class="tok-num">1</span>) <span class="tok-kw">return</span> <span class="tok-num">0</span>; <span class="tok-com">// agar last check-in 1 din se zyada purana hai (matlab kal bhi miss kiya), streak toot chuki hai — zero</span>
+
+  <span class="tok-kw">let</span> streak = <span class="tok-num">1</span>; <span class="tok-com">// kam se kam ek din toh complete hai hi (sabse recent wala), isse count shuru</span>
+  <span class="tok-kw">for</span> (<span class="tok-kw">let</span> i = <span class="tok-num">0</span>; i < uniqueSorted.length - <span class="tok-num">1</span>; i++) { <span class="tok-com">// consecutive pairs check karne ke liye loop, aakhri element tak nahi jaate kyunki pair chahiye</span>
+    <span class="tok-kw">const</span> current = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>(uniqueSorted[i]); <span class="tok-com">// current date is iteration ka</span>
+    <span class="tok-kw">const</span> previous = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>(uniqueSorted[i + <span class="tok-num">1</span>]); <span class="tok-com">// usse ek din purana wala date (array reverse-sorted hai, isliye i+1 purana hai)</span>
+    <span class="tok-kw">const</span> diff = <span class="tok-fn">Math</span>.<span class="tok-fn">round</span>((current.<span class="tok-fn">getTime</span>() - previous.<span class="tok-fn">getTime</span>()) / (<span class="tok-num">1000</span> * <span class="tok-num">60</span> * <span class="tok-num">60</span> * <span class="tok-num">24</span>)); <span class="tok-com">// dono dates ke beech ka gap din mein</span>
+
+    <span class="tok-kw">if</span> (diff === <span class="tok-num">1</span>) { <span class="tok-com">// exactly ek din ka gap matlab consecutive day hai, streak continue</span>
+      streak++; <span class="tok-com">// streak count badhaya</span>
+    } <span class="tok-kw">else</span> {
+      <span class="tok-kw">break</span>; <span class="tok-com">// gap 1 se zyada mila matlab kahin beech mein miss hua tha, isliye streak yahin ruk jaati hai</span>
+    }
+  }
+
+  <span class="tok-kw">return</span> streak; <span class="tok-com">// final consecutive-days count return kiya</span>
+}</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip — kal ka check-in bhi allow kyun kiya</div>
+        <p>
+          <code>daysSinceLast > 1</code> check isliye hai, na ki <code>> 0</code> — agar user ne kal check-in
+          kiya tha aur aaj abhi tak nahi kiya (lekin din khatam nahi hua), streak abhi "broken" nahi maani
+          jaani chahiye, warna app "aaj kuch nahi kiya toh turant streak 0 dikha do" jaisa harsh/annoying
+          UX de dega. Ye ek chhoti si business-logic decision hai jo real habit-tracker apps (jaise Duolingo)
+          mein bhi is tarah handle hoti hai.
+        </p>
+      </div>
+
+      <p>Ab main list screen jo habits dikhata hai, check-in karta hai, aur streak show karta hai:</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/index.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useCallback</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur memoized-callback hooks</span>
+<span class="tok-kw">import</span> { View, Text, FlatList, Pressable, TextInput, Button } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> { useFocusEffect } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>; <span class="tok-com">// tab pe wapas aane par data refresh karne ke liye</span>
+<span class="tok-kw">import</span> { supabase } <span class="tok-kw">from</span> <span class="tok-str">"../../lib/supabase"</span>; <span class="tok-com">// shared Supabase client</span>
+<span class="tok-kw">import</span> { calculateStreak } <span class="tok-kw">from</span> <span class="tok-str">"../../lib/streaks"</span>; <span class="tok-com">// hamara pure streak-calculation function</span>
+
+<span class="tok-kw">type</span> HabitWithStreak = { id: <span class="tok-kw">string</span>; title: <span class="tok-kw">string</span>; emoji: <span class="tok-kw">string</span>; streak: <span class="tok-kw">number</span>; doneToday: <span class="tok-kw">boolean</span> }; <span class="tok-com">// UI ke liye combined shape (DB rows + calculated fields)</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">HabitsScreen</span>() {
+  <span class="tok-kw">const</span> [habits, setHabits] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>HabitWithStreak[]<span class="tok-punc">&gt;</span>([]); <span class="tok-com">// list of habits with computed streak/doneToday</span>
+  <span class="tok-kw">const</span> [newTitle, setNewTitle] = <span class="tok-fn">useState</span>(<span class="tok-str">""</span>); <span class="tok-com">// naya habit type karne ka input state</span>
+
+  <span class="tok-kw">const</span> <span class="tok-fn">loadHabits</span> = <span class="tok-fn">useCallback</span>(<span class="tok-kw">async</span> () => {
+    <span class="tok-kw">const</span> { data: habitsData, error: habitsErr } = <span class="tok-kw">await</span> supabase
+      .<span class="tok-fn">from</span>(<span class="tok-str">"habits"</span>) <span class="tok-com">// "habits" table target kiya — RLS automatically sirf current user ke rows return karega</span>
+      .<span class="tok-fn">select</span>(<span class="tok-str">"id, title, emoji"</span>) <span class="tok-com">// sirf zaroori columns</span>
+      .<span class="tok-fn">order</span>(<span class="tok-str">"created_at"</span>, { ascending: <span class="tok-kw">true</span> }); <span class="tok-com">// purane habits pehle dikhenge</span>
+
+    <span class="tok-kw">if</span> (habitsErr || !habitsData) { <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(habitsErr); <span class="tok-kw">return</span>; } <span class="tok-com">// error ho toh log karke ruk jao</span>
+
+    <span class="tok-kw">const</span> today = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>().<span class="tok-fn">toISOString</span>().<span class="tok-fn">slice</span>(<span class="tok-num">0</span>, <span class="tok-num">10</span>); <span class="tok-com">// aaj ki date "YYYY-MM-DD" format mein, DB ke "date" column se match karne ke liye</span>
+
+    <span class="tok-com">// har habit ke liye uske saare logs fetch karke streak calculate karte hain (chhoti app ke liye N+1 query theek hai, scale pe ek single join-query se optimize karoge)</span>
+    <span class="tok-kw">const</span> enriched = <span class="tok-kw">await</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">all</span>(
+      habitsData.<span class="tok-fn">map</span>(<span class="tok-kw">async</span> (habit) => {
+        <span class="tok-kw">const</span> { data: logs } = <span class="tok-kw">await</span> supabase
+          .<span class="tok-fn">from</span>(<span class="tok-str">"habit_logs"</span>) <span class="tok-com">// "habit_logs" table target kiya</span>
+          .<span class="tok-fn">select</span>(<span class="tok-str">"completed_on"</span>) <span class="tok-com">// sirf date column chahiye</span>
+          .<span class="tok-fn">eq</span>(<span class="tok-str">"habit_id"</span>, habit.id); <span class="tok-com">// sirf isi habit ke logs</span>
+
+        <span class="tok-kw">const</span> dates = (logs ?? []).<span class="tok-fn">map</span>((l) => l.completed_on); <span class="tok-com">// sirf date strings ki array nikaali</span>
+        <span class="tok-kw">return</span> {
+          id: habit.id, <span class="tok-com">// habit id passthrough</span>
+          title: habit.title, <span class="tok-com">// habit title passthrough</span>
+          emoji: habit.emoji, <span class="tok-com">// habit emoji passthrough</span>
+          streak: <span class="tok-fn">calculateStreak</span>(dates), <span class="tok-com">// hamara pure function call karke streak nikaala</span>
+          doneToday: dates.<span class="tok-fn">includes</span>(today), <span class="tok-com">// aaj ka check-in already hua hai ya nahi, UI mein checkbox state ke liye</span>
+        };
+      })
+    );
+
+    <span class="tok-fn">setHabits</span>(enriched); <span class="tok-com">// final enriched list ko state mein daala</span>
+  }, []); <span class="tok-com">// koi external dependency nahi, function reference stable rehta hai</span>
+
+  <span class="tok-fn">useFocusEffect</span>(
+    <span class="tok-fn">useCallback</span>(() => {
+      <span class="tok-fn">loadHabits</span>(); <span class="tok-com">// jab bhi ye tab focus mein aaye (jaise premium screen se wapas aaye), fresh data load karo</span>
+    }, [loadHabits])
+  );
+
+  <span class="tok-kw">const</span> <span class="tok-fn">addHabit</span> = <span class="tok-kw">async</span> () => {
+    <span class="tok-kw">if</span> (!newTitle.<span class="tok-fn">trim</span>()) <span class="tok-kw">return</span>; <span class="tok-com">// empty input pe kuch mat karo</span>
+    <span class="tok-kw">const</span> { data: { user } } = <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">getUser</span>(); <span class="tok-com">// current logged-in user nikaala (RLS insert-check ke liye user_id chahiye)</span>
+    <span class="tok-kw">if</span> (!user) <span class="tok-kw">return</span>; <span class="tok-com">// safety check</span>
+
+    <span class="tok-kw">await</span> supabase.<span class="tok-fn">from</span>(<span class="tok-str">"habits"</span>).<span class="tok-fn">insert</span>({ title: newTitle.<span class="tok-fn">trim</span>(), user_id: user.id }); <span class="tok-com">// naya habit insert kiya</span>
+    <span class="tok-fn">setNewTitle</span>(<span class="tok-str">""</span>); <span class="tok-com">// input clear kiya</span>
+    <span class="tok-fn">loadHabits</span>(); <span class="tok-com">// list refresh taaki naya habit turant dikhe</span>
+  };
+
+  <span class="tok-kw">const</span> <span class="tok-fn">toggleToday</span> = <span class="tok-kw">async</span> (habit: HabitWithStreak) => {
+    <span class="tok-kw">const</span> { data: { user } } = <span class="tok-kw">await</span> supabase.auth.<span class="tok-fn">getUser</span>(); <span class="tok-com">// current user nikaala</span>
+    <span class="tok-kw">if</span> (!user) <span class="tok-kw">return</span>; <span class="tok-com">// safety check</span>
+    <span class="tok-kw">const</span> today = <span class="tok-kw">new</span> <span class="tok-fn">Date</span>().<span class="tok-fn">toISOString</span>().<span class="tok-fn">slice</span>(<span class="tok-num">0</span>, <span class="tok-num">10</span>); <span class="tok-com">// aaj ki date "YYYY-MM-DD" format mein</span>
+
+    <span class="tok-kw">if</span> (habit.doneToday) { <span class="tok-com">// agar already complete tha, toggle off karo (undo)</span>
+      <span class="tok-kw">await</span> supabase.<span class="tok-fn">from</span>(<span class="tok-str">"habit_logs"</span>).<span class="tok-fn">delete</span>().<span class="tok-fn">eq</span>(<span class="tok-str">"habit_id"</span>, habit.id).<span class="tok-fn">eq</span>(<span class="tok-str">"completed_on"</span>, today); <span class="tok-com">// aaj wala log delete kiya</span>
+    } <span class="tok-kw">else</span> {
+      <span class="tok-kw">await</span> supabase.<span class="tok-fn">from</span>(<span class="tok-str">"habit_logs"</span>).<span class="tok-fn">insert</span>({ habit_id: habit.id, user_id: user.id, completed_on: today }); <span class="tok-com">// naya check-in log insert kiya</span>
+    }
+    <span class="tok-fn">loadHabits</span>(); <span class="tok-com">// list refresh taaki naya streak turant reflect ho</span>
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span>=<span class="tok-punc">{</span>{ flex: <span class="tok-num">1</span>, padding: <span class="tok-num">16</span> }<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-tag">&lt;TextInput</span>
+        <span class="tok-attr">value</span>=<span class="tok-punc">{</span>newTitle<span class="tok-punc">}</span> <span class="tok-com">{/* controlled input value */}</span>
+        <span class="tok-attr">onChangeText</span>=<span class="tok-punc">{</span>setNewTitle<span class="tok-punc">}</span> <span class="tok-com">{/* typing pe state update */}</span>
+        <span class="tok-attr">placeholder</span>=<span class="tok-str">"Naya habit (jaise: Paani piyo)"</span>
+      <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-str">"Add Habit"</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>addHabit<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+
+      <span class="tok-tag">&lt;FlatList</span>
+        <span class="tok-attr">data</span>=<span class="tok-punc">{</span>habits<span class="tok-punc">}</span>
+        <span class="tok-attr">keyExtractor</span>=<span class="tok-punc">{</span>(item) =&gt; item.id<span class="tok-punc">}</span>
+        <span class="tok-attr">renderItem</span>=<span class="tok-punc">{</span>({ item }) =&gt; (
+          <span class="tok-tag">&lt;Pressable</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() =&gt; <span class="tok-fn">toggleToday</span>(item)<span class="tok-punc">}</span> <span class="tok-attr">style</span>=<span class="tok-punc">{</span>{ flexDirection: <span class="tok-str">"row"</span>, padding: <span class="tok-num">12</span> }<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+            <span class="tok-tag">&lt;Text&gt;</span>{item.doneToday ? <span class="tok-str">"✅"</span> : <span class="tok-str">"⬜"</span>} {item.emoji} {item.title}<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">{/* checkbox state + emoji + title ek line mein */}</span>
+            <span class="tok-tag">&lt;Text&gt;</span> — 🔥{item.streak} din<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">{/* current streak count fire-emoji ke saath */}</span>
+          <span class="tok-tag">&lt;/Pressable&gt;</span>
+        )<span class="tok-punc">}</span>
+      <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> HabitsScreen; <span class="tok-com">// component export kiya, Expo Router isi file ko route ke roop mein render karega</span></code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="razorpay">6. Step 5 — Adding the Paid Premium Feature with Razorpay Test Mode</h2>
+
+      <p>
+        Ye chapter ka heart hai — ek real (lekin fake-money) payment flow banate hain jo premium themes
+        unlock karta hai. Poori tarah <strong>Razorpay Test Mode</strong> mein — matlab koi real paisa
+        kabhi kahin move nahi hota, lekin poora technical flow bilkul production jaisa hi hai.
+      </p>
+
+      <h3>(a) Razorpay account banana, Test Mode mein</h3>
+      <ol>
+        <li><a href="https://razorpay.com" target="_blank" rel="noopener">razorpay.com</a> pe free sign up karo (business details maangega, lekin Test Mode use karne ke liye poora KYC turant zaroori nahi — Test Mode signup ke turant baad hi available ho jaata hai).</li>
+        <li>Dashboard mein top-right pe ek toggle milta hai <strong>Test Mode / Live Mode</strong> — sunishchit karo ki ye <strong>Test Mode</strong> pe hai. Jab tak khud KYC complete karke Live Mode activate na karo, account by default Test Mode mein hi rehta hai.</li>
+        <li>Test Mode mein Razorpay apne docs mein ek published set of <strong>test card numbers aur test UPI IDs</strong> deta hai exactly isi purpose ke liye — inse "successful payment", "failed payment", waghera scenarios simulate kar sakte ho bina kisi real bank/card involve kiye.</li>
+      </ol>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Test Mode ka matlab kya hai, technically</div>
+        <p>
+          Test Mode mein Razorpay tumhe alag API keys deta hai (prefix <code>rzp_test_...</code>) jo sirf
+          ek sandboxed environment se connect hoti hain — real banking rails se koi connection hi nahi hai.
+          Jab tum test card number se "pay" karte ho, Razorpay ka test environment ek fake success/failure
+          response simulate karta hai. Ye bilkul waisa hi concept hai jaisa ch.15 mein Stripe/Apple/Google
+          ke sandbox testing ka tha — har major payment provider isi pattern ko follow karta hai.
+        </p>
+      </div>
+
+      <h3>(b) Test API keys nikalna</h3>
+      <p>
+        Dashboard mein <strong>Settings → API Keys</strong> pe jaao, "Generate Test Key" click karo. Do
+        values milengi: <strong>Key ID</strong> (<code>rzp_test_xxxxxxxxxxxx</code>) aur <strong>Key
+        Secret</strong> (ek dikhta hai ek baar hi, turant copy karke safe jagah rakh lo). Ye exactly ch.9/
+        ch.15 wala client-vs-server key split hai:
+      </p>
+
+      <table>
+        <thead><tr><th>Key</th><th>Kahan use ho</th><th>Kyun</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Key ID</strong> (<code>rzp_test_...</code>)</td>
+            <td>Client (RN app), <code>EXPO_PUBLIC_*</code> mein</td>
+            <td>Ye sirf identify karta hai ki checkout kis Razorpay account ka hai — public/client-safe by design</td>
+          </tr>
+          <tr>
+            <td><strong>Key Secret</strong></td>
+            <td><strong>Sirf server-side</strong> (Expo Router API route) — <strong>kabhi client mein nahi</strong></td>
+            <td>Isse order create hota hai aur payment signature verify hoti hai — agar ye leak ho, koi bhi fake "verified" payment bana sakta hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title"><span>.env (updated)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># ... pehle wali Supabase lines already yahan hain ...</span>
+
+<span class="tok-com"># Razorpay Test Mode ka Key ID — client-safe, checkout SDK ko identify karne ke liye chahiye</span>
+EXPO_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+
+<span class="tok-com"># Razorpay Key Secret — NO "EXPO_PUBLIC_" prefix, ye sirf server (+api.ts routes) process.env se padhega</span>
+RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+
+<span class="tok-com"># Supabase service_role key — RLS bypass karta hai, sirf server-side is_premium update karne ke liye chahiye</span>
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Key Secret aur service_role kabhi EXPO_PUBLIC_ nahi</div>
+        <p>
+          Notice karo upar <code>RAZORPAY_KEY_SECRET</code> aur <code>SUPABASE_SERVICE_ROLE_KEY</code>, dono
+          <code>EXPO_PUBLIC_</code> prefix ke bina hain — ye jaan-boojh ke hai. Agar galti se ye
+          <code>EXPO_PUBLIC_RAZORPAY_KEY_SECRET</code> ban gaye, Metro bundler inhe client JS bundle mein
+          plain text bake kar dega (ch.9 section 1 ka wahi mechanism), aur koi bhi APK decompile karke inhe
+          nikaal sakta hai — phir wo tumhare Razorpay account se fake orders bana sakta hai ya, badtar,
+          tumhari database ka poora RLS bypass kar sakta hai <code>service_role</code> key se.
+        </p>
+      </div>
+
+      <h3>(c) Server-side order create karna — Expo Router API route</h3>
+      <p>
+        Razorpay ka flow hamesha "order-first" hota hai — client seedha payment start nahi kar sakta,
+        pehle server ek <strong>order</strong> banata hai (jisme amount fix hota hai, client ise change
+        nahi kar sakta), phir client us order ke against checkout kholta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/create-order+api.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> Razorpay <span class="tok-kw">from</span> <span class="tok-str">"razorpay"</span>; <span class="tok-com">// Razorpay ka official Node SDK (npm install razorpay)</span>
+
+<span class="tok-kw">const</span> razorpay = <span class="tok-kw">new</span> <span class="tok-fn">Razorpay</span>({ <span class="tok-com">// server-side Razorpay client, sirf yahan secret key touch hoti hai</span>
+  key_id: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID<span class="tok-punc">!</span>, <span class="tok-com">// Key ID (public, lekin server pe bhi zaroori hai SDK config ke liye)</span>
+  key_secret: process.env.RAZORPAY_KEY_SECRET<span class="tok-punc">!</span>, <span class="tok-com">// Key Secret — sirf server (Node runtime) pe process.env se readable, client bundle mein kabhi nahi (ch.9 pattern)</span>
+});
+
+<span class="tok-kw">const</span> PREMIUM_PRICE_PAISE = <span class="tok-num">4900</span>; <span class="tok-com">// ₹49 paise mein — amount hamesha server pe hardcode/DB se aana chahiye, client se kabhi trust nahi karte (ch.15 ka exact wahi principle)</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">POST</span>(request: Request) {
+  <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> razorpay.orders.<span class="tok-fn">create</span>({ <span class="tok-com">// Razorpay ke saath naya order banaya, Test Mode key hone ki wajah se ye ek "test" order hai</span>
+    amount: PREMIUM_PRICE_PAISE, <span class="tok-com">// server-computed amount, client se koi amount input accept nahi kiya</span>
+    currency: <span class="tok-str">"INR"</span>, <span class="tok-com">// Indian Rupees</span>
+    receipt: <span class="tok-str">`premium_${Date.now()}`</span>, <span class="tok-com">// hamara khud ka internal reference id, Razorpay dashboard mein dikhega</span>
+  });
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ orderId: order.id, amount: order.amount }); <span class="tok-com">// sirf orderId aur amount client ko wapas bheja, poora order object nahi</span>
+}</code></pre>
+      </div>
+
+      <h3>(d) Client-side checkout kholna — test payment complete karna</h3>
+      <p>
+        Client mein Razorpay ka React Native checkout SDK use karke, Key ID (public) aur upar mile
+        <code>orderId</code> ke saath ek native checkout screen kholte hain. Test Mode mein hi user ko
+        Razorpay ki apni test card number ya test UPI dikh ke "pay" karne ka option milega.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — Razorpay RN SDK install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install react-native-razorpay <span class="tok-com"># Razorpay ka official React Native checkout SDK — native module hai, isliye Expo Go mein nahi chalega, dev build zaroori hai (ch.1 gotcha)</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/premium.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// local loading state ke liye</span>
+<span class="tok-kw">import</span> { View, Text, Button, Alert } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> RazorpayCheckout <span class="tok-kw">from</span> <span class="tok-str">"react-native-razorpay"</span>; <span class="tok-com">// native checkout SDK, ek native "pay screen" open karta hai</span>
+<span class="tok-kw">import</span> { supabase } <span class="tok-kw">from</span> <span class="tok-str">"../../lib/supabase"</span>; <span class="tok-com">// shared Supabase client</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">PremiumScreen</span>() {
+  <span class="tok-kw">const</span> [loading, setLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// payment process ho raha hai ya nahi, button disable karne ke liye</span>
+
+  <span class="tok-kw">const</span> <span class="tok-fn">handleUnlock</span> = <span class="tok-kw">async</span> () => {
+    <span class="tok-fn">setLoading</span>(<span class="tok-kw">true</span>); <span class="tok-com">// spinner/disable state on</span>
+    <span class="tok-kw">try</span> {
+      <span class="tok-com">// step 1: apne backend se order banwao (client seedha Razorpay se order nahi bana sakta, secret key nahi hai yahan)</span>
+      <span class="tok-kw">const</span> orderRes = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/create-order"</span>, { method: <span class="tok-str">"POST"</span> }); <span class="tok-com">// hamare Expo Router API route ko POST kiya</span>
+      <span class="tok-kw">const</span> { orderId, amount } = <span class="tok-kw">await</span> orderRes.<span class="tok-fn">json</span>(); <span class="tok-com">// backend se orderId aur amount mila</span>
+
+      <span class="tok-com">// step 2: native Razorpay checkout khola, is order ke against</span>
+      <span class="tok-kw">const</span> paymentData = <span class="tok-kw">await</span> RazorpayCheckout.<span class="tok-fn">open</span>({
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID<span class="tok-punc">!</span>, <span class="tok-com">// public Key ID, checkout ko identify karne ke liye</span>
+        order_id: orderId, <span class="tok-com">// server-created order ka id — amount yahan se hi derive hota hai, client kuch aur nahi bhej sakta</span>
+        amount, <span class="tok-com">// display ke liye, actual charge amount order_id se locked hai</span>
+        currency: <span class="tok-str">"INR"</span>, <span class="tok-com">// currency</span>
+        name: <span class="tok-str">"Streaks"</span>, <span class="tok-com">// checkout screen pe app ka naam dikhega</span>
+        description: <span class="tok-str">"Premium Themes Unlock"</span>, <span class="tok-com">// checkout screen pe description</span>
+      });
+      <span class="tok-com">// yahan tak pahunche matlab Test Mode mein user ne test card/UPI se "pay" kar diya — paymentData mein razorpay_payment_id, razorpay_order_id, razorpay_signature aate hain</span>
+
+      <span class="tok-com">// step 3: is CLIENT-SIDE success ko kabhi bhi trust karke seedha premium unlock NAHI karte — server se signature verify karwate hain (ch.15 ka receipt-validation principle)</span>
+      <span class="tok-kw">const</span> verifyRes = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/verify-payment"</span>, {
+        method: <span class="tok-str">"POST"</span>, <span class="tok-com">// POST request</span>
+        headers: { <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span> }, <span class="tok-com">// JSON body bhej rahe hain</span>
+        body: JSON.<span class="tok-fn">stringify</span>(paymentData), <span class="tok-com">// Razorpay se mile teeno ids/signature backend ko forward kiye</span>
+      });
+      <span class="tok-kw">const</span> verifyJson = <span class="tok-kw">await</span> verifyRes.<span class="tok-fn">json</span>(); <span class="tok-com">// backend ka verification result parse kiya</span>
+
+      <span class="tok-kw">if</span> (verifyJson.verified) { <span class="tok-com">// sirf tabhi success maano jab backend ne explicitly "verified: true" bola ho</span>
+        Alert.<span class="tok-fn">alert</span>(<span class="tok-str">"Success"</span>, <span class="tok-str">"Premium unlocked! 🎉"</span>); <span class="tok-com">// is_premium DB mein already server ne set kar diya hai is point tak</span>
+      } <span class="tok-kw">else</span> {
+        Alert.<span class="tok-fn">alert</span>(<span class="tok-str">"Verification failed"</span>, <span class="tok-str">"Payment verify nahi ho paya, support se contact karo"</span>); <span class="tok-com">// signature match nahi hui — tampered ya kuch galat</span>
+      }
+    } <span class="tok-kw">catch</span> (err: <span class="tok-kw">any</span>) {
+      <span class="tok-kw">if</span> (err.code !== <span class="tok-str">"PAYMENT_CANCELLED"</span>) { <span class="tok-com">// user ne khud checkout cancel kiya toh error dikhana zaroori nahi</span>
+        Alert.<span class="tok-fn">alert</span>(<span class="tok-str">"Error"</span>, <span class="tok-str">"Kuch galat ho gaya"</span>); <span class="tok-com">// genuine failure (network, etc.)</span>
+      }
+    } <span class="tok-kw">finally</span> {
+      <span class="tok-fn">setLoading</span>(<span class="tok-kw">false</span>); <span class="tok-com">// process complete, loading state off</span>
+    }
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span>=<span class="tok-punc">{</span>{ flex: <span class="tok-num">1</span>, padding: <span class="tok-num">16</span> }<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>Extra themes aur stats unlock karo — sirf ₹49 (test mode mein free hai!)<span class="tok-tag">&lt;/Text&gt;</span>
+      <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-punc">{</span>loading ? <span class="tok-str">"Processing..."</span> : <span class="tok-str">"Unlock Premium"</span><span class="tok-punc">}</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>handleUnlock<span class="tok-punc">}</span> <span class="tok-attr">disabled</span>=<span class="tok-punc">{</span>loading<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> PremiumScreen; <span class="tok-com">// component export kiya</span></code></pre>
+      </div>
+
+      <h3>(e) Server-side signature verify karna — premium tabhi unlock jab genuinely verified ho</h3>
+      <p>
+        Ye poore flow ka sabse important security step hai. Razorpay checkout se aaya "success" client-side
+        event hai — usse blindly trust karna bilkul waisi hi galti hai jaisa ch.15 mein StoreKit ke client-side
+        success event ko blindly trust karna thi. Razorpay <code>order_id + payment_id</code> ko tumhare Key
+        Secret se ek HMAC signature ke saath sign karke bhejta hai — server pe wahi signature dobara compute
+        karke match karte hain, tabhi genuinely confirm hota hai ki payment tamper nahi hua.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/verify-payment+api.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> crypto <span class="tok-kw">from</span> <span class="tok-str">"crypto"</span>; <span class="tok-com">// Node ka built-in crypto module, HMAC signature verify karne ke liye</span>
+<span class="tok-kw">import</span> { createClient } <span class="tok-kw">from</span> <span class="tok-str">"@supabase/supabase-js"</span>; <span class="tok-com">// server-side Supabase client banane ke liye</span>
+
+<span class="tok-com">// service_role key wala client — RLS bypass karta hai, isliye sirf yahan server pe, kabhi client bundle mein nahi</span>
+<span class="tok-kw">const</span> supabaseAdmin = <span class="tok-fn">createClient</span>(
+  process.env.EXPO_PUBLIC_SUPABASE_URL<span class="tok-punc">!</span>, <span class="tok-com">// URL public hai, koi issue nahi</span>
+  process.env.SUPABASE_SERVICE_ROLE_KEY<span class="tok-punc">!</span> <span class="tok-com">// service_role key — sirf server, RLS ko bypass karke bhi safe hai kyunki humne khud user_id filter kiya hai code mein</span>
+);
+
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">POST</span>(request: Request) {
+  <span class="tok-kw">const</span> body = <span class="tok-kw">await</span> request.<span class="tok-fn">json</span>(); <span class="tok-com">// client se aaya payment data parse kiya</span>
+  <span class="tok-kw">const</span> { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body; <span class="tok-com">// teeno zaroori fields destructure kiye</span>
+
+  <span class="tok-kw">if</span> (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) { <span class="tok-com">// koi field missing ho toh aage mat badho</span>
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ verified: <span class="tok-kw">false</span>, error: <span class="tok-str">"Missing fields"</span> }, { status: <span class="tok-num">400</span> }); <span class="tok-com">// 400 = bad request</span>
+  }
+
+  <span class="tok-com">// Razorpay ka documented signature-verification formula: HMAC-SHA256("order_id|payment_id", key_secret)</span>
+  <span class="tok-kw">const</span> expectedSignature = crypto
+    .<span class="tok-fn">createHmac</span>(<span class="tok-str">"sha256"</span>, process.env.RAZORPAY_KEY_SECRET<span class="tok-punc">!</span>) <span class="tok-com">// SHA256 HMAC banaya, secret key ke saath — ye secret sirf server pe hai, isliye ye check kabhi client mein nahi ho sakta</span>
+    .<span class="tok-fn">update</span>(<span class="tok-str">`${razorpay_order_id}|${razorpay_payment_id}`</span>) <span class="tok-com">// exact wahi string format jo Razorpay docs specify karti hain</span>
+    .<span class="tok-fn">digest</span>(<span class="tok-str">"hex"</span>); <span class="tok-com">// hex string ke roop mein final hash nikaala</span>
+
+  <span class="tok-kw">const</span> isValid = expectedSignature === razorpay_signature; <span class="tok-com">// hamara khud compute kiya hash, client se aaye signature se match hona chahiye</span>
+
+  <span class="tok-kw">if</span> (!isValid) { <span class="tok-com">// signature match nahi hui — ya toh tampered request hai, ya kuch galat gaya</span>
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ verified: <span class="tok-kw">false</span> }, { status: <span class="tok-num">400</span> }); <span class="tok-com">// premium unlock BILKUL nahi hoga is case mein</span>
+  }
+
+  <span class="tok-com">// signature genuinely valid hai — ab hi database mein is_premium update karte hain, aur kabhi pehle nahi</span>
+  <span class="tok-kw">const</span> authHeader = request.headers.<span class="tok-fn">get</span>(<span class="tok-str">"Authorization"</span>); <span class="tok-com">// production mein yahan client ka JWT bhejwa ke us se user_id derive karna chahiye (simplified example)</span>
+  <span class="tok-com">// NOTE: real app mein yahan supabaseAdmin.auth.getUser(token) se verified user_id nikaalo, client se raw user_id trust mat karo</span>
+
+  <span class="tok-kw">await</span> supabaseAdmin
+    .<span class="tok-fn">from</span>(<span class="tok-str">"profiles"</span>) <span class="tok-com">// "profiles" table target kiya</span>
+    .<span class="tok-fn">update</span>({ is_premium: <span class="tok-kw">true</span>, unlocked_at: <span class="tok-kw">new</span> <span class="tok-fn">Date</span>().<span class="tok-fn">toISOString</span>() }) <span class="tok-com">// premium flag ON + timestamp record kiya</span>
+    .<span class="tok-fn">eq</span>(<span class="tok-str">"id"</span>, <span class="tok-str">"USER_ID_DERIVED_FROM_VERIFIED_TOKEN"</span>); <span class="tok-com">// sirf isi (verified) user ki row update ho — service_role key RLS bypass karta hai isliye ye WHERE khud enforce karna zaroori hai</span>
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ verified: <span class="tok-kw">true</span> }); <span class="tok-com">// client ko confirm kiya — ab premium genuinely unlock ho chuka hai DB mein</span>
+}</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — service_role key ek double-edged sword hai</div>
+        <p>
+          <code>service_role</code> key RLS ko <strong>completely bypass</strong> karti hai — isi wajah se ye
+          isi tarah ke server-side "trusted operation" ke liye zaroori hai (client khud <code>is_premium</code>
+          update nahi kar sakta, section 3 mein dekha). Lekin isi wajah se, jab tum ye key use karte ho, RLS
+          ka automatic protection gaya — matlab <strong>tumhe khud</strong> apne code mein WHERE clause se
+          sunishchit karna padega ki update sirf sahi user ki row pe ho raha hai (upar wale
+          <code>.eq("id", verified_user_id)</code> jaisa). Production code mein <code>request</code> ke
+          Authorization header se JWT nikaal ke <code>supabaseAdmin.auth.getUser(token)</code> se verified
+          user id nikaalna zaroori hai — client se raw <code>user_id</code> field accept karna khud ek
+          security hole hai (koi bhi doosre ka id bhej ke uska account premium bana sakta hai).
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Stripe Test Mode Equivalent (global readers ke liye)</div>
+        <p>
+          Agar Stripe use kar rahe ho: <code>pk_test_...</code> (publishable, client) aur
+          <code>sk_test_...</code> (secret, server) dono test keys hongi. Flow bilkul same shape ka hai —
+          server pe (ch.15 ka <code>create-payment-intent+api.ts</code>) ek <code>PaymentIntent</code> banega
+          Stripe's well-known published test card <code>4242 4242 4242 4242</code> se test kiya ja sakta hai
+          (koi bhi future expiry date, koi bhi 3-digit CVC chalega). Signature-verification ka Stripe
+          equivalent hai <strong>webhook signing secret</strong> se webhook events verify karna — client-side
+          <code>confirmPayment()</code> success ko trust karne ke bajaye, backend Stripe se ek server-to-server
+          webhook (<code>payment_intent.succeeded</code>) receive karke tabhi <code>is_premium</code> update
+          kare. Mental model bilkul identical hai: <strong>kabhi bhi sirf client ka "success" mat maano,
+          hamesha server-side, provider ke apne cryptographic proof se verify karo.</strong>
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="debugging">7. Step 6 — Debugging Steps at Each Stage</h2>
+
+      <p>
+        Real building mein pehli try mein kabhi kuch perfect nahi chalta. Yahan har stage ke sabse common
+        bugs aur unhe systematically debug karne ka tareeka hai:
+      </p>
+
+      <h3>Supabase — "RLS policy blocking a query that should work"</h3>
+      <p>
+        Symptom: query error nahi deti, bas <strong>empty array</strong> return karti hai jab tumhe pata hai
+        data DB mein exist karta hai.
+      </p>
+      <ol>
+        <li>Sabse pehle confirm karo user actually authenticated hai — <code>console.log(await supabase.auth.getSession())</code> chala ke dekho session null toh nahi hai.</li>
+        <li>Supabase dashboard ke <strong>SQL Editor</strong> mein jaake, apne policy ke <code>USING</code> clause ko directly ek query se simulate karo: <code>select * from habits where user_id = auth.uid();</code> — agar SQL Editor mein bhi empty aata hai (aur SQL Editor default service_role context mein chalta hai, isliye RLS bypass hota hai wahan), toh problem RLS nahi, data hi missing hai. Agar SQL Editor mein data dikhta hai lekin app mein nahi, toh RLS policy ya auth context ka issue hai.</li>
+        <li>Dashboard mein <strong>Database → Policies</strong> pe jaake confirm karo ki policy ka naam, operation (select/insert/etc.), aur <code>USING</code>/<code>WITH CHECK</code> expression bilkul wahi hai jo tumne socha tha — copy-paste errors yahan bahut common hain.</li>
+        <li>Confirm karo ki <code>alter table ... enable row level security</code> chala tha (ch.9 ka wahi common miss) — agar RLS enable hi nahi hai, koi bhi policy matter nahi karti.</li>
+      </ol>
+
+      <h3>Auth — "Auth guard redirect loop"</h3>
+      <p>
+        Symptom: app login aur main screen ke beech flicker karti rehti hai, ya white screen pe stuck ho
+        jaati hai.
+      </p>
+      <ol>
+        <li>Section 4 ke gotcha ko recap karo — <code>app/_layout.tsx</code> ke <code>useEffect</code> mein <code>if (isLoading) return;</code> line sabse pehle honi chahiye.</li>
+        <li><code>console.log(segments)</code> daal ke dekho actual segments kya aa rahe hain — kabhi kabhi route group ka naam typo ho jaata hai (jaise <code>"auth"</code> likh diya <code>"(auth)"</code> ki jagah, jo kabhi match hi nahi karega).</li>
+        <li>useEffect ki dependency array check karo — agar <code>segments</code> missing hai deps se, redirect stale closures ke saath fire ho sakta hai.</li>
+      </ol>
+
+      <h3>Razorpay — "Test payment succeeds on Razorpay's side but app doesn't unlock premium"</h3>
+      <p>
+        Ye is chapter ka sabse "senior-level" debugging scenario hai — checkout dikhata hai success, lekin
+        app mein <code>is_premium</code> false hi rehta hai.
+      </p>
+      <ol>
+        <li><strong>Signature verification silently fail toh nahi hui?</strong> — <code>verify-payment+api.ts</code> ke andar <code>console.log({ expectedSignature, razorpay_signature })</code> daal ke dono values compare karo. Agar match nahi ho rahi, sabse pehla suspect: Key Secret galat hai (ya dashboard se copy karte waqt extra space aa gaya).</li>
+        <li><strong>Key mismatch check karo</strong> — ek bahut common real mistake: client mein Test Mode ka Key ID (<code>rzp_test_...</code>) use ho raha hai lekin server pe galti se Live Mode ka Key Secret paste ho gaya (ya vice versa). Test aur Live keys ek doosre se completely independent hote hain — mismatch hote hi signature kabhi match nahi karegi, chahe payment "successful" dikhe.</li>
+        <li><strong>Request backend tak pahuncha hi nahi?</strong> — client-side network tab/logs check karo (agla point) ki <code>/api/verify-payment</code> call actually fire hui aur 200 response aayi, ya kahin beech mein hi fail ho gayi (jaise app background mein chali gayi payment ke turant baad, request cancel ho gayi).</li>
+        <li><strong>Amount/order mismatch?</strong> — confirm karo ki client ne wahi <code>order_id</code> bheja jo server ne banaya tha, koi stale/cached order id toh nahi reuse ho raha.</li>
+      </ol>
+
+      <h3>General — "App works in Expo Go but not in a Dev Build"</h3>
+      <p>
+        Symptom: Expo Go mein sab theek chalta hai, lekin jaise hi <code>react-native-razorpay</code> jaisa
+        native module use karte ho, error aata hai jaise <em>"Cannot find native module"</em>.
+      </p>
+      <ol>
+        <li>Ye ch.1 ka exact wahi gotcha hai — <strong>Expo Go ek fixed set of native modules ke saath aata hai</strong>, aur third-party native SDKs (jaise Razorpay checkout, jo actual native iOS/Android code use karta hai) usme included nahi hote.</li>
+        <li>Fix: <code>npx expo install expo-dev-client</code> chalao, phir <code>npx expo run:android</code> ya <code>eas build --profile development</code> se ek dev build banao — Razorpay jaise native modules sirf dev build/production build mein hi kaam karenge.</li>
+        <li>Rule of thumb (ch.1 se): jaise hi koi native SDK app mein aata hai, Day 1 se dev build pe shift ho jao, Expo Go sirf pure-JS prototyping ke liye best hai.</li>
+      </ol>
+
+      <h3>Network debugging — jab kuch silently fail ho raha ho</h3>
+      <p>
+        Jab upar ke sab checks ke baad bhi samajh nahi aa raha error kahan hai, actual HTTP request/response
+        dekhna sabse reliable tareeka hai — "kya request gayi bhi thi, aur kya response mein aaya":
+      </p>
+      <ul>
+        <li>React Native DevTools ka <strong>Network</strong> tab (ch.19 ke debugging tools) khol ke <code>/api/create-order</code> aur <code>/api/verify-payment</code> dono requests ko inspect karo — request body sahi bheja gaya tha? Response status code kya tha? Response body mein koi error message hai?</li>
+        <li>Agar Supabase call fail ho rahi hai, wahi Network tab mein Supabase ke REST endpoint (<code>*.supabase.co/rest/v1/...</code>) ka actual response dekh sakte ho — Postgres ka raw error message wahan milta hai jo kaafi baar console.log se zyada specific hota hai (jaise exact constraint violation).</li>
+        <li>Supabase dashboard ke <strong>Logs</strong> section mein bhi jaake dekho — har API request, uska status, aur agar RLS ne reject kiya toh wo bhi yahan trace hota hai.</li>
+      </ul>
+
+      <table>
+        <thead><tr><th>Stage</th><th>Symptom</th><th>Pehla debugging step</th></tr></thead>
+        <tbody>
+          <tr><td>Supabase RLS</td><td>Query empty aati hai, error nahi</td><td>SQL Editor mein policy ko directly SQL se simulate karo</td></tr>
+          <tr><td>Auth guard</td><td>Screen flicker/redirect loop</td><td><code>isLoading</code> check useEffect ki pehli line hai ya nahi confirm karo</td></tr>
+          <tr><td>Razorpay verify</td><td>Payment success dikha, premium unlock nahi hua</td><td>Server logs mein expected vs actual signature compare karo</td></tr>
+          <tr><td>Native modules</td><td>Expo Go mein crash/missing module error</td><td>Dev build banao, Expo Go se test karna band karo</td></tr>
+          <tr><td>Anything silent</td><td>Kuch bhi bina clear error ke fail ho raha ho</td><td>Network tab se actual request/response dekhо</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="build-share">8. Step 7 — Building and Sharing for Free</h2>
+
+      <p>
+        Ab app ko ek real installable build mein convert karke ek dost ko test karne ke liye bhejte hain —
+        sab kuch EAS ke free tier se, bina koi paid subscription liye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — EAS preview build (ch.10 ka profile)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># agar pehli baar EAS use kar rahe ho, CLI install/login karo</span>
+npm install <span class="tok-punc">-g</span> eas-cli <span class="tok-com"># EAS ka global CLI tool install kiya</span>
+eas login <span class="tok-com"># Expo account se login (free account kaafi hai)</span>
+
+<span class="tok-com"># project ko EAS se configure karo (eas.json ban jaayega, "preview" profile already default template mein hota hai)</span>
+eas build:configure <span class="tok-com"># interactive setup — platform choose karega, eas.json generate karega</span>
+
+<span class="tok-com"># Android ke liye ek preview (internal-distribution) build banao — ye .apk deta hai, seedha install ho sakta hai</span>
+eas build <span class="tok-punc">--</span>profile preview <span class="tok-punc">--</span>platform android <span class="tok-com"># cloud pe build hota hai, EAS free tier ke build minutes use hote hain</span></code></pre>
+      </div>
+
+      <p>
+        Build complete hone pe EAS terminal mein aur dashboard pe ek <strong>install link</strong> deta hai
+        (jaise <code>https://expo.dev/accounts/.../builds/...</code>) — ye link kisi ko bhi (dost, tester)
+        seedha WhatsApp/email se bhej sakte ho. Android pe koi bhi is link ko apne phone pe khol ke
+        <code>.apk</code> download aur install kar sakta hai — <strong>koi Play Store account, koi paid
+        developer program, kuch bhi nahi chahiye</strong>.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — iOS ka honest reality check</div>
+        <p>
+          Android + Expo Go + iOS Simulator (agar Mac hai) — ye poora loop <strong>100% free</strong> hai.
+          Lekin agar tumhe ye build ek <strong>real iPhone</strong> pe install karke dikhana hai (Expo Go ke
+          bina, jaise Razorpay native module wale is app ke liye zaroori hoga), Apple ka rule hai ki
+          bina App Store release ke bhi real device pe app install karne ke liye ek
+          <strong>Apple Developer Program membership ($99/year)</strong> chahiye hi hoga — chahe wo sirf
+          testing ke liye ho, App Store pe publish na bhi karo. Ye is poore pipeline ka <strong>ekmatra
+          hissa jo genuinely free nahi hai</strong> — honestly bata dena zaroori hai, kyunki "poora free hai"
+          bolna is ek exception ko chhupana hoga. Agar tumhare paas iPhone nahi hai ya sirf demo/learning
+          purpose hai, Android + simulator/Expo Go se kaam chal jaata hai bina ek rupaya kharch kiye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="free-vs-paid">9. What's Genuinely Free vs What Costs Money at Scale</h2>
+
+      <p>
+        Ek honest senior-level summary — hobby/learning scale pe kya hamesha free rahega, aur app grow karne
+        pe kahan paisa lagna shuru hoga:
+      </p>
+
+      <table>
+        <thead><tr><th>Cheez</th><th>Hobby scale pe</th><th>Scale/production pe</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Supabase</td>
+            <td>Free tier — 500MB DB, 50k MAU — years tak solo/small-app ke liye kaafi</td>
+            <td>Free limits cross karte hi Pro plan ($25/month se) chahiye hoga — zyada storage, zyada compute, backups</td>
+          </tr>
+          <tr>
+            <td>EAS Build</td>
+            <td>Free tier ke monthly build minutes — occasional builds ke liye kaafi</td>
+            <td>Frequent CI builds/team scale pe paid EAS plan chahiye — zyada build concurrency, priority queue</td>
+          </tr>
+          <tr>
+            <td>Razorpay/Stripe <strong>Test Mode</strong></td>
+            <td>Hamesha, permanently free — koi real transaction hota hi nahi</td>
+            <td>Test Mode hamesha free rahega chahe app kitna bhi scale kare — ye kabhi paid nahi hota</td>
+          </tr>
+          <tr>
+            <td>Razorpay/Stripe <strong>Live Mode</strong></td>
+            <td>N/A (learning/capstone stage pe live mode use hi nahi karte)</td>
+            <td>Real transactions pe per-transaction fee lagti hai (typically 2%+ range, provider/plan ke hisaab se)</td>
+          </tr>
+          <tr>
+            <td>Apple Developer Program</td>
+            <td>Zaroori sirf agar real iPhone pe install/test karna hai</td>
+            <td>App Store pe publish karne ke liye mandatory — $99/year</td>
+          </tr>
+          <tr>
+            <td>Google Play Developer</td>
+            <td>Zaroori nahi testing ke liye (sideload/internal link se free hai)</td>
+            <td>Play Store pe publish karne ke liye one-time $25 registration fee</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="closing">10. Closing — From Capstone to Production</h2>
+
+      <p>
+        Ye capstone tumhe ek genuinely working, end-to-end app deta hai — auth, database, aur ek real
+        (test-mode) payment flow, sab kuch free tools se. Lekin ye ek <strong>foundation</strong> hai, final
+        product nahi. Agar tum isse actual real users ko dena chahte ho, yahan se aage ka raasta poori
+        handbook mein already likha hua hai:
+      </p>
+      <ul>
+        <li><strong>ch.11 (EAS Submit)</strong> — App Store aur Play Store pe automate submission karne ke liye.</li>
+        <li><strong>ch.14 (Publishing)</strong> — full submission checklists, screenshots, store listing requirements.</li>
+        <li><strong>ch.15 (Payments)</strong> — Razorpay/Stripe Test keys ko Live keys mein switch karna, aur agar premium feature ko "digital good" maana jaaye toh StoreKit/Play Billing (RevenueCat) ke through jaana bhi consider karna — is chapter ka Category A/B distinction yahan dobara relevant ho jaata hai.</li>
+        <li><strong>ch.19 (Debugging & Crashes)</strong> — real users ke saath Sentry crash reporting add karna, taaki production issues aane se pehle hi pata chal jaayein.</li>
+      </ul>
+      <p>
+        Baaki poori handbook — Style/Design, Animations, State Management, Accessibility — sab is capstone
+        app ko polish karne mein directly apply hoti hai. Ye chapter ek starting point tha; asli seekhna
+        tab hota hai jab tum khud is app mein naye features add karte ho, khud bugs debug karte ho, aur
+        khud decide karte ho ki agla kya banana hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">11. 🎯 A Few Questions to Test Your Understanding</h2>
+      <ol>
+        <li>Humne Razorpay payment signature ko client-side "success" callback pe trust karne ke bajaye server-side verify kyun kiya? Agar hum sirf client callback pe <code>is_premium</code> set kar dete, kya exploit possible hota?</li>
+        <li><code>profiles</code> table pe humne <code>is_premium</code> ke liye koi client-facing "update" RLS policy kyun nahi banayi? Agar bana dete toh kya ho sakta tha?</li>
+        <li>RLS ko hi kyun sahi jagah maana gaya users ke apne habits filter karne ke liye, sirf app ke query mein <code>.eq("user_id", currentUser.id)</code> lagana kyun kaafi nahi hota?</li>
+        <li><code>app/_layout.tsx</code> ke auth-guard <code>useEffect</code> mein <code>if (isLoading) return;</code> line hatane se kya problem aa sakti hai?</li>
+        <li>Razorpay Test Mode aur Live Mode ke keys mix ho jaayein (jaise client mein test Key ID lekin server pe live Key Secret) toh kya symptom dikhega, aur usse debug kaise karoge?</li>
+        <li><code>SUPABASE_SERVICE_ROLE_KEY</code> use karte waqt humne <code>verify-payment+api.ts</code> mein khud se ek <code>.eq("id", verified_user_id)</code> WHERE-jaisa filter kyun explicitly likha, jab ki service_role RLS bypass kar hi deta hai?</li>
+      </ol>
+
+      <div class="prevnext">
+        <a href="20-accessibility-i18n.html">
+          <div class="label">← Previous</div>
+          <div class="title">Accessibility &amp; i18n</div>
+        </a>
+        <a class="next" href="index.html">
+          <div class="label">Next →</div>
+          <div class="title">Home</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

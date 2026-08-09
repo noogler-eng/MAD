@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expo UI — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link active" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Expo UI</div>
+      <div class="progress-pill">Chapter 6 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Expo UI · SwiftUI · Jetpack Compose</span>
+      <h1>Expo UI</h1>
+      <p class="subtitle">
+        Ye chapter Expo UI ke internals cover karta hai — truly native SwiftUI/Jetpack Compose views ko directly
+        React se render karna, bina custom native module likhe. Hum root level pe dekhenge ki ye kaam kaise karta
+        hai, kab use karna chahiye, aur ek maintainable native-first screen kaise architect karte hain — surface
+        level "bas is component ko import karo" wali baat nahi.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#kya-hai">1. Expo UI Kya Hai Aur Kyun</a></li>
+          <li><a href="#mental-model">2. SwiftUI aur Jetpack Compose: The Mental Model</a></li>
+          <li><a href="#ios">3. Expo UI on iOS</a></li>
+          <li><a href="#android">4. Expo UI on Android</a></li>
+          <li><a href="#state-worklets">5. Native State and Worklets</a></li>
+          <li><a href="#universal">6. Universal Components</a></li>
+          <li><a href="#custom-swiftui">7. Custom SwiftUI Views and Modifiers</a></li>
+          <li><a href="#custom-compose">8. Custom Compose Views and Modifiers</a></li>
+          <li><a href="#architecture">9. Architecting a Maintainable Native-First Screen</a></li>
+          <li><a href="#gotchas">10. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">11. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">12. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <h2 id="kya-hai" style="border-top:none; padding-top:0; margin-top:32px;">1. Expo UI Kya Hai Aur Kyun</h2>
+
+      <p>
+        Pehle ek cheez clear kar lete hain jo bahut confusion create karti hai: <strong>regular React Native
+        components (View, Text, ScrollView, etc.) "native" nahi render hote jaise SwiftUI/Compose native hote
+        hain</strong> — wo native hote hain in the sense ki UIView/Android View banate hain, lekin unka layout
+        <strong>Yoga</strong> (RN ka own C++ flexbox engine) calculate karta hai, aur styling props (flex,
+        padding, borderRadius) sab RN ka apna abstraction hai jo phir underlying UIView/View pe map hota hai.
+        Matlab jab aap <code>&lt;View style={{ flex: 1 }}&gt;</code> likhte ho, RN internally Yoga se layout
+        compute karke ek generic native container view banata hai — wo iOS ka asli <code>List</code> ya
+        <code>Form</code> nahi hai, wo RN ka apna re-implementation hai jo <em>look-alike</em> hone ki koshish
+        karta hai.
+      </p>
+
+      <p>
+        <strong>Expo UI</strong> (<code>@expo/ui</code> package) is se fundamentally different approach leta hai.
+        Ye JS se <em>directly</em> platform ke asli declarative UI framework ke components instantiate karta hai —
+        iOS pe actual <strong>SwiftUI</strong> views (jaise Apple ka khud ka <code>Button</code>, <code>Toggle</code>,
+        <code>List</code>), aur Android pe actual <strong>Jetpack Compose</strong> composables. Ye RN ka
+        re-implementation nahi hai — ye wahi view hierarchy hai jo ek native iOS/Android app apne aap use karta,
+        including automatic OS-level theming, dynamic type support, accessibility behavior, aur future OS
+        design updates (jaise iOS ka koi naya visual refresh) bina aapke app ka code touch kiye milna.
+      </p>
+
+      <div class="table" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Aspect</th><th>Regular RN Components</th><th>Expo UI</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Layout engine</td><td>Yoga (RN ka apna flexbox impl)</td><td>Native — SwiftUI layout system / Compose layout system</td></tr>
+            <tr><td>Rendered view</td><td>Generic UIView/Android View wrapper</td><td>Asli platform-native component (SwiftUI Button, Compose Switch, etc.)</td></tr>
+            <tr><td>Look-and-feel updates on OS upgrade</td><td>Manual — RN team ko dubara match karna padta hai</td><td>Automatic — OS jo bhi render kare wahi milta hai</td></tr>
+            <tr><td>Cross-platform consistency</td><td>High (same JS-driven look everywhere)</td><td>Intentionally platform-specific look per OS</td></tr>
+            <tr><td>Custom native module likhna padta hai?</td><td>Nahi (built-in)</td><td>Nahi — Expo UI khud native code ship karta hai, aap bas JS se consume karte ho</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Kab use karna chahiye</h3>
+      <ul>
+        <li><strong>Settings screens</strong> — jaha users expect karte hain ki app ka Settings screen bilkul OS ke Settings jaisa dikhe (Form-style grouped lists, native Switch, native Picker).</li>
+        <li><strong>Platform polish critical screens</strong> — onboarding, permission prompts, ya koi screen jaha "yeh app native feel deti hai" first impression matter karti hai.</li>
+        <li><strong>Native-only widgets</strong> — jaise iOS ka <code>ContextMenu</code>, native <code>DatePicker</code> wheel, ya Android ka Material 3 <code>Slider</code> — inhe RN mein pixel-perfect replicate karna mushkil hai, Expo UI free mein deta hai.</li>
+      </ul>
+      <h3>Kab core RN components hi kaafi hain</h3>
+      <ul>
+        <li>Jab aapka design system fully custom/branded hai (jaise ek fintech app jiska apna distinct visual language hai) — wahan native look actually <em>against</em> aapke brand consistency ke jaata hai.</li>
+        <li>Jab aapko ek hi codebase se identical UI dono platforms pe chahiye (marketing consistency > platform-nativeness).</li>
+        <li>Jab team ke paas SwiftUI/Compose ka knowledge nahi hai aur maintenance overhead justify nahi hota chhote se feature ke liye.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Expo UI ek "all or nothing" decision nahi hai — ye per-screen (ya per-component) decision hai. Ek app
+          mein aap 90% custom-branded RN UI rakh sakte ho aur sirf Settings screen ko Expo UI se native banao.
+          Yehi hybrid approach most production apps mein sabse practical hota hai — jahan native-feel highest
+          leverage deta hai wahan use karo, baaki jagah apna design system rakho.
+        </p>
+      </div>
+
+      <h2 id="mental-model">2. SwiftUI aur Jetpack Compose: The Mental Model</h2>
+
+      <p>
+        Expo UI itni naturally kaam kyun karta hai iske peeche ek deep reason hai: <strong>SwiftUI aur Jetpack
+        Compose dono, React ki tarah hi, declarative UI frameworks hain</strong>. Teeno frameworks (React,
+        SwiftUI, Compose) ek hi core idea share karte hain — "UI state ka function hai" (<code>UI = f(state)</code>).
+        Aap imperative step-by-step instructions nahi likhte ("is view ko add karo, phir uska color change karo");
+        aap describe karte ho ki current state ke given UI kaisi dikhni chahiye, aur framework khud diff karke
+        actual updates apply karta hai.
+      </p>
+
+      <div class="table" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Concept</th><th>React</th><th>SwiftUI</th><th>Jetpack Compose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Local mutable state</td><td><code>useState</code></td><td><code>@State</code></td><td><code>remember { mutableStateOf(...) }</code></td></tr>
+            <tr><td>UI description</td><td>JSX tree</td><td>View struct tree (body computed property)</td><td>Composable function calls</td></tr>
+            <tr><td>Re-render trigger</td><td>State change → re-render function component</td><td>@State change → body re-evaluated</td><td>State read change → recomposition</td></tr>
+            <tr><td>Derived/computed values</td><td><code>useMemo</code></td><td>Computed properties</td><td><code>remember(key) { ... }</code></td></tr>
+            <tr><td>Side effects</td><td><code>useEffect</code></td><td><code>.onAppear</code> / <code>.task</code></td><td><code>LaunchedEffect</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Kyunki concept-level pe teeno ek hi mental model share karte hain, Expo UI ka kaam sirf ek
+        <strong>thin JS-to-native bridging layer</strong> banane ka reh jaata hai — usse naya declarative
+        paradigm invent nahi karna padta, sirf React ke component tree ko SwiftUI/Compose ke component tree
+        mein translate karna hai. Yehi wajah hai ki Expo UI ki API bhi bilkul RN jaisi feel deti hai (JSX,
+        props, children) — sirf under the hood wo actual native views instantiate karta hai.
+      </p>
+
+      <h3>Ek chhota conceptual comparison</h3>
+      <p>Neeche teeno mein ek simple button dekhte hain — notice karo declarative shape kitni similar hai.</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>swiftui-button.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye pure SwiftUI hai (native iOS side, JS ka hissa nahi) — reference ke liye</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">ContentView</span>: View { <span class="tok-com">// SwiftUI view struct — React component jaisa hi role</span>
+    <span class="tok-kw">@State</span> <span class="tok-kw">private</span> <span class="tok-kw">var</span> count = <span class="tok-num">0</span> <span class="tok-com">// @State React ke useState jaisa hai — value change pe body dubara evaluate hoga</span>
+    <span class="tok-kw">var</span> body: <span class="tok-kw">some</span> View { <span class="tok-com">// body computed property JSX return jaisa kaam karta hai</span>
+        <span class="tok-fn">Button</span>(<span class="tok-str">"Tapped \(count) times"</span>) { <span class="tok-com">// SwiftUI ka native Button, label string interpolation ke saath</span>
+            count += <span class="tok-num">1</span> <span class="tok-com">// Tap pe state mutate hoti hai, body auto re-run hoga</span>
+        } <span class="tok-com">// Button trailing closure close</span>
+    } <span class="tok-com">// body close</span>
+} <span class="tok-com">// struct close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>compose-button.kt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye pure Jetpack Compose hai (native Android side) — reference ke liye</span>
+<span class="tok-kw">@Composable</span> <span class="tok-com">// Annotation batata hai ki ye function ek UI-describing composable hai</span>
+<span class="tok-kw">fun</span> <span class="tok-fn">CounterButton</span>() { <span class="tok-com">// Composable function — React function component jaisa hi role</span>
+    <span class="tok-kw">var</span> count <span class="tok-kw">by</span> <span class="tok-fn">remember</span> { <span class="tok-fn">mutableStateOf</span>(<span class="tok-num">0</span>) } <span class="tok-com">// remember+mutableStateOf React ke useState jaisa hai</span>
+    <span class="tok-fn">Button</span>(onClick = { count++ }) { <span class="tok-com">// Compose ka native Button, onClick lambda tap handle karta hai</span>
+        <span class="tok-fn">Text</span>(<span class="tok-str">"Tapped $count times"</span>) <span class="tok-com">// Compose ka native Text, string template ke saath</span>
+    } <span class="tok-com">// Button lambda close</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <p>
+        Ab dekhte hain Expo UI in dono ko React se kaise call karne dega — same declarative shape, lekin ab
+        React component tree ke andar se:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>UnifiedIdea.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Host, Button } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/swift-ui'</span>; <span class="tok-com">// iOS ke liye Expo UI ka SwiftUI wrapper import</span>
+<span class="tok-com">// Android ke liye equivalent hota: import { Host, Button } from '@expo/ui/jetpack-compose';</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">ConceptDemo</span>() { <span class="tok-com">// React function component — normal RN component jaisa hi</span>
+  <span class="tok-kw">const</span> [count, setCount] = <span class="tok-fn">useState</span>(<span class="tok-num">0</span>); <span class="tok-com">// React ka useState — JS side ki state, native view ko prop se pass hogi</span>
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return — describe karta hai UI kaisi dikhni chahiye</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ flex: <span class="tok-num">1</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host native SwiftUI tree ko RN tree ke andar mount karta hai</span>
+      <span class="tok-tag">&lt;Button</span> <span class="tok-attr">onPress</span>={() => <span class="tok-fn">setCount</span>(c => c + <span class="tok-num">1</span>)}<span class="tok-tag">&gt;</span> <span class="tok-com">// Native SwiftUI Button, tap pe React state update</span>
+        {`Tapped ${count} times`} <span class="tok-com">// Label text — JS state ko interpolate karke native view ko diya</span>
+      <span class="tok-tag">&lt;/Button&gt;</span> <span class="tok-com">// Button close</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Yaad rakhna: state <strong>abhi bhi JS side pe hi rehti hai</strong> (<code>useState</code>) — Expo
+          UI usko sirf props ke through native view tak forward karta hai. Native side apna khud ka
+          <code>@State</code>/<code>remember</code> tabhi use karta hai jab aap custom native SwiftUI/Compose
+          code khud likh rahe ho (section 7-8 mein dekhenge) — regular Expo UI components use karte waqt state
+          ownership almost hamesha React ke paas hi rehti hai.
+        </p>
+      </div>
+
+      <h2 id="ios">3. Expo UI on iOS</h2>
+
+      <p>
+        iOS pe Expo UI <code>@expo/ui/swift-ui</code> package ke through components deta hai — <code>Host</code>
+        (root container jo native tree mount karta hai), aur phir individual SwiftUI-backed components jaise
+        <code>Button</code>, <code>Text</code>, <code>Switch</code>, <code>Slider</code>, <code>Picker</code>,
+        <code>ContextMenu</code>, etc. Chalo ek real settings row banate hain — ek label aur ek native toggle
+        switch, exactly jaisa iOS Settings app mein dikhta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>NotificationsSettingRow.ios.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>; <span class="tok-com">// React ka useState hook import — local toggle state ke liye</span>
+<span class="tok-kw">import</span> { Host, HStack, Text, Switch } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/swift-ui'</span>; <span class="tok-com">// Expo UI ke SwiftUI wrapper se Host, HStack, Text, Switch import</span>
+<span class="tok-kw">import</span> { frame } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/swift-ui/modifiers'</span>; <span class="tok-com">// SwiftUI-style modifiers helper import — spacing/sizing ke liye</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">NotificationsSettingRow</span>() { <span class="tok-com">// Settings row component, sirf iOS build mein resolve hoga (.ios.tsx suffix)</span>
+  <span class="tok-kw">const</span> [enabled, setEnabled] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// Toggle ka current value — default 'on'</span>
+
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX describe karta hai native row kaisi dikhni chahiye</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ height: <span class="tok-num">44</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host root — native SwiftUI subtree ko RN view tree mein mount karta hai, height fix taaki row jaisa dikhe</span>
+      <span class="tok-tag">&lt;HStack</span> <span class="tok-attr">modifiers</span>={[<span class="tok-fn">frame</span>({ height: <span class="tok-num">44</span> })]}<span class="tok-tag">&gt;</span> <span class="tok-com">// HStack SwiftUI ka horizontal stack — label aur switch ko row mein arrange karta hai</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Push Notifications<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Native SwiftUI Text — row ka label, OS ka default system font/size use karega</span>
+        <span class="tok-tag">&lt;Switch</span> <span class="tok-com">// Native SwiftUI Switch — asli iOS toggle, RN ka Switch nahi</span>
+          <span class="tok-attr">value</span>={enabled} <span class="tok-com">// Current on/off state React se pass ho rahi hai</span>
+          <span class="tok-attr">onValueChange</span>={(value) => <span class="tok-fn">setEnabled</span>(value)} <span class="tok-com">// User tap kare to native switch React state update karega</span>
+        <span class="tok-tag">/&gt;</span> <span class="tok-com">// Switch self-closing tag</span>
+      <span class="tok-tag">&lt;/HStack&gt;</span> <span class="tok-com">// HStack close</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo — <code>Switch</code> ka <code>value</code>/<code>onValueChange</code> pattern bilkul RN ke
+        controlled-component pattern jaisa hai (jaise RN ka apna <code>Switch</code>). Ye intentional hai —
+        Expo UI ka goal hai ki API surface RN developers ke liye familiar rahe, sirf underlying rendering
+        engine badal jaaye.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Host kya kaam karta hai exactly</div>
+        <p>
+          <code>Host</code> ek boundary marker hai — ye RN ke Fabric-rendered tree aur ek independent SwiftUI
+          view hierarchy ke beech ka "portal" hai. Native side pe, Expo UI ek <code>UIHostingController</code>
+          (SwiftUI ko UIKit tree mein embed karne ka Apple ka apna mechanism) create karta hai jiske andar
+          poora SwiftUI subtree render hota hai. Isliye <code>Host</code> ke andar jo bhi hai wo pure SwiftUI
+          rules follow karta hai (layout, modifiers), RN Yoga rules nahi.
+        </p>
+      </div>
+
+      <h2 id="android">4. Expo UI on Android</h2>
+
+      <p>
+        Android pe equivalent package hai <code>@expo/ui/jetpack-compose</code> — API shape almost symmetric
+        hai, bas underlying native components Compose composables hain (<code>Switch</code>, <code>Text</code>,
+        <code>Button</code>, <code>Slider</code>, etc., jo Material Design 3 follow karte hain by default).
+        Chalo wahi settings row Android side pe banate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>NotificationsSettingRow.android.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>; <span class="tok-com">// React ka useState hook import — local toggle state ke liye</span>
+<span class="tok-kw">import</span> { Host, Row, Text, Switch } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/jetpack-compose'</span>; <span class="tok-com">// Expo UI ke Jetpack Compose wrapper se Host, Row, Text, Switch import</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">NotificationsSettingRow</span>() { <span class="tok-com">// Settings row component, sirf Android build mein resolve hoga (.android.tsx suffix)</span>
+  <span class="tok-kw">const</span> [enabled, setEnabled] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// Toggle ka current value — default 'on', symmetric iOS file jaisa hi</span>
+
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX describe karta hai native row kaisi dikhni chahiye</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ height: <span class="tok-num">48</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host root — native Compose subtree ko RN view tree mein mount karta hai, height Material row spacing ke hisab se</span>
+      <span class="tok-tag">&lt;Row&gt;</span> <span class="tok-com">// Row Compose ka horizontal arrangement wrapper — HStack ka Android equivalent</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Push Notifications<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Native Compose Text — Material 3 default typography use karega</span>
+        <span class="tok-tag">&lt;Switch</span> <span class="tok-com">// Native Compose Switch — asli Material 3 toggle, RN ka Switch nahi</span>
+          <span class="tok-attr">value</span>={enabled} <span class="tok-com">// Current on/off state React se pass ho rahi hai — same prop name as iOS side</span>
+          <span class="tok-attr">onValueChange</span>={(value) => <span class="tok-fn">setEnabled</span>(value)} <span class="tok-com">// User tap kare to native switch React state update karega</span>
+        <span class="tok-tag">/&gt;</span> <span class="tok-com">// Switch self-closing tag</span>
+      <span class="tok-tag">&lt;/Row&gt;</span> <span class="tok-com">// Row close</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — API symmetry ka fayda</div>
+        <p>
+          Dono files mein <code>value</code>/<code>onValueChange</code> prop names, component structure, aur
+          <code>useState</code> ka use bilkul same hai — sirf import path (<code>swift-ui</code> vs
+          <code>jetpack-compose</code>) aur layout wrapper naam (<code>HStack</code> vs <code>Row</code>) alag
+          hain. Ye symmetry deliberate design choice hai Expo team ki taaki platform-forked files likhna
+          (section 9 mein dekhenge) copy-paste-jaisa mechanical kaam ho, naya API seekhna na pade har baar.
+        </p>
+      </div>
+
+      <h2 id="state-worklets">5. Native State and Worklets</h2>
+
+      <p>
+        Ab samajhte hain ki JS aur native view ke beech state kaise sync hoti hai. Jab aap
+        <code>&lt;Switch value={enabled} /&gt;</code> jaisa likhte ho, har render pe React nayi <code>value</code>
+        prop native module ko pass karta hai. Expo UI ka native binding layer (Expo Modules API ke upar bana
+        hua) is prop change ko detect karke underlying SwiftUI/Compose view ki internal state
+        (<code>@State</code>/<code>remember</code>) ko update kar deta hai — jisse SwiftUI/Compose apna normal
+        re-render/recomposition cycle trigger karte hain. Reverse direction mein, jab user native switch tap
+        karta hai, native side ek event JS thread ko bhejta hai jo <code>onValueChange</code> callback fire
+        karta hai — bilkul RN ke kisi bhi native component (jaise <code>TextInput</code>) jaisa hi round-trip.
+      </p>
+
+      <p>
+        Ye round-trip — JS prop change → native update, aur native event → JS callback — normal <strong>bridge/JSI
+        call</strong> ke through hota hai, jo discrete interactions (tap, toggle, text change) ke liye bilkul
+        fine hai. Lekin agar aap kisi native view property ko <strong>continuously, har frame</strong> update
+        karna chahte ho — jaise ek native SwiftUI view ka opacity ek drag gesture ke saath sync mein badalna —
+        to normal React state (<code>useState</code>) is use case ke liye slow pad sakta hai, exactly wahi
+        reason jo humne Chapter 5 (Animations &amp; Gestures) mein dekha tha: har state update ek React
+        re-render trigger karta hai jo JS thread involve karta hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Reanimated shared values ka role yahan</div>
+        <p>
+          Isi wajah se Expo UI, Reanimated ke <strong>shared values/worklets</strong> ke saath integrate hone
+          ki taraf move kar raha hai — idea ye hai ki agar ek native Expo UI view ki koi property directly ek
+          <code>useSharedValue</code> se drive ho sake (JSI ke through, bina React re-render ke, bina normal
+          bridge event ke), to continuous updates (drag-driven native view animation) bhi <strong>zero bridge
+          crossing</strong> ke saath ho sakti hain — wahi architecture jo Reanimated animations ko 60fps
+          deta hai, ab native Expo UI views ke liye bhi available hoti hai. Ye area Expo UI mein abhi bhi
+          actively evolve ho raha hai — production mein use karne se pehle current Expo SDK docs check karna
+          zaroori hai ki kaunse components worklet-driven props support karte hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Practical guidance</div>
+        <p>
+          Jab tak aapko explicitly continuous/gesture-driven native view updates nahi chahiye, normal React
+          <code>useState</code> + props hi use karo Expo UI components ke saath — ye simple hai aur discrete
+          interactions (settings toggle, button tap) ke liye koi performance problem nahi hai. Worklet-driven
+          native props sirf tab reach for karo jab profiling se pata chale ki normal prop updates jank kar
+          rahe hain.
+        </p>
+      </div>
+
+      <h2 id="universal">6. Universal Components</h2>
+
+      <p>
+        Har jagah platform-forked files (<code>.ios.tsx</code> / <code>.android.tsx</code>) likhna zaroori
+        nahi hai. Expo UI kuch <strong>cross-platform primitives</strong> bhi deta hai jo internally sahi
+        platform ke native component ko resolve karte hain — matlab ek hi file dono platforms pe correct
+        native view render karti hai. Ye tab useful hai jab aapko sirf ek simple, common-denominator native
+        control chahiye (jaise ek basic Button ya Switch) bina platform-specific fine-tuning ke.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>UniversalToggleRow.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>; <span class="tok-com">// React ka useState hook import</span>
+<span class="tok-kw">import</span> { Host, Switch } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui'</span>; <span class="tok-com">// '@expo/ui' ka root export — Platform.OS check karke sahi native implementation resolve karta hai</span>
+<span class="tok-kw">import</span> { Text } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// Label ke liye plain RN Text — Expo UI ke andar RN components bhi mix kiye ja sakte hain</span>
+<span class="tok-kw">import</span> { View } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>; <span class="tok-com">// Layout wrapper ke liye plain RN View</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">UniversalToggleRow</span>() { <span class="tok-com">// Ye single file iOS aur Android dono pe kaam karega, no platform fork</span>
+  <span class="tok-kw">const</span> [enabled, setEnabled] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// Local toggle state, default off</span>
+
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return karta hai row ka layout</span>
+    <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span>={{ flexDirection: <span class="tok-str">'row'</span>, alignItems: <span class="tok-str">'center'</span>, gap: <span class="tok-num">12</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Regular RN View, Yoga flexbox se layout hoga — label aur native switch ko align karta hai</span>
+      <span class="tok-tag">&lt;Text&gt;</span>Dark Mode<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Regular RN Text — is example mein label RN se hai, switch native se</span>
+      <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ width: <span class="tok-num">51</span>, height: <span class="tok-num">31</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host root — universal package platform detect karke sahi native tree yahan mount karega</span>
+        <span class="tok-tag">&lt;Switch</span> <span class="tok-com">// '@expo/ui' ka universal Switch — iOS pe SwiftUI Switch, Android pe Compose Switch banega</span>
+          <span class="tok-attr">value</span>={enabled} <span class="tok-com">// Dono platforms pe same prop name — universal API ka fayda</span>
+          <span class="tok-attr">onValueChange</span>={setEnabled} <span class="tok-com">// Direct setState reference — dono platforms pe same callback shape</span>
+        <span class="tok-tag">/&gt;</span> <span class="tok-com">// Switch self-closing tag</span>
+      <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+    <span class="tok-tag">&lt;/View&gt;</span> <span class="tok-com">// View close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Universal import (<code>@expo/ui</code>) tab use karo jab aapko sirf ek simple, well-supported common
+          control chahiye. Jaise hi aapko platform-specific fine-grained control chahiye ho (jaise iOS ka
+          specific <code>ContextMenu</code> style, ya Android ka specific Material variant), platform-specific
+          imports (<code>@expo/ui/swift-ui</code> / <code>@expo/ui/jetpack-compose</code>) pe switch karo —
+          ye zyada control dete hain lekin platform-fork approach maangte hain (section 9 dekho).
+        </p>
+      </div>
+
+      <h2 id="custom-swiftui">7. Custom SwiftUI Views and Modifiers</h2>
+
+      <p>
+        SwiftUI ka core styling pattern hai <strong>modifier chaining</strong> — har modifier (<code>.padding()</code>,
+        <code>.background()</code>, <code>.cornerRadius()</code>) ek naya wrapped view return karta hai (immutable
+        chaining, jaise builder pattern). Expo UI is pattern ko JS side pe ek <code>modifiers</code> prop ke
+        through expose karta hai jisme aap modifier helper functions ka array pass karte ho — order matter karta
+        hai, exactly jaise Swift mein <code>.padding().background().cornerRadius()</code> order matter karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>StyledNativeCard.ios.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Host, VStack, Text } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/swift-ui'</span>; <span class="tok-com">// Host, VStack (vertical stack), Text SwiftUI wrapper se import</span>
+<span class="tok-kw">import</span> { padding, background, cornerRadius, shadow } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/swift-ui/modifiers'</span>; <span class="tok-com">// Chain-style modifier helpers import</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">StyledNativeCard</span>() { <span class="tok-com">// Ek card component jo native SwiftUI modifiers se style hoga</span>
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ padding: <span class="tok-num">16</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host root — RN-side padding sirf Host boundary ke bahar ke space ke liye</span>
+      <span class="tok-tag">&lt;VStack</span> <span class="tok-com">// SwiftUI VStack — vertical stack, card ke andar content ko stack karega</span>
+        <span class="tok-attr">modifiers</span>={[ <span class="tok-com">// Modifiers array — order top-to-bottom apply hota hai, jaise Swift ki dot-chain</span>
+          <span class="tok-fn">padding</span>(<span class="tok-num">20</span>), <span class="tok-com">// Sabse pehle: content ke around 20pt internal padding (SwiftUI ka .padding(20) jaisa)</span>
+          <span class="tok-fn">background</span>(<span class="tok-str">'#262524'</span>), <span class="tok-com">// Phir: background color apply, dark card jaisa (.background(Color(...)) jaisa)</span>
+          <span class="tok-fn">cornerRadius</span>(<span class="tok-num">16</span>), <span class="tok-com">// Phir: corners round karo 16pt radius se (.cornerRadius(16) jaisa)</span>
+          <span class="tok-fn">shadow</span>({ radius: <span class="tok-num">8</span>, y: <span class="tok-num">4</span> }), <span class="tok-com">// Aakhir mein: soft drop shadow (.shadow(radius:y:) jaisa) — order isliye important hai kyunki shadow ko rounded shape ke baad apply hona chahiye</span>
+        ]}
+      <span class="tok-tag">&gt;</span> <span class="tok-com">// VStack opening tag ka end, modifiers close</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Native Card Title<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Native SwiftUI Text — card ke andar content</span>
+      <span class="tok-tag">&lt;/VStack&gt;</span> <span class="tok-com">// VStack close</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Order matters</div>
+        <p>
+          SwiftUI mein modifier order semantically important hai — <code>.padding().background()</code> aur
+          <code>.background().padding()</code> do alag results dete hain (pehla: padding ke bahar background;
+          doosra: background ke bahar padding, jisse background sirf content ke around dikhega, extra padding
+          transparent rahega). Expo UI ke <code>modifiers</code> array mein bhi yahi rule apply hota hai —
+          array ka order hi visual result decide karta hai, isliye copy-paste karte waqt order zaroor verify
+          karo.
+        </p>
+      </div>
+
+      <h2 id="custom-compose">8. Custom Compose Views and Modifiers</h2>
+
+      <p>
+        Jetpack Compose ka equivalent pattern hai <code>Modifier</code> chaining — <code>Modifier.padding().background().clip()</code>
+        jaisa method-chaining syntax (Swift ke dot-chain jaisa hi concept, syntax thoda alag). Expo UI Android
+        side pe bhi similar <code>modifiers</code> prop expose karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>StyledNativeCard.android.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Host, Column, Text } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/jetpack-compose'</span>; <span class="tok-com">// Host, Column (VStack ka Compose equivalent), Text import</span>
+<span class="tok-kw">import</span> { padding, background, clip, elevation } <span class="tok-kw">from</span> <span class="tok-str">'@expo/ui/jetpack-compose/modifiers'</span>; <span class="tok-com">// Chain-style modifier helpers import</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">StyledNativeCard</span>() { <span class="tok-com">// Symmetric component — same card, Android-native modifiers ke saath</span>
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ padding: <span class="tok-num">16</span> }}<span class="tok-tag">&gt;</span> <span class="tok-com">// Host root — RN-side outer spacing, Compose subtree yahan mount hoga</span>
+      <span class="tok-tag">&lt;Column</span> <span class="tok-com">// Compose Column — vertical stack, VStack ka Android equivalent</span>
+        <span class="tok-attr">modifiers</span>={[ <span class="tok-com">// Modifiers array — Compose ke Modifier.x().y().z() chain jaisa hi order-sensitive</span>
+          <span class="tok-fn">padding</span>(<span class="tok-num">20</span>), <span class="tok-com">// Content ke around internal padding (Modifier.padding(20.dp) jaisa)</span>
+          <span class="tok-fn">background</span>(<span class="tok-str">'#262524'</span>), <span class="tok-com">// Background color, dark card (Modifier.background(Color(...)) jaisa)</span>
+          <span class="tok-fn">clip</span>({ radius: <span class="tok-num">16</span> }), <span class="tok-com">// Rounded corner shape se clip karo (Modifier.clip(RoundedCornerShape(16.dp)) jaisa)</span>
+          <span class="tok-fn">elevation</span>(<span class="tok-num">4</span>), <span class="tok-com">// Material elevation — Android ka shadow equivalent, dp units mein</span>
+        ]}
+      <span class="tok-tag">&gt;</span> <span class="tok-com">// Column opening tag ka end, modifiers close</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Native Card Title<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Native Compose Text — card content</span>
+      <span class="tok-tag">&lt;/Column&gt;</span> <span class="tok-com">// Column close</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Android pe <code>elevation</code> aur iOS pe <code>shadow</code> conceptually similar hain (dono depth
+          convey karte hain) lekin Android ka Material elevation system light-source-based rendering use karta
+          hai jo iOS ke simple shadow-offset model se visually different result deta hai. Agar aapko pixel-level
+          identical shadow chahiye dono platforms pe, to ye ek jagah hai jaha "native look" ka trade-off pay
+          karna padta hai — dono platform apne khud ke design language ke hisaab se render karenge, aur yehi
+          Expo UI ka intended behavior hai, bug nahi.
+        </p>
+      </div>
+
+      <h2 id="architecture">9. Architecting a Maintainable Native-First Screen</h2>
+
+      <p>
+        Ab senior-level architecture advice — Expo UI ko production codebase mein maintainable tareeke se
+        organize karna.
+      </p>
+
+      <h3>Platform-fork files ko isolate karo</h3>
+      <p>
+        Jab bhi aap <code>@expo/ui/swift-ui</code> aur <code>@expo/ui/jetpack-compose</code> dono use kar rahe
+        ho (universal package ke bajaye), best practice hai React Native ki built-in
+        <strong>platform-specific file extension resolution</strong> use karna — <code>MySettingsScreen.ios.tsx</code>
+        aur <code>MySettingsScreen.android.tsx</code> naam ki do files banao, aur baaki app se
+        <code>import MySettingsScreen from './MySettingsScreen'</code> (bina extension ke) karo. Metro bundler
+        automatically build platform ke hisaab se sahi file resolve kar lega.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>folder-structure.txt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Recommended folder shape jab screen platform-forked ho</span>
+features/settings/ <span class="tok-com"># Feature folder — settings se related sab kuch yahan</span>
+  MySettingsScreen.ios.tsx <span class="tok-com"># iOS-specific implementation, @expo/ui/swift-ui use karta hai</span>
+  MySettingsScreen.android.tsx <span class="tok-com"># Android-specific implementation, @expo/ui/jetpack-compose use karta hai</span>
+  useSettingsData.ts <span class="tok-com"># Shared hook — data fetching/logic dono platforms share karte hain</span>
+  types.ts <span class="tok-com"># Shared TypeScript types — dono platform files isi se import karenge</span></code></pre>
+      </div>
+
+      <p>
+        Is pattern ka core idea hai <strong>UI presentation ko platform-fork karo, business logic ko nahi</strong>.
+        Data fetching, validation, navigation logic — ye sab ek shared hook (<code>useSettingsData.ts</code>) mein
+        rakho jo dono platform-specific screens import karte hain. Isse aapko logic duplicate nahi karna padta,
+        sirf presentation layer alag hota hai jaha actually native differences matter karte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>useSettingsData.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span>, <span class="tok-fn">useEffect</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>; <span class="tok-com">// React hooks import — state aur lifecycle ke liye</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useSettingsData</span>() { <span class="tok-com">// Shared hook — dono .ios.tsx aur .android.tsx files isse use karengi</span>
+  <span class="tok-kw">const</span> [notificationsEnabled, setNotificationsEnabled] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// Notification toggle ka shared state</span>
+
+  <span class="tok-fn">useEffect</span>(() => { <span class="tok-com">// Component mount pe backend/local storage se preference load karo</span>
+    <span class="tok-com">// Yahan real app mein AsyncStorage ya API call hogi — platform-independent logic</span>
+  }, []); <span class="tok-com">// Empty deps — sirf mount pe ek baar chale</span>
+
+  <span class="tok-kw">return</span> { notificationsEnabled, setNotificationsEnabled }; <span class="tok-com">// Dono platform screens ko same shape ka data/setter return</span>
+} <span class="tok-com">// hook close</span></code></pre>
+      </div>
+
+      <h3>Overuse mat karo — per-screen decision, per-app nahi</h3>
+      <p>
+        Har screen ke liye do implementations maintain karna (iOS + Android) inherently zyada maintenance
+        surface hai — do jagah bug fix karna, do jagah test karna, aur bundle size bhi thoda badhta hai
+        (dono platform ke native bridging code ship hota hai). Isliye Expo UI ko sirf un screens pe use karo
+        jahan native look-and-feel ka leverage genuinely high hai (settings, permission prompts, native-only
+        widgets) — poori app ko Expo UI se rewrite karne ki koshish mat karo, warna aap RN ka sabse bada
+        fayda (single shared UI codebase) hi khoke baith jaoge.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Decision framework simple rakho: "Kya is specific screen pe native look genuinely user-perceivable
+          value deta hai (jaise Settings, jaha users literally OS Settings se comparison karte hain)? Agar
+          haan, Expo UI justify hota hai. Agar ye sirf 'thoda zyada native feel achha lagega' level ka reasoning
+          hai, to normal RN components (jo already achha perform karte hain) hi use karo aur maintenance
+          overhead avoid karo."
+        </p>
+      </div>
+
+      <h2 id="gotchas">10. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Development Build zaroori hai — Expo Go mein kaam nahi karega</div>
+        <p>
+          Expo UI native code ship karta hai (SwiftUI/Compose bridging modules) jo Expo Go ke andar pre-built
+          nahi hote — Expo Go ek fixed set of native modules ke saath aata hai jo publish hote hain Expo team
+          ke through. Isliye Expo UI use karne ke liye aapko ek <strong>custom Development Build</strong>
+          (<code>expo-dev-client</code> ke through, ya <code>eas build --profile development</code>) banana
+          hi padega. Agar aap Expo Go mein test karne ki koshish karoge, Expo UI components silently fail ya
+          error throw karenge — ye ek bahut common confusion point hai naye developers ke liye jo directly
+          Expo Go se try karte hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Expo SDK version compatibility</div>
+        <p>
+          <code>@expo/ui</code> package ka version specific Expo SDK version ke saath tightly coupled hota hai
+          (jaise kisi bhi native module ke saath hota hai). Expo SDK upgrade karte waqt <code>@expo/ui</code>
+          ko bhi matching version pe upgrade karna zaroori hai, warna native binding mismatch errors aa sakti
+          hain (build time pe, ya runtime crash ke roop mein). Hamesha Expo SDK release notes check karo ki
+          konsi <code>@expo/ui</code> version compatible hai upgrade karne se pehle.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Debugging harder hai — ye pure JS View tree nahi hai</div>
+        <p>
+          Regular RN components React DevTools mein poori tarah inspectable hote hain — har prop, har style,
+          sab kuch JS-driven hai. Expo UI ke <code>Host</code> boundary ke andar ka tree ek <em>actual native
+          view hierarchy</em> hai (SwiftUI/Compose), matlab React DevTools ko iske andar full visibility nahi
+          milti — aapko native debugging tools (Xcode's View Debugger for SwiftUI, Android Studio's Layout
+          Inspector for Compose) use karne padenge us subtree ko debug karne ke liye. Isse debugging workflow
+          do tools ke beech split ho jaata hai — JS-side issues ke liye normal RN debugging, aur native-view
+          issues (layout, styling glitches inside Host) ke liye platform-native tools. Naye developers ko
+          isme adjust hone mein time lagta hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Har component har platform pe available nahi hota</div>
+        <p>
+          Kyunki Expo UI asli platform-native components wrap karta hai, kuch components sirf ek platform pe
+          hi meaningful hote hain (jaise iOS ka <code>ContextMenu</code> long-press style, ya Android-specific
+          Material components) — API surface poori tarah symmetric nahi hai har jagah. Platform-specific
+          imports use karte waqt Expo docs check karna zaroori hai ki jo component chahiye wo current SDK
+          version mein us platform pe supported hai ya nahi.
+        </p>
+      </div>
+
+      <h2 id="advanced-deep-dive">11. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne dekha ki Expo UI <em>kya</em> hai aur <em>kaise</em> use karte hain. Ab ek level neeche
+        jaate hain — <em>internals</em> mein — jo ek senior React Native developer se interview mein aur
+        production architecture decisions mein dono jagah poocha/expect kiya jaata hai: Fabric ke andar ye
+        actually mount kaise hota hai, state sync ki real cost kya hai, aur bundle-size trade-off kaise
+        evaluate karein.
+      </p>
+
+      <h3>11.1 — Fabric ke shadow tree ke andar native SwiftUI/Compose view kaise mount hoti hai</h3>
+
+      <p>
+        Ye samajhna zaroori hai ki <strong>Fabric (RN ka current renderer) ko Expo UI ke bare mein "pata"
+        nahi hota</strong> — matlab Fabric SwiftUI ya Compose ka concept hi nahi jaanta. Fabric sirf itna
+        jaanta hai: "ek native view manager hai jiska naam <code>ExpoUIHostView</code> (conceptually) hai,
+        isko shadow tree mein ek node ke roop mein treat karo, layout props do, aur bas." Yehi wo trick hai
+        jo Expo UI ko possible banati hai bina Fabric ko modify kiye.
+      </p>
+
+      <p>Step-by-step kya hota hai jab aap <code>&lt;Host&gt;...&lt;/Host&gt;</code> render karte ho:</p>
+
+      <ul>
+        <li>
+          <strong>Registration:</strong> <code>Host</code> component, Fabric ke perspective se, ek regular
+          native view manager hai — bilkul waise hi jaise koi bhi third-party custom native view
+          (<code>RNMapView</code>, ya koi bhi Expo Module ka native view) register hoti hai. Fabric ke
+          shadow tree ko sirf ek <code>ShadowNode</code> milta hai jiske paas layout properties (width,
+          height, flex, etc.) hain — bilkul ek plain <code>&lt;View&gt;</code> jaisa.
+        </li>
+        <li>
+          <strong>Single opaque slot:</strong> Fabric commit phase mein jab ye node ko "mount" karta hai
+          (matlab actual native platform view create karta hai), to native side pe iOS ka
+          <code>UIView</code> subclass (jo internally ek <code>UIHostingController.view</code> hota hai) ya
+          Android ka <code>ComposeView</code> banaya jaata hai — aur ye view Fabric ko ek single, opaque
+          "black box" ki tarah dikhti hai. Matlab Fabric ka shadow tree mein sirf <strong>ek node</strong>
+          hai jiska naam Host hai — usse aage jo bhi SwiftUI/Compose hierarchy hai (VStack, Button, Text,
+          etc.) uska Fabric ko koi idea hi nahi hai.
+        </li>
+        <li>
+          <strong>Ek independent, parallel render tree:</strong> Us single native view slot ke <em>andar</em>,
+          SwiftUI apna khud ka independent render tree maintain karta hai — jise Apple ke apne diffing
+          algorithm se manage kiya jaata hai (<code>@State</code> change → SwiftUI internally decide karta
+          hai kaunse sub-views re-render karni hain), bilkul waise hi jaise agar ye ek pure native iOS app
+          hota, Fabric ka koi involvement nahi. Compose side pe bhi yehi hota hai — Compose ka apna
+          recomposition engine independently kaam karta hai us <code>ComposeView</code> slot ke andar.
+        </li>
+        <li>
+          <strong>Two render trees, one bridge point:</strong> Result ye hai ki aapke pass ek hi screen mein
+          effectively <em>do alag rendering systems</em> chal rahe hain simultaneously — Fabric ka shadow
+          tree (jisme Host ek leaf-jaisa opaque node hai) aur uske andar ek poora independent SwiftUI/Compose
+          tree. Ye dono sirf ek jagah touch karte hain: props jo JS se Host/child components ko pass hoti
+          hain, jo native binding layer (Expo Modules API) ke through SwiftUI/Compose state mein forward
+          hoti hain.
+        </li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title"><span>fabric-vs-swiftui-tree.txt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Conceptual diagram — Fabric shadow tree vs internal SwiftUI tree</span>
+Fabric Shadow Tree (RN ko pata hai) <span class="tok-com"># Ye wahi tree hai jo Fabric diff/reconcile karta hai</span>
+├── RootView <span class="tok-com"># App ka root native container</span>
+│   ├── View (header) <span class="tok-com"># Regular RN View — Yoga layout se manage hota hai</span>
+│   ├── ExpoUIHostView  <span class="tok-com"># ⬅ Fabric ke liye ye BAS EK opaque native view node hai, koi aur detail nahi</span>
+│   │                    <span class="tok-com"># (Fabric ko iske andar kya hai iska bilkul koi idea nahi)</span>
+│   └── View (footer) <span class="tok-com"># Regular RN View — Yoga layout se manage hota hai</span>
+│
+└── ─────────── BOUNDARY: yahan se Fabric ka control khatam ───────────
+                <span class="tok-com"># ExpoUIHostView ke andar, ek POORA ALAG render tree chal raha hai:</span>
+    SwiftUI Internal Tree (Fabric ko is tree ka pata hi nahi) <span class="tok-com"># Apple ka apna diffing engine ise manage karta hai</span>
+    └── VStack <span class="tok-com"># SwiftUI ka apna layout node — Yoga se koi lena dena nahi</span>
+        ├── Text <span class="tok-com"># SwiftUI native Text node — apna render lifecycle</span>
+        └── Button <span class="tok-com"># SwiftUI native Button node — apna render lifecycle, apna @State</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "single view slot" mental model</div>
+        <p>
+          Interview mein agar ye poocha jaaye "Expo UI Fabric ke saath kaise integrate hota hai", sabse
+          precise answer yahi hai: <strong>Expo UI Fabric ko extend nahi karta, ye Fabric ko "trick" karta
+          hai</strong> ek single opaque native view register karke, aur us view ke andar apna khud ka
+          completely separate declarative rendering system (SwiftUI/Compose) chala ke. Ye exactly wahi
+          pattern hai jo koi bhi native view manager use karta hai (jaise <code>react-native-maps</code> ka
+          <code>MapView</code>, ya ek <code>WebView</code>) — Fabric ke liye "map" ya "webpage" bhi ek single
+          opaque node hi hote hain, unke andar ka rendering (MapKit, Chromium engine) Fabric ke scope se
+          bahar hota hai. Expo UI bas isi established pattern ko SwiftUI/Compose ke liye apply karta hai.
+        </p>
+      </div>
+
+      <h3>11.2 — State synchronization ki real cost: "free" nahi hai</h3>
+
+      <p>
+        Ek common misconception hai ki JSI ki wajah se ab har cheez "free" ho gayi hai — old bridge (async
+        JSON serialization) ke comparison mein JSI zaroor bahut fast hai (synchronous, no JSON stringify),
+        lekin <strong>"fast" aur "free" alag cheezein hain</strong>. Har prop change jo aap Expo UI ke
+        native component ko pass karte ho, ab bhi ye steps involve karta hai:
+      </p>
+
+      <ol>
+        <li>JS thread pe React reconciliation chalta hai (naya prop value compute hota hai)</li>
+        <li>Fabric shadow tree update hota hai (naya prop us node pe set hota hai)</li>
+        <li>Native side (Host Fabric component) ko notify kiya jaata hai naye props ke saath</li>
+        <li>Expo UI ka native binding layer us prop change ko SwiftUI <code>@State</code>/Compose
+          <code>mutableStateOf</code> mein translate karta hai</li>
+        <li>SwiftUI/Compose apna independent re-render/recomposition cycle trigger karta hai</li>
+      </ol>
+
+      <p>
+        Ye poora chain discrete interactions (button tap, toggle switch, occasional value change) ke liye
+        <strong>completely fine hai</strong> — insaan ke perception ke hisaab se instant feel hoga, kyunki
+        ye chain milliseconds mein complete hoti hai aur discrete events per-frame frequency se kahi kam
+        frequent hote hain. Lekin agar aap is chain ko <strong>60 baar per second</strong> (60fps continuous
+        update, jaise ek drag gesture se kisi native view ki position/opacity sync karna) trigger karte ho,
+        to har ek crossing ka chhota sa overhead accumulate hoke visible jank ban sakta hai — especially
+        kyunki JS thread pe React reconciliation bhi ho raha hai, jo already busy thread hai agar aapki app
+        mein aur bhi state updates chal rahe hain.
+      </p>
+
+      <div class="table" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Use case</th><th>Update frequency</th><th>Best approach</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Settings toggle, button tap</td><td>Discrete (user-triggered, sparse)</td><td>Normal <code>useState</code> + Expo UI props — bilkul fine</td></tr>
+            <tr><td>Slider being dragged with a live-updating native label</td><td>Medium-high, but bursty</td><td>Normal props aur/ya debounced state — test karo, profile karo</td></tr>
+            <tr><td>Native view property synced continuously with a pan/drag gesture (60fps)</td><td>Continuous, every frame</td><td>Reanimated shared value driven native props (JSI direct, zero bridge crossing) — ya fully custom native module jisme aap khud UI-thread se drive karo</td></tr>
+            <tr><td>Real-time chart/graph redraw on scroll</td><td>Continuous, every frame</td><td>Custom native module ya Skia-based solution — Expo UI is use case ke liye designed hi nahi hai</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — kab Expo UI galat tool hai</div>
+        <p>
+          Agar aapki requirement hai "ek native SwiftUI view ka property 60fps pe continuously update ho
+          gesture ke saath" — Expo UI (normal prop-driven state ke through) is job ke liye <strong>galat
+          tool</strong> hai. Ye wahi mistake hai jo Chapter 5 mein humne <code>useState</code>-driven
+          animations ke liye dekhi thi — har update ek JS-thread round-trip hai. Sahi approach ya to (a)
+          Reanimated ke worklet-driven native props ka wait/use karna hai (jab Expo UI is capability ko
+          mature support de), ya (b) us specific interaction ke liye ek fully custom native module (Chapter
+          16 dekho) likhna hai jisme aap khud UI thread pe directly view property update karte ho, JS thread
+          ko touch kiye bina. Expo UI ka sweet spot hai <em>settings-density</em> screens, na ki
+          <em>animation-density</em> screens.
+        </p>
+      </div>
+
+      <h3>11.3 — Bundle size aur complexity trade-off: senior-level cost-benefit analysis</h3>
+
+      <p>
+        Jab aap <code>@expo/ui/swift-ui</code> ya <code>@expo/ui/jetpack-compose</code> import karte ho,
+        aap sirf ek JS API import nahi kar rahe — aap apni app ke native binary mein SwiftUI/Compose
+        bridging runtime dependencies bhi pull kar rahe ho us platform ke liye. Ye completely "free" nahi
+        hai:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Native binary size:</strong> Expo UI ke native modules (SwiftUI/Compose interop code,
+          view managers, modifier translation layer) app ke native binary size mein add hote hain — SwiftUI
+          khud toh iOS mein already OS-level framework hai (extra download nahi), lekin Expo UI ka
+          <em>bridging code</em> (jo React props ko SwiftUI state mein translate karta hai) aapke app bundle
+          ka hissa hai.
+        </li>
+        <li>
+          <strong>Build complexity:</strong> Development Build zaroori ho jaata hai (Expo Go se kaam nahi
+          karega — section 10 mein dekha), matlab CI/CD pipeline mein har PR ke liye ek native build cycle
+          add hota hai jo pure-JS changes ke liye bhi zaroori hota agar Expo UI dependency already app mein
+          hai. Ye EAS Build minutes aur iteration speed dono ko impact karta hai.
+        </li>
+        <li>
+          <strong>Cognitive/maintenance surface:</strong> Team ko ab teen mental models maintain karne padte
+          hain — RN/Yoga layout, SwiftUI layout, Compose layout — kyunki Expo UI subtree ke andar RN ke
+          layout rules apply nahi hote. Debugging tools bhi split ho jaate hain (Xcode View Debugger,
+          Android Studio Layout Inspector, React DevTools) — section 10 ke gotcha mein dekha.
+        </li>
+      </ul>
+
+      <p>
+        Senior-level decision ek simple cost-benefit question pe aake rukta hai: <strong>"Kya is specific
+        screen ke liye asli native look-and-feel itna high-value hai ki upar diye gaye complexity cost ko
+        justify kare, ya well-styled RN components (Pressable + custom styling + maybe a subtle native-like
+        animation) 90% same visual/UX goal simpler tareeke se achieve kar denge?"</strong>
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>decision-checklist.txt</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Senior-level checklist — Expo UI use karne se pehle poochne wale sawaal</span>
+1. Kya users literally is screen ko OS ke native screen se compare karenge? <span class="tok-com"># (Settings screen: haan. Custom onboarding carousel: nahi.)</span>
+2. Kya ye screen high-frequency continuous updates chahta hai (60fps drag/animation)? <span class="tok-com"># Agar haan → Expo UI galat tool hai (section 11.2 dekho)</span>
+3. Kya team already dono platforms (iOS+Android) ke liye do implementations maintain karne ko ready hai? <span class="tok-com"># Platform-fork maintenance cost real hai — section 9 dekho</span>
+4. Kya is screen pe RN + custom styling se 90% same visual result already achieve ho sakta hai? <span class="tok-com"># Agar haan, aur difference marginal hai → RN simpler hai, use wahi karo</span>
+5. Kya CI/CD pipeline already Development Build use kar raha hai (matlab ye ek nayi constraint nahi hai)? <span class="tok-com"># Agar app already dev-client use kar rahi hai (native modules ki wajah se), Expo UI ka marginal cost kam hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "90% rule" apply karo</div>
+        <p>
+          Practical experience se: zyadatar screens jo "native feel chahiye" ki request ke saath aati hain,
+          actually RN + thoughtful styling (correct spacing, platform-aware shadows via
+          <code>Platform.select()</code>, subtle Reanimated micro-interactions) se 90% goal achieve kar
+          lete hain — bina Expo UI ki complexity ke. Wo bacha hua 10% (jaise exact native
+          <code>ContextMenu</code> ka haptic-feel, ya iOS ka literal grouped-Form visual) hi wo cases hain
+          jaha Expo UI ka trade-off genuinely worth hota hai. Interview mein bhi ye "90% rule" articulate
+          karna ek strong signal hai ki aap sirf naye tools use karne ke liye excited nahi ho, balki
+          cost-benefit soch ke decide karte ho.
+        </p>
+      </div>
+
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Neeche wahi tarah ke sawaal hain jo ek senior RN developer interview mein Expo UI/native-bridging
+        topic pe poochhe ja sakte hain — internals, trade-offs, aur "why" dono angle se.
+      </p>
+
+      <h3>Q1. Expo UI ke Host component ke andar ek SwiftUI view actually React Native component tree mein kaise mount hoti hai? Do rendering systems ko kya bridge karta hai?</h3>
+      <p>
+        <strong>Answer:</strong> Host, Fabric ke perspective se ek regular native view manager hai — jaise
+        koi bhi custom native view. Jab Fabric apna shadow tree commit karta hai, Host node ke liye ek
+        actual native view instantiate hoti hai — iOS pe ye internally ek <code>UIHostingController</code>
+        (Apple ka official SwiftUI-in-UIKit embedding mechanism) hoti hai, jiska <code>.view</code> Fabric
+        ko as a single opaque <code>UIView</code> milta hai. Us view ke andar poora SwiftUI hierarchy
+        (VStack, Button, etc.) SwiftUI ke apne independent rendering engine se manage hota hai — Fabric ko
+        is internal hierarchy ka koi idea nahi hota, wo sirf ek "black box" view dekhta hai jiski width/height
+        hai. Bridge ka kaam <strong>Expo Modules API</strong> (jis par Expo UI bana hai) karta hai — ye JS
+        props ko native method calls mein translate karta hai jo phir SwiftUI ke <code>@State</code>
+        properties ko update karte hain, jisse SwiftUI apna normal re-render trigger karta hai. Reverse
+        direction mein native events JSI ke through JS callbacks (<code>onValueChange</code> jaisa) fire
+        karte hain.
+      </p>
+
+      <h3>Q2. Fabric shadow tree ko Expo UI ke internal SwiftUI/Compose tree ke baare mein kitna pata hota hai?</h3>
+      <p>
+        <strong>Answer:</strong> Bilkul kuch nahi — aur ye by design hai. Fabric sirf Host node ko dekhta hai
+        as ek single shadow node jiske layout properties hain (width, height, flex). Us node ke andar jo
+        SwiftUI/Compose hierarchy hai, wo completely Fabric ke scope ke bahar hai — ye ek independent,
+        parallel render tree hai jise Apple/Google ka apna diffing engine manage karta hai. Ye exactly wahi
+        pattern hai jo <code>react-native-maps</code> ka <code>MapView</code> ya ek <code>WebView</code> use
+        karta hai — un dono ke andar bhi ek poora alag rendering engine (MapKit/Chromium) chal raha hota hai
+        jo Fabric ke liye opaque hai. Interview mein ye point clearly articulate karna important hai ki
+        <strong>Expo UI Fabric ko modify/extend nahi karta — ye ek established "opaque native view" pattern
+        ko naye tarike se apply karta hai</strong>.
+      </p>
+
+      <h3>Q3. Aap kab Expo UI recommend karoge Expo Modules API se ek fully custom native module banane ke bajaye?</h3>
+      <p>
+        <strong>Answer:</strong> Decision framework kuch aisa hoga:
+      </p>
+      <ul>
+        <li><strong>Expo UI:</strong> Jab aapko standard native controls chahiye (Button, Switch, Slider, Picker, Form/List style layouts) jo already Expo UI expose karta hai, aur aapki requirement discrete/moderate-frequency interactions tak limited hai. Ye zero native code likhne deta hai — pure TS/JSX se native views milte hain.</li>
+        <li><strong>Custom native module (Expo Modules API):</strong> Jab aapko ek genuinely custom native UI component chahiye jo Expo UI expose nahi karta (jaise ek proprietary camera overlay, ek custom charting engine, ya koi third-party native SDK ka UI wrapper), ya jab aapko fine-grained control chahiye native rendering lifecycle par jo Expo UI ke abstraction se possible nahi hai (jaise UI-thread se directly driven 60fps updates).</li>
+        <li><strong>Raw TurboModule:</strong> Bahut rarely — sirf jab aap Expo ecosystem se bahar completely bare RN app mein ho, ya Expo Modules API ki koi specific limitation aapko block kar rahi ho.</li>
+      </ul>
+      <p>
+        Practical rule: Expo UI se start karo agar component list mein maujood hai. Agar nahi hai lekin ye
+        ek "standard-ish" native control hai (jaise koi common design pattern), pehle Expo UI ke roadmap/GitHub
+        issues check karo — ho sakta hai wo already planned ho. Sirf tabhi custom native module likho jab
+        genuinely kuch unique/proprietary chahiye ho.
+      </p>
+
+      <h3>Q4. Expo UI ko Development Build chahiye — Expo Go mein kaam kyun nahi karta?</h3>
+      <p>
+        <strong>Answer:</strong> Expo Go ek pre-built app hai jo Expo team publish karta hai App Store/Play
+        Store pe, jisme sirf ek <em>fixed, predetermined set of native modules</em> compiled hote hain (wo
+        native modules jo Expo SDK ke "core" ka hissa hain). Expo UI apna khud ka native binding code ship
+        karta hai (SwiftUI/Compose interop layer, view managers) jo Expo Go ke us fixed build mein compile
+        nahi hua hota — kyunki Expo UI ek separate package hai jo har app ki specific dependency list ke
+        hisaab se differ kar sakta hai. Native modules ko app ke native binary mein compile-time pe include
+        hona padta hai (unlike JS code jo runtime pe download ho sakta hai) — isliye jab tak aap khud ek
+        <strong>Development Build</strong> (<code>expo-dev-client</code> ke through, apni khud ki native
+        dependencies ke saath compiled) nahi banate, Expo UI ka native code kahin exist nahi karta jisse JS
+        connect ho sake. Ye fundamentally same reason hai jispe koi bhi third-party native module (jaise
+        Reanimated ki gesture handler native parts) Expo Go mein kaam nahi karta.
+      </p>
+
+      <h3>Q5. Continuous 60fps native property updates ke liye Expo UI kyun best-suited nahi hai? Aap kya use karoge instead?</h3>
+      <p>
+        <strong>Answer:</strong> Har normal Expo UI prop update ek poora chain trigger karta hai — JS
+        reconciliation → Fabric shadow tree update → native binding layer → SwiftUI/Compose state update →
+        re-render/recomposition. JSI ki wajah se ye chain fast hai (koi JSON serialization nahi, synchronous
+        calls), lekin "fast" ka matlab "zero-cost" nahi hai. 60fps pe (~16.6ms per frame budget), agar JS
+        thread already busy hai (React reconciliation, business logic), to har extra round-trip us budget
+        ka meaningful hissa kha sakta hai, jisse dropped frames/jank hota hai. Iske bajaye continuous,
+        gesture-driven updates ke liye Reanimated ka approach better hai — <code>useSharedValue</code> se
+        driven properties JSI ke through directly UI thread pe update hoti hain, <em>bina</em> React
+        re-render ya JS thread involvement ke har frame pe. Expo UI is direction mein move kar raha hai
+        (worklet-driven native props), lekin jab tak wo mature na ho, high-frequency native-view updates ke
+        liye ya to Reanimated-driven native components use karo, ya ek custom native module jisme aap khud
+        UI thread se property directly drive karte ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>frequency-mismatch-example.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Anti-pattern — normal useState se native view property ko har frame update karna</span>
+<span class="tok-kw">function</span> <span class="tok-fn">BadDragSync</span>() { <span class="tok-com">// Ye example dikhata hai ki galat approach kaisi dikhti hai</span>
+  <span class="tok-kw">const</span> [offset, setOffset] = <span class="tok-fn">useState</span>(<span class="tok-num">0</span>); <span class="tok-com">// Normal React state — har change pe re-render + JS-native round-trip</span>
+  <span class="tok-com">// PanResponder/gesture handler yahan har move event pe setOffset(newValue) call karega</span>
+  <span class="tok-com">// Har call: JS reconciliation → Fabric update → native binding → SwiftUI state — 60 baar/sec</span>
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+    <span class="tok-tag">&lt;Host</span> <span class="tok-attr">style</span>={{ transform: [{ translateX: offset }] }}<span class="tok-tag">&gt;</span> <span class="tok-com">// ⚠️ Har frame ek full JS-native chain — high-frequency ke liye slow</span>
+      <span class="tok-tag">&lt;Text&gt;</span>Dragging<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// Content — irrelevant issue ke liye</span>
+    <span class="tok-tag">&lt;/Host&gt;</span> <span class="tok-com">// Host close</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component close — is pattern ko continuous drag ke liye avoid karo</span></code></pre>
+      </div>
+
+      <h3>Q6. Expo UI use karne ka bundle size/complexity cost kya hai, aur aap ise kaise justify karte ho ek production app mein?</h3>
+      <p>
+        <strong>Answer:</strong> Teen main costs hain: (1) native binary size badhta hai kyunki Expo UI ka
+        bridging code (SwiftUI/Compose ko React props se connect karne wala layer) app ke saath ship hota
+        hai; (2) Development Build zaroori ho jaata hai, jo CI/CD pipeline mein native build cycles add
+        karta hai (EAS Build minutes, iteration speed impact); (3) maintenance/cognitive surface badhta hai
+        kyunki team ko ab teen layout systems (Yoga, SwiftUI, Compose) aur split debugging tools (React
+        DevTools + Xcode View Debugger + Android Studio Layout Inspector) handle karne padte hain. Main
+        justify karta hoon ek simple checklist se: kya is specific screen pe native look genuinely
+        user-perceivable, high-leverage value deta hai (jaise Settings screen jaha users OS se direct
+        comparison karte hain)? Agar haan, cost worth hai. Agar answer "thoda better lagega" level ka hai,
+        RN + achhi styling se 90% same visual goal simpler tareeke se milta hai — us case mein Expo UI
+        overkill hai.
+      </p>
+
+      <h3>Q7. Ek settings screen pe native Switch/Picker chahiye. Aap Expo UI, universal <code>@expo/ui</code> import, ya platform-forked <code>swift-ui</code>/<code>jetpack-compose</code> imports mein se kaunsa choose karoge, aur kyun?</h3>
+      <p>
+        <strong>Answer:</strong> Ye depend karta hai control ke granularity requirement pe. Agar mujhe sirf
+        ek simple, well-supported common control chahiye (basic Switch, basic Button) bina platform-specific
+        fine-tuning ke, main universal <code>@expo/ui</code> import use karunga — single file, no platform
+        fork, kam maintenance. Lekin jaise hi mujhe platform-specific fine-grained behavior chahiye ho (jaise
+        iOS ka specific <code>ContextMenu</code> style, ya Android Material 3 ka specific variant ya
+        specific modifier jo dusre platform pe exist hi nahi karta), main platform-specific imports
+        (<code>@expo/ui/swift-ui</code> / <code>@expo/ui/jetpack-compose</code>) pe switch karunga aur
+        <code>.ios.tsx</code>/<code>.android.tsx</code> fork banaunga — is case mein extra maintenance cost
+        (do files) justified hai kyunki control ka level genuinely zaroori hai. Business logic (data
+        fetching, validation) ko main hamesha ek shared hook mein rakhta hoon taaki sirf presentation layer
+        fork ho, logic duplicate na ho.
+      </p>
+
+      <h3>Q8. Agar SwiftUI ka <code>.padding().background()</code> aur <code>.background().padding()</code> alag visual result dete hain, to ye Expo UI ke JS-side <code>modifiers</code> array mein kaise reflect hota hai, aur ye kyun important hai?</h3>
+      <p>
+        <strong>Answer:</strong> SwiftUI mein modifiers ek immutable wrapping chain banate hain — har
+        modifier apne se pehle wale view ko ek naye view mein wrap karta hai, isliye order semantically
+        matter karta hai (<code>.padding().background()</code> = background padding ke bahar; reverse =
+        background sirf content ke around, padding transparent). Expo UI ka <code>modifiers</code> prop
+        (jo ek array leta hai) is exact same underlying SwiftUI/Compose modifier chain ko generate karta hai
+        — array ka index-order directly Swift/Kotlin ke method-chain order mein map hota hai. Isliye array
+        mein modifiers ka order copy-paste karte waqt verify karna zaroori hai — galat order se visual bug
+        aayega jo debug karna confusing ho sakta hai kyunki JS side pe koi obvious error nahi aayega, sirf
+        wrong visual result milega (jaise background transparent padding ke saath dikhna jab expected tha
+        ki wo edge-to-edge ho).
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="05-animations-and-gestures.html">
+          <div class="label">← Previous</div>
+          <div class="title">Animations &amp; Gestures</div>
+        </a>
+        <a class="next" href="07-testing.html">
+          <div class="label">Next →</div>
+          <div class="title">Testing</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

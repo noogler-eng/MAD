@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>State Management — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link active" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> State Management</div>
+      <div class="progress-pill">Chapter 18 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Zustand · Redux Toolkit · Jotai · MMKV Persistence</span>
+      <h1>State Management — Context Se Aage, Zustand/Redux/Jotai Tak</h1>
+      <p class="subtitle">
+        Chapter 2 mein humne <code>useState</code> aur <code>useContext</code> dekhe the — chhote apps ke liye
+        wo kaafi hain. Lekin jaise-jaise app grow karta hai (zyada screens, zyada shared state, zyada
+        frequently-updating data), ek point aata hai jahan "context + prop drilling" architecture khud ek
+        maintenance aur performance problem ban jaata hai. Ye chapter senior-level state management ka poora
+        landscape cover karta hai — Zustand, Redux Toolkit, Jotai — kab kaunsa choose karna hai, aur unke
+        internals actually kaise kaam karte hain, sirf syntax nahi.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why-separate-topic">1. Kyun State Management Ek Separate Topic Hai</a></li>
+          <li><a href="#context-limits">2. React Context — When It's Enough, When It's Not</a></li>
+          <li><a href="#zustand">3. Zustand Deep-Dive</a></li>
+          <li><a href="#redux-toolkit">4. Redux Toolkit Deep-Dive</a></li>
+          <li><a href="#jotai">5. Jotai — Atomic State Model</a></li>
+          <li><a href="#decision-framework">6. Senior Decision Framework: Which One, When</a></li>
+          <li><a href="#persisting-state">7. Persisting State — MMKV and AsyncStorage</a></li>
+          <li><a href="#selector-patterns">8. Selector Patterns and Preventing Re-renders</a></li>
+          <li><a href="#gotchas">9. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">11. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="why-separate-topic" style="border-top:none; padding-top:0; margin-top:28px;">1. Kyun State Management Ek Separate Topic Hai</h2>
+
+      <p>
+        Ek chhoti app mein <code>useState</code> aur agar zaroorat pade <code>useContext</code> — bas itna hi
+        chahiye hota hai. Ek login screen apna khud ka form state rakh sakta hai, ek toggle apna khud ka boolean
+        rakh sakta hai. Problem tab shuru hoti hai jab state ko <strong>multiple, unrelated screens</strong> ke
+        beech share karna padta hai — jaise cart items, logged-in user, theme preference, ya ek multi-step form
+        jiska data 4 alag screens mein spread hai.
+      </p>
+
+      <h3>Prop drilling — pehla symptom</h3>
+      <p>
+        Agar tumhe <code>App</code> se 5 levels neeche ek component tak ek value pahunchani hai, aur beech ke
+        saare 4 components ko sirf isliye us prop ko accept + forward karna padta hai kyunki wo bhi render tree
+        mein beech mein baithe hain — yehi <strong>prop drilling</strong> hai. Ye components ko unnecessarily
+        coupled banata hai (beech wale components ko ek prop ki "knowledge" honi padti hai jo unhe khud kabhi use
+        hi nahi karni), aur refactoring painful ho jaata hai.
+      </p>
+
+      <h3>Single large Context — dusra symptom (recap ch.2)</h3>
+      <p>
+        Chapter 2 mein humne dekha tha ki Context iska "official" fix hai — lekin ek naya trap hai <strong>ek
+        hi bade Context</strong> mein sab kuch daal dena (user, theme, cart, notifications — sab ek object mein).
+        Jab is Context ki value change hoti hai (chahe sirf ek field badla ho), <strong>har consumer re-render
+        hota hai</strong>, chahe usne us specific field ko read kiya ho ya nahi — kyunki Context ka re-render
+        model "value reference badli, sab consumers ko notify karo" hai, field-level granularity nahi hai. Ch.2
+        mein humne iska fix "Context splitting" dekha tha (alag-alag Context per concern) — yahan hum us
+        limitation ko ek level upar le jaake dekhte hain: jab splitting bhi kaafi na pade.
+      </p>
+
+      <h3>Teesra symptom — predictability aur debuggability</h3>
+      <p>
+        Jab state kaafi saare jagah se update ho sakta hai (multiple screens, multiple event handlers), ek
+        genuine production bug track karna mushkil ho jaata hai: "ye value achanak <code>undefined</code> kaise
+        ho gayi?" Iska answer dhoondhne ke liye tumhe poori codebase mein har jagah dhoondhna padta hai jahan
+        se wo state update ho sakta hai. Dedicated state libraries (Zustand/Redux/Jotai) is problem ko solve
+        karte hain <strong>centralizing state updates</strong> ek predictable, traceable pattern mein — kaunsi
+        action state ko kaise badalti hai, ye ek jagah se clearly dikhta hai (especially Redux DevTools ke
+        saath, jo har state change ko time-travel-debuggable banata hai).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          State management library "add" karna koi default best-practice nahi hai — ye ek trade-off hai
+          (extra dependency, thodi learning curve, thoda boilerplate) jo tabhi worth hota hai jab prop
+          drilling/Context-based approach genuinely pain de raha ho. Ek chhoti app mein Redux daalna
+          over-engineering hai; ek 50-screen app mein sirf Context pe rely karna under-engineering hai. Section
+          6 ka decision framework isi judgment ko structure karta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="context-limits">2. React Context — When It's Enough, When It's Not</h2>
+
+      <p>
+        Context ek built-in React feature hai — koi extra dependency nahi chahiye, aur genuinely sahi tool hai
+        kuch specific cases ke liye. Senior-level decision ye hai: <strong>Context ka use-case identify karna
+        seekho</strong>, na ki "Context bad hai, hamesha library use karo" jaisa blanket rule follow karna.
+      </p>
+
+      <h3>Context achha fit hai jab:</h3>
+      <ul>
+        <li>
+          Value <strong>rarely update</strong> hoti hai — jaise theme (light/dark), locale (language), ya
+          logged-in user object jo login/logout pe hi change hota hai, per-keystroke nahi.
+        </li>
+        <li>
+          Value <strong>app-wide</strong> hai — matlab bahut saare, unrelated components isse read karte hain,
+          isliye ek single Provider poore tree ke top pe rakhna natural hai.
+        </li>
+        <li>
+          Tumhe koi extra dependency <strong>nahi chahiye</strong> — chhote projects, prototypes, ya jahan bundle
+          size ek genuine constraint hai (jaise ek super lightweight widget/SDK).
+        </li>
+      </ul>
+
+      <h3>Context weak fit hai jab:</h3>
+      <ul>
+        <li>
+          State <strong>frequently update</strong> hota hai — jaise ek text input ki value, scroll position, ya
+          real-time data (chat messages, live cursor position). Har update pe poore subtree ka re-render trigger
+          hona (Context ka default behavior) yahan visible performance problem ban jaata hai.
+        </li>
+        <li>
+          Bahut saare <strong>unrelated consumers</strong> ko state ke <em>alag-alag slices</em> selectively
+          subscribe karna hai — jaise ek app mein 20 components hain jo ek bade store se sirf apna-apna ek field
+          padhte hain. Context isme "sab ya kuch nahi" model deta hai (poori Context value badli ya nahi), field-level
+          selective subscription ke liye designed nahi hai.
+        </li>
+        <li>
+          Tumhe <strong>state ko component tree ke bahar se</strong> bhi read/update karna ho (jaise ek utility
+          function mein, ya ek non-component module mein) — Context sirf render tree ke andar accessible hota
+          hai (<code>useContext</code> hook ke through), jabki Zustand jaisa store kahin se bhi (<code>store.getState()</code>)
+          access ho sakta hai.
+        </li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip — Mental Shortcut</div>
+        <p>
+          Poochho khud se: "Kya ye value din mein kuch hi baar badalti hai (login, theme toggle), ya har second
+          multiple baar (typing, animation, live data)?" Pehla case Context, doosra case ek dedicated store
+          (Zustand/Redux/Jotai) — yahi sabse fast senior heuristic hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="zustand">3. Zustand Deep-Dive</h2>
+
+      <p>
+        Zustand (German word for "state") React Native community mein senior devs ka favorite banta ja raha hai
+        — wajah simple hai: <strong>minimal boilerplate</strong>, koi <code>&lt;Provider&gt;</code> wrap karne ki
+        zaroorat nahi, aur out-of-the-box <strong>selector-based subscriptions</strong> jo unnecessary re-renders
+        ko automatically avoid karti hain, bina extra memoization code likhe.
+      </p>
+
+      <h3>Kyun no Provider chahiye</h3>
+      <p>
+        Zustand internally store ko ek <strong>module-level variable</strong> (external to React tree) mein
+        rakhta hai, React state mein nahi. Ye store apna khud ka subscription system rakhta hai — jab
+        <code>set()</code> call hoti hai, Zustand sirf un components ko notify karta hai jinhone specific slice
+        subscribe kiya tha (via selector function), poore tree ko re-render trigger karne ke bajaye ek Context
+        value change karke. Isi wajah se koi Provider tree mein wrap karne ki zaroorat nahi — store khud
+        independently exist karta hai, components sirf ek hook se usse "connect" hote hain.
+      </p>
+
+      <h3>Installation aur store banana</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install zustand <span class="tok-com"># Zustand ka core package install kar rahe hain, RN/Expo ke saath compatible</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>store/useCartStore.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { create } <span class="tok-kw">from</span> <span class="tok-str">"zustand"</span>; <span class="tok-com">// Zustand ka main function — isi se store banate hain</span>
+
+<span class="tok-kw">type</span> CartItem = { id: <span class="tok-kw">string</span>; name: <span class="tok-kw">string</span>; price: <span class="tok-kw">number</span>; qty: <span class="tok-kw">number</span> }; <span class="tok-com">// ek cart item ka shape</span>
+
+<span class="tok-kw">type</span> CartState = { <span class="tok-com">// poore store ka shape — state fields + actions dono isi type mein</span>
+  items: CartItem[]; <span class="tok-com">// cart mein currently kaunse items hain</span>
+  addItem: (item: CartItem) => <span class="tok-kw">void</span>; <span class="tok-com">// naya item cart mein add karne ka action</span>
+  removeItem: (id: <span class="tok-kw">string</span>) => <span class="tok-kw">void</span>; <span class="tok-com">// id se item remove karne ka action</span>
+  clearCart: () => <span class="tok-kw">void</span>; <span class="tok-com">// poora cart empty karne ka action</span>
+  totalPrice: () => <span class="tok-kw">number</span>; <span class="tok-com">// derived value — total price compute karne ka helper (state mein store nahi karte, section 8/advanced dekho)</span>
+};
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> useCartStore = <span class="tok-fn">create</span><span class="tok-punc">&lt;</span>CartState<span class="tok-punc">&gt;</span>((set, get) => ({ <span class="tok-com">// create() ek hook return karta hai jo components use karenge; set = state update karne ka function, get = current state read karne ka function</span>
+  items: [], <span class="tok-com">// initial state — khaali cart se shuru</span>
+
+  addItem: (item) => <span class="tok-fn">set</span>((state) => ({ <span class="tok-com">// set ek updater function accept karta hai, jaise useState ka functional update</span>
+    items: [...state.items, item], <span class="tok-com">// immutably naya array banaya, purane items + naya item</span>
+  })), <span class="tok-com">// closing addItem</span>
+
+  removeItem: (id) => <span class="tok-fn">set</span>((state) => ({ <span class="tok-com">// remove bhi similarly immutable update hai</span>
+    items: state.items.<span class="tok-fn">filter</span>((i) => i.id !== id), <span class="tok-com">// matching id wala item filter out kiya, naya array return hua</span>
+  })), <span class="tok-com">// closing removeItem</span>
+
+  clearCart: () => <span class="tok-fn">set</span>({ items: [] }), <span class="tok-com">// object update — updater function ke bina bhi set() seedha partial state accept karta hai</span>
+
+  totalPrice: () => <span class="tok-fn">get</span>().items.<span class="tok-fn">reduce</span>((sum, i) => sum + i.price * i.qty, <span class="tok-num">0</span>), <span class="tok-com">// get() se current state padha, total compute kiya — ye state mein store NAHI hota, on-demand calculate hota hai</span>
+})); <span class="tok-com">// create() call close, hook export ho gaya</span></code></pre>
+      </div>
+
+      <h3>Component mein use karna — selector-based subscription</h3>
+      <p>
+        Yahan sabse important senior detail hai: store ko poora destructure mat karo agar sirf ek field chahiye
+        — <strong>selector function</strong> pass karo taaki component sirf us specific slice ke change pe
+        re-render ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/CartBadge.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Text } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitive import kiya</span>
+<span class="tok-kw">import</span> { useCartStore } <span class="tok-kw">from</span> <span class="tok-str">"../store/useCartStore"</span>; <span class="tok-com">// hamara Zustand store hook import kiya</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CartBadge</span>() {
+  <span class="tok-com">// SELECTOR PATTERN: sirf items.length subscribe kiya, poora items array nahi — component sirf</span>
+  <span class="tok-com">// tab re-render hoga jab length actually badlega, kisi item ki price update hone pe nahi</span>
+  <span class="tok-kw">const</span> itemCount = <span class="tok-fn">useCartStore</span>((state) => state.items.length); <span class="tok-com">// selector function — state se sirf ek derived number nikaala</span>
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Text&gt;</span>{itemCount} <span class="tok-str">items in cart</span><span class="tok-tag">&lt;/Text&gt;</span>; <span class="tok-com">// count render kar diya</span>
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> CartBadge; <span class="tok-com">// export kiya reuse ke liye</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/AddToCartButton.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Button } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitive</span>
+<span class="tok-kw">import</span> { useCartStore } <span class="tok-kw">from</span> <span class="tok-str">"../store/useCartStore"</span>; <span class="tok-com">// store hook import</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">AddToCartButton</span>({ product }: { product: { id: <span class="tok-kw">string</span>; name: <span class="tok-kw">string</span>; price: <span class="tok-kw">number</span> } }) {
+  <span class="tok-com">// yahan sirf addItem action chahiye, koi state field nahi — actions stable reference hoti hain,</span>
+  <span class="tok-com">// isliye ye selector kabhi re-render trigger nahi karega jab tak store khud recreate na ho</span>
+  <span class="tok-kw">const</span> addItem = <span class="tok-fn">useCartStore</span>((state) => state.addItem); <span class="tok-com">// sirf action function ko select kiya</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;Button</span>
+      <span class="tok-attr">title</span>=<span class="tok-str">"Add to Cart"</span>
+      <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() => <span class="tok-fn">addItem</span>({ ...product, qty: <span class="tok-num">1</span> })<span class="tok-punc">}</span> <span class="tok-com">// click pe store action call ki, qty default 1</span>
+    <span class="tok-tag">/&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> AddToCartButton; <span class="tok-com">// export kiya</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Actions Store Ke Andar Hi Kyun</div>
+        <p>
+          Notice karo <code>addItem</code>/<code>removeItem</code> functions store definition ke <em>andar</em>
+          define hue hain (component ke andar nahi). Ye Zustand ka recommended pattern hai — state aur uski
+          update-logic dono ek hi jagah colocated rehte hain, jisse koi bhi component sirf action call karta hai,
+          business logic duplicate nahi hoti alag-alag components mein. Ye conceptually Redux ke reducer pattern
+          jaisa hi hai, bas kaafi kam boilerplate ke saath.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="redux-toolkit">4. Redux Toolkit Deep-Dive</h2>
+
+      <p>
+        Zustand jitna simple hone ke baad bhi, Redux Toolkit (RTK) — jo modern "official" Redux hai — bahut
+        saari large-scale production apps mein still sahi choice hai. Iski wajah samajhna zaroori hai, kyunki
+        "Redux purana/verbose hai" jaisa oversimplified take senior interviews mein weak jawaab lagta hai.
+      </p>
+
+      <h3>Redux Toolkit still sahi choice kab hai</h3>
+      <ul>
+        <li>
+          <strong>Large teams</strong> — Redux ka strict, opinionated pattern (actions → reducers → store, sab
+          ek predictable shape mein) large teams mein consistency enforce karta hai. Naya developer bhi codebase
+          mein aake turant pattern samajh jaata hai, kyunki "Redux way" ek hi hai, Zustand mein flexibility
+          zyada hone ki wajah se har team apna alag convention bana sakti hai.
+        </li>
+        <li>
+          <strong>Complex state graphs</strong> — jab bahut saari entities hain jo ek-doosre se related hain
+          (users, posts, comments, likes — sab normalized state chahte hain), Redux ka ecosystem (normalizr,
+          RTK ke <code>createEntityAdapter</code>) isko structured way se handle karta hai.
+        </li>
+        <li>
+          <strong>RTK Query</strong> — Redux Toolkit ka built-in data-fetching + caching layer, jo server-state
+          (API se aane wala data) ko automatically cache, invalidate, aur refetch karta hai — bina manual
+          <code>useEffect</code> + <code>useState</code> fetch logic likhe (section advanced deep-dive mein
+          isko TanStack Query se compare karenge).
+        </li>
+        <li>
+          <strong>Redux DevTools — time-travel debugging</strong> — har single state change ek dispatched
+          "action" ke through hoti hai, jo DevTools mein ek timeline ki tarah dikhti hai. Tum kisi bhi purani
+          action pe "jump" kar sakte ho aur dekh sakte ho state us waqt kaisi thi — ye debugging superpower hai
+          jo complex bugs (jaise "state kis sequence of actions se is corrupt state mein pahuncha") reproduce
+          karne mein directly help karta hai.
+        </li>
+      </ul>
+
+      <h3>Internal mental model — single store + pure reducers</h3>
+      <p>
+        Redux ka core idea hai: <strong>ek hi global store</strong>, aur state ko badalne ka <strong>sirf ek hi
+        tareeka</strong> — ek action dispatch karo, aur ek pure reducer function purane state + action lekar
+        naya state return karta hai (<code>(state, action) => newState</code>). "Pure" ka matlab hai reducer
+        koi side-effect nahi karta aur same input se hamesha same output deta hai — is guarantee ki wajah se
+        Redux DevTools time-travel possible hai (kyunki kisi bhi point pe state ko deterministically replay
+        kiya ja sakta hai), aur predictable state transitions milte hain — koi bhi state change ek traceable
+        action se aata hai, ad-hoc random mutation se nahi.
+      </p>
+
+      <h3>Installation aur ek slice banana</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install @reduxjs/toolkit react-redux <span class="tok-com"># RTK core + React bindings, dono chahiye hote hain</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>store/cartSlice.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { createSlice, PayloadAction } <span class="tok-kw">from</span> <span class="tok-str">"@reduxjs/toolkit"</span>; <span class="tok-com">// createSlice = reducer+actions ek saath generate karne wala helper; PayloadAction = action ka TS type</span>
+
+<span class="tok-kw">type</span> CartItem = { id: <span class="tok-kw">string</span>; name: <span class="tok-kw">string</span>; price: <span class="tok-kw">number</span>; qty: <span class="tok-kw">number</span> }; <span class="tok-com">// ek cart item ka shape</span>
+<span class="tok-kw">type</span> CartState = { items: CartItem[] }; <span class="tok-com">// is slice ka state shape</span>
+
+<span class="tok-kw">const</span> initialState: CartState = { items: [] }; <span class="tok-com">// initial khaali cart</span>
+
+<span class="tok-kw">const</span> cartSlice = <span class="tok-fn">createSlice</span>({ <span class="tok-com">// slice = ek feature ka state + reducers + auto-generated actions</span>
+  name: <span class="tok-str">"cart"</span>, <span class="tok-com">// slice ka naam, action types mein prefix ki tarah use hota hai (e.g. "cart/addItem")</span>
+  initialState, <span class="tok-com">// upar define kiya hua starting state</span>
+  reducers: { <span class="tok-com">// har key ek reducer function hai jo automatically ek action creator bhi generate karti hai</span>
+    addItem: (state, action: PayloadAction<span class="tok-punc">&lt;</span>CartItem<span class="tok-punc">&gt;</span>) => {
+      <span class="tok-com">// RTK Immer use karta hai internally — yahan "state.items.push" DIRECT MUTATION jaisa dikhta hai</span>
+      <span class="tok-com">// lekin Immer isse safely ek naya immutable state mein convert kar deta hai (advanced deep-dive mein detail)</span>
+      state.items.<span class="tok-fn">push</span>(action.payload); <span class="tok-com">// naya item array mein push kiya (Immer-safe)</span>
+    },
+    removeItem: (state, action: PayloadAction<span class="tok-punc">&lt;</span><span class="tok-kw">string</span><span class="tok-punc">&gt;</span>) => {
+      <span class="tok-com">// action.payload yahan item ki id hai</span>
+      state.items = state.items.<span class="tok-fn">filter</span>((i) => i.id !== action.payload); <span class="tok-com">// matching id wala item hataya, naya array assign kiya</span>
+    },
+    clearCart: (state) => {
+      state.items = []; <span class="tok-com">// poora cart empty kar diya</span>
+    },
+  },
+});
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> { addItem, removeItem, clearCart } = cartSlice.actions; <span class="tok-com">// auto-generated action creators export kiye — components inhe dispatch karenge</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> cartSlice.reducer; <span class="tok-com">// reducer function export kiya, store mein register hoga</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>store/index.ts — store setup</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { configureStore } <span class="tok-kw">from</span> <span class="tok-str">"@reduxjs/toolkit"</span>; <span class="tok-com">// RTK ka store-creation helper — DevTools + middleware defaults already configured</span>
+<span class="tok-kw">import</span> cartReducer <span class="tok-kw">from</span> <span class="tok-str">"./cartSlice"</span>; <span class="tok-com">// hamara cart slice ka reducer import kiya</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> store = <span class="tok-fn">configureStore</span>({ <span class="tok-com">// poora app ka single Redux store bana rahe hain</span>
+  reducer: {
+    cart: cartReducer, <span class="tok-com">// "cart" key ke neeche cart slice ka state rahega — state.cart.items se access hoga</span>
+  },
+});
+
+<span class="tok-kw">export</span> <span class="tok-kw">type</span> RootState = <span class="tok-kw">ReturnType</span><span class="tok-punc">&lt;</span><span class="tok-kw">typeof</span> store.getState<span class="tok-punc">&gt;</span>; <span class="tok-com">// poore store ka TS type, useSelector mein type-safety ke liye</span>
+<span class="tok-kw">export</span> <span class="tok-kw">type</span> AppDispatch = <span class="tok-kw">typeof</span> store.dispatch; <span class="tok-com">// dispatch function ka type, useDispatch mein type-safety ke liye</span></code></pre>
+      </div>
+
+      <p>
+        Ab root component ko store ke saath wrap karna hoga — yahan Redux ko genuinely ek <code>Provider</code>
+        chahiye (Zustand ke opposite):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Provider } <span class="tok-kw">from</span> <span class="tok-str">"react-redux"</span>; <span class="tok-com">// react-redux ka Provider component</span>
+<span class="tok-kw">import</span> { store } <span class="tok-kw">from</span> <span class="tok-str">"../store"</span>; <span class="tok-com">// hamara configured store</span>
+<span class="tok-kw">import</span> { Stack } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>; <span class="tok-com">// Expo Router ka navigator</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">RootLayout</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;Provider</span> <span class="tok-attr">store</span>=<span class="tok-punc">{</span>store<span class="tok-punc">}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// poore app tree ko store se wrap kiya — ab har component neeche se store access kar sakta hai</span>
+      <span class="tok-tag">&lt;Stack</span> <span class="tok-tag">/&gt;</span> <span class="tok-com">// Expo Router ka navigator, Provider ke andar</span>
+    <span class="tok-tag">&lt;/Provider&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> RootLayout; <span class="tok-com">// export kiya, ye root layout hai</span></code></pre>
+      </div>
+
+      <h3>Component mein useSelector aur useDispatch</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/CartScreen.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useSelector, useDispatch } <span class="tok-kw">from</span> <span class="tok-str">"react-redux"</span>; <span class="tok-com">// hooks — state read karne ke liye aur actions dispatch karne ke liye</span>
+<span class="tok-kw">import</span> { View, Text, Button, FlatList } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> { removeItem } <span class="tok-kw">from</span> <span class="tok-str">"../store/cartSlice"</span>; <span class="tok-com">// action creator import kiya</span>
+<span class="tok-kw">import</span> <span class="tok-kw">type</span> { RootState, AppDispatch } <span class="tok-kw">from</span> <span class="tok-str">"../store"</span>; <span class="tok-com">// type-safety ke liye types import kiye</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CartScreen</span>() {
+  <span class="tok-com">// SELECTOR: sirf state.cart.items nikaala poore store se — component sirf tab re-render hoga jab</span>
+  <span class="tok-com">// ye specific slice reference change ho (Redux shallow-equality check karta hai)</span>
+  <span class="tok-kw">const</span> items = <span class="tok-fn">useSelector</span>((state: RootState) => state.cart.items); <span class="tok-com">// selector function, RootState type se type-safe</span>
+  <span class="tok-kw">const</span> dispatch = <span class="tok-fn">useDispatch</span><span class="tok-punc">&lt;</span>AppDispatch<span class="tok-punc">&gt;</span>(); <span class="tok-com">// dispatch function nikaala, actions bhejne ke liye</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;FlatList</span>
+        <span class="tok-attr">data</span>=<span class="tok-punc">{</span>items<span class="tok-punc">}</span>
+        <span class="tok-attr">keyExtractor</span>=<span class="tok-punc">{</span>(item) => item.id<span class="tok-punc">}</span>
+        <span class="tok-attr">renderItem</span>=<span class="tok-punc">{</span>({ item }) => (
+          <span class="tok-tag">&lt;View&gt;</span>
+            <span class="tok-tag">&lt;Text&gt;</span>{item.name} — ₹{item.price}<span class="tok-tag">&lt;/Text&gt;</span>
+            <span class="tok-tag">&lt;Button</span>
+              <span class="tok-attr">title</span>=<span class="tok-str">"Remove"</span>
+              <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() => <span class="tok-fn">dispatch</span>(<span class="tok-fn">removeItem</span>(item.id))<span class="tok-punc">}</span> <span class="tok-com">// action creator call ki, uska result dispatch kiya — yahi Redux ka "action" hai</span>
+            <span class="tok-tag">/&gt;</span>
+          <span class="tok-tag">&lt;/View&gt;</span>
+        )<span class="tok-punc">}</span>
+      <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> CartScreen; <span class="tok-com">// export kiya</span></code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="jotai">5. Jotai — Atomic State Model</h2>
+
+      <p>
+        Jotai (Japanese word for "state") ek fundamentally different mental model deta hai — ek bade central
+        store ke bajaye, state ko chhote-chhote independent <strong>"atoms"</strong> mein todte hain. Har atom
+        apna khud ka piece of state hai, aur components sirf unhi atoms ko subscribe karte hain jo unhe chahiye.
+      </p>
+
+      <h3>Ye mental model shift kyun matter karta hai</h3>
+      <p>
+        Zustand/Redux mein tumhare paas ek "store object" hota hai jisme saara related state ek saath rehta hai,
+        aur selector functions use karke tum granularity manually manage karte ho (jaisa section 3/4 mein dikha).
+        Jotai isse invert kar deta hai — <strong>granularity by default</strong> hai, kyunki har atom apne aap
+        mein ek independent, isolated subscription unit hai. Iska matlab agar ek component sirf ek atom read
+        karta hai, wo <em>sirf</em> tabhi re-render hoga jab exact wahi atom change ho — bina kisi selector
+        function likhe, kyunki architecture khud hi fine-grained hai.
+      </p>
+      <p>
+        Ye especially achha fit hai jab tumhare paas <strong>derived/computed state</strong> bahut zyada ho —
+        Jotai mein ek atom directly doosre atoms se "compute" ho sakta hai, aur Jotai automatically track karta
+        hai ki kaunse atoms pe depend karta hai, bilkul React ke apne dependency-tracking jaisa (spreadsheet
+        cells ki tarah socho — ek cell doosre cell se formula se derive hota hai, aur base cell change hote hi
+        automatically recompute hota hai).
+      </p>
+
+      <h3>Installation aur basic example</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install jotai <span class="tok-com"># Jotai ka core package, koi extra peer dependency zaroori nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>store/cartAtoms.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { atom } <span class="tok-kw">from</span> <span class="tok-str">"jotai"</span>; <span class="tok-com">// atom() function se hi ek naya independent state unit banta hai</span>
+
+<span class="tok-kw">type</span> CartItem = { id: <span class="tok-kw">string</span>; name: <span class="tok-kw">string</span>; price: <span class="tok-kw">number</span>; qty: <span class="tok-kw">number</span> }; <span class="tok-com">// item ka shape</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> cartItemsAtom = <span class="tok-fn">atom</span><span class="tok-punc">&lt;</span>CartItem[]<span class="tok-punc">&gt;</span>([]); <span class="tok-com">// PRIMITIVE atom — ek independent piece of state, initial value khaali array</span>
+
+<span class="tok-com">// DERIVED atom — koi naya state store nahi ho raha, ye sirf cartItemsAtom se compute hota hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> totalPriceAtom = <span class="tok-fn">atom</span>((get) => { <span class="tok-com">// read-only derived atom, get() se dusre atoms padhte hain</span>
+  <span class="tok-kw">const</span> items = <span class="tok-fn">get</span>(cartItemsAtom); <span class="tok-com">// cartItemsAtom ki current value nikaali — Jotai automatically dependency track karta hai</span>
+  <span class="tok-kw">return</span> items.<span class="tok-fn">reduce</span>((sum, i) => sum + i.price * i.qty, <span class="tok-num">0</span>); <span class="tok-com">// total compute kiya — jab bhi cartItemsAtom badlega, ye automatically recompute hoga</span>
+}); <span class="tok-com">// closing totalPriceAtom</span>
+
+<span class="tok-com">// WRITE-ONLY derived atom — state change karne ka "action" jaisa pattern, Zustand ki action jaisa</span>
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> addItemAtom = <span class="tok-fn">atom</span>(
+  <span class="tok-kw">null</span>, <span class="tok-com">// pehla argument null = ye atom khud kuch "read" nahi karta, sirf write karta hai</span>
+  (get, set, newItem: CartItem) => { <span class="tok-com">// set function state update karne ke liye, get current values padhne ke liye</span>
+    <span class="tok-kw">const</span> current = <span class="tok-fn">get</span>(cartItemsAtom); <span class="tok-com">// current items nikaale</span>
+    <span class="tok-fn">set</span>(cartItemsAtom, [...current, newItem]); <span class="tok-com">// naya immutable array set kiya cartItemsAtom mein</span>
+  }
+); <span class="tok-com">// closing addItemAtom</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/CartTotal.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useAtomValue, useSetAtom } <span class="tok-kw">from</span> <span class="tok-str">"jotai"</span>; <span class="tok-com">// useAtomValue = sirf padhne ke liye, useSetAtom = sirf likhne ke liye (read/write ko decouple karta hai)</span>
+<span class="tok-kw">import</span> { Text, Button } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> { totalPriceAtom, addItemAtom } <span class="tok-kw">from</span> <span class="tok-str">"../store/cartAtoms"</span>; <span class="tok-com">// atoms import kiye</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CartTotal</span>() {
+  <span class="tok-com">// ye component SIRF totalPriceAtom subscribe karta hai — agar koi doosra atom app mein badle,</span>
+  <span class="tok-com">// ye component bilkul re-render nahi hoga, sirf jab derived total actually badlega tab hoga</span>
+  <span class="tok-kw">const</span> total = <span class="tok-fn">useAtomValue</span>(totalPriceAtom); <span class="tok-com">// derived atom ki current computed value padhi</span>
+  <span class="tok-kw">const</span> addItem = <span class="tok-fn">useSetAtom</span>(addItemAtom); <span class="tok-com">// write-only atom ka setter function nikaala, value read nahi ki (kyunki chahiye hi nahi)</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-kw">&lt;&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>Total: ₹{total}<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// computed total render kiya</span>
+      <span class="tok-tag">&lt;Button</span>
+        <span class="tok-attr">title</span>=<span class="tok-str">"Add Sample Item"</span>
+        <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() => <span class="tok-fn">addItem</span>({ id: <span class="tok-str">"1"</span>, name: <span class="tok-str">"Item"</span>, price: <span class="tok-num">100</span>, qty: <span class="tok-num">1</span> })<span class="tok-punc">}</span> <span class="tok-com">// write-atom call kiya naya item ke saath</span>
+      <span class="tok-tag">/&gt;</span>
+    <span class="tok-kw">&lt;/&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> CartTotal; <span class="tok-com">// export kiya</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          <code>useAtomValue</code> (sirf read) aur <code>useSetAtom</code> (sirf write) ka split intentional
+          hai — agar ek component sirf state update karta hai (jaise upar wala Add button), usse value read
+          karne ki zaroorat hi nahi, isliye <code>useSetAtom</code> use karne se wo component atom ki value
+          change hone pe bhi re-render <strong>nahi</strong> hoga — sirf action-trigger karne ki responsibility
+          hai usme.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="decision-framework">6. Senior Decision Framework: Which One, When</h2>
+
+      <p>
+        Ab in teeno (+ Context) ko ek comparison table mein daal ke ek clear decision logic banate hain:
+      </p>
+
+      <table>
+        <thead><tr><th>Dimension</th><th>Context</th><th>Zustand</th><th>Redux Toolkit</th><th>Jotai</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Boilerplate</strong></td>
+            <td>Low (built-in)</td>
+            <td>Very low</td>
+            <td>Medium (slices, store setup, Provider)</td>
+            <td>Low (atoms are tiny)</td>
+          </tr>
+          <tr>
+            <td><strong>Learning curve</strong></td>
+            <td>Trivial (core React)</td>
+            <td>Very easy</td>
+            <td>Medium-high (actions, reducers, middleware concepts)</td>
+            <td>Easy, but atomic mental model needs a mindset shift</td>
+          </tr>
+          <tr>
+            <td><strong>DevTools</strong></td>
+            <td>None dedicated</td>
+            <td>Basic (Redux DevTools support via middleware)</td>
+            <td>Excellent — full time-travel debugging</td>
+            <td>Basic (Jotai DevTools available, less mature)</td>
+          </tr>
+          <tr>
+            <td><strong>Re-render control</strong></td>
+            <td>Manual (Context splitting)</td>
+            <td>Built-in via selectors</td>
+            <td>Built-in via <code>useSelector</code></td>
+            <td>Built-in by design (per-atom)</td>
+          </tr>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Rarely-changing app-wide values (theme, auth, locale)</td>
+            <td>Small-to-mid apps, solo/small teams, fast iteration</td>
+            <td>Large teams, complex async flows, need RTK Query caching</td>
+            <td>Fine-grained reactivity, derived-state-heavy UIs</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Recommendation Logic</div>
+        <p>
+          <strong>Solo dev/small team, simple-to-medium app</strong> → Zustand ya Context (Zustand jaise hi
+          state frequently update hone lage ya cross-screen sharing badhe). <strong>Large team, complex async
+          flows, aur server-state caching genuinely chahiye</strong> (RTK Query ka caching/invalidation layer) →
+          Redux Toolkit — iski strict conventions large team consistency ke liye directly help karti hain.
+          <strong>Fine-grained atomic reactivity, bahut saara derived/computed state</strong> (dashboards,
+          forms with interdependent fields, spreadsheet-jaisi UIs) → Jotai. Aur agar state genuinely rarely
+          badalta hai aur app-wide hai (theme, locale, auth user) → plain Context, kisi library ki zaroorat hi
+          nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="persisting-state">7. Persisting State — MMKV and AsyncStorage</h2>
+
+      <p>
+        Ab tak jo state dekha wo sab <strong>in-memory</strong> tha — app restart hote hi gayab ho jaata hai.
+        Real apps mein tumhe kai cheezein persist karni padti hain: user preferences (dark mode toggle), auth
+        tokens, cached data jo offline-first feel deta hai. Iske liye do main options hain RN mein.
+      </p>
+
+      <h3>MMKV vs AsyncStorage</h3>
+      <table>
+        <thead><tr><th>Aspect</th><th>react-native-mmkv</th><th>AsyncStorage</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Execution model</strong></td>
+            <td><strong>Synchronous</strong> — ek native key-value store (Tencent ka MMKV, jo memory-mapped file
+            use karta hai) directly JS thread se read/write hoti hai, koi Promise/await zaroorat nahi</td>
+            <td><strong>Asynchronous</strong> — har operation ek Promise return karta hai, JS aur native ke
+            beech bridge cross karna padta hai har call pe</td>
+          </tr>
+          <tr>
+            <td><strong>Speed</strong></td>
+            <td>Bahut fast — benchmarks mein AsyncStorage se roughly 30x tak faster reported hota hai, kyunki
+            memory-mapped file ka direct access hai, serialization overhead bhi kam hai</td>
+            <td>Slower — har read/write bridge round-trip + JSON serialization involve karta hai</td>
+          </tr>
+          <tr>
+            <td><strong>Setup friction</strong></td>
+            <td>Native module hai — Expo mein <code>expo-dev-client</code>/prebuild chahiye (Expo Go mein kaam
+            nahi karega, kyunki custom native code hai)</td>
+            <td>Zero native-linking friction — bahut simple install, Expo Go mein bhi chalta hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Zustand store ko MMKV ke saath persist karna</h3>
+      <p>
+        Zustand ka built-in <code>persist</code> middleware kisi bhi storage engine ko "storage adapter" ki
+        tarah accept karta hai — hum MMKV ko wrap karke pass karenge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install react-native-mmkv <span class="tok-com"># MMKV native module install kiya</span>
+npx expo install zustand <span class="tok-com"># Zustand already install ho toh skip, persist middleware isi package ke andar hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>store/usePreferencesStore.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { create } <span class="tok-kw">from</span> <span class="tok-str">"zustand"</span>; <span class="tok-com">// Zustand ka main function</span>
+<span class="tok-kw">import</span> { persist, createJSONStorage, StateStorage } <span class="tok-kw">from</span> <span class="tok-str">"zustand/middleware"</span>; <span class="tok-com">// persist middleware + storage adapter helpers</span>
+<span class="tok-kw">import</span> { MMKV } <span class="tok-kw">from</span> <span class="tok-str">"react-native-mmkv"</span>; <span class="tok-com">// MMKV native storage engine</span>
+
+<span class="tok-kw">const</span> mmkv = <span class="tok-kw">new</span> <span class="tok-fn">MMKV</span>(); <span class="tok-com">// ek MMKV instance banaya — ye default storage "id" use karega</span>
+
+<span class="tok-com">// Zustand ka persist middleware ek StateStorage interface expect karta hai (getItem/setItem/removeItem,</span>
+<span class="tok-com">// sab STRING-based). MMKV synchronous hai, isliye hum in functions ko plain (non-async) rakh sakte hain.</span>
+<span class="tok-kw">const</span> mmkvStorage: StateStorage = {
+  setItem: (name, value) => {
+    mmkv.<span class="tok-fn">set</span>(name, value); <span class="tok-com">// MMKV mein key-value synchronously likh diya, koi await nahi chahiye</span>
+  },
+  getItem: (name) => {
+    <span class="tok-kw">const</span> value = mmkv.<span class="tok-fn">getString</span>(name); <span class="tok-com">// MMKV se string synchronously padhi</span>
+    <span class="tok-kw">return</span> value ?? <span class="tok-kw">null</span>; <span class="tok-com">// agar key exist nahi karti, undefined aata hai — usse null mein normalize kiya (interface ki requirement)</span>
+  },
+  removeItem: (name) => {
+    mmkv.<span class="tok-fn">delete</span>(name); <span class="tok-com">// key ko MMKV se hata diya</span>
+  },
+};
+
+<span class="tok-kw">type</span> PreferencesState = { <span class="tok-com">// store ka shape</span>
+  isDarkMode: <span class="tok-kw">boolean</span>; <span class="tok-com">// dark mode on/off</span>
+  toggleDarkMode: () => <span class="tok-kw">void</span>; <span class="tok-com">// toggle karne ka action</span>
+};
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> usePreferencesStore = <span class="tok-fn">create</span><span class="tok-punc">&lt;</span>PreferencesState<span class="tok-punc">&gt;</span>()( <span class="tok-com">// create ke baad extra () — jab middleware wrap karna ho, ye TS ke liye curry syntax hai</span>
+  <span class="tok-fn">persist</span>( <span class="tok-com">// persist middleware se store ko wrap kiya</span>
+    (set) => ({ <span class="tok-com">// actual store definition, jaisa pehle dekha tha</span>
+      isDarkMode: <span class="tok-kw">false</span>, <span class="tok-com">// default light mode</span>
+      toggleDarkMode: () => <span class="tok-fn">set</span>((state) => ({ isDarkMode: !state.isDarkMode })), <span class="tok-com">// current value flip kiya</span>
+    }),
+    {
+      name: <span class="tok-str">"preferences-storage"</span>, <span class="tok-com">// storage mein is store ka data kis key naam se save hoga</span>
+      storage: <span class="tok-fn">createJSONStorage</span>(() => mmkvStorage), <span class="tok-com">// hamara MMKV adapter pass kiya, createJSONStorage isse JSON serialize/deserialize karna sikhata hai</span>
+    }
+  )
+); <span class="tok-com">// create() call close</span></code></pre>
+      </div>
+
+      <p>
+        Yahan se aage app restart hone pe bhi <code>isDarkMode</code> automatically MMKV se rehydrate ho jaayega
+        — koi manual load/save code likhne ki zaroorat nahi, <code>persist</code> middleware ye poora lifecycle
+        khud handle karta hai (app start pe read, har <code>set()</code> ke baad write).
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 AsyncStorage Version</div>
+        <p>
+          Agar Expo Go mein chalana hai (MMKV native module ki wajah se possible nahi), sirf
+          <code>storage: createJSONStorage(() => AsyncStorage)</code> use karo — AsyncStorage already Zustand ke
+          <code>StateStorage</code> interface ko match karta hai (uska API bhi <code>getItem</code>/<code>setItem</code>/
+          <code>removeItem</code> hai), toh koi wrapper likhne ki zaroorat nahi padti jaisa MMKV ke liye padi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="selector-patterns">8. Selector Patterns and Preventing Re-renders</h2>
+
+      <p>
+        Selectors ka poora point ek hi core idea hai: <strong>component sirf us slice ko subscribe kare jo
+        wo actually use kar raha hai</strong>, poora store nahi. Ye concept humne section 3/4/5 mein bikhra hua
+        dekha, ab isse ek concrete before/after example se consolidate karte hain.
+      </p>
+
+      <h3>Before — over-subscribing (bad pattern)</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>❌ over-subscribed component — poore store pe re-render hoga</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">UserGreeting</span>() {
+  <span class="tok-com">// POORA store object destructure kar liya — user.name sirf chahiye tha, lekin store ke</span>
+  <span class="tok-com">// KISI BHI field (jaise cart.items, notifications, preferences) badalne pe bhi ye component</span>
+  <span class="tok-com">// re-render hoga, kyunki poora state object select kiya, ek specific slice nahi</span>
+  <span class="tok-kw">const</span> state = <span class="tok-fn">useCartStore</span>((s) => s); <span class="tok-com">// ⚠️ poora state return karne wala selector — kabhi mat likho aisa</span>
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Text&gt;</span>Hi, {state.userName}<span class="tok-tag">&lt;/Text&gt;</span>; <span class="tok-com">// sirf userName use ho raha hai, baaki poora state waste subscribe hua</span>
+}</code></pre>
+      </div>
+
+      <h3>After — narrow selection (good pattern)</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>✅ narrowly-selected component — sirf relevant field pe re-render hoga</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">UserGreeting</span>() {
+  <span class="tok-com">// SIRF userName field select kiya — Zustand internally is value ka pichla aur naya value</span>
+  <span class="tok-com">// compare karta hai (Object.is se), aur sirf tabhi re-render trigger karta hai jab ye specific</span>
+  <span class="tok-com">// value actually badle — cart items badalne se is component ka koi lena-dena nahi</span>
+  <span class="tok-kw">const</span> userName = <span class="tok-fn">useCartStore</span>((s) => s.userName); <span class="tok-com">// ✅ narrow selector — sirf ek primitive field return kiya</span>
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Text&gt;</span>Hi, {userName}<span class="tok-tag">&lt;/Text&gt;</span>; <span class="tok-com">// same output, lekin re-render surface area bahut chhota hai</span>
+}</code></pre>
+      </div>
+
+      <h3>Memoized selectors — Reselect (Redux) aur Zustand ke built-in selectors</h3>
+      <p>
+        Jab selector koi <strong>derived, computed value</strong> return karta hai (jaise ek filtered/sorted
+        array), naive selector har render pe ek <em>naya</em> array/object bana sakta hai (chahe underlying data
+        same ho) — aur ye naya reference automatically re-render trigger kar deta hai, kyunki reference equality
+        check fail ho jaata hai. Iska fix <strong>memoization</strong> hai — same input pe same reference wapas
+        do.
+      </p>
+
+      <ul>
+        <li>
+          <strong>Redux mein:</strong> <a href="https://github.com/reduxjs/reselect" target="_blank" rel="noopener">Reselect</a>
+          library ka <code>createSelector</code> use karte hain — ye input selectors ke result ko cache karta
+          hai, aur sirf tabhi recompute karta hai jab input actually badla ho, warna cached reference wapas
+          deta hai.
+        </li>
+        <li>
+          <strong>Zustand mein:</strong> selector ko simple/primitive rakho jab possible ho, ya derived arrays
+          ke liye <code>useMemo</code> ka use karo component ke andar, ya Zustand ke <code>useShallow</code>
+          helper se shallow-equality comparison use karo (jab selector ek object/array return karta hai jiske
+          fields individually same hain, lekin reference alag hai).
+        </li>
+      </ul>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">9. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ State ko Directly Mutate Karna (bina store update mechanism ke)</div>
+        <p>
+          Zustand/plain-object state ke saath ek bahut common bug hai <strong>direct mutation</strong> — jaise
+          <code>useCartStore.getState().items.push(newItem)</code> likh dena set() ke bina. Ye "kaam kar jaata
+          hai" JS level pe (array actually mutate ho jaata hai), lekin React ko iski <strong>koi khabar nahi
+          milti</strong> — kyunki React/Zustand re-render trigger karne ke liye reference change detect karte
+          hain, aur direct mutation reference ko same rakhta hai. Result: state internally badal gaya, lekin UI
+          stale reh jaata hai jab tak koi unrelated re-render na ho jaaye. Hamesha <code>set()</code> ke through
+          hi update karo, jo naya reference banata hai.
+        </p>
+        <p>
+          Redux Toolkit is problem se safe hai by design — RTK ke andar <strong>Immer</strong> library baked-in
+          hai, jisse tum reducers mein <code>state.items.push(...)</code> jaisa "mutating" syntax likh sakte ho,
+          lekin Immer under the hood ek naya immutable state tree generate karta hai (via a proxy-based diffing
+          mechanism), reference correctly badalti hai. Ye RTK ka ek genuine ergonomic advantage hai plain Zustand
+          ke against.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Non-Serializable Values Ko Persisted Store Mein Rakhna</div>
+        <p>
+          Agar tum apne persisted store (section 7) mein koi function, class instance, ya <code>Map</code>/<code>Set</code>
+          jaisi non-plain-JSON value store karte ho, persist middleware jab isse JSON string mein serialize
+          karega (disk pe likhne ke liye), ye values silently corrupt ho jaayengi ya poori tarah gayab ho
+          jaayengi — kyunki <code>JSON.stringify</code> functions ko drop kar deta hai aur class instances ko
+          plain objects mein flatten kar deta hai. Jab app restart hoke rehydrate karega, tumhe wo class methods
+          ya functions wapas nahi milenge, sirf plain data milega — agar code un methods pe depend karta hai,
+          runtime crash ho sakta hai. Rule: sirf plain, JSON-serializable data (`string`/`number`/`boolean`/
+          plain object/array) hi persisted store mein rakho.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Har Cheez Global State Banana (Senior Anti-Pattern)</div>
+        <p>
+          Ek bahut common junior-to-mid-level mistake ye hai ki <strong>har state ko global store mein daal
+          dena</strong> — chahe wo sirf ek form ke andar ek input field ho, ya ek modal ka open/close boolean
+          jo sirf ek hi component tree mein use hota hai. Isse do problems hoti hain: (1) unnecessary coupling —
+          poori app ko ab us global store ki "existence" ka pata hona padta hai kisi aisi cheez ke liye jo
+          genuinely local thi; (2) debugging harder ho jaata hai — global store mein jitne zyada unrelated
+          fields honge, utna hi mushkil hai samajhna ki koi specific field kis liye/kaha use ho raha hai. Senior
+          heuristic simple hai: agar state sirf ek component (ya uske direct children) tak simit hai aur kisi
+          aur screen/component ko iski zaroorat nahi, <strong>plain <code>useState</code> hi sahi choice hai</strong>
+          — global store mein daalna unnecessary indirection hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne "kaunsi library kab use karo" dekha. Ye section teen aur advanced concepts cover karta hai
+        jo genuinely complex apps mein zaroori ban jaate hain — invalid states ko structurally prevent karna,
+        server-state ko client-state se properly separate karna, aur derived state ko sahi tarike se model karna.
+      </p>
+
+      <h3>10.1 State Machines with XState — jab simple store kaafi nahi hai</h3>
+      <p>
+        Ek plain store (Zustand/Redux) mein state ka koi bhi combination technically possible hota hai — jaise
+        agar tumhare paas <code>isLoading</code>, <code>isError</code>, aur <code>data</code> teen separate
+        booleans/fields hain, kuch bhi tumhe <code>isLoading: true</code> aur <code>isError: true</code> dono
+        ek saath set hone se nahi rokta — jo logically ek <strong>invalid state</strong> hai (ek operation
+        loading bhi ho aur error bhi ho, ek saath, doesn't make sense). Complex multi-step flows mein (checkout,
+        onboarding wizard, multi-stage upload) aisi invalid state combinations bugs ka bahut bada source hote
+        hain.
+      </p>
+      <p>
+        <strong>XState</strong> is problem ko <strong>finite state machines</strong> se solve karta hai — state
+        ko ek "boolean soup" ki jagah ek explicit, named set of states (jaise <code>"idle"</code>,
+        <code>"loading"</code>, <code>"success"</code>, <code>"error"</code>) ke roop mein model karte hain, aur
+        sirf explicitly-defined <strong>transitions</strong> (events) hi ek state se doosre state mein move kar
+        sakte hain. Isse invalid combinations structurally impossible ho jaate hain — machine sirf <em>ek</em>
+        state mein ho sakta hai kisi bhi waqt, aur sirf wahi transitions allowed hain jo tumne explicitly define
+        ki hain (jaise <code>"loading"</code> se sirf <code>"success"</code> ya <code>"error"</code> pe ja sakte
+        ho, seedha <code>"idle"</code> pe wapas nahi ja sakte bina kisi defined event ke).
+      </p>
+      <p>
+        Checkout flow jaisa multi-step process (address → payment → review → confirm) ek classic XState use-case
+        hai — har step ka apna explicit state hai, aur "user payment step pe hai lekin address abhi fill nahi
+        hui" jaisi invalid combination machine definition mein hi impossible bana di jaati hai, runtime check
+        se nahi.
+      </p>
+
+      <h3>10.2 RTK Query vs TanStack Query — Client State vs Server State</h3>
+      <p>
+        Ye ek core senior-level architectural distinction hai jo bahut mid-level devs miss karte hain:
+        <strong>client state</strong> (UI state jaise "is this modal open", form input values, theme) aur
+        <strong>server state</strong> (data jo kisi API se fetch hui hai — users list, product catalog) do
+        <em>fundamentally different</em> cheezein hain, chahe dono "state" hi kehlaate hon.
+      </p>
+      <ul>
+        <li>
+          <strong>Client state</strong> — tumhare paas hi "owned" hai, sirf tumhare app ke andar exist karta
+          hai, aur tum jab chaho update kar sakte ho.
+        </li>
+        <li>
+          <strong>Server state</strong> — kisi aur system (backend) ka "owned" hai, tumhare paas sirf ek
+          <em>snapshot/cache</em> hai jo <strong>stale ho sakta hai</strong> (koi aur user/device ne backend pe
+          data change kar diya ho), jisko <strong>refetch/invalidate/re-sync</strong> karna padta hai, aur jo
+          <strong>async fetch lifecycle</strong> (loading/error/success, retries, background refetch) ke saath
+          aata hai.
+        </li>
+      </ul>
+      <p>
+        Iss wajah se server state ko ek plain Zustand/Redux store mein "seedha daal dena" (jaise ek
+        <code>useEffect</code> se fetch karke <code>setUsers(data)</code> karna) ek common architectural
+        mistake hai — kyunki tumhe manually cache invalidation, staleness tracking, retry logic, deduplication
+        (agar 2 components same data ek saath fetch kar rahe hain) sab khud implement karna padta hai. Yehi gap
+        <strong>RTK Query</strong> (Redux Toolkit ke andar built-in) aur <strong>TanStack Query</strong>
+        (standalone, framework-agnostic) bharte hain — dono hi ek dedicated caching layer dete hain jo automatically
+        stale data ko background mein refetch karta hai, same query ko multiple components se dedupe karta hai,
+        aur loading/error states ko ek consistent hook API (<code>useQuery</code>) ke through expose karta hai.
+      </p>
+      <p>
+        Senior pattern: <strong>client state ke liye Zustand/Redux/Jotai, server state ke liye RTK Query/
+        TanStack Query</strong> — dono ko alag rakho, ek dusre ka substitute mat banao. RTK Query already Redux
+        Toolkit ke andar hai, isliye agar tum Redux use kar rahe ho, RTK Query natural choice hai; agar tum
+        Zustand/Jotai use kar rahe ho (jo server-state caching provide nahi karte), TanStack Query ko saath mein
+        add karna standard practice hai.
+      </p>
+
+      <h3>10.3 Derived/Computed State — mat store karo, compute karo</h3>
+      <p>
+        Section 3 ke Zustand example mein <code>totalPrice()</code> ek function tha jo <em>on-demand</em>
+        compute hota tha (<code>get().items.reduce(...)</code>), state field ki tarah store nahi hua tha. Ye
+        intentional tha — agar tum <code>totalPrice</code> ko ek separate state field ki tarah store karte
+        (aur har <code>addItem</code>/<code>removeItem</code> ke saath manually update karte), do independent
+        values create ho jaati hain jo <strong>out of sync</strong> ho sakti hain agar kahin bhi update logic
+        miss ho jaaye (jaise ek naya action add kiya jo items badalta hai lekin totalPrice update karna bhool
+        gaya).
+      </p>
+      <p>
+        Senior principle: <strong>derived values ko store mat karo, unhe compute karo</strong> (memoized selector
+        se, jaisa Reselect/Jotai derived atoms/Zustand getter functions section 8 mein dikhaya) — is tarah sirf
+        ek "source of truth" (raw <code>items</code> array) hoti hai, aur derived value hamesha automatically
+        correct rehti hai kyunki wo directly usi source se calculate ho rahi hai, kabhi manually "sync" nahi
+        karni padti.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">11. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye questions state management ke around senior/staff-level RN interviews mein common hain — internals,
+        trade-offs, "why", aur scenario-based sab mix hai.
+      </p>
+
+      <h3>Q1. Zustand bina Provider/Context ke re-renders ko selectively kaise avoid karta hai?</h3>
+      <p>
+        Zustand ka store ek module-level (React tree ke bahar) mutable object hota hai jo apna khud ka pub-sub
+        subscription system rakhta hai. Jab koi component <code>useStore(selector)</code> call karta hai,
+        Zustand internally us selector ko run karke ek value nikaalta hai aur usse subscribe kar leta hai. Jab
+        bhi <code>set()</code> call hoti hai, Zustand naye state pe wahi selector dobara run karta hai aur naye
+        result ko purane result se <code>Object.is</code> se compare karta hai — sirf tabhi component ko
+        re-render trigger karta hai jab ye comparison <code>false</code> aaye (matlab value genuinely badli).
+        Context ka default model iske opposite hai — Context Provider ki value badalte hi <strong>saare</strong>
+        consumers (jo <code>useContext</code> call karte hain) re-render hote hain, chahe unhone kisi specific
+        field ko select kiya ho ya nahi, kyunki React Context field-level granularity natively support nahi
+        karta.
+      </p>
+
+      <h3>Q2. Ek naye project ke liye, Zustand ki simplicity ke bawajood, kab Redux Toolkit choose karoge?</h3>
+      <p>
+        Main RTK choose karunga jab (a) team bada hai aur strict, uniform conventions genuinely help karengi
+        onboarding aur code-review consistency mein — Zustand ki flexibility large teams mein har developer ko
+        apna alag pattern banane deti hai, jo drift create kar sakti hai; (b) app mein genuinely complex
+        server-state caching zaroorat hai jo RTK Query provide karta hai out-of-the-box (agar main Zustand use
+        karta toh separately TanStack Query add karna padta, jo bhi valid hai lekin ek extra dependency decision
+        hai); (c) time-travel debugging/Redux DevTools ek genuine requirement hai (jaise bahut complex state
+        transitions wale bugs debug karne ke liye); ya (d) organization mein already Redux expertise/tooling
+        exist karta hai aur naya pattern introduce karne ka cost > benefit hai. Chhote-medium apps ke liye, jahan
+        ye factors apply nahi hote, Zustand ki lower boilerplate genuinely faster iteration deti hai.
+      </p>
+
+      <h3>Q3. Server-state aur client-state ko ek hi global store mein mix karna anti-pattern kyun mana jaata hai?</h3>
+      <p>
+        Dono ka fundamentally different lifecycle aur ownership model hai (section advanced deep-dive 10.2).
+        Client state tumhare app ke andar hi "born" hota hai aur tumhare control mein hai — ek boolean flip karna
+        bas ek synchronous update hai. Server state ek external system ka snapshot hai jo <strong>independently
+        stale ho sakta hai</strong> — agar tum isse ek plain store mein manually daal dete ho (via ek-baar-fetch-
+        karke-setState), tumhe khud implement karna padega: staleness detection, background refetching, retry-on-
+        failure, request deduplication (agar 2 components same data chahte hain), aur cache invalidation jab
+        related data (jaise ek mutation ke baad) change ho. Ye sab ek dedicated data-fetching library (RTK Query/
+        TanStack Query) already solve kar chuki hai — inhe reinvent karna, aur unke sath plain client-state ko
+        mix karna, dono concerns ko messy bana deta hai (jaise "is user list stale hai?" jaisa logic tumhare
+        apne UI-state reducers mein bikhar jaata hai).
+      </p>
+
+      <h3>Q4. Ek component har store update pe re-render ho raha hai, jabki usse sirf ek field chahiye — kya galat hai, kaise fix karoge?</h3>
+      <p>
+        Ye classic over-subscription bug hai (section 8). Root cause almost hamesha ye hoti hai ki selector
+        poora state object return kar raha hai (jaise <code>useStore((s) => s)</code>, ya destructuring pattern
+        jo internally poori state ko access karta hai), instead of ek specific narrow field/derived-value
+        select karne ke. Fix: selector ko sirf wahi field return karne ke liye narrow karo jo component actually
+        use karta hai (<code>useStore((s) => s.specificField)</code>). Agar selector ek naya object/array return
+        karta hai (jaise ek filter/map ka result), toh additionally memoization chahiye hoga (Reselect Redux ke
+        liye, ya Zustand ke <code>useShallow</code>/component-level <code>useMemo</code>) taaki har render pe naya
+        reference na bane, jo khud ek re-render trigger kar sakta hai chahe underlying data same ho.
+      </p>
+
+      <h3>Q5. Redux Toolkit "mutating" syntax (<code>state.items.push(...)</code>) allow karta hai jabki Redux ka core principle immutability hai — ye contradiction kaise resolve hota hai?</h3>
+      <p>
+        RTK ke reducers Immer library ke through wrap hote hain. Jab tum reducer ke andar <code>state.items.push(x)</code>
+        likhte ho, actually tum ek <strong>Immer Proxy object</strong> ke saath interact kar rahe ho, real state
+        object ke saath nahi. Immer in "mutations" ko record karta hai, phir automatically ek naya immutable state
+        tree produce karta hai jisme sirf wahi paths change hue hain jo tumne touch kiye, baaki sab reference-equal
+        rehta hai (structural sharing). Isliye syntax-level pe ye mutation jaisa lagta hai (jo developer
+        ergonomics ke liye achha hai — array/object manipulation ka natural syntax), lekin runtime pe actual
+        result still ek naya, immutable state object hi hai — Redux ka core "state is never mutated directly"
+        guarantee intact rehta hai.
+      </p>
+
+      <h3>Q6. Jotai ke atomic model mein derived atom kaise "automatically" recompute hota hai jab uski dependency badalti hai — kya ye reactive framework jaisa hai?</h3>
+      <p>
+        Haan, conceptually bahut close hai. Jab ek derived atom define hota hai (jaise <code>atom((get) => get(baseAtom) * 2)</code>),
+        Jotai us function ko turant ek baar run karta hai aur track karta hai kaunse atoms uske andar
+        <code>get()</code> se access hue — yehi uski <strong>dependency list</strong> ban jaati hai (dynamic
+        dependency tracking, spreadsheet formulas jaisa). Jab bhi <code>baseAtom</code> update hota hai, Jotai
+        apne internal dependency graph mein dekhta hai kaunse derived atoms is base atom pe depend karte hain,
+        aur unhi ko selectively invalidate/recompute karta hai — poore app ka koi global "recompute everything"
+        pass nahi chalta. Isi wajah se ye fine-grained hai — sirf directly-affected computed atoms hi kaam
+        karte hain, unrelated atoms untouched rehte hain.
+      </p>
+
+      <h3>Q7. MMKV synchronous hai aur AsyncStorage asynchronous — ye difference practically kab matter karta hai?</h3>
+      <p>
+        Practically ye tab sabse zyada matter karta hai jab tumhe app <strong>launch ke bilkul shuru mein</strong>
+        (splash screen khatam hone se pehle) persisted state chahiye ho — jaise "kya user logged in hai" ya
+        "kaunsa theme select tha" — taaki first render hi correct UI ke saath ho, ek flash-of-wrong-state
+        (jaise pehle light theme flash hoke phir dark mode load hona) na dikhe. AsyncStorage ke saath ye read
+        inherently async hai, isliye tumhe ek loading state handle karni padti hai before pehla "real" render.
+        MMKV ke saath, kyunki read synchronous hai, tum store ko module-load-time pe hi synchronously rehydrate
+        kar sakte ho, aur first render already correct state ke saath ho sakta hai. Iske alawa, high-frequency
+        writes (jaise ek analytics buffer jo har event pe disk pe likhta hai) mein MMKV ki speed genuinely
+        measurable difference deti hai — AsyncStorage ke bridge overhead se bottleneck ban sakta hai agar writes
+        bahut frequent hon.
+      </p>
+
+      <h3>Q8. Ek complex checkout flow (address → payment → review) build kar rahe ho — plain Zustand store ya XState, kaunsa choose karoge aur kyun?</h3>
+      <p>
+        Depends on flow ki complexity aur invalid-state risk pe. Agar steps simple hain aur linear hain (bas
+        ek "currentStep" number/string field hai jo sequentially badalta hai, aur har step independent data
+        collect karta hai), ek plain Zustand store already kaafi hai — XState yahan overkill ho sakta hai.
+        Lekin agar flow mein genuinely complex branching hai (jaise "agar guest checkout hai toh payment step
+        skip nahi ho sakta bina address ke, lekin agar saved card hai toh review step directly ja sakte ho",
+        multiple conditional paths, aur invalid combinations ka real risk hai jo production mein confusing bugs
+        create kar sakti hain), XState ka explicit state machine model use karunga — kyunki wahan invalid state
+        combinations ko runtime checks se prevent karne ke bajaye, machine definition mein hi structurally
+        impossible banana zyada robust hai, especially jab multiple developers is flow ko maintain kar rahe hon
+        aur ek naya edge-case add karte waqt kisi purani invalid-state-prevention check ko accidentally break
+        karne ka risk ho.
+      </p>
+
+      <h3>Q9. Persisted Zustand store rehydrate hone ke baad expected value nahi de raha — kaise debug karoge?</h3>
+      <p>
+        Systematic order: (1) Check karo kya store mein koi non-serializable value hai (function, class instance,
+        <code>Map</code>/<code>Set</code>) — <code>JSON.stringify</code> aisi values ko silently drop/corrupt kar
+        deta hai (section 9 gotcha), isliye pehle store shape ko purely-JSON-serializable confirm karo. (2)
+        Check karo <code>persist</code> ka <code>name</code> option consistent hai across app versions — agar
+        tumne kabhi store ka shape badla (jaise ek field rename kiya) bina <code>migrate</code> option use kiye,
+        purana persisted data naye shape ke saath mismatch ho sakta hai. (3) Confirm karo storage adapter (MMKV/
+        AsyncStorage) sahi se initialize ho raha hai — jaise MMKV ka multiple instance/id confusion, ya
+        AsyncStorage ka import path galat hona. (4) Check karo rehydration <em>synchronous</em> assumption kahin
+        galat toh nahi ban rahi — AsyncStorage-backed persist async hota hai, isliye agar app ka pehla render
+        hi persisted value pe depend karta hai bina "has hydrated" state check kiye, tumhe transient default
+        value dikh sakti hai jo baad mein "flip" hoti hai — ye bug nahi, ye expected async behavior hai jise
+        handle karna padta hai (Zustand persist ka <code>onRehydrateStorage</code> callback isi liye use hota hai).
+      </p>
+
+      <h3>Q10. Ek junior dev ne ek modal ka "isOpen" boolean apne global Zustand store mein daal diya. Ye code review mein kya feedback doge?</h3>
+      <p>
+        Main flag karunga ye as a likely anti-pattern (section 9) — agar modal sirf ek specific screen/component
+        tree ke andar hi open/close hota hai aur koi doosra unrelated component/screen isko control ya read nahi
+        karta, ye state genuinely <strong>local</strong> hai, global store mein hone ki zaroorat nahi. Global
+        store mein daalne se do downsides hain: (a) poori app ko ab ek aisi state field ki "existence" ka pata
+        hai jo unse related hi nahi hai, jo cognitive overhead badhata hai jab koi naya dev store explore karta
+        hai; (b) agar future mein 2 alag jagah ye hi modal (ya similar naam ka field) use hota hai, naming
+        collision/confusion ka risk hai. Feedback: <code>const [isOpen, setIsOpen] = useState(false)</code> use
+        karo jab tak genuinely proof na ho ki iss state ko kisi doosri screen/component se access/control karna
+        hai — "future mein zaroorat pad sakti hai" premature globalization ka valid reason nahi hai (YAGNI).
+      </p>
+
+      <!-- ============================================================ -->
+      <div class="prevnext">
+        <a class="prev" href="17-bonus.html">
+          <div class="label">← Previous</div>
+          <div class="title">Bonus</div>
+        </a>
+        <a class="next" href="19-debugging-and-crashes.html">
+          <div class="label">Next →</div>
+          <div class="title">Debugging &amp; Crashes</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link active" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Introduction</div>
+      <div class="progress-pill">Chapter 1 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 1 · Foundations</span>
+      <h1>Introduction — React Native, Expo aur New Architecture</h1>
+      <p class="subtitle">
+        Is chapter mein hum bilkul root se start karenge — RN aur Expo actually kya hain, environment kaise
+        set karte hain, New Architecture (Fabric + TurboModules + JSI) internally kaise kaam karta hai,
+        Expo Go vs Dev Builds ka real trade-off, ek production-grade folder structure, aur Day-1 gotchas jo
+        har senior dev ko pata honi chahiye.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#what-is-rn-expo">1. Kya hai React Native aur Expo</a></li>
+          <li><a href="#dev-env-setup">2. Development Environment Setup</a></li>
+          <li><a href="#new-architecture">3. New Architecture (Fabric + TurboModules + JSI)</a></li>
+          <li><a href="#expo-go-vs-dev-builds">4. Expo Go vs Development Builds</a></li>
+          <li><a href="#folder-structure">5. Project Folder Structure</a></li>
+          <li><a href="#gotchas">6. Real-World Gotchas &amp; Anomalies</a></li>
+          <li><a href="#advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">8. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="what-is-rn-expo" style="border-top:none; padding-top:0; margin-top:28px;">Kya hai React Native aur Expo</h2>
+
+      <p>
+        Chalo bilkul shuru se pakadte hain. <strong>React Native (RN)</strong> ek framework hai jo Facebook
+        (ab Meta) ne 2015 mein release kiya tha, jiska idea simple tha — "aap React ka mental model (components,
+        JSX, state, props) use karke <em>actual native</em> iOS aur Android apps bana sako, web view nahi,
+        real native UI components (UIView, android.view.View)". Shuru mein iska architecture ek
+        <strong>"Bridge"</strong> pe based tha — JavaScript thread ek alag thread pe chalta tha, aur native side
+        (iOS/Android) ek alag thread pe. Dono ke beech communication hoti thi <strong>async, batched, JSON-serialized
+        messages</strong> ke through. Matlab agar aapko JS se ek native button ka color change karna hai, to
+        JS ek message JSON stringify karke bridge pe daalta tha, native side use parse karta tha, action perform
+        karta tha, aur result wapas JSON serialize karke bhejta tha. Ye kaam karta tha, lekin jaise jaise apps
+        complex hue (lists, animations, gestures), ye serialization overhead aur async nature bottleneck ban gaya —
+        especially jab aapko synchronous, high-frequency communication chahiye thi (jaise scroll position ya
+        gesture tracking). Isi problem ko solve karne ke liye Meta ne pichle kuch saalon mein poora
+        <strong>"New Architecture"</strong> phir se likha — jisme Bridge ki jagah <strong>JSI (JavaScript Interface)</strong>
+        aata hai, jo JS aur native code ko directly, synchronously call karne deta hai bina JSON serialize kiye
+        (isko hum next section mein deeply dekhenge).
+      </p>
+
+      <p>
+        Ab baat karte hain <strong>Expo</strong> ki. Ye ek common misconception hai ki "Expo aur React Native do
+        alag cheezein hain, ya Expo RN ka competitor/replacement hai" — <strong>ye bilkul galat hai</strong>.
+        Expo ek <em>platform aur toolchain</em> hai jo React Native ke <strong>upar</strong> banaya gaya hai.
+        Jab aap <code>npx create-expo-app</code> chalate ho, andar se still React Native hi chal raha hota hai —
+        Expo bas aapko in cheezon ka ek batteries-included layer deta hai:
+      </p>
+      <ul>
+        <li><strong>Expo SDK</strong> — pre-built native modules (camera, location, notifications, file system,
+          etc.) jo already tested aur cross-platform consistent hain, taaki aapko har cheez ke liye khud native
+          module likhna na pade.</li>
+        <li><strong>Expo CLI + EAS (Expo Application Services)</strong> — build, submit aur OTA update ka poora
+          cloud-based pipeline, bina aapko Xcode/Android Studio ki har config khud manage karne ki zaroorat ho
+          (though aap chaho to still kar sakte ho).</li>
+        <li><strong>Expo Router</strong> — file-based routing (Next.js jaisa mental model), jo hum Chapter 4 mein
+          detail se dekhenge.</li>
+        <li><strong>Config-based native project generation</strong> — <code>app.json</code>/<code>app.config.ts</code>
+          se poora <code>ios/</code> aur <code>android/</code> native project generate ho jaata hai (isko
+          "Prebuild" kehte hain), jisse aapko native folders ko manually maintain nahi karna padta.</li>
+      </ul>
+
+      <p>
+        Historically Expo ke do workflows the: <strong>Managed Workflow</strong> (jisme aapke paas
+        <code>ios/</code>/<code>android/</code> native folders bilkul nahi hote, sab kuch Expo manage karta tha,
+        lekin limitation ye thi ki aap custom native code add nahi kar sakte the) aur <strong>Bare Workflow</strong>
+        (jisme aap poore native project ke owner ho, custom native modules likh sakte ho, lekin phir Expo ke
+        convenience features kam mil paate the). Ye distinction ab largely <strong>obsolete</strong> ho chuka hai
+        — modern Expo (SDK 45+) mein "Development Builds" concept aane ke baad, aap managed-jaisi DX rakhte hue
+        bhi custom native modules add kar sakte ho (isko hum Section 4 mein detail se explain karenge). Yehi wajah
+        hai ki Expo ab industry standard ban chuka hai — pehle "Expo sirf prototyping/hobby projects ke liye hai"
+        wali reputation thi, lekin ab bade production apps (Discord jaisa scale bhi) Expo pe chal rahe hain, kyunki
+        New Architecture, Dev Builds aur EAS ne wo saari limitations hata di jo pehle managed workflow mein thi.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Jab koi interview mein pooche "Expo vs React Native, kaunsa use karoge?" — ye galat framing hai, sahi
+          jawab hai "Expo hamesha use karunga, kyunki wo RN hi hai bas better DX ke saath". Sirf ek genuine case
+          hai jahan aap "bare RN CLI" (bina Expo ke) choose karoge — agar aapko kisi legacy/brownfield native app
+          mein RN ko <em>integrate</em> karna hai (existing native codebase ke andar), tabhi Expo ka poora tooling
+          overkill ho sakta hai. Naye greenfield project ke liye, Expo hi default choice honi chahiye 2024+ mein.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="dev-env-setup">Development Environment Setup</h2>
+
+      <p>
+        Environment setup ko "just run the installer" jaisa treat mat karo — samjho ki har piece kya kaam kar raha
+        hai, taaki jab kal koi weird error aaye, aap root cause pakad sako.
+      </p>
+
+      <h3>Node, npm/yarn/pnpm, aur Expo CLI</h3>
+      <p>
+        React Native/Expo tooling (Metro bundler, CLI scripts, codegen) sab <strong>Node.js</strong> pe chalta hai
+        — ye baat confuse mat karo ki "React Native to mobile app hai, Node kyun chahiye" — Node sirf
+        <em>build-time tooling</em> ke liye chahiye, aapki actual app JS engine (Hermes) pe runtime mein chalti
+        hai, Node pe nahi. Package manager (npm/yarn/pnpm) mein se koi bhi chalega, lekin senior teams mostly
+        <strong>pnpm</strong> prefer karti hain bade monorepos mein kyunki wo disk space aur install speed dono
+        mein better hai (content-addressable storage + symlinks), jabki chhote/solo projects ke liye
+        <strong>npm</strong> hi kaafi hai (Expo docs bhi default npm assume karte hain). Expo CLI ab separately
+        install karne ki zaroorat nahi — modern Expo mein CLI local devDependency ke through <code>npx expo</code>
+        se hi chalti hai (global install ka pattern deprecated ho chuka hai, kyunki version mismatch issues create
+        karta tha).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Naya Expo project banane ka standard tareeka</span>
+npx create-expo-app@latest my-app --template
+
+<span class="tok-com"># Project ke andar CLI commands local se chalti hain</span>
+<span class="tok-kw">cd</span> my-app
+npx expo start
+
+<span class="tok-com"># Cache clear karke start (bahut common debugging step)</span>
+npx expo start -c</code></pre>
+      </div>
+
+      <h3>Android Studio + Emulator ka internal setup</h3>
+      <p>
+        Android emulator ko log log "bas ek app jo phone jaisa dikhta hai" samajhte hain, lekin actually ye
+        <strong>AVD (Android Virtual Device)</strong> hai — ek full virtualized Android system image jo QEMU
+        (Quick EMUlator) ke upar chalta hai, with hardware acceleration (macOS pe HAXM/Hypervisor.framework,
+        Windows/Linux pe usually KVM ya WHPX). Jab aap Android Studio mein AVD Manager se ek device banate ho,
+        aap effectively ek poora Android OS image (system.img) download kar rahe ho jo specific API level
+        (jaise API 34 = Android 14) ke saath aata hai, aur wo image ek isolated virtual machine mein boot hota
+        hai — isiliye emulator start hone mein time leta hai (poora OS boot ho raha hai) aur RAM/CPU zyada consume
+        karta hai. Setup steps: Android Studio install karo → SDK Manager se ek Android SDK Platform + one
+        system image install karo → AVD Manager se virtual device create karo → environment variables set karo
+        (<code>ANDROID_HOME</code>, aur <code>platform-tools</code> ko <code>PATH</code> mein add karo) taaki
+        <code>adb</code> command line se accessible ho.
+      </p>
+
+      <h3>Xcode + iOS Simulator</h3>
+      <p>
+        iOS Simulator, Android emulator jaisa full virtualization nahi hai — ye actually macOS pe hi
+        <strong>native x86/ARM binaries</strong> compile aur run karta hai jo iOS APIs ko simulate karte hain
+        (isiliye Simulator itna fast hai compare to real hardware testing ke, lekin isi wajah se kuch cheezein
+        jaise camera, push notifications ka real behavior, ya performance profiling Simulator pe accurate nahi
+        hoti — un cheezon ke liye real device chahiye hota hai). Setup: Mac App Store se Xcode install karo,
+        Xcode → Settings → Platforms se ek iOS Simulator runtime download karo, aur command line tools
+        (<code>xcode-select --install</code>) setup karo taaki <code>expo run:ios</code> jaise commands kaam
+        karein.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          iOS Simulator sirf macOS pe available hai — Windows/Linux pe aap sirf Android emulator ya physical
+          device (Expo Go ya dev build install karke) use kar sakte ho. Ye ek common reason hai ki teams
+          M-series MacBooks ko standard dev machine banate hain.
+        </p>
+      </div>
+
+      <h3>Environment Variables: <code>.env</code>, <code>app.json</code> vs <code>app.config.ts</code></h3>
+      <p>
+        Expo project mein config file do forms mein aa sakti hai — static <code>app.json</code>, ya dynamic
+        <code>app.config.js</code>/<code>app.config.ts</code>. Beginner projects <code>app.json</code> se start
+        karte hain kyunki wo simple JSON hai, lekin <strong>senior/production setup mein <code>app.config.ts</code>
+        hi sahi choice hai</strong>, kyunki:
+      </p>
+      <ul>
+        <li>Ye ek <strong>JS/TS file</strong> hai, matlab aap ismein logic likh sakte ho — jaise environment ke
+          hisaab se (dev/staging/prod) different bundle identifier, app name, ya API URL set karna.</li>
+        <li>TypeScript ke through aapko <strong>type safety aur autocomplete</strong> milta hai config likhte
+          waqt, jisse typo-based bugs (jaise galat key name) build time pe hi pakad mein aa jaate hain.</li>
+        <li>Aap environment variables ko <code>process.env</code> se directly read karke config mein inject kar
+          sakte ho, jo static JSON mein possible nahi hai.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title"><span>app.config.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { ExpoConfig, ConfigContext } <span class="tok-kw">from</span> <span class="tok-str">'expo/config'</span>;
+
+<span class="tok-com">// Environment ke hisaab se alag values — CI/EAS in env vars ko inject karta hai</span>
+<span class="tok-kw">const</span> APP_ENV = process.env.APP_ENV ?? <span class="tok-str">'development'</span>;
+
+<span class="tok-kw">const</span> ENV_CONFIG = {
+  development: { name: <span class="tok-str">'MyApp (Dev)'</span>, bundleId: <span class="tok-str">'com.mycompany.myapp.dev'</span> },
+  staging:     { name: <span class="tok-str">'MyApp (Staging)'</span>, bundleId: <span class="tok-str">'com.mycompany.myapp.staging'</span> },
+  production:  { name: <span class="tok-str">'MyApp'</span>, bundleId: <span class="tok-str">'com.mycompany.myapp'</span> },
+};
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: ENV_CONFIG[APP_ENV as <span class="tok-kw">keyof</span> <span class="tok-kw">typeof</span> ENV_CONFIG].name,
+  slug: <span class="tok-str">'myapp'</span>,
+  ios: {
+    bundleIdentifier: ENV_CONFIG[APP_ENV as <span class="tok-kw">keyof</span> <span class="tok-kw">typeof</span> ENV_CONFIG].bundleId,
+  },
+  android: {
+    package: ENV_CONFIG[APP_ENV as <span class="tok-kw">keyof</span> <span class="tok-kw">typeof</span> ENV_CONFIG].bundleId,
+  },
+  extra: {
+    <span class="tok-com">// runtime pe Constants.expoConfig.extra se accessible hota hai</span>
+    apiUrl: process.env.API_URL,
+    eas: { projectId: <span class="tok-str">'your-eas-project-id'</span> },
+  },
+});</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Security Critical</div>
+        <p>
+          <strong>Kabhi bhi <code>.env</code> file (real API keys/secrets ke saath) commit mat karo</strong> —
+          hamesha <code>.gitignore</code> mein add karo aur ek <code>.env.example</code> (dummy values ke saath)
+          rakho documentation ke liye. Aur ek aur important cheez: agar aap koi env variable
+          <code>EXPO_PUBLIC_</code> prefix ke saath likhte ho (jaise <code>EXPO_PUBLIC_API_URL</code>), to Expo
+          use build-time pe JS bundle ke andar <strong>literally inline (hardcode)</strong> kar deta hai —
+          matlab ye client-side JS bundle ke andar plaintext mein pada hoga, jise koi bhi decompile/inspect karke
+          padh sakta hai. Isiliye <code>EXPO_PUBLIC_</code> prefix wale variables mein <strong>kabhi secret keys,
+          private tokens ya server-only credentials mat daalo</strong> — ye "public" hain by design, sirf public
+          config (jaise ek public API base URL) ke liye use karo. Real secrets sirf server-side/backend mein
+          rehne chahiye, kabhi client bundle mein nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="new-architecture">React Native New Architecture (Fabric + TurboModules + JSI)</h2>
+
+      <p>
+        Ye section is chapter ka sabse "root-level" hissa hai — chalo dekhte hain ki React Native internally
+        actually kaam kaise karta hai, purane Bridge model se leke naye JSI-based model tak.
+      </p>
+
+      <h3>Old Architecture: The Bridge</h3>
+      <p>
+        Purane RN mein teen alag "worlds" the: <strong>JS thread</strong> (jahan aapka React code chalta hai),
+        <strong>Native/UI thread</strong> (jahan actual native views render hoti hain), aur inke beech ek
+        <strong>Bridge</strong>. Bridge ka kaam tha in dono worlds ke beech messages pass karna — lekin critical
+        baat ye thi ki communication <strong>asynchronous</strong> thi aur har message <strong>JSON serialize</strong>
+        karke bheja jaata tha. Matlab agar JS ko native se koi data chahiye (jaise "is view ka current width
+        kya hai"), to: JS ek message queue mein request daalta → serialize hoti → bridge cross karti → native
+        side deserialize karta → process karta → response phir serialize hoke wapas aata → JS deserialize
+        karta. Ye poora round-trip async tha (kabhi turant nahi mil sakta result), aur high-frequency operations
+        (jaise scroll events, gesture tracking, ya animations) ke liye ye serialization overhead ek real
+        performance bottleneck ban jaata tha — isiliye purane RN mein complex gesture-driven animations ko
+        native thread pe "offload" karna padta tha (Reanimated 1/2 ka poora design isi limitation ke around tha).
+      </p>
+
+      <h3>New Architecture: JSI, Fabric, TurboModules, Hermes</h3>
+      <p>
+        New Architecture ne is poore model ko replace kar diya. Core piece hai <strong>JSI (JavaScript Interface)</strong>
+        — ye ek C++ layer hai jo JS engine (Hermes) ko directly native C++ objects ke saath bind karta hai. Isse
+        JS code native functions ko <strong>synchronously, directly</strong> call kar sakta hai — bina JSON
+        serialize kiye, bina async queue ke through jaaye. JS objects ab native C++ "Host Objects" ko directly
+        hold kar sakte hain aur unke methods call kar sakte hain jaise wo normal JS objects hon.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Old Bridge vs New JSI (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>OLD ARCHITECTURE (Bridge)
+┌─────────────┐        async, JSON-serialized        ┌──────────────┐
+│  JS Thread   │ ───────────── queue ───────────────▶ │ Native Thread │
+│ (React code) │ ◀──────────── queue ───────────────  │ (UIView etc.) │
+└─────────────┘        batched, no sync calls         └──────────────┘
+
+NEW ARCHITECTURE (JSI)
+┌─────────────┐                                       ┌──────────────┐
+│  JS Thread   │ ◀════ JSI: direct C++ binding ══════▶ │ Native Thread │
+│  (Hermes)    │      synchronous, no serialization    │ (Fabric/C++)  │
+└─────────────┘                                       └──────────────┘
+        │                                                     │
+        ▼                                                     ▼
+   TurboModules                                          Fabric Renderer
+ (lazy-loaded native                                 (concurrent, host-tree
+  modules, on-demand)                                    reconciliation)</code></pre>
+      </div>
+
+      <p>
+        Is JSI foundation ke upar do bade pieces bane hain:
+      </p>
+      <ul>
+        <li>
+          <strong>Fabric (naya renderer)</strong> — purana renderer JS aur native ke beech tree diffing ke liye
+          bhi bridge use karta tha, batched aur async. Fabric ab JSI ke through directly kaam karta hai, aur
+          React 18 ke <strong>concurrent rendering</strong> features (jaise priority-based updates) ko native
+          side tak properly propagate karta hai. Fabric ek naya "Shadow Tree" (host component tree) maintain
+          karta hai jo C++ mein hai aur JS thread ke saath synchronously interact kar sakta hai — isse layout
+          calculations aur commits zyada predictable aur fast hote hain.
+        </li>
+        <li>
+          <strong>TurboModules</strong> — purane <code>NativeModules</code> system mein <em>saare</em> native
+          modules app start hote hi eagerly initialize ho jaate the, chahe aap use karo ya na karo — isse app
+          startup time badhta tha. TurboModules JSI use karke modules ko <strong>lazy-load</strong> karte hain
+          — matlab ek native module tabhi initialize hota hai jab JS code use pehli baar actually
+          <code>require</code>/access karta hai. Isse app startup fast hota hai, especially bade apps mein
+          jahan dozens of native modules hote hain.
+        </li>
+      </ul>
+
+      <h3>Hermes Engine</h3>
+      <p>
+        Hermes Meta ka apna JavaScript engine hai (V8 ya JSC ka alternative), jo specifically React Native ke
+        liye optimize kiya gaya hai. Iska sabse bada trick hai <strong>bytecode precompilation</strong> — normal
+        JS engines (jaise JSC) app ke JS source code ko <em>device pe runtime mein</em> parse aur compile karte
+        hain (jo startup time lagata hai), jabki Hermes build time pe hi JS ko <strong>bytecode</strong> mein
+        precompile kar deta hai. Runtime pe device sirf bytecode load aur execute karta hai — parsing step
+        skip ho jaata hai. Isse <strong>app startup time (TTI — Time To Interactive)</strong> significantly
+        improve hota hai, especially lower-end Android devices pe. Yehi wajah hai ki Hermes ab RN mein
+        <strong>default engine</strong> hai (SDK 46+ se) — aur New Architecture ke saath Hermes hi best
+        supported/tested combination hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interview mein agar pooche "New Architecture kyun better hai", sirf "fast hai" mat bolo — specifically
+          bolo: "JSON serialization overhead khatam hua kyunki JSI synchronous, direct C++ bindings deta hai;
+          TurboModules lazy-loading se startup improve karta hai; aur Fabric concurrent rendering ko properly
+          support karta hai jo React 18 features (jaise <code>useTransition</code>) ko native side tak le jaata
+          hai." Ye depth interviewer ko turant dikha degi ki aapne sirf marketing blog nahi padha, internals
+          samjhe hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="expo-go-vs-dev-builds">Expo Go vs Development Builds</h2>
+
+      <p>
+        Ye ek aisa topic hai jahan bahut saare beginners confuse ho jaate hain, aur agar aapne galat choice
+        kiya to baad mein migration paining ho sakti hai. Chalo dono ko root se samajhte hain.
+      </p>
+
+      <p>
+        <strong>Expo Go</strong> ek generic, pre-built native app hai jo App Store/Play Store se directly install
+        hoti hai. Ye ek "universal runtime" hai — iske andar already Expo SDK ke saare common native modules
+        compiled/baked-in hain. Jab aap <code>expo start</code> chalate ho aur QR code scan karte ho, actually
+        koi naya native binary nahi ban raha — Expo Go app aapke JS bundle ko <em>download aur interpret</em>
+        kar rahi hai apne already-existing native shell ke andar. Isi wajah se Expo Go itna fast hai iterate
+        karne ke liye (bina native rebuild ke, bas JS reload). Lekin yehi iski <strong>fundamental limitation</strong>
+        bhi hai — kyunki native binary already fixed/pre-built hai, aap koi <strong>custom native module</strong>
+        (jaise koi third-party library jisme native iOS/Android code ho, ya khud likha hua native module) add
+        nahi kar sakte — Expo Go sirf wahi native modules support karta hai jo usme already bundled hain.
+      </p>
+
+      <p>
+        <strong>Development Build</strong> iska solution hai — ye aapki <em>apni custom native binary</em> hai,
+        jisme <code>expo-dev-client</code> included hota hai (jo Expo Go jaisa hi dev experience deta hai — QR
+        scan, fast refresh, error overlay — lekin ab ye binary <strong>aapke project ke specific native
+        dependencies ke saath</strong> ban chuki hai). Ye binary ya to cloud mein <strong>EAS Build</strong>
+        se banti hai, ya locally <code>expo run:ios</code> / <code>expo run:android</code> commands se (jo
+        pehle native project generate karte hain — "prebuild" — aur phir Xcode/Gradle se actual build chalate
+        hain). Development build ke saath aap koi bhi native module add kar sakte ho — chahe wo Expo SDK ka ho,
+        third-party (jaise <code>react-native-mmkv</code>) ho, ya khud likha hua custom native module ho.
+      </p>
+
+      <table class="table">
+        <thead>
+          <tr><th>Criteria</th><th>Expo Go</th><th>Development Build</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Custom native modules</strong></td>
+            <td>Nahi (sirf jo already Expo Go mein bundled hain)</td>
+            <td>Haan, koi bhi native module add kar sakte ho</td>
+          </tr>
+          <tr>
+            <td><strong>OTA updates</strong></td>
+            <td>N/A (Expo Go khud ek shared app hai)</td>
+            <td>Haan, EAS Update se JS-only changes bina store review ke push kar sakte ho</td>
+          </tr>
+          <tr>
+            <td><strong>Build time</strong></td>
+            <td>Zero — instantly connect ho jaata hai</td>
+            <td>Pehli baar 5–20 min (cloud/local build), phir sirf JS reload fast hai</td>
+          </tr>
+          <tr>
+            <td><strong>Use case</strong></td>
+            <td>Bilkul shuruaati prototyping, learning, quick demos</td>
+            <td>Real projects — jaise hi ek bhi custom native dependency chahiye, migrate karo</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        <strong>Migration path:</strong> Naya project Expo Go se start karna bilkul fine hai jab tak aap sirf
+        core Expo SDK modules use kar rahe ho. Jaise hi project ko koi aisi library chahiye jo Expo Go mein
+        support nahi hai (error milega: "This module cannot be used in Expo Go"), ya jaise hi aapko production
+        ke liye custom native config (jaise push notification certificates, ya native SDK integration jaise
+        Firebase/Stripe) chahiye — <code>npx expo install expo-dev-client</code> karke development build pe
+        switch kar do. Ye ek one-way, low-friction migration hai — aapka JS code same rehta hai, sirf ab aap
+        Expo Go ki jagah apni khud ki dev build app use kar rahe ho.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Rule of thumb: agar aap ye chapter padh rahe ho aur real production app bana rahe ho, <strong>Day 1 se
+          hi development build pe chale jao</strong>. Expo Go sirf learning/prototype ke liye best hai — real
+          projects mein aksar koi na koi native dependency jaldi aa hi jaati hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="folder-structure">Project Folder Structure (Scalable, Senior-Level)</h2>
+
+      <p>
+        Ek chhota project kaisa bhi structure ho chal jaata hai, lekin jaise jaise team aur codebase badhta hai,
+        <strong>folder structure hi decide karta hai ki codebase maintainable rahega ya spaghetti ban jaayega</strong>.
+        Yahaan ek production-grade Expo Router app ka recommended structure hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>folder structure</span><button class="copy-btn">Copy</button></div>
+        <pre><code>my-app/
+├── app/                      <span class="tok-com"># Expo Router root — sirf routing/screens yahan, kyunki route resolution isi folder ke naam pe depend karta hai</span>
+│   ├── (auth)/               <span class="tok-com"># route GROUP — login/signup ko isolate kiya taaki inka apna _layout ho aur auth guard inhe ek unit ki tarah treat kar sake</span>
+│   │   ├── login.tsx         <span class="tok-com"># route "/login" — file ka naam hi URL path banta hai, isliye naming consistent rakhna zaroori hai</span>
+│   │   └── signup.tsx        <span class="tok-com"># route "/signup" — auth group ke andar isliye ki logged-out user isi tree mein rahe</span>
+│   ├── (tabs)/               <span class="tok-com"># dusra route group — logged-in tab navigation, alag rakha taaki auth vs main-app ka concern separate ho</span>
+│   │   ├── home.tsx          <span class="tok-com"># tab ka pehla screen — feature logic yahan nahi likhi, sirf features/ se import karke render karta hai</span>
+│   │   └── profile.tsx       <span class="tok-com"># dusra tab screen — isi wajah se thin, taaki route file sirf "wiring" kare, business logic nahi</span>
+│   └── _layout.tsx           <span class="tok-com"># root layout — auth-guard redirect logic yahan likhi jaati hai kyunki ye sabse pehle mount hota hai</span>
+│
+├── src/                      <span class="tok-com"># saara "real" application code yahan — app/ se alag isliye taaki routing aur logic mix na ho</span>
+│   ├── features/             <span class="tok-com"># feature-based grouping (NOT type-based) — reason: ek feature ka saara code ek jagah, easy onboarding + kam merge conflicts</span>
+│   │   ├── auth/             <span class="tok-com"># "auth" feature ka apna self-contained folder — delete/refactor karna ho to bas ye ek folder touch karna hai</span>
+│   │   │   ├── components/   <span class="tok-com"># feature-specific UI — isliye yahan rakha kyunki koi aur feature inhe reuse nahi karega</span>
+│   │   │   ├── hooks/        <span class="tok-com"># useLogin, useAuthState, etc. — feature-scoped state/logic, global hooks/ mein nahi rakha kyunki sirf auth ko chahiye</span>
+│   │   │   ├── api/          <span class="tok-com"># login(), refreshToken() calls — network calls ko component se alag rakha taaki UI aur data-fetching independently test ho sakein</span>
+│   │   │   └── types.ts      <span class="tok-com"># is feature ke TypeScript types — colocated taaki type aur usage saath change ho, alag drift na kare</span>
+│   │   └── feed/             <span class="tok-com"># dusra independent feature, same internal shape jitna possible — consistency se navigate karna easy hota hai</span>
+│   │       ├── components/   <span class="tok-com"># feed-specific UI, auth/components se koi dependency nahi (features cross-import nahi karte)</span>
+│   │       ├── hooks/        <span class="tok-com"># feed-scoped hooks</span>
+│   │       └── api/          <span class="tok-com"># feed-related network calls</span>
+│   │
+│   ├── components/           <span class="tok-com"># truly shared/reusable UI (Button, Card, Input) — sirf tab jab 2+ features same component use karein, "rule of three"</span>
+│   ├── hooks/                <span class="tok-com"># app-wide generic hooks (useDebounce, useAppState) — feature-agnostic hone chahiye, warna feature folder mein hi rakho</span>
+│   ├── lib/                  <span class="tok-com"># third-party client setup (axios instance, mmkv, analytics) — alag rakha taaki config ek jagah se manage ho, spread na ho</span>
+│   ├── services/             <span class="tok-com"># cross-cutting backend integration layer, features ke api/ folders se upar ki generic infra</span>
+│   │   └── api/               <span class="tok-com"># base API client, interceptors — auth token attach jaisa cross-feature logic yahan, taaki har feature isse reuse kare</span>
+│   ├── store/                <span class="tok-com"># global state (zustand/redux slices) — sirf genuinely cross-feature state yahan, feature-local state feature ke andar hi</span>
+│   ├── constants/             <span class="tok-com"># colors, spacing, config constants — single source of truth taaki magic numbers/hex codes har jagah copy-paste na ho</span>
+│   └── types/                 <span class="tok-com"># global/shared TypeScript types — sirf wahi types jo 2+ features share karte hain, warna feature-local types.ts behtar</span>
+│
+├── assets/                    <span class="tok-com"># fonts, images, lottie files — app/src code se alag isliye ki ye static binary assets hain, code nahi</span>
+├── app.config.ts              <span class="tok-com"># typed Expo config — app.json ki jagah isliye kyunki isme TypeScript se env-based conditional config likh sakte hain</span>
+├── .env.example                <span class="tok-com"># kaunse env vars chahiye uska template — real .env commit nahi hota (gitignored), ye sirf documentation ke liye hai</span>
+└── package.json                <span class="tok-com"># dependencies aur scripts — root pe isliye kyunki poore project ka single dependency tree hona chahiye</span></code></pre>
+      </div>
+
+      <p>
+        Sabse important architectural decision yahaan hai <strong>"feature folder" pattern vs "type folder"
+        pattern</strong>. "Type folder" pattern (jo bahut beginners default karte hain) ka matlab hai sab
+        components ek <code>components/</code> folder mein, sab hooks ek <code>hooks/</code> folder mein, sab
+        API calls ek <code>api/</code> folder mein — bina feature ke hisaab se group kiye. Ye chhote projects
+        mein theek lagta hai, lekin jaise hi project 50-100+ files tak badhta hai, problem ye hoti hai ki ek
+        single feature (jaise "checkout flow") ka code teen-chaar alag folders mein bikhra hota hai — aur agar
+        aapko us feature ko samajhna ya modify karna hai, aapko poore codebase mein jump karna padta hai.
+      </p>
+      <p>
+        <strong>Feature folder pattern</strong> is problem ko solve karta hai — har feature (auth, feed, checkout,
+        profile) apna khud ka self-contained folder rakhta hai jisme uske components, hooks, API calls, aur types
+        sab ek jagah hain. Ye ek senior architect ki tarah sochne wali baat hai: <strong>"cheezein jo saath mein
+        change hoti hain, unhe saath mein rakho"</strong> (co-location principle) — isse (1) naye developer ko
+        onboard karna easy hota hai (bas ek folder samjho, poora feature samajh aa jaata hai), (2) bade teams mein
+        alag-alag developers alag features pe kaam karte waqt merge conflicts kam hote hain, aur (3) agar kabhi
+        koi feature deprecate/remove karni ho, to bas ek folder delete karna hota hai, poore codebase mein
+        dhoondhna nahi padta. Sirf genuinely <strong>shared, cross-feature</strong> cheezein (jaise ek generic
+        <code>&lt;Button /&gt;</code> component ya ek <code>useDebounce</code> hook) top-level
+        <code>src/components</code> ya <code>src/hooks</code> mein jaati hain.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Info</div>
+        <p>
+          Notice karo <code>app/</code> folder (Expo Router routes) mein hum bahut thin screens rakhte hain —
+          actual logic <code>src/features/*</code> mein hota hai, aur route file bas us feature ke component ko
+          import karke render karta hai. Isse routing layer aur business logic layer clearly separate rehte hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas &amp; Anomalies (Day-1 se hi zaroori)</h2>
+
+      <p>
+        Ye wo cheezein hain jo docs mein kabhi properly explain nahi hoti, lekin har senior dev ne apne career
+        mein kam se kam ek baar face ki hain — Day 1 se pata hona chahiye taaki hours waste na ho debugging mein.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Metro Bundler Cache Issues</div>
+        <p>
+          Metro (RN ka JS bundler) aggressively cache karta hai transformed files ko speed ke liye. Kabhi kabhi
+          — especially jab aap <code>babel.config.js</code>, <code>metro.config.js</code> change karte ho, ya
+          koi naya native module add karte ho — Metro purana cached bundle serve karta rehta hai aur aapko lagta
+          hai "code change hua hi nahi". Fix simple hai: <code>npx expo start -c</code> (cache clear karke
+          start). Agar wo bhi kaam na kare, <code>node_modules/.cache</code> aur <code>.expo</code> folder
+          manually delete karo.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Watchman Issues on Mac</div>
+        <p>
+          macOS pe Metro file changes detect karne ke liye <strong>Watchman</strong> (Facebook ka file-watching
+          service) use karta hai. Kabhi kabhi Watchman ka internal state corrupt ho jaata hai (especially bade
+          monorepos mein, ya jab bahut saari files rapidly change hoti hain — jaise git branch switch), aur
+          hot-reload kaam karna band kar deta hai bina koi error diye. Fix: <code>watchman watch-del-all</code>
+          chala ke Watchman ka state reset karo, phir Metro restart karo.
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 "App sirf release build mein crash hoti hai, dev mein nahi"</div>
+        <p>
+          Ye ek bahut common aur confusing anomaly hai. Common causes: (1) <strong>dev-only code paths</strong> —
+          kabhi kabhi aap <code>if (__DEV__)</code> checks pe depend kar lete ho bina realize kiye, aur release
+          build mein wo path hi nahi chalta; (2) <strong><code>console.log</code> stripping</strong> — release
+          builds mein console statements strip ho sakte hain configuration ke hisaab se, aur agar aapka code
+          kisi console call ke <em>side-effect</em> pe accidentally depend karta hai, wo break ho jaata hai;
+          (3) <strong>Hermes bytecode differences</strong> — dev mode mein JS interpret directly ho sakta hai
+          jabki release mein precompiled Hermes bytecode chalta hai, aur kuch edge-case JS behaviors (jaise
+          certain polyfills ya minification-related issues) sirf release build mein surface hote hain; aur
+          (4) <strong>ProGuard/R8 minification (Android)</strong> jo release build mein class/method names
+          rename kar sakta hai, aur agar koi native module reflection use kar raha hai class names pe, wo crash
+          kar sakta hai. Debugging tip: hamesha ek local release build banao (<code>eas build --profile
+          preview</code> ya <code>expo run:android --variant release</code>) aur usse test karo, sirf dev build
+          pe bharosa mat karo before shipping.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Expo SDK aur Native Module Version Mismatch</div>
+        <p>
+          Har Expo SDK version ek specific React Native version ke saath paired hoti hai, aur Expo SDK modules
+          (jaise <code>expo-camera</code>, <code>expo-location</code>) ki bhi specific versions us SDK ke saath
+          compatible hoti hain. Agar aap manually koi Expo package ka version bump/downgrade karte ho bina
+          <code>npx expo install --check</code> use kiye, aap version mismatch mein fasa sakte ho — jo aksar
+          runtime crash (silent native crash, bina clear JS error ke) ke roop mein manifest hota hai, kyunki
+          native binary ek version expect kar raha hota hai jabki JS side dusra version bhej raha hota hai.
+          Hamesha <code>npx expo install</code> use karo naye Expo-aware packages install karne ke liye (npm/yarn
+          install ki jagah), aur <code>npx expo-doctor</code> se periodically version health check karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ye section un cheezon ko cover karta hai jo aapko interview mein "impressive" nahi, balki
+        <strong>genuinely useful</strong> banati hain jab production mein kuch ajeeb break ho — kyunki tab aapko
+        internals pata honi chahiye, sirf "how to use" nahi. Chalo Hermes ke bytecode pipeline se shuru karte
+        hain, phir prebuild/CNG ka poora mental model, ek JS engine comparison, aur monorepo setups.
+      </p>
+
+      <h3>Hermes Bytecode Compilation — Actually Kya Hota Hai Build Time Pe</h3>
+      <p>
+        Upar humne bola "Hermes bytecode precompile karta hai", lekin chalo isko step-by-step todte hain taaki
+        ye sirf ek marketing line na lage, balki aapko pipeline samajh aaye. Normal JS engine jaisa
+        <strong>JSC (JavaScriptCore)</strong> ek <em>JIT (Just-In-Time)</em> compiler hai — matlab jab app device
+        pe launch hoti hai, JSC pehle poore JS bundle ko <strong>parse</strong> karta hai (text → AST), phir usse
+        <strong>bytecode/machine code mein compile</strong> karta hai, aur phir execute karta hai — aur ye sab
+        <em>runtime pe, device pe hi, har baar app open hone pe</em> hota hai (kuch caching JSC bhi karta hai,
+        lekin cold start pe full parse+compile cost lagti hai). Isi wajah se bade JS bundles (jaise 5-10 MB ka
+        production bundle) JSC pe slow cold-start dete hain, especially low-end Android devices pe jinka CPU
+        parse+compile ke liye already slow hota hai.
+      </p>
+      <p>
+        Hermes iska ulta approach leta hai — ye <strong>AOT (Ahead-Of-Time)</strong> compilation model hai. Jab
+        aap <code>eas build</code> ya <code>expo run:android/ios</code> chalate ho, build pipeline ke andar ek
+        step hota hai jahan poora JS bundle (jo Metro ne banaya) <code>hermesc</code> (Hermes compiler binary)
+        ke through pass hota hai, jo JS source ko parse karke usse <strong>Hermes Bytecode (HBC)</strong> format
+        mein compile kar deta hai — ek compact, binary, stack-machine-style bytecode jo directly Hermes VM
+        execute kar sakta hai. Ye compiled <code>.hbc</code> file (jo actually <code>index.android.bundle</code>
+        ke naam se hi APK/IPA ke andar embed hoti hai, bas format bytecode hota hai text JS ki jagah) app binary
+        ke andar ship hoti hai. Runtime pe, jab app launch hoti hai, Hermes VM sirf ye pre-compiled bytecode
+        <strong>load aur execute</strong> karta hai — parse ya compile karne ka koi step hi nahi bachta device
+        pe. Yehi wajah hai ki Hermes wale apps ka <strong>TTI (Time To Interactive)</strong> significantly better
+        hota hai — aap ek poori compile-time cost ko build machine pe move kar rahe ho (jahan CPU powerful hai
+        aur ek baar ka cost hai), device se hata ke (jahan har user, har launch pe wo cost bhugatta).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Hermes build pipeline (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Step 1 — Metro bundler poora JS/TS source ko ek single JS bundle mein resolve+transform karta hai</span>
+npx metro build <span class="tok-punc">--</span>entry-file index.js <span class="tok-punc">--</span>out bundle.js
+
+<span class="tok-com"># Step 2 — Hermes compiler (hermesc) is JS bundle ko binary bytecode mein AOT compile karta hai</span>
+<span class="tok-com"># ye step build machine pe hota hai (CI/EAS build server), device pe nahi</span>
+hermesc <span class="tok-punc">--</span>emit-binary bundle.js <span class="tok-punc">-</span>o index.android.bundle
+
+<span class="tok-com"># Step 3 — ye .hbc (Hermes ByteCode) file hi final app binary (APK/IPA) ke andar embed hoti hai</span>
+<span class="tok-com"># runtime pe Hermes VM isse directly load karke execute karta hai — koi parse/compile step nahi</span>
+<span class="tok-com"># is wajah se cold-start time predictably fast hota hai, chahe JS bundle kitna bhi bada ho</span></code></pre>
+      </div>
+
+      <p>
+        Trade-offs bhi samajhna zaroori hai, kyunki "sab kuch free mein fast" jaisa kuch nahi hota:
+      </p>
+      <ul>
+        <li><strong>Binary size thoda badhta hai</strong> — bytecode format kabhi kabhi raw minified JS se
+          slightly bada hota hai (though gzip/compression ke baad difference kam ho jaata hai), aur Hermes VM
+          khud bhi app binary mein bundled hota hai (ek statically linked library ki tarah), jo kuch MB add
+          karta hai.</li>
+        <li><strong>Runtime execution speed uniformly improve nahi hoti</strong> — ye ek common misconception hai
+          jo interview mein bhi pooche jaata hai (neeche dekhenge). Hermes sirf <em>startup/parse</em> cost
+          remove karta hai, lekin ek baar JS chal raha ho, uski raw execution speed (loops, math, array
+          operations) JSC ya V8 se necessarily better nahi hoti — kabhi kabhi thodi slower bhi ho sakti hai kyunki
+          Hermes ka bytecode interpreter, V8 jaise highly-optimized JIT ke comparison mein simpler hai.</li>
+        <li><strong>Kuch JS features mein Hermes-specific caveats hain</strong> — jaise <code>Intl</code> API ka
+          poora support pehle missing tha (ab largely fixed hai recent versions mein, lekin still kabhi
+          <code>Intl</code>-heavy locale/date-formatting code mein polyfill chahiye ho sakta hai), aur regex
+          engine mein kuch edge-case differences JSC ke comparison mein.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Ye distinction bahut important hai: <strong>Hermes startup ko fast banata hai, steady-state execution
+          ko nahi</strong>. Agar aapki app slow feel ho rahi hai kisi heavy computation (jaise large list sort,
+          image processing) ke waqt (na ki app open karte waqt), Hermes on/off karne se wo problem solve nahi
+          hogi — us case mein aapko algorithm optimize karna hoga, ya us kaam ko native module/worklet mein move
+          karna hoga. Interview mein "Hermes se sab kuch fast ho jaata hai" bolna ek red flag hai — depth wale
+          answer mein specifically "parse+compile cost" bolna zaroori hai.
+        </p>
+      </div>
+
+      <h3>Prebuild Internals — Continuous Native Generation (CNG)</h3>
+      <p>
+        Jab aap <code>npx expo prebuild</code> chalate ho, ye "magic" nahi hai — ye ek deterministic, step-by-step
+        pipeline hai jise samajhna zaroori hai kyunki iski wajah se ek fundamental philosophy shift aata hai
+        aapke native folders ke saath kaam karne ke tareeke mein. Chalo steps dekhte hain:
+      </p>
+      <ol>
+        <li>Prebuild sabse pehle aapki config file (<code>app.json</code> ya <code>app.config.ts</code>) ko
+          <strong>read aur evaluate</strong> karta hai — agar wo TypeScript file hai, to usse pehle compile/run
+          karke final resolved JSON config nikaalta hai.</li>
+        <li>Phir wo ek base <strong>native project template</strong> (Expo ka standard iOS Xcode project aur
+          Android Gradle project skeleton) leta hai — ye templates Expo SDK version ke saath versioned hain.</li>
+        <li>Us template ke upar, config mein jo bhi values hain (app name, bundle identifier, icons, splash
+          screen, permissions) unhe inject karta hai — jaise <code>Info.plist</code>, <code>AndroidManifest.xml</code>,
+          <code>build.gradle</code> jaise native files ko generate/modify karta hai.</li>
+        <li>Sabse important step — <strong>config plugins</strong> ko unke declared <em>order</em> mein apply
+          karta hai. Har config plugin ek function hai jo native project (Xcode project object model, Android
+          Gradle files, Info.plist, etc.) ko programmatically modify karta hai — jaise ek plugin ho sakta hai jo
+          Firebase config file (<code>GoogleService-Info.plist</code>) copy kare, ya ek native permission string
+          add kare. Ye plugins ek "mod" system ke through native config files ko AST/object level pe safely
+          modify karte hain (raw text find-replace nahi, isliye idempotent hote hain — dobara prebuild chalane pe
+          duplicate entries nahi banti).</li>
+        <li>End result: poori tarah generated <code>ios/</code> aur <code>android/</code> folders, jo ready hain
+          ki inhe Xcode/Gradle se directly build kiya ja sake.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — prebuild flow</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Prebuild command chalane se pehle: sirf app.config.ts + package.json exist karte hain, ios/android nahi</span>
+<span class="tok-kw">ls</span>
+<span class="tok-com"># app/  app.config.ts  package.json   (ios/ android/ abhi absent hain)</span>
+
+<span class="tok-com"># Prebuild chalao — ye config read karega, template lega, plugins apply karega</span>
+npx expo prebuild
+
+<span class="tok-com"># Ab ios/ aur android/ poori tarah generate ho chuke hain, native build ke liye ready</span>
+<span class="tok-kw">ls</span>
+<span class="tok-com"># app/  app.config.ts  ios/  android/  package.json</span>
+
+<span class="tok-com"># Agar aapne ios/ folder mein manually koi file edit ki thi (jaise Info.plist), aur ab dobara</span>
+<span class="tok-com"># prebuild chalate ho, wo manual edit WIPE ho jaayegi — kyunki ios/ ek "derived output" hai,</span>
+<span class="tok-com"># source of truth nahi. Isliye clean regenerate ke liye --clean flag bhi common hai:</span>
+npx expo prebuild <span class="tok-punc">--</span>clean
+<span class="tok-com"># --clean flag purane ios/android folders delete karke bilkul fresh generate karta hai</span></code></pre>
+      </div>
+
+      <p>
+        Yahi hai <strong>CNG (Continuous Native Generation)</strong> ki poori philosophy — native folders ko
+        ek <em>source of truth</em> ki tarah treat mat karo, unhe ek <strong>build artifact/output</strong> ki
+        tarah treat karo, jaise aap <code>dist/</code> ya <code>build/</code> folder ko treat karte ho webpack
+        se. Source of truth aapka <code>app.config.ts</code> + config plugins hain — jab bhi chaho, ek fresh,
+        deterministic <code>ios/</code>/<code>android/</code> reproduce ho sakta hai unse. Isi wajah se bahut
+        saare Expo-first teams <code>ios/</code> aur <code>android/</code> ko <strong><code>.gitignore</code>
+        mein daal dete hain</strong> (bilkul aise jaise <code>node_modules/</code> ko ignore karte hain) — kyunki
+        commit karne ka koi fayda nahi jab wo kabhi bhi regenerate ho sakte hain, aur commit karne se ulta
+        problem hoti hai: agar do developers alag time pe prebuild chalate hain (ya CI chalata hai), generated
+        files mein minor diffs (timestamps, ordering) aa sakte hain jo unnecessary merge conflicts create karte
+        hain.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          Agar kabhi genuinely koi native file <strong>manually edit</strong> karni pade (rare case, jab config
+          plugin available nahi hai kisi cheez ke liye), to sahi approach hai <strong>khud ek config plugin
+          likhna</strong> jo wo modification programmatically kare — na ki directly <code>ios/</code> folder
+          mein jaake edit karna. Isse aapka edit "source of truth" (config plugin code) mein reh jaata hai aur
+          har prebuild pe consistently reapply hota hai, kabhi lost nahi hota.
+        </p>
+      </div>
+
+      <h3>JS Engine Comparison — Hermes vs JSC vs V8</h3>
+      <p>
+        Interview mein aksar ye table-jaisa comparison poocha jaata hai — chalo teeno major JS engines ko
+        side-by-side dekhte hain jo mobile/RN context mein relevant hain:
+      </p>
+
+      <table class="table">
+        <thead>
+          <tr><th>Engine</th><th>Compilation Model</th><th>Startup Time</th><th>Memory Usage</th><th>Debugging Support</th><th>Default Platform Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Hermes</strong></td>
+            <td>AOT (bytecode precompiled at build time)</td>
+            <td>Fastest — no parse/compile at runtime</td>
+            <td>Lowest — compact bytecode, efficient GC tuned for mobile</td>
+            <td>Chrome DevTools via Hermes debugger protocol, Flipper (legacy), source maps supported</td>
+            <td>Default engine for RN (iOS + Android) since RN 0.70+/SDK 46+</td>
+          </tr>
+          <tr>
+            <td><strong>JSC (JavaScriptCore)</strong></td>
+            <td>JIT (parse + compile at runtime, with tiered optimization)</td>
+            <td>Slower cold start (parse+compile cost on device)</td>
+            <td>Higher — JIT compiler cache + optimizing compiler overhead</td>
+            <td>Safari Web Inspector (iOS), decent but RN-specific tooling weaker now that Hermes is default</td>
+            <td>Legacy default on iOS pre-Hermes; still usable via config but rarely chosen now</td>
+          </tr>
+          <tr>
+            <td><strong>V8</strong></td>
+            <td>JIT (multi-tier: Ignition interpreter + TurboFan optimizing compiler)</td>
+            <td>Moderate — some snapshotting but heavier than Hermes AOT</td>
+            <td>Highest of the three — most memory-hungry, optimized for desktop-class execution speed</td>
+            <td>Best-in-class (Chrome DevTools native home), extremely mature</td>
+            <td>Not used in standard RN; powers Node.js, Chrome, and some custom/experimental RN engine setups</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Key insight jo interview mein useful hai: V8 aur JSC dono <strong>raw peak execution speed</strong> mein
+        Hermes se better ho sakte hain (kyunki unke JIT optimizing compilers hain jo hot code paths ko
+        aggressively optimize karte hain over time), lekin mobile app ka <em>dominant</em> performance metric
+        <strong>startup time</strong> hai, na ki peak throughput — kyunki ek average app session mein user app
+        kholta hai, kuch seconds/minutes use karta hai, band kar deta hai. Is usage pattern mein, "fast cold
+        start, decent steady-state" (Hermes) generally "slow cold start, very fast steady-state" (V8-jaisa) se
+        better user experience deta hai — yahi reasoning hai ki Meta ne Hermes ko is trade-off ke saath specifically
+        RN ke liye design kiya.
+      </p>
+
+      <h3>Monorepo Setups — Expo App Turborepo/Nx Ke Andar</h3>
+      <p>
+        Bade organizations mein aksar ek single repo mein multiple apps/packages hote hain — jaise ek Expo mobile
+        app, ek Next.js web app, aur shared packages (<code>ui</code>, <code>utils</code>, <code>api-client</code>)
+        jo dono use karte hain. Ye setup <strong>Turborepo</strong> ya <strong>Nx</strong> jaise tools se manage
+        hota hai. Concept simple lagta hai, lekin Metro bundler (jo RN ka default bundler hai) ka default resolver
+        monorepos ke liye design nahi hua tha shuru mein, isliye kuch specific challenges aate hain:
+      </p>
+      <ul>
+        <li><strong>Symlink resolution</strong> — package managers (pnpm especially, yarn workspaces bhi) shared
+          packages ko <code>node_modules</code> ke andar <strong>symlinks</strong> ke through link karte hain
+          (actual code root package folder mein hota hai, <code>node_modules</code> mein sirf ek symlink hota
+          hai). Metro ka default resolver symlinks ko properly follow nahi karta tha (real file location resolve
+          nahi kar paata tha), isse "module not found" jaise errors aate the jab aap shared package import karte
+          the.</li>
+        <li><strong><code>watchFolders</code> config</strong> — Metro by default sirf apne app root ke
+          andar files watch karta hai. Monorepo mein, agar aap ek shared package (<code>packages/ui</code>) mein
+          change karte ho jo repo root ke bahar hai app folder se, Metro us change ko detect hi nahi karega
+          jab tak aap use explicitly <code>watchFolders</code> array mein add na karo.</li>
+        <li><strong><code>nodeModulesPaths</code></strong> — monorepos mein dependencies hoisted ho sakti hain
+          root <code>node_modules</code> mein (workspace hoisting ki wajah se), na ki app-level
+          <code>node_modules</code> mein. Metro ko batana padta hai ki extra jagah pe bhi dependencies dhoondhe.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title"><span>metro.config.js — monorepo-aware config</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> { getDefaultConfig } = <span class="tok-fn">require</span>(<span class="tok-str">'expo/metro-config'</span>); <span class="tok-com">// Expo ka default Metro config factory import kiya</span>
+<span class="tok-kw">const</span> path = <span class="tok-fn">require</span>(<span class="tok-str">'path'</span>); <span class="tok-com">// Node ka path module — folder paths resolve karne ke liye chahiye</span>
+
+<span class="tok-kw">const</span> projectRoot = __dirname; <span class="tok-com">// current app ka folder (jaise apps/mobile)</span>
+<span class="tok-kw">const</span> workspaceRoot = path.<span class="tok-fn">resolve</span>(projectRoot, <span class="tok-str">'../..'</span>); <span class="tok-com">// monorepo ka root folder, do level upar</span>
+
+<span class="tok-kw">const</span> config = <span class="tok-fn">getDefaultConfig</span>(projectRoot); <span class="tok-com">// Expo ka base Metro config load kiya, isi ko customize karenge</span>
+
+<span class="tok-com">// Metro ko batao ki workspace root ke andar bhi files watch kare, sirf app folder nahi</span>
+<span class="tok-com">// warna packages/ui jaise shared package mein change hone pe hot-reload trigger hi nahi hoga</span>
+config.watchFolders = [workspaceRoot];
+
+<span class="tok-com">// Metro ko batao ki node_modules do jagah dhoonde — app-level aur workspace-root-level</span>
+<span class="tok-com">// kyunki pnpm/yarn workspaces dependencies ko root mein hoist kar sakte hain</span>
+config.resolver.nodeModulesPaths = [
+  path.<span class="tok-fn">resolve</span>(projectRoot, <span class="tok-str">'node_modules'</span>), <span class="tok-com">// pehle app-local node_modules check karo</span>
+  path.<span class="tok-fn">resolve</span>(workspaceRoot, <span class="tok-str">'node_modules'</span>), <span class="tok-com">// phir workspace-root node_modules check karo</span>
+];
+
+<span class="tok-com">// Symlinks ko properly follow karne ke liye ye enable karna zaroori hai monorepo setups mein</span>
+<span class="tok-com">// warna Metro symlinked shared package ka real path resolve nahi kar paata</span>
+config.resolver.unstable_enableSymlinks = <span class="tok-kw">true</span>;
+
+<span class="tok-com">// Modified config ko export kiya — ab Metro isi config ke saath bundle banayega</span>
+<span class="tok-kw">module.exports</span> = config;</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Modern Expo SDK versions mein <code>unstable_enableSymlinks</code> aur better monorepo defaults already
+          largely built-in ho chuke hain (Metro team ne is pain ko upstream fix karna shuru kiya hai), lekin
+          senior interview mein ye expect kiya jaata hai ki aap <strong>samjho ki problem kya thi aur kyun</strong>
+          — sirf ye nahi ki "bas config copy-paste kar do". Agar aap kabhi ek naya monorepo bootstrap kar rahe ho,
+          <code>create-expo-app</code> ke saath-saath Turborepo/Nx ke official Expo templates use karna sabse
+          safe starting point hai, kyunki wo ye saari config already correctly wire kar chuke hote hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye questions un cheezon pe focus karte hain jo actually ek senior/staff candidate ko mid-level se alag
+        karti hain — depth of reasoning, trade-off awareness, aur real debugging instinct, na ki sirf
+        definitions ratt lena.
+      </p>
+
+      <h3>1. Walk me through what happens when JS calls a native function under the New Architecture, step by step, compared to the old Bridge.</h3>
+      <p>
+        Old Bridge mein: JS ek native method call karta hai → ye call ek message object mein encode hota hai →
+        JSON.stringify hoke ek queue mein daala jaata hai → ye queue batch mein, asynchronously, ek native
+        thread pe deliver hoti hai → native side JSON.parse karke message decode karta hai → actual native
+        method invoke hota hai → agar return value chahiye, to poora process reverse mein wapas hota hai (native
+        → JSON serialize → queue → JS deserialize). Ye poora round-trip kam se kam ek event-loop tick lagata hai,
+        aur bade payloads (jaise images/arrays) serialize karna khud CPU cost hai.
+      </p>
+      <p>
+        New Architecture (JSI) mein: JS engine (Hermes) ke paas ek direct C++ binding hoti hai native "Host
+        Objects" ke saath. Jab JS ek TurboModule method call karta hai, JSI directly us C++ function ko
+        <strong>synchronously</strong> invoke karta hai — same call stack pe, bina kisi queue/serialization ke.
+        Data JSON string ki jagah directly memory mein pass hota hai (JS values → C++ jsi::Value representations,
+        bina text conversion ke). Agar return value hai, wo turant, same synchronous call ke andar wapas mil
+        jaata hai — async ka wait nahi karna padta (though aap chaho to still async pattern use kar sakte ho
+        Promise ke saath, wo JS-level choice hai, architecture-level constraint nahi).
+      </p>
+      <p>
+        Key differentiator jo main interview mein highlight karunga: purane model mein <em>har</em> cross-boundary
+        call ki cost thi (serialization + queue + async round trip), naye model mein sirf ek initial lazy-load
+        cost hai (TurboModule pehli baar access hone pe initialize hota hai), uske baad calls near-zero-overhead
+        hain — kyunki wo essentially native C++ function calls hain jinhe JS engine directly invoke kar raha hai.
+      </p>
+
+      <h3>2. Why does Hermes improve startup time specifically, not runtime execution speed uniformly?</h3>
+      <p>
+        Kyunki Hermes jo cost eliminate karta hai wo hai <strong>parse + compile</strong> cost — ye ek one-time,
+        upfront cost hoti hai jo normally app launch ke exact waqt lagti (JSC jaisa JIT engine JS source ko
+        parse karke bytecode/machine code banata hai runtime pe). Hermes ye poora kaam build time pe kar chuka
+        hota hai (<code>hermesc</code> ke through), isliye device pe sirf bytecode <em>load + execute</em> hota
+        hai — parse/compile step hi missing hai.
+      </p>
+      <p>
+        Lekin ek baar code chal raha ho (steady-state execution — loops, function calls, math), wahan Hermes ka
+        koi special architectural advantage nahi hai. Actually, JIT engines jaise V8 ya JSC ka advantage hai
+        wahan — wo runtime pe "hot" code paths ko detect karke unhe aggressively optimize (machine code mein
+        recompile) kar sakte hain based on actual runtime behavior/types (jise "adaptive optimization" kehte
+        hain). Hermes ka bytecode interpreter simpler hai — ye consistently interpret karta hai bina us tarah ke
+        runtime profiling-based optimization ke. Isliye "startup fast, peak throughput thoda kam" ye ek deliberate,
+        reasoned trade-off hai — mobile app ke usage pattern (short sessions, frequent launches) ke liye startup
+        latency zyada matter karti hai peak compute throughput se, isliye Meta ne ye trade-off consciously choose
+        kiya.
+      </p>
+
+      <h3>3. When would you choose to eject/prebuild vs stay fully managed? What are you giving up either way?</h3>
+      <p>
+        Ye framing thodi purani (managed vs bare) ho chuki hai — modern Expo mein har production app <em>already</em>
+        prebuild use karti hai (CNG ke through), sirf ye choice hai ki "kab tak Expo Go pe stay karo before
+        prebuild karna zaroori ho jaaye". Real decision point hai: <strong>jaise hi aapko koi native module
+        chahiye jo Expo Go mein bundled nahi hai</strong> (chahe wo third-party ho jaise
+        <code>react-native-mmkv</code>, ya koi native SDK integration jaise Stripe/Firebase ka kuch specific
+        piece, ya khud likha hua custom native module), aapko Development Build pe move karna hi padega.
+      </p>
+      <p>
+        Fully Expo Go mein rehne ka fayda hai: zero build time, instant iteration, koi native toolchain (Xcode/
+        Android Studio) setup ki zaroorat nahi even non-Mac machines pe kaam ho sakta hai — ye choti team/
+        prototype phase ke liye ideal hai. Jo aap give up karte ho: koi custom native code, koi specific native
+        SDK jo Expo Go mein missing ho.
+      </p>
+      <p>
+        Development Build/Prebuild pe move karne ka trade-off ulta hai: aapko ab native build infrastructure
+        maintain karni padti hai (EAS Build cost/time, ya local Xcode/Gradle setup), pehli build 5-20 minutes
+        legi, aur agar aap manually native folders edit karte ho (jo aapko nahi karna chahiye — config plugins
+        use karo), to aapko CNG ke "disposable native folder" model ko discipline se follow karna padega. Lekin
+        aap poori flexibility paate ho — koi bhi native capability add kar sakte ho jabki OTA updates (EAS Update)
+        ka fayda bhi retain karte ho JS-only changes ke liye.
+      </p>
+
+      <h3>4. Your app works fine in Expo Go but crashes on a production build — what's your systematic debugging approach?</h3>
+      <p>
+        Sabse pehle main confirm karunga ki ye <em>Expo Go vs dev/production build</em> ka difference hai, ya
+        <em>dev vs release</em> ka — dono alag categories of issues hain. Systematic approach:
+      </p>
+      <ul>
+        <li><strong>Step 1 — Reproduce locally with same build type:</strong> ek local release build banao
+          (<code>eas build --profile preview</code> ya <code>expo run:android --variant release</code>) taaki
+          crash consistently reproduce ho bina cloud build wait kiye baar-baar.</li>
+        <li><strong>Step 2 — Get real logs:</strong> Expo Go/dev build mein aapko nice red-box errors milte hain,
+          release build mein aksar sirf "app crashed" milta hai. Android pe <code>adb logcat</code> se native
+          crash logs, iOS pe Xcode Console/device logs se stack trace nikaalo — Hermes crashes ke liye source
+          maps ke saath symbolicate karna padta hai (raw bytecode addresses readable nahi hote).</li>
+        <li><strong>Step 3 — Check the usual suspects:</strong> (a) koi native module jo Expo Go mein
+          available tha but config plugin properly wire nahi hua production build mein, (b) <code>__DEV__</code>
+          pe conditional code jo silently different path le raha hai, (c) environment variables ya EAS secrets
+          jo local <code>.env</code> mein the but EAS build environment mein set nahi hain, (d) ProGuard/R8
+          minification (Android) ne kisi class ko rename/strip kar diya jo reflection-based native module use
+          kar raha tha.</li>
+        <li><strong>Step 4 — Bisect if needed:</strong> agar sab kuch pehle theek tha aur recently break hua,
+          <code>git bisect</code> ya recent dependency changes check karo — aksar ek naya native module add hua
+          hota hai jisne config plugin properly setup nahi kiya.</li>
+      </ul>
+
+      <h3>5. Why can't Metro's default resolver handle monorepo symlinks well, and how do you fix it?</h3>
+      <p>
+        Metro originally single-package RN apps ke liye design hua tha, jahan assumption thi ki saara code ek hi
+        <code>node_modules</code> tree ke andar, ek hi root se resolve hoga. Monorepos mein pnpm/yarn workspaces
+        shared packages ko symlinks ke through link karte hain — actual file kahin aur hai (jaise
+        <code>packages/ui/src/Button.tsx</code>), aur <code>node_modules/@myorg/ui</code> sirf ek symlink hai
+        us jagah ki taraf. Metro ka haystack-based module resolution symlink ko "follow" karke real file location
+        tak nahi pahunchta tha by default — isse ya to module not found error milta, ya (worse) duplicate React
+        instances load ho jaate the kyunki Metro symlinked aur non-symlinked path ko do alag modules samajh
+        leta tha.
+      </p>
+      <p>
+        Fix hai <code>metro.config.js</code> mein <code>unstable_enableSymlinks: true</code> set karna (symlinks
+        ko properly resolve karne ke liye), <code>watchFolders</code> mein monorepo root add karna (taaki file
+        watching sirf app folder tak limited na rahe), aur <code>nodeModulesPaths</code> mein workspace-root
+        <code>node_modules</code> bhi add karna (kyunki hoisted dependencies wahan reh sakti hain). Ye teeno
+        pieces combined monorepo mein Expo app ko reliably kaam karne dete hain.
+      </p>
+
+      <h3>6. What actually happens when you run `npx expo prebuild`, and why shouldn't you hand-edit the generated ios/android folders?</h3>
+      <p>
+        Prebuild config file read karta hai, base native template leta hai, config plugins ko unke order mein
+        apply karta hai (jo native files jaise Info.plist/AndroidManifest/build.gradle ko programmatically
+        modify karte hain), aur end mein poori tarah fresh <code>ios/</code>/<code>android/</code> generate karta
+        hai. Iska matlab hai ye folders <strong>deterministically derived output</strong> hain aapke config +
+        plugins se — bilkul aise jaise webpack ek <code>dist/</code> folder generate karta hai source code se.
+      </p>
+      <p>
+        Agar aap directly <code>ios/YourApp/Info.plist</code> mein jaake manual edit karo, wo edit tab tak survive
+        karega jab tak koi dobara <code>expo prebuild</code> na chalaye — aur jaise hi koi (aap khud, ya CI, ya
+        ek teammate) prebuild chalata hai, wo file config se dobara fresh generate hoti hai aur aapka manual edit
+        <strong>silently wipe</strong> ho jaata hai, bina koi warning ke. Ye ek bahut common "production mein
+        pehle kaam kar raha tha, ab nahi" bug ka source hai. Sahi tareeka hai ki jo bhi native modification chahiye
+        thi, use ek <strong>config plugin</strong> ke through express karo — ab wo modification "source of truth"
+        (aapka JS/TS config plugin code, jo version control mein hai) ka hissa ban jaati hai, aur har prebuild pe
+        consistently reapply hoti hai.
+      </p>
+
+      <h3>7. How would you architect a large-scale RN app to minimize unnecessary re-renders, and how does the New Architecture change your reasoning here?</h3>
+      <p>
+        React-level optimization (memoization, stable references, avoiding inline objects/functions in render,
+        splitting context providers so unrelated state changes don't cascade) remains fundamentally same regardless
+        of old/new architecture — kyunki ye React's reconciliation ka concern hai, native bridge ka nahi. Jo
+        change hota hai New Architecture mein wo hai <strong>Fabric ka concurrent rendering support</strong> —
+        React 18 features jaise <code>useTransition</code>/<code>startTransition</code> ab properly native side
+        tak propagate hote hain, matlab aap high-priority updates (jaise user typing) ko low-priority updates
+        (jaise background list re-sort) se genuinely prioritize kar sakte ho at the rendering commit level, na
+        sirf JS scheduling level pe.
+      </p>
+      <p>
+        Practically, main large lists ke liye <code>FlashList</code> (ya <code>FlatList</code> with properly
+        tuned <code>windowSize</code>/<code>getItemLayout</code>) use karunga, expensive derived state ko
+        <code>useMemo</code> se cache karunga, aur agar koi animation/gesture-heavy interaction hai, use
+        Reanimated worklets mein move karunga taaki wo UI thread pe directly chale — JS thread ke render cycle
+        se completely decoupled, jo ki khud JSI ki hi capability hai (worklets bhi JSI ke through UI thread pe
+        directly JS-like code execute karte hain).
+      </p>
+
+      <h3>8. What's the difference between Expo's "Managed Workflow" of old and today's "Development Build" model — why did the old distinction become obsolete?</h3>
+      <p>
+        Purana Managed Workflow ek hard constraint tha — aap <code>ios/</code>/<code>android/</code> folders
+        dekh hi nahi sakte the, aur agar aapko ek custom native module chahiye, aapko poora "eject" karna padta
+        tha Bare Workflow mein, jisse aap permanently Expo tooling ke convenience features (jaise EAS ka managed
+        build pipeline) kho dete the — ye ek one-way, painful migration thi.
+      </p>
+      <p>
+        Development Build model (SDK 45+ ke baad) ne ye distinction obsolete kar diya kyunki ab prebuild/CNG
+        ki wajah se native folders <em>hamesha</em> derivable hain aapke config se — matlab aap "custom native
+        module add karna" aur "Expo tooling ka convenience rakhna" dono simultaneously kar sakte ho. Aap apna
+        khud ka dev client (<code>expo-dev-client</code>) build karte ho jisme aapke specific native
+        dependencies hain, lekin still EAS Build, EAS Update, config plugins sab kaam karte hain same tarah. Ye
+        ek reversible, incremental choice ban gaya hai — na ki ek permanent fork jaisa pehle tha.
+      </p>
+
+      <h3>9. If you had to explain JSI to a junior engineer in one analogy, and defend why that analogy holds up, how would you do it?</h3>
+      <p>
+        Main bolunga: "Bridge purane zamaane ke do deshon ke beech letter bhejne jaisa tha — aapko message likhna
+        padta (serialize), post office (queue) mein daalna padta, wait karna padta jab tak wo deliver ho
+        (async), aur reply bhi isi tarah wapas aata. JSI ek direct phone call jaisa hai — dono taraf ke log
+        directly, real-time baat kar sakte hain, bina kisi intermediary ke."
+      </p>
+      <p>
+        Analogy ko defend karte hue: ye is tarah accurate hai ki dono cases mein "communication cost" ka structural
+        difference capture hota hai — letter mein encoding/decoding overhead hai (serialization), aur inherent
+        delay hai (async queue), jabki phone call mein dono directly ek dusre ka "representation" access kar rahe
+        hain real-time (JSI ke Host Objects, jo C++ objects ko directly JS se accessible banate hain). Jahan
+        analogy thodi break hoti hai: JSI calls sirf "conversation" nahi hain, wo actual memory-level, type-safe
+        bindings hain — isliye main junior ko clarify karta ki analogy sirf latency/overhead ka intuition dene
+        ke liye hai, actual mechanism C++ level binding hai, magic phone call nahi.
+      </p>
+
+      <h3>10. You're setting up a new Expo app inside an existing Turborepo with a Next.js web app and shared UI package. What are the first three things you'd configure, and why?</h3>
+      <p>
+        Pehla: <strong><code>metro.config.js</code></strong> ko monorepo-aware banana — <code>watchFolders</code>
+        workspace root ki taraf point karna (warna shared package changes hot-reload trigger nahi karenge),
+        <code>nodeModulesPaths</code> mein workspace root <code>node_modules</code> add karna (hoisted deps ke
+        liye), aur <code>unstable_enableSymlinks: true</code> set karna (workspace symlinks properly resolve
+        karne ke liye).
+      </p>
+      <p>
+        Dusra: shared UI package ko <strong>platform-aware</strong> banana agar wo web (DOM-based) aur native
+        (RN-based) dono targets share kar raha hai — ya to package ke andar <code>.native.tsx</code>/web split
+        rakhna, ya bilkul processing web-only components ko is package se exclude karke sirf truly-shared logic
+        (types, utils, non-UI business logic) share karna, aur UI components har platform ke apne package mein
+        rakhna. Ye galti bahut common hai jahan log soch lete hain "ek Button component web aur native dono mein
+        chalega" bina realize kiye ki underlying primitives (`div` vs `View`) fundamentally different hain.
+      </p>
+      <p>
+        Teesra: <strong>TypeScript project references / path aliases</strong> ko consistently set karna taaki
+        shared package se import karte waqt type-checking aur IDE autocomplete dono kaam karein across apps —
+        aur build pipeline (Turborepo <code>turbo.json</code> pipeline) mein dependency order define karna
+        (shared package pehle build ho, phir Expo app), taaki <code>turbo run build</code> ya
+        <code>turbo run dev</code> chalane pe cheezein sahi order mein compile hon.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="index.html">
+          <div class="label">← Previous</div>
+          <div class="title">Home</div>
+        </a>
+        <a class="next" href="02-components-and-apis.html">
+          <div class="label">Next →</div>
+          <div class="title">Components &amp; APIs</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

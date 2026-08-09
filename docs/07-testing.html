@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testing — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link active" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Testing</div>
+      <div class="progress-pill">Chapter 7 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Jest · RNTL · Maestro · CI</span>
+      <h1>Testing — Jest, React Native Testing Library &amp; Maestro E2E</h1>
+      <p class="subtitle">
+        Testing ek aisi cheez hai jo zyaadatar RN developers "baad mein karenge" bolke skip kar dete hain — aur phir
+        production mein ek silent regression aata hai jo QA bhi miss kar jaata hai. Is chapter mein hum dekhenge ki
+        RN apps ke liye testing pyramid kaisi dikhni chahiye, Jest se leke unit tests kaise likhte hain, native
+        modules ko kaise mock karte hain, React Native Testing Library se components ko "user ki tarah" kaise test
+        karte hain, hooks aur async logic kaise test karte hain, aur Maestro se full end-to-end flows kaise automate
+        karte hain — plus CI mein sab kuch wire karna.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#pyramid">1. Testing Pyramid for React Native</a></li>
+          <li><a href="#jest-setup">2. Jest Setup and Unit Testing</a></li>
+          <li><a href="#mocking">3. Mocking Native Modules</a></li>
+          <li><a href="#rntl">4. React Native Testing Library (RNTL)</a></li>
+          <li><a href="#hooks-async">5. Testing Hooks and Async Logic</a></li>
+          <li><a href="#maestro">6. Maestro E2E Testing</a></li>
+          <li><a href="#ci">7. CI Integration</a></li>
+          <li><a href="#gotchas">8. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">10. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="pyramid" style="border-top:none; padding-top:0; margin-top:28px;">1. Testing Pyramid for React Native</h2>
+
+      <p>
+        Testing pyramid ek mental model hai jo batata hai ki tumhare test suite mein kaunse type ke tests <em>kitni
+        matra</em> mein hone chahiye. RN apps ke liye ye especially important hai kyunki har layer ki cost (speed,
+        flakiness, setup complexity) bahut alag hai — web ke comparison mein bhi zyada extreme, kyunki native build
+        involve hoti hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Layer</th><th>Tool</th><th>Kya test karta hai</th><th>Speed</th><th>Confidence</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Unit</strong></td><td>Jest</td><td>Pure functions, utility logic, reducers — isolated, koi rendering nahi</td><td>Bahut fast (ms)</td><td>Low-medium</td></tr>
+          <tr><td><strong>Integration/Component</strong></td><td>Jest + RNTL</td><td>Component ka behavior user perspective se — render, interact, assert</td><td>Fast (sec)</td><td>Medium-high</td></tr>
+          <tr><td><strong>E2E</strong></td><td>Maestro</td><td>Poora app, real device/simulator pe, full user flow (login → home)</td><td>Slow (minutes)</td><td>Highest</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Classic pyramid shape ka matlab hai: <strong>bahut saare unit tests</strong> (foundation, fast feedback),
+        <strong>kaafi integration/component tests</strong> (middle layer), aur <strong>bahut kam E2E tests</strong>
+        (sirf critical user journeys — login, checkout, onboarding). Jitna upar jaoge pyramid mein, utna zyada
+        confidence milta hai ki app <em>actually</em> kaam kar rahi hai, lekin utna hi zyada cost bhi lagta hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — RN mein E2E-only strategy kyun fail hoti hai</div>
+        <p>
+          Web apps ke liye E2E-heavy strategy (Cypress/Playwright sab jagah) chal jaati hai kyunki browser instantly
+          reload hota hai. RN mein ye assumption tootti hai — <strong>E2E tests ko ek real native build chahiye</strong>
+          (simulator/emulator/device pe install hone wali actual app), aur native build times 2-10 minutes tak le
+          sakte hain (especially iOS pe, ya jab native dependencies change hui hon). Agar tumhara pura test suite
+          E2E-based hai, toh har chhota logic change bhi ek 5+ minute build-then-test cycle trigger karega — CI
+          minutes explode ho jaate hain, aur developers locally test hi nahi karenge kyunki wait bahut lamba hai.
+          Isse zyada bada issue: E2E tests <strong>flaky</strong> hote hain — animation timing, network latency,
+          simulator slowness — sab combine hoke false failures dete hain, aur team dheere-dheere "red build ignore
+          karo, phir se run karo" ki habit develop kar leti hai, jo poore CI pipeline ka trust hi khatam kar deti
+          hai. Isliye rule of thumb: business logic aur component behavior ko Jest/RNTL se cover karo (fast, no
+          native build needed, run har save pe), aur Maestro sirf un 5-10 "must never break" user journeys ke liye
+          reserve karo.
+        </p>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Ek practical heuristic: agar tumhara test <code>expo-secure-store</code>, camera, ya kisi aur native
+          module ko chhoo raha hai bina mock ke, ya agar test ka goal "poora flow end-to-end kaam karta hai ya
+          nahi" hai — wo E2E candidate hai. Agar test ka goal "ye function sahi output deta hai" ya "ye component
+          sahi render hota hai given props" — wo unit/integration candidate hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="jest-setup">2. Jest Setup and Unit Testing</h2>
+
+      <p>
+        Expo projects ke liye Jest setup ka starting point <code>jest-expo</code> preset hai — ye Babel transforms,
+        module resolution, aur Expo/RN-specific mocks (jaise <code>expo-asset</code>, <code>expo-font</code>) ko
+        pehle se configure kar deta hai, taaki tumhe khud se Metro-jaisa transform pipeline set up na karna pade.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install jest-expo jest @testing-library/react-native @testing-library/jest-native --dev
+<span class="tok-com"># jest-expo: Expo-specific Jest preset (transforms + native mocks)</span>
+<span class="tok-com"># jest: actual test runner</span>
+<span class="tok-com"># @testing-library/react-native: RNTL — component testing utilities</span>
+<span class="tok-com"># @testing-library/jest-native: extra matchers jaise toBeVisible(), toHaveTextContent()</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>package.json</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"scripts"</span>: <span class="tok-punc">{</span>
+    <span class="tok-attr">"test"</span>: <span class="tok-str">"jest"</span><span class="tok-punc">,</span> <span class="tok-com">// "npm test" chalane pe jest run hoga</span>
+    <span class="tok-attr">"test:watch"</span>: <span class="tok-str">"jest --watchAll"</span> <span class="tok-com">// dev ke waqt watch mode, save pe auto re-run</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-attr">"jest"</span>: <span class="tok-punc">{</span>
+    <span class="tok-attr">"preset"</span>: <span class="tok-str">"jest-expo"</span><span class="tok-punc">,</span> <span class="tok-com">// Expo ka preset use karo — transforms + native mocks provide karta hai</span>
+    <span class="tok-attr">"transformIgnorePatterns"</span>: <span class="tok-punc">[</span>
+      <span class="tok-str">"node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"</span>
+      <span class="tok-com">// node_modules mein kai RN packages raw JSX/ESNext ship karte hain, unhe transform karna zaroori hai</span>
+    <span class="tok-punc">]</span><span class="tok-punc">,</span>
+    <span class="tok-attr">"setupFilesAfterEach"</span>: <span class="tok-punc">[</span><span class="tok-str">"@testing-library/jest-native/extend-expect"</span><span class="tok-punc">]</span> <span class="tok-com">// extra matchers globally available kar deta hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Sabse pehla aur sabse asaan test kya likhna chahiye? <strong>Pure functions</strong> — jo koi rendering
+        involve nahi karte, sirf input leke output dete hain. Ye tests sabse fast likhne mein aate hain, sabse
+        kam flaky hote hain, aur "TDD-friendly" hote hain. Neeche ek <code>formatCurrency()</code> utility ka
+        example hai jo poori tarah se comment kiya hua hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>utils/formatCurrency.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ek pure function — sirf number leke formatted string deta hai, koi side effect nahi</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">formatCurrency</span>(amount: <span class="tok-kw">number</span>, currency: <span class="tok-kw">string</span> = <span class="tok-str">"INR"</span>): <span class="tok-kw">string</span> {
+  <span class="tok-kw">if</span> (<span class="tok-fn">Number</span>.<span class="tok-fn">isNaN</span>(amount)) { <span class="tok-com">// agar amount NaN hai (invalid input) toh</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"Invalid amount"</span>); <span class="tok-com">// explicit error throw karo, silently galat output mat do</span>
+  }
+  <span class="tok-kw">const</span> formatter = <span class="tok-kw">new</span> <span class="tok-fn">Intl</span>.<span class="tok-fn">NumberFormat</span>(<span class="tok-str">"en-IN"</span>, { <span class="tok-com">// Indian numbering system (lakh/crore commas) use karo</span>
+    style: <span class="tok-str">"currency"</span>, <span class="tok-com">// currency style — symbol ke saath format karega</span>
+    currency, <span class="tok-com">// dynamic currency code, default INR</span>
+  }); <span class="tok-com">// formatter object ban gaya</span>
+  <span class="tok-kw">return</span> formatter.<span class="tok-fn">format</span>(amount); <span class="tok-com">// number ko formatted currency string mein convert karke return karo</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>utils/formatCurrency.test.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { formatCurrency } <span class="tok-kw">from</span> <span class="tok-str">"./formatCurrency"</span>; <span class="tok-com">// jis function ko test karna hai use import kiya</span>
+
+<span class="tok-fn">describe</span>(<span class="tok-str">"formatCurrency"</span>, () => { <span class="tok-com">// related tests ko ek group mein daala, "describe" block</span>
+  <span class="tok-fn">it</span>(<span class="tok-str">"formats a positive INR amount correctly"</span>, () => { <span class="tok-com">// ek specific test case, "it" naam se readable sentence banta hai</span>
+    <span class="tok-kw">const</span> result = <span class="tok-fn">formatCurrency</span>(<span class="tok-num">1000</span>); <span class="tok-com">// function ko 1000 ke saath call kiya, default currency INR</span>
+    <span class="tok-fn">expect</span>(result).<span class="tok-fn">toBe</span>(<span class="tok-str">"₹1,000.00"</span>); <span class="tok-com">// assert kar rahe hain ki output exactly ye string ho</span>
+  }); <span class="tok-com">// test case close</span>
+
+  <span class="tok-fn">it</span>(<span class="tok-str">"formats large amounts with Indian comma grouping"</span>, () => { <span class="tok-com">// Indian numbering system (lakh grouping) test karne ke liye</span>
+    <span class="tok-kw">const</span> result = <span class="tok-fn">formatCurrency</span>(<span class="tok-num">1000000</span>); <span class="tok-com">// 10 lakh pass kiya</span>
+    <span class="tok-fn">expect</span>(result).<span class="tok-fn">toBe</span>(<span class="tok-str">"₹10,00,000.00"</span>); <span class="tok-com">// Indian grouping "10,00,000" honi chahiye, na ki "1,000,000"</span>
+  }); <span class="tok-com">// test case close</span>
+
+  <span class="tok-fn">it</span>(<span class="tok-str">"supports a different currency code"</span>, () => { <span class="tok-com">// currency param override test karne ke liye</span>
+    <span class="tok-kw">const</span> result = <span class="tok-fn">formatCurrency</span>(<span class="tok-num">50</span>, <span class="tok-str">"USD"</span>); <span class="tok-com">// USD currency explicitly pass kiya</span>
+    <span class="tok-fn">expect</span>(result).<span class="tok-fn">toBe</span>(<span class="tok-str">"$50.00"</span>); <span class="tok-com">// USD symbol expect kar rahe hain</span>
+  }); <span class="tok-com">// test case close</span>
+
+  <span class="tok-fn">it</span>(<span class="tok-str">"throws on NaN input"</span>, () => { <span class="tok-com">// edge case — invalid input pe error throw hona chahiye</span>
+    <span class="tok-fn">expect</span>(() => <span class="tok-fn">formatCurrency</span>(<span class="tok-fn">Number</span>(<span class="tok-str">"abc"</span>))).<span class="tok-fn">toThrow</span>(<span class="tok-str">"Invalid amount"</span>); <span class="tok-com">// function ko wrap karke throw check karte hain, direct call nahi</span>
+  }); <span class="tok-com">// test case close</span>
+}); <span class="tok-com">// describe block close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          <code>expect(() => fn()).toThrow()</code> pattern zaroori hai — agar tum direct <code>expect(fn()).toThrow()</code>
+          likhoge, function turant call ho jaayega aur error test framework ke andar catch hone se pehle hi throw
+          ho jaayegi (test crash karega, "throw hua" assert nahi hoga). Function ko ek arrow function ke andar
+          wrap karna Jest ko control deta hai ki wo <em>kab</em> call kare aur exception ko safely catch kare.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="mocking">3. Mocking Native Modules</h2>
+
+      <p>
+        Jest tests <strong>Node.js environment</strong> mein chalte hain, na ki actual iOS/Android device pe.
+        Iska matlab: koi bhi module jo native bridge/JSI ke through real platform APIs ko call karta hai —
+        <code>AsyncStorage</code>, <code>expo-secure-store</code>, <code>expo-camera</code>, push notifications,
+        haptics, sab kuch — <strong>Node mein exist hi nahi karte</strong>. Jab tum in modules ko import karogi
+        Jest ke andar, ya toh import silently fail hoga, ya method call pe crash aayega ("native module not
+        found" jaisa error), kyunki underlying native binding wahan hai hi nahi.
+      </p>
+
+      <p>
+        Solution: <strong>mocking</strong> — hum in modules ko ek fake JS implementation se replace kar dete hain
+        jo sirf test ke liye kaafi hai (jaise ek in-memory object jo <code>get</code>/<code>set</code> simulate
+        kare), taaki jo code in modules ko <em>use</em> karta hai wo bina crash hue test ho sake.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>jest.mock() — inline mock example</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">jest</span>.<span class="tok-fn">mock</span>(<span class="tok-str">"expo-secure-store"</span>, () => (<span class="tok-punc">{</span> <span class="tok-com">// "expo-secure-store" module ko poora replace kar rahe hain</span>
+  getItemAsync: <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(() => <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>(<span class="tok-kw">null</span>)), <span class="tok-com">// fake getItemAsync — default null return karega jab tak override na ho</span>
+  setItemAsync: <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(() => <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>()), <span class="tok-com">// fake setItemAsync — kuch bhi store nahi karega, bas resolve hoga</span>
+  deleteItemAsync: <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(() => <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>()), <span class="tok-com">// fake deleteItemAsync — same tarah resolve</span>
+<span class="tok-punc">}</span>)); <span class="tok-com">// mock factory function close</span></code></pre>
+      </div>
+
+      <p>
+        Ye pattern kaam karta hai lekin har test file mein repeat karna padega. Better approach: ek dedicated
+        <code>__mocks__</code> folder banao jisse Jest automatically pick kare jab bhi wo module import ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>__mocks__/expo-secure-store.js</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Jest convention: agar root ya module-adjacent __mocks__ folder mein isi naam ki file ho,</span>
+<span class="tok-com">// aur jest.mock("expo-secure-store") call ho (ya automock on ho), ye file automatically use hogi</span>
+
+<span class="tok-kw">const</span> store = <span class="tok-kw">new</span> <span class="tok-fn">Map</span>(); <span class="tok-com">// ek in-memory Map jo real SecureStore ki jagah data hold karega test ke duration</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> getItemAsync = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>((key) =&gt; <span class="tok-com">// fake getItemAsync jo actually kuch state maintain karta hai</span>
+  <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>(store.<span class="tok-fn">get</span>(key) ?? <span class="tok-kw">null</span>) <span class="tok-com">// Map se value nikaalo, na mile toh null resolve karo (real API jaisa behavior)</span>
+); <span class="tok-com">// getItemAsync definition close</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> setItemAsync = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>((key, value) =&gt; { <span class="tok-com">// fake setItemAsync</span>
+  store.<span class="tok-fn">set</span>(key, value); <span class="tok-com">// Map mein value store karo, taaki baad mein getItemAsync se milе</span>
+  <span class="tok-kw">return</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>(); <span class="tok-com">// void promise resolve karo, real API jaisa</span>
+}); <span class="tok-com">// setItemAsync definition close</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> deleteItemAsync = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>((key) =&gt; { <span class="tok-com">// fake deleteItemAsync</span>
+  store.<span class="tok-fn">delete</span>(key); <span class="tok-com">// Map se key hata do</span>
+  <span class="tok-kw">return</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>(); <span class="tok-com">// void promise resolve</span>
+}); <span class="tok-com">// deleteItemAsync definition close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>AuthContext.test.tsx (using the mock)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">jest</span>.<span class="tok-fn">mock</span>(<span class="tok-str">"expo-secure-store"</span>); <span class="tok-com">// bina factory ke call kiya — Jest automatically __mocks__/expo-secure-store.js pick karega</span>
+
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> SecureStore <span class="tok-kw">from</span> <span class="tok-str">"expo-secure-store"</span>; <span class="tok-com">// ye ab mocked version import karega, real nahi</span>
+
+<span class="tok-fn">it</span>(<span class="tok-str">"stores the token after sign in"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// async test kyunki signIn promise-based hai</span>
+  <span class="tok-kw">await</span> SecureStore.<span class="tok-fn">setItemAsync</span>(<span class="tok-str">"session_token"</span>, <span class="tok-str">"abc123"</span>); <span class="tok-com">// mock function ko call kiya jaise real code karega</span>
+  <span class="tok-fn">expect</span>(SecureStore.setItemAsync).<span class="tok-fn">toHaveBeenCalledWith</span>(<span class="tok-str">"session_token"</span>, <span class="tok-str">"abc123"</span>); <span class="tok-com">// assert — sahi arguments ke saath call hua</span>
+}); <span class="tok-com">// test close</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          <code>jest-expo</code> preset khud kai common Expo native modules (jaise <code>expo-font</code>,
+          <code>expo-asset</code>) ko already mock kar deta hai — lekin sab modules nahi. Har naye native module
+          (third-party ya Expo ka) ko add karne ke baad ek baar check kar lo ki uska test-environment behavior
+          predictable hai ya nahi — agar test crash ho raha hai "native module cannot be null" jaisi error ke
+          saath, 99% chances hain wo module ko manually mock karna padega.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="rntl">4. React Native Testing Library (RNTL)</h2>
+
+      <p>
+        RNTL ki core philosophy ek line mein: <strong>"test like a user, not implementation details."</strong>
+        Matlab tumhare tests ko component ke internal state, props, ya class names ko directly access nahi karna
+        chahiye — balki wahi cheez query karni chahiye jo ek real user screen pe <em>dekh</em> sakta hai ya
+        <em>interact</em> kar sakta hai: visible text, accessibility role, ya ek explicit <code>testID</code>.
+      </p>
+
+      <p>
+        Isse fayda kya hota hai? Agar tum component ka internal implementation refactor karte ho (jaise
+        <code>useState</code> se <code>useReducer</code> mein switch karna) bina user-facing behavior change kiye,
+        tumhare tests <strong>pass hote rehte hain</strong> — kyunki wo implementation detail ko jaante hi nahi
+        the. Ye tests ko refactor-resistant banata hai, jo long-term maintenance ke liye bahut valuable hai.
+      </p>
+
+      <table>
+        <thead><tr><th>API</th><th>Kaam</th></tr></thead>
+        <tbody>
+          <tr><td><code>render()</code></td><td>Component ko virtual RN tree mein render karta hai, testing environment mein</td></tr>
+          <tr><td><code>screen</code></td><td>Global query object — render ke baad screen pe jo bhi hai use query karne ke liye</td></tr>
+          <tr><td><code>fireEvent</code></td><td>Low-level event simulation — press, changeText, scroll</td></tr>
+          <tr><td><code>userEvent</code></td><td>Higher-level, real user interaction ke zyada kareeb (async, sequential steps)</td></tr>
+          <tr><td><code>waitFor</code></td><td>Async UI update ka wait karta hai — jab state update ke baad DOM/tree change ho</td></tr>
+        </tbody>
+      </table>
+
+      <p>Ab ek full example — ek <code>LoginForm</code> component aur uska test, dono line-by-line commented.</p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/LoginForm.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// local form state ke liye useState chahiye</span>
+<span class="tok-kw">import</span> { View, TextInput, Text, Pressable } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// core RN components</span>
+
+<span class="tok-kw">type</span> Props = { <span class="tok-com">// component ke props ka type</span>
+  onSubmit: (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) =&gt; Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span>; <span class="tok-com">// parent se aane wala async submit handler</span>
+}; <span class="tok-com">// Props type close</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">LoginForm</span>({ onSubmit }: Props) { <span class="tok-com">// LoginForm component, onSubmit prop destructure kiya</span>
+  <span class="tok-kw">const</span> [email, setEmail] = <span class="tok-fn">useState</span>(<span class="tok-str">""</span>); <span class="tok-com">// email input ka state</span>
+  <span class="tok-kw">const</span> [password, setPassword] = <span class="tok-fn">useState</span>(<span class="tok-str">""</span>); <span class="tok-com">// password input ka state</span>
+  <span class="tok-kw">const</span> [error, setError] = <span class="tok-fn">useState</span>(<span class="tok-str">""</span>); <span class="tok-com">// validation/submit error message ka state</span>
+
+  <span class="tok-kw">const</span> handleSubmit = <span class="tok-kw">async</span> () => { <span class="tok-com">// submit button dabane pe chalne wala async handler</span>
+    <span class="tok-kw">if</span> (!email) { <span class="tok-com">// agar email khaali hai</span>
+      <span class="tok-fn">setError</span>(<span class="tok-str">"Email required"</span>); <span class="tok-com">// error message set karo</span>
+      <span class="tok-kw">return</span>; <span class="tok-com">// aage mat badho, API call mat karo</span>
+    } <span class="tok-com">// if block close</span>
+    <span class="tok-kw">try</span> { <span class="tok-com">// error handling ke liye try block</span>
+      <span class="tok-kw">await</span> <span class="tok-fn">onSubmit</span>(email, password); <span class="tok-com">// parent ka submit handler call karo, await karo kyunki async hai</span>
+      <span class="tok-fn">setError</span>(<span class="tok-str">""</span>); <span class="tok-com">// success pe purana error clear kar do</span>
+    } <span class="tok-kw">catch</span> { <span class="tok-com">// agar onSubmit reject ho (jaise galat password)</span>
+      <span class="tok-fn">setError</span>(<span class="tok-str">"Invalid credentials"</span>); <span class="tok-com">// user ko readable error dikhao</span>
+    } <span class="tok-com">// try/catch close</span>
+  }; <span class="tok-com">// handleSubmit close</span>
+
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+    <span class="tok-tag">&lt;View&gt;</span> <span class="tok-com">// wrapper container</span>
+      <span class="tok-tag">&lt;TextInput</span> <span class="tok-com">// email input field</span>
+        <span class="tok-attr">testID</span>=<span class="tok-str">"email-input"</span> <span class="tok-com">// stable identifier tests ke liye (implementation-independent)</span>
+        <span class="tok-attr">placeholder</span>=<span class="tok-str">"Email"</span> <span class="tok-com">// placeholder text</span>
+        <span class="tok-attr">value</span>=<span class="tok-punc">{</span>email<span class="tok-punc">}</span> <span class="tok-com">// controlled input — value state se bound</span>
+        <span class="tok-attr">onChangeText</span>=<span class="tok-punc">{</span>setEmail<span class="tok-punc">}</span> <span class="tok-com">// har keystroke pe state update</span>
+      <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;TextInput</span> <span class="tok-com">// password input field</span>
+        <span class="tok-attr">testID</span>=<span class="tok-str">"password-input"</span> <span class="tok-com">// password field ka stable id</span>
+        <span class="tok-attr">placeholder</span>=<span class="tok-str">"Password"</span> <span class="tok-com">// placeholder</span>
+        <span class="tok-attr">secureTextEntry</span> <span class="tok-com">// characters ko mask karega (dots dikhega)</span>
+        <span class="tok-attr">value</span>=<span class="tok-punc">{</span>password<span class="tok-punc">}</span> <span class="tok-com">// controlled value</span>
+        <span class="tok-attr">onChangeText</span>=<span class="tok-punc">{</span>setPassword<span class="tok-punc">}</span> <span class="tok-com">// keystroke pe update</span>
+      <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Pressable</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>handleSubmit<span class="tok-punc">}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// submit button, press pe handleSubmit call</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Submit<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// button ka visible text — user isse hi dhoondega</span>
+      <span class="tok-tag">&lt;/Pressable&gt;</span>
+      {error ? <span class="tok-tag">&lt;Text&gt;</span>{error}<span class="tok-tag">&lt;/Text&gt;</span> : <span class="tok-kw">null</span>} <span class="tok-com">// error hone pe hi error text render karo</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// component function close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/LoginForm.test.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { render, screen, fireEvent, waitFor } <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// RNTL ke core utilities import kiye</span>
+<span class="tok-kw">import</span> { LoginForm } <span class="tok-kw">from</span> <span class="tok-str">"./LoginForm"</span>; <span class="tok-com">// jis component ko test karna hai</span>
+
+<span class="tok-fn">describe</span>(<span class="tok-str">"LoginForm"</span>, () => { <span class="tok-com">// sab LoginForm tests ko group kiya</span>
+  <span class="tok-fn">it</span>(<span class="tok-str">"shows error when email is empty"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// validation test case</span>
+    <span class="tok-kw">const</span> onSubmit = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(); <span class="tok-com">// fake onSubmit prop, taaki actual API call na ho</span>
+    <span class="tok-fn">render</span>(<span class="tok-tag">&lt;LoginForm</span> <span class="tok-attr">onSubmit</span>=<span class="tok-punc">{</span>onSubmit<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>); <span class="tok-com">// component ko virtual tree mein render kiya</span>
+
+    <span class="tok-kw">const</span> button = screen.<span class="tok-fn">getByText</span>(<span class="tok-str">"Submit"</span>); <span class="tok-com">// Submit button ko uske visible text se dhoondha, jaise user dhoondta</span>
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">press</span>(button); <span class="tok-com">// button pe press event simulate kiya (email khaali hai)</span>
+
+    <span class="tok-kw">const</span> errorText = <span class="tok-kw">await</span> screen.<span class="tok-fn">findByText</span>(<span class="tok-str">"Email required"</span>); <span class="tok-com">// findByText async hai, state update ka wait khud karta hai</span>
+    <span class="tok-fn">expect</span>(errorText).<span class="tok-fn">toBeTruthy</span>(); <span class="tok-com">// assert — error message screen pe mil gaya</span>
+    <span class="tok-fn">expect</span>(onSubmit).<span class="tok-fn">not</span>.<span class="tok-fn">toHaveBeenCalled</span>(); <span class="tok-com">// assert — validation fail hone pe API call bilkul nahi hui</span>
+  }); <span class="tok-com">// test case close</span>
+
+  <span class="tok-fn">it</span>(<span class="tok-str">"submits with entered credentials"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// happy-path test case</span>
+    <span class="tok-kw">const</span> onSubmit = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>().<span class="tok-fn">mockResolvedValue</span>(<span class="tok-kw">undefined</span>); <span class="tok-com">// onSubmit ko resolve karne wala mock banaya (success simulate)</span>
+    <span class="tok-fn">render</span>(<span class="tok-tag">&lt;LoginForm</span> <span class="tok-attr">onSubmit</span>=<span class="tok-punc">{</span>onSubmit<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>); <span class="tok-com">// render karo</span>
+
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">changeText</span>(screen.<span class="tok-fn">getByTestId</span>(<span class="tok-str">"email-input"</span>), <span class="tok-str">"sharad@clear.in"</span>); <span class="tok-com">// email input mein text simulate karke type kiya</span>
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">changeText</span>(screen.<span class="tok-fn">getByTestId</span>(<span class="tok-str">"password-input"</span>), <span class="tok-str">"secret123"</span>); <span class="tok-com">// password input mein text daala</span>
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">press</span>(screen.<span class="tok-fn">getByText</span>(<span class="tok-str">"Submit"</span>)); <span class="tok-com">// submit button press kiya</span>
+
+    <span class="tok-kw">await</span> <span class="tok-fn">waitFor</span>(() => { <span class="tok-com">// waitFor — async state update poora hone tak retry karta rehta hai</span>
+      <span class="tok-fn">expect</span>(onSubmit).<span class="tok-fn">toHaveBeenCalledWith</span>(<span class="tok-str">"sharad@clear.in"</span>, <span class="tok-str">"secret123"</span>); <span class="tok-com">// assert — sahi values ke saath call hua</span>
+    }); <span class="tok-com">// waitFor close</span>
+  }); <span class="tok-com">// test case close</span>
+
+  <span class="tok-fn">it</span>(<span class="tok-str">"shows error when onSubmit rejects"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// failure-path test case</span>
+    <span class="tok-kw">const</span> onSubmit = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>().<span class="tok-fn">mockRejectedValue</span>(<span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"401"</span>)); <span class="tok-com">// onSubmit ko reject karne wala mock (galat credentials simulate)</span>
+    <span class="tok-fn">render</span>(<span class="tok-tag">&lt;LoginForm</span> <span class="tok-attr">onSubmit</span>=<span class="tok-punc">{</span>onSubmit<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>); <span class="tok-com">// render karo</span>
+
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">changeText</span>(screen.<span class="tok-fn">getByTestId</span>(<span class="tok-str">"email-input"</span>), <span class="tok-str">"sharad@clear.in"</span>); <span class="tok-com">// email bhara</span>
+    <span class="tok-fn">fireEvent</span>.<span class="tok-fn">press</span>(screen.<span class="tok-fn">getByText</span>(<span class="tok-str">"Submit"</span>)); <span class="tok-com">// submit dabaya</span>
+
+    <span class="tok-fn">expect</span>(<span class="tok-kw">await</span> screen.<span class="tok-fn">findByText</span>(<span class="tok-str">"Invalid credentials"</span>)).<span class="tok-fn">toBeTruthy</span>(); <span class="tok-com">// assert — catch block wala error message dikha</span>
+  }); <span class="tok-com">// test case close</span>
+}); <span class="tok-com">// describe block close</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — getBy vs findBy vs queryBy</div>
+        <p>
+          <code>getByX</code> turant throw karega agar element nahi mila (sync). <code>findByX</code> async hai —
+          andar hi andar <code>waitFor</code> use karta hai, isliye state update ke baad aane wale elements ke
+          liye ye sahi choice hai. <code>queryByX</code> throw nahi karta, <code>null</code> return karta hai —
+          isko use karo jab tum assert kar rahe ho ki koi element <strong>absent</strong> hai
+          (<code>expect(screen.queryByText("Error")).toBeNull()</code>).
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="hooks-async">5. Testing Hooks and Async Logic</h2>
+
+      <p>
+        Custom hooks ko test karna thoda tricky hota hai kyunki hooks sirf component ke andar hi call ho sakte
+        hain (React ke "rules of hooks" ke wajah se). RNTL ka <code>renderHook</code> ek minimal, invisible
+        wrapper component banata hai jisme hook ko mount karta hai, taaki tum hook ke return value aur uske
+        state changes ko directly test kar sako — bina koi UI likhe.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/useFetchUser.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur lifecycle ke liye</span>
+
+<span class="tok-kw">type</span> User = { id: <span class="tok-kw">string</span>; name: <span class="tok-kw">string</span> }; <span class="tok-com">// user shape ka type</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">useFetchUser</span>(userId: <span class="tok-kw">string</span>) { <span class="tok-com">// custom hook, userId leta hai</span>
+  <span class="tok-kw">const</span> [user, setUser] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>User | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>); <span class="tok-com">// fetched user data</span>
+  <span class="tok-kw">const</span> [isLoading, setIsLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// loading flag, initially true</span>
+  <span class="tok-kw">const</span> [error, setError] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span><span class="tok-kw">string</span> | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>); <span class="tok-com">// error message, null jab tak error na ho</span>
+
+  <span class="tok-fn">useEffect</span>(() => { <span class="tok-com">// side effect — userId change hone pe fetch trigger karega</span>
+    <span class="tok-kw">let</span> cancelled = <span class="tok-kw">false</span>; <span class="tok-com">// stale response ignore karne ke liye flag (component unmount/id-change race)</span>
+    <span class="tok-fn">setIsLoading</span>(<span class="tok-kw">true</span>); <span class="tok-com">// naye fetch ke shuru mein loading true karo</span>
+
+    <span class="tok-fn">fetch</span>(<span class="tok-str">`https://api.myapp.com/users/${userId}`</span>) <span class="tok-com">// actual network call (test mein mock hoga)</span>
+      .<span class="tok-fn">then</span>((res) => res.<span class="tok-fn">json</span>()) <span class="tok-com">// response ko JSON mein parse karo</span>
+      .<span class="tok-fn">then</span>((data) => { <span class="tok-com">// success callback</span>
+        <span class="tok-kw">if</span> (!cancelled) <span class="tok-fn">setUser</span>(data); <span class="tok-com">// sirf tab set karo jab request cancel nahi hui</span>
+      })
+      .<span class="tok-fn">catch</span>((err) => { <span class="tok-com">// failure callback</span>
+        <span class="tok-kw">if</span> (!cancelled) <span class="tok-fn">setError</span>(err.<span class="tok-fn">message</span>); <span class="tok-com">// error message state mein daalo</span>
+      })
+      .<span class="tok-fn">finally</span>(() => { <span class="tok-com">// dono cases mein chalega</span>
+        <span class="tok-kw">if</span> (!cancelled) <span class="tok-fn">setIsLoading</span>(<span class="tok-kw">false</span>); <span class="tok-com">// loading khatam</span>
+      }); <span class="tok-com">// promise chain close</span>
+
+    <span class="tok-kw">return</span> () => { <span class="tok-com">// cleanup function</span>
+      cancelled = <span class="tok-kw">true</span>; <span class="tok-com">// agar userId change ho ya unmount ho jaaye, purani response ignore karo</span>
+    }; <span class="tok-com">// cleanup close</span>
+  }, [userId]); <span class="tok-com">// dependency — userId badalne pe re-run</span>
+
+  <span class="tok-kw">return</span> { user, isLoading, error }; <span class="tok-com">// hook ka public return value</span>
+} <span class="tok-com">// hook close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/useFetchUser.test.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { renderHook, waitFor } <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// renderHook hooks ko isolation mein test karne deta hai</span>
+<span class="tok-kw">import</span> { useFetchUser } <span class="tok-kw">from</span> <span class="tok-str">"./useFetchUser"</span>; <span class="tok-com">// jis hook ko test karna hai</span>
+
+<span class="tok-kw">beforeEach</span>(() => { <span class="tok-com">// har test se pehle chalega</span>
+  <span class="tok-fn">global</span>.<span class="tok-fn">fetch</span> = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(); <span class="tok-com">// global fetch ko ek fresh jest mock function se replace kiya</span>
+}); <span class="tok-com">// beforeEach close</span>
+
+<span class="tok-fn">it</span>(<span class="tok-str">"returns user data after successful fetch"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// happy path test</span>
+  (<span class="tok-fn">global</span>.<span class="tok-fn">fetch</span> <span class="tok-kw">as</span> <span class="tok-fn">jest</span>.Mock).<span class="tok-fn">mockResolvedValue</span>({ <span class="tok-com">// fetch ka resolved value define kiya</span>
+    json: () =&gt; <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>({ id: <span class="tok-str">"1"</span>, name: <span class="tok-str">"Sharad"</span> }), <span class="tok-com">// .json() bhi ek promise return kare, real Response jaisa</span>
+  }); <span class="tok-com">// mockResolvedValue close</span>
+
+  <span class="tok-kw">const</span> { result } = <span class="tok-fn">renderHook</span>(() =&gt; <span class="tok-fn">useFetchUser</span>(<span class="tok-str">"1"</span>)); <span class="tok-com">// hook ko invisible wrapper component mein mount kiya</span>
+
+  <span class="tok-fn">expect</span>(result.current.isLoading).<span class="tok-fn">toBe</span>(<span class="tok-kw">true</span>); <span class="tok-com">// turant ke baad loading true hona chahiye (fetch abhi resolve nahi hua)</span>
+
+  <span class="tok-kw">await</span> <span class="tok-fn">waitFor</span>(() =&gt; <span class="tok-fn">expect</span>(result.current.isLoading).<span class="tok-fn">toBe</span>(<span class="tok-kw">false</span>)); <span class="tok-com">// jab tak loading false na ho jaaye, poll karte raho</span>
+
+  <span class="tok-fn">expect</span>(result.current.user).<span class="tok-fn">toEqual</span>({ id: <span class="tok-str">"1"</span>, name: <span class="tok-str">"Sharad"</span> }); <span class="tok-com">// assert — final user state sahi hai</span>
+  <span class="tok-fn">expect</span>(result.current.error).<span class="tok-fn">toBeNull</span>(); <span class="tok-com">// assert — koi error nahi hui</span>
+}); <span class="tok-com">// test close</span>
+
+<span class="tok-fn">it</span>(<span class="tok-str">"sets error state when fetch fails"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// failure path test</span>
+  (<span class="tok-fn">global</span>.<span class="tok-fn">fetch</span> <span class="tok-kw">as</span> <span class="tok-fn">jest</span>.Mock).<span class="tok-fn">mockRejectedValue</span>(<span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"Network down"</span>)); <span class="tok-com">// fetch ko reject karne ke liye configure kiya</span>
+
+  <span class="tok-kw">const</span> { result } = <span class="tok-fn">renderHook</span>(() =&gt; <span class="tok-fn">useFetchUser</span>(<span class="tok-str">"2"</span>)); <span class="tok-com">// hook mount kiya different userId ke saath</span>
+
+  <span class="tok-kw">await</span> <span class="tok-fn">waitFor</span>(() =&gt; <span class="tok-fn">expect</span>(result.current.error).<span class="tok-fn">toBe</span>(<span class="tok-str">"Network down"</span>)); <span class="tok-com">// error set hone ka wait karo</span>
+  <span class="tok-fn">expect</span>(result.current.user).<span class="tok-fn">toBeNull</span>(); <span class="tok-com">// assert — user null hi raha, fetch fail hua tha</span>
+}); <span class="tok-com">// test close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — act() warnings</div>
+        <p>
+          Agar tumhe console mein <code>"An update to X inside a test was not wrapped in act(...)"</code> jaisi
+          warning dikhe, iska matlab hai component/hook ka state update test assertion ke baad, bina
+          <code>waitFor</code>/<code>act</code> ke wrap kiye, ho raha hai. RNTL ke <code>waitFor</code>,
+          <code>findBy*</code>, aur <code>renderHook</code> ke result updates already internally <code>act()</code>
+          use karte hain — isliye zyada tar cases mein manually <code>act()</code> likhne ki zaroorat nahi padti,
+          bas async assertions ko sahi API (<code>waitFor</code>/<code>findBy</code>) se wrap karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="maestro">6. Maestro E2E Testing</h2>
+
+      <p>
+        Maestro ek open-source E2E testing framework hai jo specifically mobile apps (iOS + Android, React Native
+        ya native dono) ke liye bana hai. Sabse bada differentiator: tests <strong>plain YAML</strong> mein likhe
+        jaate hain — koi native test code (Espresso/XCUITest) likhne ki zaroorat nahi. Maestro internally accessibility
+        tree read karta hai (jaisa RNTL karta hai component tree ke liye, lekin ye poori running app pe, real
+        gestures ke through), aur automatically retries/waits karta hai jab tak element screen pe render nahi ho
+        jaata — isse animation-timing-based flakiness kaafi kam ho jaati hai compared to raw Appium/Detox scripts.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Install Maestro</span><button class="copy-btn">Copy</button></div>
+        <pre><code>curl -Ls <span class="tok-str">"https://get.maestro.mobile.dev"</span> | bash <span class="tok-com"># official install script, Maestro CLI ko system pe install karta hai</span>
+maestro --version <span class="tok-com"># verify karo installation successful hui ya nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>.maestro/login-to-home.yaml</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># appId — kaunsi app pe ye flow chalega, bundle identifier/package name se match hona chahiye</span>
+appId: com.mycompany.myapp
+<span class="tok-com">---</span>
+<span class="tok-com"># --- launchApp: app ko fresh state mein launch karta hai (state clear karke) ---</span>
+- launchApp:
+    clearState: <span class="tok-kw">true</span> <span class="tok-com"># purana app data clear karo, taaki test hamesha "logged out" state se shuru ho</span>
+
+<span class="tok-com"># --- assertVisible: check karta hai ki given text/element screen pe dikh raha hai ---</span>
+- assertVisible: <span class="tok-str">"Login"</span> <span class="tok-com"># confirm karo ki hum login screen pe hi hain</span>
+
+<span class="tok-com"># --- tapOn: given text/testID wale element pe tap simulate karta hai ---</span>
+- tapOn:
+    id: <span class="tok-str">"email-input"</span> <span class="tok-com"># RNTL wale testID se match hota hai (accessibilityLabel/testID ke through)</span>
+
+<span class="tok-com"># --- inputText: currently focused field mein text type karta hai ---</span>
+- inputText: <span class="tok-str">"sharad@clear.in"</span> <span class="tok-com"># email field mein credentials type karo</span>
+
+- tapOn:
+    id: <span class="tok-str">"password-input"</span> <span class="tok-com"># password field pe tap karo focus shift karne ke liye</span>
+
+- inputText: <span class="tok-str">"secret123"</span> <span class="tok-com"># password type karo</span>
+
+- tapOn: <span class="tok-str">"Submit"</span> <span class="tok-com"># Submit button ko uske visible text se tap karo</span>
+
+<span class="tok-com"># --- extendedWaitUntil: fixed sleep() ki jagah condition-based wait karta hai ---</span>
+- extendedWaitUntil:
+    visible: <span class="tok-str">"Home"</span> <span class="tok-com"># jab tak "Home" text screen pe na aaye (login network call complete hone tak)</span>
+    timeout: 10000 <span class="tok-com"># max 10 seconds tak wait karega, phir fail mark karega</span>
+
+<span class="tok-com"># --- assertVisible: final assertion — humein home screen pe pahuncha ya nahi ---</span>
+- assertVisible: <span class="tok-str">"Welcome back"</span> <span class="tok-com"># home screen ka koi unique greeting text confirm karo</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>Run the flow</span><button class="copy-btn">Copy</button></div>
+        <pre><code>maestro test .maestro/login-to-home.yaml <span class="tok-com"># is single flow file ko booted simulator/emulator/device pe run karo</span>
+maestro test .maestro/ <span class="tok-com"># folder pass karo toh andar ke saare .yaml flows sequentially run honge</span></code></pre>
+      </div>
+
+      <p>
+        Maestro Expo Go pe bhi kaam kar sakta hai chhoti testing ke liye, lekin production-representative results
+        ke liye <strong>Development Build</strong> (ya Preview/Production build) pe run karna chahiye — kyunki
+        Expo Go ka apna bundle ID/UI chrome hota hai jo actual shipped app se differ karta hai, aur native modules
+        jo Expo Go support nahi karta wahan crash/skip ho sakte hain jab wo real build mein present honge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Running against a Dev Build</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># pehle EAS/local se ek development build banao jo device/simulator pe install ho</span>
+eas build --profile development --platform ios <span class="tok-com"># dev-client wala build trigger karo</span>
+
+<span class="tok-com"># build install hone ke baad, us installed app ke bundle id ke against Maestro run karo</span>
+maestro test .maestro/login-to-home.yaml <span class="tok-com"># yaml ke appId field ko dev build ke bundle id se match rakhna zaroori hai</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip — Maestro Studio</div>
+        <p>
+          <code>maestro studio</code> command ek local UI kholta hai jahan tum running app ke accessibility tree
+          ko live inspect kar sakte ho aur interactively element pe click karke uska sahi selector (id/text)
+          copy kar sakte ho — isse YAML likhna kaafi fast ho jaata hai, especially jab pata nahi ki kisi element
+          ka accessible identifier kya hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="ci">7. CI Integration</h2>
+
+      <p>
+        Tests likhna tab hi valuable hai jab wo <strong>automatically</strong>, har PR pe run hon — koi manually
+        yaad rakh ke "test chalao" nahi bhoolega. Jest tests har GitHub Actions run pe seconds mein chal jaate
+        hain (no native build needed), jabki Maestro tests ko ek actual build artifact chahiye hota hai, isliye
+        unhe typically EAS Build ke baad ek separate step/job mein chalate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.github/workflows/test.yml</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># workflow ka naam, GitHub Actions UI mein dikhega</span>
+name: Test
+<span class="tok-com"># kab trigger ho — har pull_request pe (main branch ke against)</span>
+on:
+  pull_request:
+    branches: [main] <span class="tok-com"># sirf main ke against banne wale PRs pe chalega</span>
+
+jobs:
+  unit-tests: <span class="tok-com"># pehla job — Jest unit + component tests</span>
+    runs-on: ubuntu-latest <span class="tok-com"># Linux runner kaafi hai, Jest ko native build nahi chahiye</span>
+    steps:
+      - uses: actions/checkout@v4 <span class="tok-com"># repo code ko runner mein checkout karo</span>
+      - uses: actions/setup-node@v4 <span class="tok-com"># Node.js environment setup karo</span>
+        with:
+          node-version: 20 <span class="tok-com"># Node version pin kiya, consistency ke liye</span>
+      - run: npm ci <span class="tok-com"># exact lockfile versions install karo, "npm install" se zyada deterministic</span>
+      - run: npm test -- --ci --coverage <span class="tok-com"># Jest ko CI mode mein chalao, coverage report bhi generate karo</span>
+
+  e2e-tests: <span class="tok-com"># dusra job — Maestro E2E, build artifact pe depend karta hai</span>
+    needs: unit-tests <span class="tok-com"># pehle unit tests pass hone chahiye, tabhi ye job chalega (fast-fail)</span>
+    runs-on: macos-latest <span class="tok-com"># iOS simulator chahiye toh macOS runner mandatory hai</span>
+    steps:
+      - uses: actions/checkout@v4 <span class="tok-com"># repo checkout</span>
+      - name: Install Maestro <span class="tok-com"># Maestro CLI ko runner pe install karne ka step</span>
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash <span class="tok-com"># same install script jo local pe use kiya tha</span>
+      - name: Download EAS build artifact <span class="tok-com"># pehle se bana hua build download karna</span>
+        run: eas build:download --platform ios --latest <span class="tok-com"># latest iOS simulator build download karo EAS se</span>
+      - name: Run Maestro flows <span class="tok-com"># actual E2E tests chalane ka step</span>
+        run: maestro test .maestro/ <span class="tok-com"># saare flows sequentially run karo</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Notice karo <code>needs: unit-tests</code> — ye ek deliberate ordering hai. Unit/component tests seconds
+          mein fail ho jaate hain agar kuch basic tut gaya, jabki E2E job ko ek naya build banwa ke download karne
+          mein hi minutes lag sakte hain. Fast, cheap checks pehle chalao taaki obvious breakage jaldi pakda jaaye
+          — is pattern ko <strong>"fail fast"</strong> bolte hain, aur ye expensive CI minutes (macOS runners
+          especially costly hote hain) bachane ka sabse simple tarika hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">8. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Stale snapshot tests — blindly update karna anti-pattern hai</div>
+        <p>
+          Jest ke snapshot tests (<code>expect(tree).toMatchSnapshot()</code>) tempting lagte hain kyunki likhna
+          easy hai — bas render karo aur snapshot le lo. Lekin practically, jab bhi koi chhota unrelated style
+          change hota hai, snapshot test fail ho jaata hai, aur developers habit bana lete hain
+          <code>jest --updateSnapshot</code> blindly chala dene ki, bina diff dekhe ki kya actually change hua.
+          Isse snapshot tests apni poori value kho dete hain — wo sirf "kuch change hua" batate hain, "sahi change
+          hua ya nahi" nahi. Snapshot tests ko sirf tab use karo jab tumhe exactly output ka structure freeze
+          karna ho (jaise ek design-system component library), aur har snapshot update pe diff carefully review
+          karo — kabhi bhi CI mein "update aur commit" ko automate mat karo.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Flaky E2E tests — sleep() ki jagah waitFor use karo</div>
+        <p>
+          Animation transitions, network latency, aur splash screen delays — ye sab E2E tests ko unpredictable
+          bana dete hain agar tumne fixed <code>sleep(2000)</code> jaisi wait daali hai. Slow CI runner pe 2 second
+          kaafi nahi honge, aur fast local machine pe wo wasted time hai. Hamesha condition-based wait use karo —
+          Maestro mein <code>extendedWaitUntil</code>, RNTL mein <code>waitFor</code>/<code>findBy*</code> — jo
+          element/condition ke actual hone tak poll karte hain, na ki ek arbitrary fixed duration tak block karte
+          hain.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Navigation/Theme providers wrap na karna — crash ya galat render</div>
+        <p>
+          Agar tumhara component <code>useNavigation()</code>, theme context, ya safe-area context use karta hai,
+          toh use directly <code>render(&lt;MyComponent /&gt;)</code> karne se crash aayega ("no navigation
+          context found" jaisa error) — kyunki test environment mein wo providers exist hi nahi karte by default.
+          Solution: ek custom <code>render</code> wrapper utility banao jo har test ke liye zaroori providers
+          automatically wrap kar de.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>test-utils/render.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { render <span class="tok-kw">as</span> rtlRender, RenderOptions } <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// RNTL ka original render, alag naam se import kiya taaki clash na ho</span>
+<span class="tok-kw">import</span> { NavigationContainer } <span class="tok-kw">from</span> <span class="tok-str">"@react-navigation/native"</span>; <span class="tok-com">// navigation context provider</span>
+<span class="tok-kw">import</span> { ThemeProvider } <span class="tok-kw">from</span> <span class="tok-str">"../context/ThemeContext"</span>; <span class="tok-com">// app ka apna theme provider</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">AllProviders</span>({ children }: { children: React.ReactNode }) { <span class="tok-com">// wrapper component jo saare providers combine karta hai</span>
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+    <span class="tok-tag">&lt;ThemeProvider&gt;</span> <span class="tok-com">// theme context provide karo</span>
+      <span class="tok-tag">&lt;NavigationContainer&gt;</span>{children}<span class="tok-tag">&lt;/NavigationContainer&gt;</span> <span class="tok-com">// navigation context provide karo, andar actual component render hoga</span>
+    <span class="tok-tag">&lt;/ThemeProvider&gt;</span>
+  ); <span class="tok-com">// return close</span>
+} <span class="tok-com">// wrapper close</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">customRender</span>(ui: React.ReactElement, options?: RenderOptions) { <span class="tok-com">// custom render function jo default export banega</span>
+  <span class="tok-kw">return</span> <span class="tok-fn">rtlRender</span>(ui, { wrapper: AllProviders, ...options }); <span class="tok-com">// RNTL render ko AllProviders wrapper ke saath call karo</span>
+} <span class="tok-com">// customRender close</span>
+
+<span class="tok-kw">export</span> * <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// screen, fireEvent, waitFor sab re-export kiye taaki ek hi jagah se import ho sake</span>
+<span class="tok-kw">export</span> { customRender <span class="tok-kw">as</span> render }; <span class="tok-com">// customRender ko "render" naam se export kiya, tests mein normal render jaisa hi dikhega</span></code></pre>
+      </div>
+
+      <p>
+        Ab tests mein <code>import { render, screen } from "../test-utils/render"</code> karke normal
+        <code>render(&lt;MyComponent /&gt;)</code> likh sakte ho, aur providers automatically wrap ho jaayenge —
+        bina har test file mein manually boilerplate repeat kiye.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — har prop combination test mat karo</div>
+        <p>
+          Diminishing returns ek real cheez hai testing mein. Agar ek component ke 5 boolean props hain, unke
+          32 possible combinations banate hain — lekin usse pura test karna time-waste hai aur maintenance
+          burden badhata hai. Instead, focus karo <strong>critical user flows</strong> pe: login/signup, checkout,
+          data submission jahan bug directly revenue ya trust ko hit karta hai. Kam-important edge cases (jaise
+          ek rarely-used prop combination) ko manual QA ya exploratory testing pe chhod do. Senior dev ka signal
+          yahi hai — pura coverage chase nahi karna, balki <em>right</em> coverage chase karna, jahan failure ka
+          business impact sabse zyada hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Section 8 mein humne dekha ki providers wrap na karne se crash aata hai, aur ek basic
+        <code>test-utils/render.tsx</code> banaya jo Theme + Navigation wrap karta hai. Ek senior-level app mein
+        usually isse zyada providers hote hain — Redux/Zustand store, gesture-handler root view, safe-area
+        context, query client (React Query) — aur har test ko har provider ka apna alag setup nahi likhna chahiye.
+        Yahan hum us pattern ko production-grade banayenge, phir Reanimated/gesture testing, visual regression, aur
+        CI mein performance profiling — ye 4 topics cover karenge jo ek senior RN interview mein testing depth
+        judge karne ke liye common hain.
+      </p>
+
+      <h3 style="margin-top:28px;">9.1 Custom Render Utility — Full Provider Stack + Preloaded State</h3>
+
+      <p>
+        Section 8 ka <code>customRender</code> sirf static providers wrap karta tha (koi per-test configuration
+        nahi thi). Ek real app mein Redux store aur React Query client ko har test ke liye <em>alag state</em>
+        ke saath inject karna padta hai (jaise "user already logged in" wala test vs "user logged out" wala test).
+        Neeche wo full, production-style version hai jo ek options object accept karta hai taaki har test apna
+        preloaded state pass kar sake, bina naya wrapper likhe.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>test-utils/render.tsx (advanced — full provider stack)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-kw">type</span> { ReactElement, ReactNode } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// type-only imports, JSX ke liye React ki type info chahiye</span>
+<span class="tok-kw">import</span> { render <span class="tok-kw">as</span> rtlRender, <span class="tok-kw">type</span> RenderOptions } <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// RNTL ka original render, renamed taaki naam clash na ho</span>
+<span class="tok-kw">import</span> { NavigationContainer } <span class="tok-kw">from</span> <span class="tok-str">"@react-navigation/native"</span>; <span class="tok-com">// navigation context provider, app-wide zaroori hai</span>
+<span class="tok-kw">import</span> { GestureHandlerRootView } <span class="tok-kw">from</span> <span class="tok-str">"react-native-gesture-handler"</span>; <span class="tok-com">// gesture-handler ko bhi root view chahiye, warna gestures silently fail hote hain</span>
+<span class="tok-kw">import</span> { SafeAreaProvider } <span class="tok-kw">from</span> <span class="tok-str">"react-native-safe-area-context"</span>; <span class="tok-com">// safe-area insets use karne wale components ke liye zaroori</span>
+<span class="tok-kw">import</span> { Provider <span class="tok-kw">as</span> ReduxProvider } <span class="tok-kw">from</span> <span class="tok-str">"react-redux"</span>; <span class="tok-com">// Redux store ko component tree mein inject karne wala provider</span>
+<span class="tok-kw">import</span> { configureStore } <span class="tok-kw">from</span> <span class="tok-str">"@reduxjs/toolkit"</span>; <span class="tok-com">// har test ke liye ek fresh, isolated store banane ke liye</span>
+<span class="tok-kw">import</span> { rootReducer, <span class="tok-kw">type</span> RootState } <span class="tok-kw">from</span> <span class="tok-str">"../store/rootReducer"</span>; <span class="tok-com">// app ka actual reducer tree — real reducers use karo, mock nahi (integration-level confidence ke liye)</span>
+<span class="tok-kw">import</span> { ThemeProvider } <span class="tok-kw">from</span> <span class="tok-str">"../context/ThemeContext"</span>; <span class="tok-com">// app ka apna custom theme context</span>
+
+<span class="tok-kw">type</span> ExtendedRenderOptions = Omit<span class="tok-punc">&lt;</span>RenderOptions, <span class="tok-str">"wrapper"</span><span class="tok-punc">&gt;</span> & { <span class="tok-com">// RenderOptions extend kiya, "wrapper" ko exclude kiya kyunki wo hum khud provide karenge</span>
+  preloadedState?: Partial<span class="tok-punc">&lt;</span>RootState<span class="tok-punc">&gt;</span>; <span class="tok-com">// optional — test apna khud ka initial Redux state de sakta hai</span>
+  store?: <span class="tok-kw">ReturnType</span><span class="tok-punc">&lt;</span><span class="tok-kw">typeof</span> configureStore<span class="tok-punc">&gt;</span>; <span class="tok-com">// optional — agar test ko poora custom store chahiye (rare case)</span>
+}; <span class="tok-com">// ExtendedRenderOptions type close</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">customRender</span>( <span class="tok-com">// naya customRender jo options accept karta hai</span>
+  ui: ReactElement, <span class="tok-com">// jo component render karna hai</span>
+  {
+    preloadedState = {}, <span class="tok-com">// default — koi preloaded state nahi, store apni default initial state se shuru hoga</span>
+    store = <span class="tok-fn">configureStore</span>({ reducer: rootReducer, preloadedState }), <span class="tok-com">// har render call pe ek fresh store banao — tests ek dusre ka state share NAHI karne chahiye</span>
+    ...renderOptions <span class="tok-com">// baaki saare RNTL options (jaise "wrapper" ke alawa sab) as-is pass kar do</span>
+  }: ExtendedRenderOptions = {} <span class="tok-com">// pura options object hi optional hai, default empty object</span>
+) {
+  <span class="tok-kw">function</span> <span class="tok-fn">Wrapper</span>({ children }: { children: ReactNode }) { <span class="tok-com">// inline wrapper component jo saare providers ek saath nest karta hai</span>
+    <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return</span>
+      <span class="tok-tag">&lt;GestureHandlerRootView</span> <span class="tok-attr">style</span>=<span class="tok-punc">{</span>{ flex: <span class="tok-num">1</span> }<span class="tok-punc">}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// gesture-handler root — outermost, flex:1 taaki poora screen area cover ho</span>
+        <span class="tok-tag">&lt;SafeAreaProvider&gt;</span> <span class="tok-com">// safe-area insets context</span>
+          <span class="tok-tag">&lt;ReduxProvider</span> <span class="tok-attr">store</span>=<span class="tok-punc">{</span>store<span class="tok-punc">}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// is test ke liye banaya gaya isolated Redux store inject karo</span>
+            <span class="tok-tag">&lt;ThemeProvider&gt;</span> <span class="tok-com">// app ka custom theme context</span>
+              <span class="tok-tag">&lt;NavigationContainer&gt;</span>{children}<span class="tok-tag">&lt;/NavigationContainer&gt;</span> <span class="tok-com">// navigation context — sabse andar, actual component yahin render hoga</span>
+            <span class="tok-tag">&lt;/ThemeProvider&gt;</span>
+          <span class="tok-tag">&lt;/ReduxProvider&gt;</span>
+        <span class="tok-tag">&lt;/SafeAreaProvider&gt;</span>
+      <span class="tok-tag">&lt;/GestureHandlerRootView&gt;</span>
+    ); <span class="tok-com">// return close</span>
+  } <span class="tok-com">// Wrapper close</span>
+
+  <span class="tok-kw">return</span> { <span class="tok-com">// return object — RNTL ka normal result + store reference bhi expose kar rahe hain</span>
+    store, <span class="tok-com">// test ko store expose kiya — kabhi kabhi test ko `store.getState()` se assert karna padta hai</span>
+    ...<span class="tok-fn">rtlRender</span>(ui, { wrapper: Wrapper, ...renderOptions }), <span class="tok-com">// asli RNTL render call, humara Wrapper pass kar diya</span>
+  }; <span class="tok-com">// return close</span>
+} <span class="tok-com">// customRender close</span>
+
+<span class="tok-kw">export</span> * <span class="tok-kw">from</span> <span class="tok-str">"@testing-library/react-native"</span>; <span class="tok-com">// screen, fireEvent, waitFor sab re-export — ek hi import path se sab milega</span>
+<span class="tok-kw">export</span> { customRender <span class="tok-kw">as</span> render }; <span class="tok-com">// "render" naam se export — test files mein normal render jaisa hi use hoga</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>ProfileScreen.test.tsx (using preloadedState)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { render, screen } <span class="tok-kw">from</span> <span class="tok-str">"../test-utils/render"</span>; <span class="tok-com">// custom render import kiya, RNTL se directly nahi</span>
+<span class="tok-kw">import</span> { ProfileScreen } <span class="tok-kw">from</span> <span class="tok-str">"./ProfileScreen"</span>; <span class="tok-com">// jo component test karna hai, wo useSelector se logged-in user padhta hai</span>
+
+<span class="tok-fn">it</span>(<span class="tok-str">"shows the logged-in user's name"</span>, () => { <span class="tok-com">// test case — logged-in state ke saath render karna hai</span>
+  <span class="tok-fn">render</span>(<span class="tok-tag">&lt;ProfileScreen</span> <span class="tok-tag">/&gt;</span>, { <span class="tok-com">// component render kiya options ke saath</span>
+    preloadedState: { auth: { user: { name: <span class="tok-str">"Sharad"</span> } } }, <span class="tok-com">// is test ke liye Redux store ko already "logged in" state se seed kiya</span>
+  }); <span class="tok-com">// render call close — koi manual dispatch/login flow simulate nahi karna pada</span>
+
+  <span class="tok-fn">expect</span>(screen.<span class="tok-fn">getByText</span>(<span class="tok-str">"Sharad"</span>)).<span class="tok-fn">toBeTruthy</span>(); <span class="tok-com">// assert — user ka naam screen pe dikh raha hai</span>
+}); <span class="tok-com">// test close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ye pattern kyun matter karta hai</div>
+        <p>
+          Bina is pattern ke, har test file mein tumhe manually <code>&lt;Provider&gt;</code>,
+          <code>&lt;NavigationContainer&gt;</code>, aur baaki wrappers repeat karne padenge — jo na sirf
+          boilerplate hai, balki agar kabhi ek naya app-wide provider add hota hai (jaise React Query), tumhe
+          <strong>har existing test file</strong> mein jaake update karna padega. Ek centralized <code>render</code>
+          utility ka matlab hai ye change <strong>ek jagah</strong> hoti hai, aur saare tests automatically naye
+          provider ke saath render hone lagte hain. Ye exactly wahi principle hai jo humne DRY components ke liye
+          use kiya tha (ch.2) — bas ab test infrastructure pe apply ho raha hai. Bade codebases mein ye file
+          usually <code>jest.config.js</code> ke <code>setupFilesAfterEach</code> ya ek shared <code>test-utils</code>
+          package ke through poore monorepo mein reuse hoti hai.
+        </p>
+      </div>
+
+      <h3 style="margin-top:28px;">9.2 Testing Reanimated aur Gesture-Driven Code</h3>
+
+      <p>
+        Reanimated ka poora fayda hi ye hai ki uske <strong>worklets</strong> UI thread pe, JSI ke through, native
+        C++ runtime mein directly chalte hain (ch.5 mein detail mein dekha tha). Jest tests Node.js environment
+        mein chalte hain — wahan koi UI thread nahi hai, koi native Reanimated runtime nahi hai. Iska matlab worklets
+        Jest ke andar <em>bilkul differently</em> execute hote hain (JS thread pe hi, synchronously ya mocked
+        timers ke through), jo real device behavior se kaafi door hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha — Reanimated bina mock ke crash karega</div>
+        <p>
+          Agar tum Reanimated use karne wale component ko bina setup ke test karogi, error milega jaisa
+          <code>"Native module 'ReanimatedModule' not found"</code> — kyunki underlying native binding Node mein
+          exist nahi karti. Solution: Reanimated khud ek official Jest mock deta hai jo isse handle karta hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>jest.config.js — Reanimated ka official mock wire karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">module</span>.<span class="tok-fn">exports</span> = { <span class="tok-com">// Jest config ka export</span>
+  preset: <span class="tok-str">"jest-expo"</span>, <span class="tok-com">// existing Expo preset (jaisa section 2 mein setup kiya tha)</span>
+  setupFilesAfterEach: [ <span class="tok-com">// har test file ke run hone ke baad automatically load hone wali setup files</span>
+    <span class="tok-str">"@testing-library/jest-native/extend-expect"</span>, <span class="tok-com">// pehle se add kiya hua matcher setup</span>
+    <span class="tok-str">"react-native-reanimated/jestSetup"</span>, <span class="tok-com">// Reanimated ka official mock — worklets ko Jest-safe fake implementation se replace karta hai</span>
+  ], <span class="tok-com">// setup array close</span>
+}; <span class="tok-com">// module.exports close</span></code></pre>
+      </div>
+
+      <p>
+        Ye official mock <code>useSharedValue</code>, <code>withTiming</code>, <code>withSpring</code> jaisi cheezon
+        ko "fake" versions se replace kar deta hai jo turant (synchronously, bina actual animation timing ke) apni
+        final value pe pahunch jaate hain — taaki test crash na ho. Lekin isse ek important limitation aati hai:
+        <strong>tum animated visual values (jaise beech ka interpolated opacity 0.5 pe hai ya nahi) reliably assert
+        nahi kar sakte</strong>, kyunki mock animation ki real timing/easing curve simulate nahi karta.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — animation values test mat karo, LOGIC test karo</div>
+        <p>
+          Ek senior engineer ka pragmatic approach: animated <em>visual</em> values ko assert karne ki koshish
+          chhod do (wo brittle aur mock-dependent hote hain), aur uske bajaye us <strong>business logic</strong> pe
+          focus karo jo animation ke through trigger hoti hai. Swipe-to-delete component (ch.5 mein banaya tha) ka
+          example lo — real question ye nahi hai "kya opacity 0 tak animate hui", balki "kya swipe threshold cross
+          karne ke baad delete callback call hua ya nahi". Neeche wahi approach code mein:
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>SwipeToDelete.test.tsx (testing the callback, not the animation)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { render, screen, fireEvent } <span class="tok-kw">from</span> <span class="tok-str">"../test-utils/render"</span>; <span class="tok-com">// section 9.1 wala custom render — gesture-handler root chahiye hoga</span>
+<span class="tok-kw">import</span> { SwipeToDelete } <span class="tok-kw">from</span> <span class="tok-str">"./SwipeToDelete"</span>; <span class="tok-com">// ch.5 wala component jo pan gesture pe delete trigger karta hai</span>
+
+<span class="tok-fn">it</span>(<span class="tok-str">"calls onDelete when the delete button is pressed"</span>, () => { <span class="tok-com">// gesture ki jagah, exposed testID button ko test kar rahe hain</span>
+  <span class="tok-kw">const</span> onDelete = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(); <span class="tok-com">// fake callback, assert karne ke liye ki wo call hua ya nahi</span>
+  <span class="tok-fn">render</span>(<span class="tok-tag">&lt;SwipeToDelete</span> <span class="tok-attr">onDelete</span>=<span class="tok-punc">{</span>onDelete<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>Item 1<span class="tok-tag">&lt;/SwipeToDelete&gt;</span>); <span class="tok-com">// render kiya, item text bhi pass kiya</span>
+
+  <span class="tok-com">// NOTE: Pan gesture ko RNTL mein reliably simulate karna mushkil/flaky hai (native gesture-handler internals),</span>
+  <span class="tok-com">// isliye component mein ek "hidden" testID-wala delete trigger expose karna practical hai — jise gesture</span>
+  <span class="tok-com">// swipe complete hone pe internally wahi function call karta hai jo ye button bhi call karta hai</span>
+  <span class="tok-fn">fireEvent</span>.<span class="tok-fn">press</span>(screen.<span class="tok-fn">getByTestId</span>(<span class="tok-str">"delete-trigger"</span>)); <span class="tok-com">// wahi internal handler trigger kiya jo swipe-threshold cross hone pe chalta</span>
+
+  <span class="tok-fn">expect</span>(onDelete).<span class="tok-fn">toHaveBeenCalledTimes</span>(<span class="tok-num">1</span>); <span class="tok-com">// assert — LOGIC (callback fire hua) verify hua, VISUAL animation nahi</span>
+}); <span class="tok-com">// test close</span></code></pre>
+      </div>
+
+      <p>
+        Actual pan gesture ke "kitna swipe hua, threshold kaisi feel hoti hai" wala experience — wo Maestro E2E
+        ke through real device/simulator pe (real touch events ke saath) verify karo, kyunki wahan asli gesture
+        recognizer aur asli animation dono chal rahe hote hain. Yahi teen-layer split hai: <strong>unit/component
+        test se logic verify karo, E2E se real feel verify karo, aur visual value assertions ko chhod do.</strong>
+      </p>
+
+      <h3 style="margin-top:28px;">9.3 Visual Regression Testing</h3>
+
+      <p>
+        Visual regression testing ka concept simple hai: component/screen ka ek rendered <strong>image</strong>
+        capture karo (baseline/reference screenshot), aur future runs mein naya screenshot le ke pixel-by-pixel
+        (ya perceptual diff algorithm se) baseline ke against compare karo. Agar difference threshold se zyada hai,
+        test fail hota hai aur ek visual diff dikhata hai — ye catch karta hai wo bugs jo <em>functionally</em>
+        sahi hain (koi crash nahi, koi wrong data nahi) lekin <em>visually</em> galat hain — jaise ek padding change
+        se layout shift, ya ek color token galat map ho jaana.
+      </p>
+
+      <table>
+        <thead><tr><th>Tool/Approach</th><th>Kaam karta hai kaise</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Chromatic / Percy-style services</strong></td><td>Storybook (ya component previews) ko cloud pe render karke, cross-browser/device baseline snapshots maintain karte hain, PR pe visual diff review UI dete hain</td></tr>
+          <tr><td><strong>Maestro screenshot testing</strong></td><td>E2E flow ke beech mein <code>takeScreenshot</code>/<code>assertVisible</code> ke saath real device/simulator pe screenshots leta hai, running app ka actual visual state capture karta hai</td></tr>
+          <tr><td><strong>jest-image-snapshot</strong></td><td>Jest ke andar hi image-diffing matcher add karta hai, lekin RN mein rendering environment (Node) real UI paint nahi karta, isliye typically ek native/E2E layer ke saath combine hota hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Trade-off — powerful lekin noisy ho sakta hai</div>
+        <p>
+          Visual regression testing bahut effective hai unintended visual changes catch karne mein, lekin agar
+          carefully maintain na kiya jaaye toh <strong>flaky</strong> ho jaata hai — different CI runners pe font
+          rendering, anti-aliasing, ya even OS-level date/time widgets thoda different pixels render kar sakte
+          hain, jisse "false positive" diffs aate rehte hain jo actual regression nahi hain. Isse team dheere-dheere
+          diffs ko bina dekhe approve karne lagti hai (jaise snapshot tests wala anti-pattern jo humne upar dekha),
+          jisse tool ki poori value khatam ho jaati hai. Practical mitigation: har CI run same fixed runner/OS
+          version use kare (consistency ke liye), threshold ko thoda tolerant rakho (jaise 0.1% pixel diff allowed),
+          aur is technique ko sirf high-value, visually-critical screens (checkout, onboarding, design-system
+          components) pe use karo — poori app pe nahi.
+        </p>
+      </div>
+
+      <h3 style="margin-top:28px;">9.4 Performance Testing / Profiling in CI</h3>
+
+      <p>
+        Ab tak humne sirf <em>functional correctness</em> test ki hai — "kya sahi output aaya". Ek senior-level
+        test strategy mein ek aur dimension hoti hai: <strong>performance regression detection</strong> — kya ek
+        naya PR app ko slow bana raha hai, bina kisi functional bug ke. Ye especially important hai kyunki
+        performance regressions (extra re-renders, ek heavy computation jo render path mein aa gayi) aksar functional
+        tests pass ho jaate hain kyunki output sahi hai, sirf slow hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Reassure — render performance ko CI mein track karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { measurePerformance } <span class="tok-kw">from</span> <span class="tok-str">"reassure"</span>; <span class="tok-com">// Reassure — Callstack ki library jo render performance ko baseline ke against track karti hai</span>
+<span class="tok-kw">import</span> { ProductList } <span class="tok-kw">from</span> <span class="tok-str">"./ProductList"</span>; <span class="tok-com">// jo component profile karna hai (jaise ek bada FlatList wala screen)</span>
+
+<span class="tok-fn">test</span>(<span class="tok-str">"ProductList render performance"</span>, <span class="tok-kw">async</span> () => { <span class="tok-com">// Reassure ka test normal Jest test jaisa hi dikhta hai</span>
+  <span class="tok-kw">await</span> <span class="tok-fn">measurePerformance</span>(<span class="tok-tag">&lt;ProductList</span> <span class="tok-attr">items</span>=<span class="tok-punc">{</span>mockItems<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>); <span class="tok-com">// component ko kai baar render karta hai aur render duration measure karta hai</span>
+}); <span class="tok-com">// test close — Reassure current run ko pichhli baseline (main branch) se compare karega</span></code></pre>
+      </div>
+
+      <p>
+        CI mein ye typically main branch ke against ek baseline run karke store hota hai, aur har PR pe naya run
+        us baseline se statistically compare hota hai (mean render duration ka difference, with noise tolerance).
+        Agar koi PR render time ko significantly badha deta hai, Reassure PR comment mein flag kar deta hai —
+        exactly jaise functional test failure flag hota hai, bas metric "sahi/galat" ki jagah "fast/slow" hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — performance testing ko "nice to have" mat samjho</div>
+        <p>
+          Bade product teams mein app startup time aur interaction responsiveness directly retention/revenue se
+          correlate karte hain (well-documented industry data hai iske baare mein). Functional tests ye guarantee
+          nahi karte ki app <em>fast</em> hai — sirf ye guarantee karte hain ki wo <em>sahi</em> hai. Performance
+          regressions chhote-chhote PRs mein slowly accumulate hote hain (death by a thousand cuts) jab tak koi
+          user complain na kare "app slow ho gaya hai" — us waqt tak root cause dhoondhna bahut mushkil ho jaata
+          hai kyunki 50 PRs ke beech kahin regression aaya tha. CI mein ek continuous performance baseline
+          maintain karna is problem ko wahi PR pe hi catch kar leta hai jahan wo introduce hui thi — bilkul
+          functional test failure ki tarah, jaldi aur cheaply.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">10. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Neeche kuch questions hain jo senior/staff-level RN interviews mein testing depth judge karne ke liye
+        poochhe jaate hain — philosophy, trade-offs, debugging scenarios, aur practical implementation, sab mix
+        kiya hai.
+      </p>
+
+      <h3>Q1. React Native Testing Library components ke internal state/instance ko query karne se actively discourage kyun karti hai? Underlying testing philosophy kya hai?</h3>
+      <p>
+        RNTL jaan-boojhkar <code>wrapper.state()</code> ya <code>instance()</code> jaisi APIs provide nahi karti
+        (jo Enzyme provide karta tha, RNTL ka predecessor). Philosophy ye hai: <strong>tests ko component ke
+        implementation se decouple hona chahiye, aur sirf uske user-facing contract se couple hona chahiye.</strong>
+        Ek user (ya screen reader) ko kabhi pata nahi hota ki component <code>useState</code> use kar raha hai ya
+        <code>useReducer</code>, ya ki internal variable ka naam kya hai — unhe sirf itna dikhta hai ki screen pe
+        kya text/element hai aur wo usse kaise interact kar sakte hain. Agar tests implementation detail ko test
+        karte hain, toh <em>har</em> refactor (chahe behavior same rahe) tests todega — jo developers ko refactoring
+        se hi darwa deta hai ("tests todenge" ka fear), jo bilkul opposite hai testing ka actual purpose hone ke.
+        RNTL ka model — <code>getByText</code>, <code>getByRole</code>, <code>getByTestId</code> — force karta hai
+        ki test sirf wahi assert kare jo genuinely observable/actionable hai, jisse test suite refactor-resistant
+        aur regression-focused dono banti hai.
+      </p>
+
+      <h3>Q2. Ek naye RN feature ke liye unit vs E2E tests ka right ratio kaise decide karogi, aur kyun?</h3>
+      <p>
+        Ye decision feature ki nature pe depend karta hai, ek fixed formula nahi hai — lekin decision framework
+        ye hoga: <strong>pehle pucho ki failure ka cost/likelihood kya hai, aur wo layer kaunsa hai jahan bug
+        sabse cheaply aur reliably catch ho sakta hai.</strong> Pure business logic (pricing calculation, form
+        validation rules, data transformation) — ye 100% unit-testable hai, koi rendering involve nahi, isliye
+        yahan heavy unit coverage lagao (fast feedback, zero flakiness). Component-level interaction (button dabane
+        pe sahi callback fire hona, conditional rendering) — RNTL se cover karo, kyunki real user-perspective
+        interaction verify karna zaroori hai lekin native build ki zaroorat nahi. E2E — sirf tab jab ek flow
+        <strong>multiple screens/systems ko cross</strong> karta hai jinka integration hi risk hai (login → token
+        storage → protected route redirect, ya payment flow jahan backend + native SDK dono involve hain) — aur
+        wo bhi sirf "must never break" journeys ke liye, kyunki E2E cost (native build + flakiness) sabse zyada
+        hai. Practically main aim karta hoon: 70% unit, 20% component/integration, 10% E2E — lekin ye ratio feature
+        ki risk profile ke hisaab se shift hota hai, ratio khud goal nahi hai, confidence-per-cost optimize karna
+        goal hai.
+      </p>
+
+      <h3>Q3. Tumhara E2E test suite flaky hai aur team "delete kar do" bol raha hai — kaise diagnose karogi ki problem tests mein hai ya app mein, aur plan kya hoga?</h3>
+      <p>
+        Sabse pehle main flaky tests ko delete karne se <em>mana</em> karunga bina root-cause diagnose kiye —
+        kyunki flakiness kabhi kabhi ek <strong>real, intermittent bug</strong> ko expose kar rahi hoti hai (race
+        condition, unhandled promise rejection), aur test delete karna sirf symptom hide karta hai. Diagnosis plan:
+      </p>
+      <ol>
+        <li><strong>Failure logs categorize karo</strong> — kya failure hamesha ek hi step pe ho raha hai (specific
+        element/assertion), ya random hai? Consistent failure point ek real timing issue point karta hai.</li>
+        <li><strong>Fixed sleeps dhoondo</strong> — agar YAML/test code mein <code>sleep(N)</code> jaisi fixed
+        waits hain (na ki <code>extendedWaitUntil</code>/<code>waitFor</code>), ye sabse common flakiness source
+        hai — CI runner slow hone pe fixed wait kaafi nahi padta.</li>
+        <li><strong>Local vs CI reproduce karo</strong> — agar test locally 100% pass hoti hai lekin CI pe fail,
+        suspect resource contention (CI runner underpowered/shared) ya environment difference (different simulator
+        OS version).</li>
+        <li><strong>Failure rate track karo</strong> — pichhle 20-30 CI runs ka failure rate nikaalo per test. Jo
+        tests 20%+ fail rate pe hain unhe priority pe fix karo, baaki ko temporarily quarantine (skip, but tracked
+        ticket ke saath) karo — poore suite ko delete karne se bahut better hai selective quarantine.</li>
+        <li><strong>App-side bug ka signal</strong> — agar failure ek genuine race condition dikhata hai (jaise
+        button 2 baar rapid-tap hone pe double-submit ho raha hai), ye actually production mein bhi hoga — is case
+        mein test "flaky" nahi hai, app buggy hai, aur test ne apna kaam kiya.</li>
+      </ol>
+      <p>
+        Team ko main ye pitch karta hoon: "delete karna" long-term mein zyada expensive hai kyunki wahi regressions
+        wapas production mein pahunchengi jo E2E catch kar raha tha — instead ek focused 1-2 din ka investigation
+        sprint karo flaky tests fix/quarantine karne ke liye, phir suite ko trust-worthy state mein wapas lao.
+      </p>
+
+      <h3>Q4. Tumne khud ek custom native module banaya hai (Expo Modules API ya TurboModule) — usse unit tests ke liye kaise mock karogi, jab wo Node environment mein exist hi nahi karta?</h3>
+      <p>
+        Approach same hai jo third-party native modules ke liye use karte hain (section 3), lekin apne module ke
+        liye tumhe khud decide karna hota hai ki mock <em>kitna</em> realistic hona chahiye. Steps:
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>__mocks__/my-custom-native-module.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Jest apne aap ye file pick karega jab bhi "my-custom-native-module" import ho aur jest.mock() call ho</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> getBatteryLevel = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>(() =&gt; <span class="tok-com">// real module ka native function, yahan fake version</span>
+  <span class="tok-fn">Promise</span>.<span class="tok-fn">resolve</span>(<span class="tok-num">0.75</span>) <span class="tok-com">// default fake value — 75% battery, deterministic test data</span>
+); <span class="tok-com">// getBatteryLevel mock close</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> addBatteryListener = <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>((callback) =&gt; { <span class="tok-com">// event-listener wala native API mock kar rahe hain</span>
+  <span class="tok-com">// real device pe ye native event emitter subscribe karta; test mein hum khud control karte hain kab callback chale</span>
+  <span class="tok-kw">return</span> { remove: <span class="tok-fn">jest</span>.<span class="tok-fn">fn</span>() }; <span class="tok-com">// real API jaisa hi ek "subscription" object return karo jisme remove() ho</span>
+}); <span class="tok-com">// addBatteryListener mock close</span></code></pre>
+      </div>
+      <p>
+        Important principle: mock ko <strong>real module ke exact same shape/API contract</strong> follow karna
+        chahiye (same function names, same return types/Promise shape) — taaki jo code is module ko consume karta
+        hai, wo bina kisi change ke test aur production dono mein kaam kare. Main apne native modules ke liye
+        mock ko module ke saath hi ship karta hoon (<code>my-module/jest-mock.ts</code>) taaki dusre teams jo is
+        module ko use karte hain, unhe khud mock likhna na pade — ye same "shared test-utils" principle hai jo
+        section 9.1 mein render utility ke liye use kiya. Agar module ka behavior test ke liye critical hai (jaise
+        edge case: "battery listener fire hone pe UI update ho"), main mock ko controllable banata hoon — jaise
+        <code>addBatteryListener</code> ka mock ek module-level array mein saare registered callbacks store kare,
+        aur test ek helper function (<code>__triggerBatteryChange(0.1)</code>) call karke unhe manually fire kar
+        sake.
+      </p>
+
+      <h3>Q5. Snapshot testing ke baare mein tumhara stance kya hai — kab use karogi, kab avoid karogi?</h3>
+      <p>
+        Snapshot tests (<code>toMatchSnapshot()</code>) mera default choice nahi hain kyunki (jaisa section 8 mein
+        discuss kiya) wo "kuch change hua" batate hain, "sahi change hua ya nahi" nahi — aur team habitually
+        <code>--updateSnapshot</code> chala deti hai bina diff review kiye, jisse wo signal-less ho jaate hain. Main
+        unhe specifically use karta hoon jab output ka <strong>exact structure freeze</strong> karna genuinely
+        goal ho — jaise ek design-system component library ka public API shape, ya ek complex serialized object
+        (API response transformer ka output) jahan manual assertions likhna impractical hoga. Har baaki case mein
+        (component behavior, user interaction) main explicit <code>expect(screen.getByText(...))</code> jaisi
+        targeted assertions prefer karta hoon — kyunki failure message directly batata hai <em>kya</em> galat hai,
+        jabki snapshot diff sirf ek text/JSON dump deta hai jise developer ko manually interpret karna padta hai.
+      </p>
+
+      <h3>Q6. Ek component jo <code>AsyncStorage</code> se data read karta hai aur render pe conditionally kuch dikhata hai — usse test karte waqt kya-kya edge cases cover karogi?</h3>
+      <p>
+        Main teen buckets mein sochta hoon: <strong>(1) happy path</strong> — data mila aur sahi shape mein hai,
+        component sahi render hua. <strong>(2) empty/first-time state</strong> — <code>AsyncStorage.getItem()</code>
+        <code>null</code> return karta hai (naya user, kabhi data save nahi hua) — component ko crash nahi karna
+        chahiye, ek sensible default/empty-state dikhana chahiye. <strong>(3) malformed data</strong> — agar
+        <code>AsyncStorage</code> mein corrupt JSON hai (app crash beech mein hua tha jab write ho raha tha, ya
+        app version update se schema change hua), <code>JSON.parse()</code> throw karega — component ko is case
+        mein bhi gracefully handle karna chahiye (try/catch + fallback), na ki white-screen crash. Ye teesra case
+        aksar miss ho jaata hai lekin production mein sabse zyada crash reports isi se aate hain — is liye ek
+        senior test suite mein explicitly ek test hona chahiye jo <code>AsyncStorage</code> ko intentionally
+        invalid JSON return karne ke liye mock kare aur assert kare ki app crash nahi hoti.
+      </p>
+
+      <h3>Q7. CI mein Jest tests toh fast hain, lekin Maestro E2E suite grow karte-karte 25 minutes le raha hai — is bottleneck ko kaise address karogi?</h3>
+      <p>
+        Pehla step: measure karo ki time kahan ja raha hai — build time (native build banane mein) vs actual
+        flow-execution time. Agar build time bottleneck hai, solution hai <strong>build artifact ko cache/reuse
+        karna</strong> — agar us PR mein native code change hi nahi hua (sirf JS/TS), toh purana build hi reuse
+        karo (Expo Update ke through JS bundle push kiya ja sakta hai us build pe, agar CI setup allow kare) —
+        naya native build har PR pe zaroori nahi. Agar execution time bottleneck hai, solutions: <strong>flows ko
+        parallelize karo</strong> (Maestro Cloud ya multiple simulators pe flows split karke ek saath chalao, na
+        ki sequentially), <strong>flow scope narrow karo</strong> (kuch E2E flows actually component-level integration
+        tests ho sakte the — unhe RNTL mein migrate karke E2E suite se hata do), aur <strong>redundant setup steps
+        eliminate karo</strong> (agar har flow "launchApp → login" se shuru hota hai, ek shared "pre-authenticated"
+        app state/deep-link se seedha relevant screen pe pahuncho, poora login flow repeat mat karo har baar). Goal
+        hai suite ko itna fast rakhna ki team use ignore/skip karne ka temptation na ho.
+      </p>
+
+      <h3>Q8. Testing pyramid ke against ek "testing trophy" (Kent C. Dodds ka model, jisme integration tests sabse zyada weight lete hain) ka argument sunaogi kya, aur RN ke liye kaunsa zyada applicable hai?</h3>
+      <p>
+        Testing trophy ka core argument ye hai: pure unit tests (isolated functions) aksar itni "confidence per
+        effort" nahi dete jitna integration tests dete hain, kyunki real bugs usually components ke <em>beech ke
+        interaction</em> mein hote hain, isolated logic mein nahi — isliye trophy shape mein integration layer
+        sabse mota hota hai, unit sabse patla. RN context mein main ye view partially agree karta hoon: RNTL wale
+        "component/integration" tests (jo multiple child components + hooks + context ko ek saath render karke
+        test karte hain) genuinely high confidence-to-cost ratio dete hain, isliye main bhi apna suite unki taraf
+        weighted rakhta hoon. Lekin RN mein ek extra factor hai jo web mein utna nahi hota: <strong>native module
+        boundary</strong> — kaafi saara "integration risk" native bridge/JSI ke through aata hai (permissions,
+        camera, storage), jo Jest/RNTL layer bilkul bhi nahi cover kar sakta chahe wo integration-style ho ya nahi
+        — us risk ko sirf E2E cover karta hai. Isliye practically main pyramid aur trophy dono se ek hybrid use
+        karta hoon: unit tests sirf genuinely-isolated pure logic ke liye rakho (thin layer, jaisa pyramid kehta
+        hai), integration/component tests ko sabse mota layer banao (jaisa trophy kehta hai), aur E2E ko RN-specific
+        native-boundary risk ke liye reserve karo.
+      </p>
+
+      <h3>Q9. Tum ek naye developer ko onboard kar rahi ho jo apna pehla PR bhej raha hai bina kisi test ke, aur kehta hai "manual QA kar li hai, feature kaam kar raha hai". Kaise respond karogi?</h3>
+      <p>
+        Main pehle acknowledge karunga ki manual QA valuable hai — lekin uska scope limited hai: wo sirf ek point-in-time
+        verification deta hai, ye guarantee nahi deta ki <em>future</em> changes (kisi aur developer ke, 3 mahine
+        baad) is feature ko silently todenge nahi. Test suite ka asli purpose hi ye "regression safety net" hai, na
+        ki "feature abhi kaam karta hai" prove karna — wo toh manual QA se bhi pata chal jaata hai. Main unhe
+        explain karunga ki minimum bar kya hona chahiye is feature ke liye: agar pure logic hai, ek unit test;
+        agar user-facing component hai, ek RNTL test jo core interaction cover kare (happy path + ek edge case);
+        aur agar ye ek critical flow hai (payment, auth), suggest karunga ki Maestro flow mein bhi add karein.
+        Main isse blocking requirement banaunga PR merge karne se pehle (via CI check), lekin pairing offer
+        karunga test likhne mein agar wo naye hain RNTL/Jest patterns se — goal hai standard maintain karna bina
+        onboarding experience ko harsh banaye.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="06-expo-ui.html">
+          <div class="label">← Previous</div>
+          <div class="title">Expo UI</div>
+        </a>
+        <a class="next" href="08-push-notifications.html">
+          <div class="label">Next →</div>
+          <div class="title">Push Notifications</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

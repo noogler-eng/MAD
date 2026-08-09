@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Push Notifications — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link active" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Push Notifications</div>
+      <div class="progress-pill">Chapter 8 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Expo Notifications · FCM · APNs · TypeScript</span>
+      <h1>Push Notifications — Architecture, Tokens &amp; Delivery</h1>
+      <p class="subtitle">
+        Push notifications sabse "magical" lagne wali feature hai jab tak tumhe pata nahi hota ki neeche kya ho
+        raha hai — phir ye sabse zyada gotcha-heavy feature ban jaati hai. Is chapter mein hum poora path dekhenge:
+        tumhare backend se leke Apple/Google ke push infra tak, phir device tak, aur wahan se app ke andar tak.
+        Saath mein token security, FCM internals, aur real production gotchas bhi cover karenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#architecture-overview">1. Push Notifications Architecture Overview</a></li>
+          <li><a href="#comparison">2. Expo Notifications vs OneSignal vs Raw FCM/APNs</a></li>
+          <li><a href="#permission-flows">3. Permission Flows (iOS vs Android)</a></li>
+          <li><a href="#token-registration">4. Token Registration &amp; Backend Integration</a></li>
+          <li><a href="#fcm-internals">5. Firebase Cloud Messaging (FCM) Internals</a></li>
+          <li><a href="#handling-states">6. Foreground, Background &amp; Killed States</a></li>
+          <li><a href="#rich-notifications">7. Rich Notifications (iOS Notification Service Extension)</a></li>
+          <li><a href="#onesignal-integration">8. OneSignal Integration</a></li>
+          <li><a href="#gotchas">9. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">11. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="architecture-overview" style="border-top:none; padding-top:0; margin-top:28px;">1. Push Notifications Architecture Overview</h2>
+
+      <p>
+        Sabse pehla mental model fix karo: <strong>tumhara app kabhi bhi direct kisi doosre device ko notification
+        "send" nahi karta, aur tumhara backend server bhi kabhi seedha kisi user ke phone ko notification "push"
+        nahi karta.</strong> Har notification hamesha OS vendor ke apne push infrastructure se hoke guzarti hai —
+        iOS ke liye Apple ka <strong>APNs</strong> (Apple Push Notification service), Android ke liye Google ka
+        <strong>FCM</strong> (Firebase Cloud Messaging).
+      </p>
+
+      <p>
+        Iska reason simple hai: jab app <em>killed</em> ho ya background mein ho, tumhara app ka JS process
+        already band ho chuka hai — koi socket open nahi hai, koi listener chal nahi raha. Agar har app apna khud
+        ka persistent connection maintain karta backend se (jaise ek permanent WebSocket), toh phone ki battery
+        minutes mein khatam ho jaati kyunki radio (cellular/wifi chip) ko baar-baar wake karna padta. Iski jagah
+        OS ek hi <strong>system-level persistent connection</strong> maintain karta hai apne push service se
+        (APNs/FCM) — chahe 100 apps installed ho ya 5, connection ek hi rehta hai, battery cost shared hoti hai.
+        Jab bhi koi notification aati hai, OS us single connection pe receive karta hai aur phir target app ko
+        specifically wake karta hai (chahe wo killed hi kyun na ho) — bas notification deliver karne ke liye,
+        poora app process launch kiye bina.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Full delivery path</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">Your Backend Server</span>
+<span class="tok-com">        │</span>
+<span class="tok-com">        │  (1) "send notification to token X" ka HTTPS request</span>
+<span class="tok-com">        ▼</span>
+<span class="tok-com">Expo Push Service   ──OR──   Direct FCM API   ──OR──   Direct APNs API</span>
+<span class="tok-com">        │                                                                </span>
+<span class="tok-com">        │  (2) Expo internally isko FCM (Android) ya APNs (iOS) ko forward karta hai</span>
+<span class="tok-com">        ▼</span>
+<span class="tok-com">Google FCM (Android)                    Apple APNs (iOS)</span>
+<span class="tok-com">        │                                        │</span>
+<span class="tok-com">        │  (3) OS-level persistent connection se device tak</span>
+<span class="tok-com">        ▼                                        ▼</span>
+<span class="tok-com">Android OS (Google Play Services)       iOS OS (springboard/daemon)</span>
+<span class="tok-com">        │                                        │</span>
+<span class="tok-com">        │  (4) OS app ko wake karta hai (even if killed) aur notification tray mein dikhata hai</span>
+<span class="tok-com">        ▼                                        ▼</span>
+<span class="tok-com">Your App (expo-notifications listeners fire karte hain)</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo — step (2) mein "Expo Push Service" ek <strong>optional proxy layer</strong> hai jo tumhare
+        liye FCM aur APNs dono ke alag-alag payload formats, auth mechanisms aur retry logic ko ek single unified
+        API ke peeche abstract kar deta hai. Tum chaaho toh Expo ko skip karke seedha FCM/APNs se baat kar sakte
+        ho — lekin tab tumhe khud dono platforms ke alag payload shapes, auth tokens, aur error handling likhni
+        padegi. Ye trade-off agla section mein detail se dekhenge.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Ye poora architecture isliye zaroori hai kyunki <strong>battery efficiency aur reliability sirf OS-level
+          se hi guarantee ho sakti hai</strong>. Third-party app-level solution (jaise custom polling ya persistent
+          socket) na toh reliable hoga jab app killed ho, na hi battery-friendly hoga jab app background mein ho.
+          Yahi wajah hai ki Apple/Google dono ne apna khud ka push infra banaya aur third-party apps ko force
+          karte hain isi ke through jaana — ye koi arbitrary restriction nahi hai, ye ek fundamental OS design
+          decision hai jo poore device ke battery/network ko optimize karta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="comparison">2. Expo Notifications vs OneSignal vs Raw FCM/APNs</h2>
+
+      <p>
+        Teen options hain notification bhejne ke liye, aur senior dev ka kaam hai sahi trade-off pick karna based
+        on team size, feature needs, aur budget — na ki hamesha "sabse powerful" wala uthana.
+      </p>
+
+      <div class="table">
+        <table>
+          <thead>
+            <tr><th>Option</th><th>Complexity</th><th>Features</th><th>Kab use karo</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Expo Notifications</strong></td>
+              <td>Sabse kam — <code>expo-notifications</code> package + Expo ka push service</td>
+              <td>Basic send/receive, scheduling, badges — Expo Application Services (EAS) ke saath tight integration</td>
+              <td>Most apps ke liye default choice. MVP, startups, jab tak tumhe heavy analytics/segmentation nahi chahiye</td>
+            </tr>
+            <tr>
+              <td><strong>OneSignal</strong></td>
+              <td>Medium — apna SDK add karna padta hai, apna dashboard setup</td>
+              <td>Rich analytics, A/B testing, audience segmentation, in-app messaging, drip campaigns</td>
+              <td>Jab marketing/growth team ko dashboard chahiye bina engineering involvement ke, ya complex segmentation campaigns chalani hain</td>
+            </tr>
+            <tr>
+              <td><strong>Raw FCM/APNs</strong></td>
+              <td>Sabse zyada — khud dono platforms ka payload format, auth, retries, error handling likhna padta hai</td>
+              <td>Full control — koi bhi custom feature, koi rate limit nahi (apni FCM/APNs quota ke andar), koi third-party dependency nahi</td>
+              <td>Bahut large-scale apps, ya jab compliance/data-residency requirements third-party proxy allow nahi karti</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Expo Notifications ke saath ek practical limit yaad rakhni chahiye — Expo push service pe rate limits
+        hain (roughly bulk sends chunks mein bhejni padti hain, ~100 notifications per request), aur ye ek
+        additional hop hai (tumhara server → Expo → FCM/APNs) jo thoda extra latency add karta hai (usually
+        negligible, but at massive scale it matters). In-most apps ke liye ye trade-off completely acceptable hai
+        kyunki dev velocity ka fayda bahut zyada hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Senior dev ka default answer: <strong>Expo Notifications se start karo</strong>. Jab tumhe actually
+          feel ho ki marketing team ko segmentation/campaign dashboard chahiye ya scale itni badh gayi hai ki
+          Expo ka proxy layer bottleneck ban raha hai — tabhi OneSignal ya raw FCM pe migrate karo. Premature
+          optimization yahan bhi utni hi galat hai jitni kahin aur.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="permission-flows">3. Permission Flows (iOS vs Android)</h2>
+
+      <p>
+        Dono platforms pe permission model alag hai, aur ye difference recently aur bhi zyada important ho gaya
+        hai:
+      </p>
+
+      <ul>
+        <li>
+          <strong>iOS:</strong> Hamesha se explicit runtime permission prompt chahiye hota hai <em>kisi bhi</em>
+          notification dikhane se pehle — <code>requestPermissionsAsync()</code> call karke user se manually
+          poochna padta hai. Agar user deny kar de, koi notification kabhi nahi dikhegi jab tak wo Settings app
+          mein jaake manually enable na kare.
+        </li>
+        <li>
+          <strong>Android (13 se pehle, API 32 aur neeche):</strong> Permission automatically granted hoti thi —
+          koi prompt nahi dikhta tha, app install hote hi notifications kaam karti thi.
+        </li>
+        <li>
+          <strong>Android 13+ (API 33+):</strong> Ab yahan bhi <code>POST_NOTIFICATIONS</code> naam ka ek runtime
+          permission chahiye — bilkul iOS jaisa explicit prompt. Ye ek <strong>bahut common gotcha</strong> hai
+          jab team purane Android behavior ke assumption pe code likhti hai aur newer devices pe silently
+          notifications nahi dikhti kyunki permission hi nahi maanga gaya.
+        </li>
+      </ul>
+
+      <p>
+        UX ka bhi ek important rule hai: <strong>app launch hote hi</strong> permission mat maango. User ko pata
+        hi nahi ki tumhara app notifications kis cheez ke liye use karega, isliye deny kar dega — aur ek baar deny
+        karne ke baad OS dobara automatically prompt nahi dikhata (user ko khud Settings mein jana padega). Isliye
+        best practice hai — <strong>context ke saath maango</strong>, jaise jab user pehli baar kisi order ko
+        "track" karna chahta hai, tab poocho "order updates ke liye notifications on karo".
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/permissions.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// expo-notifications module — permission aur token APIs dete hain</span>
+<span class="tok-kw">import</span> { Platform } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// Platform check karne ke liye (Android 13+ specific logic ke liye)</span>
+
+<span class="tok-com">// Ye function sirf permission ka CURRENT status check karta hai, bina user ko disturb kiye</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">getNotificationPermissionStatus</span>(): Promise<span class="tok-punc">&lt;</span>Notifications.PermissionStatus<span class="tok-punc">&gt;</span> { <span class="tok-com">// return type: granted | denied | undetermined</span>
+  <span class="tok-kw">const</span> { status } = <span class="tok-kw">await</span> Notifications.<span class="tok-fn">getPermissionsAsync</span>(); <span class="tok-com">// OS se current permission state maang rahe hain (koi prompt nahi aata is call se)</span>
+  <span class="tok-kw">return</span> status; <span class="tok-com">// caller ko raw status wapas de rahe hain, taaki UI decide kar sake prompt dikhana hai ya nahi</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// Ye function ACTUAL prompt dikhata hai — sirf isko tabhi call karo jab user ne context ke saath action liya ho</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">requestNotificationPermission</span>(): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">boolean</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// true = granted, false = denied ya undetermined reh gaya</span>
+  <span class="tok-kw">const</span> { status: existingStatus } = <span class="tok-kw">await</span> Notifications.<span class="tok-fn">getPermissionsAsync</span>(); <span class="tok-com">// pehle check karo — pehle se granted toh dobara mat poocho</span>
+
+  <span class="tok-kw">if</span> (existingStatus === <span class="tok-str">"granted"</span>) { <span class="tok-com">// agar already permission mil chuka hai</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">true</span>; <span class="tok-com">// seedha true return, prompt dikhane ki zaroorat nahi</span>
+  } <span class="tok-com">// if block close</span>
+
+  <span class="tok-kw">const</span> { status: newStatus } = <span class="tok-kw">await</span> Notifications.<span class="tok-fn">requestPermissionsAsync</span>({ <span class="tok-com">// Ab actual OS-level prompt trigger hoga (iOS alert / Android 13+ dialog)</span>
+    ios: { <span class="tok-com">// iOS-specific permission options object</span>
+      allowAlert: <span class="tok-kw">true</span>, <span class="tok-com">// banner/alert dikhane ki permission maang rahe hain</span>
+      allowBadge: <span class="tok-kw">true</span>, <span class="tok-com">// app icon pe badge count dikhane ki permission</span>
+      allowSound: <span class="tok-kw">true</span>, <span class="tok-com">// notification sound play karne ki permission</span>
+    }, <span class="tok-com">// ios options object close</span>
+  }); <span class="tok-com">// requestPermissionsAsync call close</span>
+
+  <span class="tok-kw">return</span> newStatus === <span class="tok-str">"granted"</span>; <span class="tok-com">// boolean return kar rahe hain caller ke liye</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <p>
+        Ab UI level pe context-aware prompting ka example — pehle app ka own custom modal dikhao explain karte
+        hue ki notifications kis kaam ke liye hain, tabhi OS ka actual permission dialog trigger karo:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/NotificationOptInCard.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// local state ke liye useState hook</span>
+<span class="tok-kw">import</span> { View, Text, Pressable } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// basic RN UI primitives</span>
+<span class="tok-kw">import</span> { requestNotificationPermission } <span class="tok-kw">from</span> <span class="tok-str">"../lib/notifications/permissions"</span>; <span class="tok-com">// humara wrapper function jo upar define kiya</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">NotificationOptInCard</span>({ onGranted }: { onGranted: () =&gt; <span class="tok-kw">void</span> }) { <span class="tok-com">// parent ko batane ke liye callback prop</span>
+  <span class="tok-kw">const</span> [dismissed, setDismissed] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// user ne card band kiya ya nahi, uska local state</span>
+
+  <span class="tok-kw">if</span> (dismissed) <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// dismiss ho chuka hai toh kuch bhi render mat karo</span>
+
+  <span class="tok-kw">const</span> handleEnable = <span class="tok-kw">async</span> () =&gt; { <span class="tok-com">// button tap hone pe ye chalega</span>
+    <span class="tok-kw">const</span> granted = <span class="tok-kw">await</span> <span class="tok-fn">requestNotificationPermission</span>(); <span class="tok-com">// ab actual OS prompt fire hoga, context establish ho chuka hai already</span>
+    <span class="tok-kw">if</span> (granted) { <span class="tok-com">// agar user ne allow kiya</span>
+      <span class="tok-fn">onGranted</span>(); <span class="tok-com">// parent ko batao ki ab token registration shuru kar sakte ho</span>
+    } <span class="tok-com">// if block close</span>
+    <span class="tok-fn">setDismissed</span>(<span class="tok-kw">true</span>); <span class="tok-com">// chahe grant ho ya deny, card ko hata do — dobara spam mat karo</span>
+  }; <span class="tok-com">// handleEnable close</span>
+
+  <span class="tok-kw">return</span> ( <span class="tok-com">// JSX return start</span>
+    <span class="tok-tag">&lt;View</span> <span class="tok-attr">style</span>=<span class="tok-punc">{{</span> padding: <span class="tok-num">16</span>, backgroundColor: <span class="tok-str">"#262524"</span>, borderRadius: <span class="tok-num">12</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// card container ka simple styling</span>
+      <span class="tok-tag">&lt;Text</span> <span class="tok-attr">style</span>=<span class="tok-punc">{{</span> color: <span class="tok-str">"#fff"</span>, fontWeight: <span class="tok-str">"600"</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>Order updates chahiye?<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// context wala heading — batata hai KYU chahiye</span>
+      <span class="tok-tag">&lt;Text</span> <span class="tok-attr">style</span>=<span class="tok-punc">{{</span> color: <span class="tok-str">"#b3aca1"</span>, marginVertical: <span class="tok-num">8</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// subtext styling</span>
+        Notifications on karo taaki delivery status turant pata chale. <span class="tok-com">// user-facing reasoning text</span>
+      <span class="tok-tag">&lt;/Text&gt;</span>
+      <span class="tok-tag">&lt;Pressable</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>handleEnable<span class="tok-punc">}</span><span class="tok-tag">&gt;</span> <span class="tok-com">// tap hone pe humara handler chalega</span>
+        <span class="tok-tag">&lt;Text</span> <span class="tok-attr">style</span>=<span class="tok-punc">{{</span> color: <span class="tok-str">"#d97757"</span>, fontWeight: <span class="tok-str">"700"</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>Enable notifications<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">// button label</span>
+      <span class="tok-tag">&lt;/Pressable&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  ); <span class="tok-com">// JSX return end</span>
+} <span class="tok-com">// component function close</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Android 13+ Gotcha</div>
+        <p>
+          Agar tumhara <code>targetSdkVersion</code>/<code>compileSdkVersion</code> 33 ya usse zyada hai (jo Expo
+          SDK ke recent versions default karte hain), toh Android par bhi <code>POST_NOTIFICATIONS</code>
+          permission runtime pe maangna <strong>zaroori</strong> hai — warna notifications silently nahi dikhengi,
+          koi error bhi nahi milega. <code>expo-notifications</code> ka <code>requestPermissionsAsync()</code>
+          internally isko handle karta hai, lekin bahut se developers jo purane Android behavior ke aadi hain,
+          is call ko skip kar dete hain assuming "Android pe toh automatic hota hai" — jo ab sach nahi hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="token-registration">4. Token Registration &amp; Backend Integration</h2>
+
+      <p>
+        Permission milne ke baad, agla step hai <strong>Expo push token</strong> generate karna — ye ek unique
+        string hai jo Expo ke push service ko batata hai "is specific device+app installation ko notification
+        deliver karo". Ye token backend ko bhejna zaroori hai aur logged-in user ke against store karna hai,
+        taaki jab backend ko us user ko notify karna ho, use pata ho kis token pe bhejna hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/register.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// token generate karne ke liye expo-notifications</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Device <span class="tok-kw">from</span> <span class="tok-str">"expo-device"</span>; <span class="tok-com">// physical device check karne ke liye (simulator pe push kaam nahi karta)</span>
+<span class="tok-kw">import</span> Constants <span class="tok-kw">from</span> <span class="tok-str">"expo-constants"</span>; <span class="tok-com">// EAS project ID nikalne ke liye zaroori (managed workflow mein token ke saath chahiye)</span>
+<span class="tok-kw">import</span> { requestNotificationPermission } <span class="tok-kw">from</span> <span class="tok-str">"./permissions"</span>; <span class="tok-com">// humara pehle wala permission wrapper</span>
+
+<span class="tok-com">// Ye function poora registration flow karta hai: permission → token → backend ko save</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">registerForPushNotificationsAsync</span>(authToken: <span class="tok-kw">string</span>): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">string</span> | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// authToken = logged-in user ka session/JWT, backend call authenticate karne ke liye</span>
+  <span class="tok-kw">if</span> (!Device.isDevice) { <span class="tok-com">// simulator/emulator pe real push token nahi milta (khaaskar iOS simulator pe)</span>
+    <span class="tok-fn">console</span>.<span class="tok-fn">warn</span>(<span class="tok-str">"Push notifications sirf physical device pe kaam karte hain"</span>); <span class="tok-com">// dev ko warn kar rahe hain, silent fail nahi</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// null return — caller ko pata chal jaayega registration nahi hua</span>
+  } <span class="tok-com">// if block close</span>
+
+  <span class="tok-kw">const</span> granted = <span class="tok-kw">await</span> <span class="tok-fn">requestNotificationPermission</span>(); <span class="tok-com">// pehle permission confirm karo (agar already granted, turant true aayega)</span>
+  <span class="tok-kw">if</span> (!granted) { <span class="tok-com">// agar user ne deny kar diya</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// token generate karne ka koi matlab nahi, null return</span>
+  } <span class="tok-com">// if block close</span>
+
+  <span class="tok-kw">const</span> projectId = Constants.expoConfig?.extra?.eas?.projectId; <span class="tok-com">// app.json/app.config.ts se EAS project ID nikaal rahe hain</span>
+  <span class="tok-kw">const</span> tokenResponse = <span class="tok-kw">await</span> Notifications.<span class="tok-fn">getExpoPushTokenAsync</span>({ projectId }); <span class="tok-com">// Expo push service se unique token maang rahe hain is project ke liye</span>
+  <span class="tok-kw">const</span> expoPushToken = tokenResponse.data; <span class="tok-com">// actual token string yahan hai, format: "ExponentPushToken[xxxxxxx]"</span>
+
+  <span class="tok-kw">await</span> <span class="tok-fn">savePushTokenToBackend</span>(expoPushToken, authToken); <span class="tok-com">// backend ko bata rahe hain ki is user ka token ye hai</span>
+
+  <span class="tok-kw">return</span> expoPushToken; <span class="tok-com">// caller ko bhi token de rahe hain (debugging/logging ke liye useful)</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// Ye helper backend ke saath actual network call karta hai</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">savePushTokenToBackend</span>(pushToken: <span class="tok-kw">string</span>, authToken: <span class="tok-kw">string</span>): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// return type void — sirf side-effect hai</span>
+  <span class="tok-kw">const</span> response = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"https://api.myapp.com/users/me/push-token"</span>, { <span class="tok-com">// user-specific endpoint, "me" batata hai server-side ki caller khud ke liye update kar raha hai</span>
+    method: <span class="tok-str">"POST"</span>, <span class="tok-com">// naya token register/update karne ke liye POST</span>
+    headers: { <span class="tok-com">// request headers object</span>
+      <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span>, <span class="tok-com">// batata hai body JSON format mein hai</span>
+      <span class="tok-str">"Authorization"</span>: <span class="tok-str">`Bearer ${authToken}`</span>, <span class="tok-com">// logged-in user ka session token — backend isse pehchanega ki request kis user ki hai</span>
+    }, <span class="tok-com">// headers object close</span>
+    body: <span class="tok-fn">JSON</span>.<span class="tok-fn">stringify</span>({ pushToken }), <span class="tok-com">// sirf token bhej rahe hain, user ID NAHI bhej rahe (backend khud auth token se nikalega)</span>
+  }); <span class="tok-com">// fetch call close</span>
+
+  <span class="tok-kw">if</span> (!response.ok) { <span class="tok-com">// agar server ne error status diya (4xx/5xx)</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">`Push token save failed: ${response.status}`</span>); <span class="tok-com">// error throw karo, caller ise catch/log kar sake</span>
+  } <span class="tok-com">// if block close</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Server-Side User Association</div>
+        <p>
+          Notice karo upar ke code mein <code>savePushTokenToBackend</code> function body mein sirf
+          <code>pushToken</code> bhej raha hai, koi <code>userId</code> nahi. Ye jaan-boojh kar hai —
+          <strong>client ko kabhi bhi apna khud ka user ID batane ki authority nahi deni chahiye</strong>. Agar
+          tum client se ek <code>userId</code> field accept karte ho aur backend usi ID ke against token save kar
+          deta hai (bina proper verification ke), toh koi bhi malicious client crafted request bhej ke <em>kisi
+          aur user ke account pe apna push token register</em> kar sakta hai — matlab wo attacker ab us doosre
+          user ko intended notifications ke bajaye khud receive karna shuru kar sakta hai, ya worse, spoofed
+          notifications trigger karwa sakta hai jo genuine lagengi. <strong>Sahi pattern:</strong> backend
+          <code>Authorization</code> header se JWT/session ko verify kare, usi se authenticated user ID nikale
+          (server-side, cryptographically verified), aur token ko sirf <em>usi</em> ID ke against store kare —
+          client-supplied user ID pe kabhi bharosa mat karo.
+        </p>
+      </div>
+
+      <h3>Component mein use karna</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/_layout.tsx (registration trigger)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// mount hote hi registration trigger karne ke liye</span>
+<span class="tok-kw">import</span> { registerForPushNotificationsAsync } <span class="tok-kw">from</span> <span class="tok-str">"../../lib/notifications/register"</span>; <span class="tok-com">// humara registration function</span>
+<span class="tok-kw">import</span> { useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../../context/AuthContext"</span>; <span class="tok-com">// logged-in user aur uska session token nikalne ke liye</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">PushRegistrationEffect</span>() { <span class="tok-com">// small dedicated component jo sirf ye side-effect handle karta hai</span>
+  <span class="tok-kw">const</span> { sessionToken } = <span class="tok-fn">useAuth</span>(); <span class="tok-com">// AuthContext se current session token nikaal rahe hain</span>
+
+  <span class="tok-fn">useEffect</span>(() => { <span class="tok-com">// jab bhi sessionToken available ho (login ho chuka ho)</span>
+    <span class="tok-kw">if</span> (!sessionToken) <span class="tok-kw">return</span>; <span class="tok-com">// abhi login nahi hua, kuch mat karo</span>
+    <span class="tok-fn">registerForPushNotificationsAsync</span>(sessionToken).<span class="tok-fn">catch</span>((err) => { <span class="tok-com">// registration call karo, error ko catch karo taaki app crash na ho</span>
+      <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Push registration failed:"</span>, err); <span class="tok-com">// sirf log karo, user-facing error mat dikhao (non-critical feature)</span>
+    }); <span class="tok-com">// catch close</span>
+  }, [sessionToken]); <span class="tok-com">// sessionToken change hone pe re-run (jaise re-login ke baad naya token generate ho)</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// ye component kuch UI render nahi karta, sirf side-effect ke liye hai</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="fcm-internals">5. Firebase Cloud Messaging (FCM) Internals</h2>
+
+      <p>
+        FCM (Firebase Cloud Messaging) Google ka push delivery infrastructure hai Android devices ke liye — ye
+        wahi persistent OS-level connection hai jo humne architecture section mein dekha. Har Android device jisme
+        Google Play Services installed hai, wo automatically FCM se connected rehta hai.
+      </p>
+
+      <p>
+        Ab yahan confusion hoti hai: <strong>agar hum Expo Notifications use kar rahe hain, toh Firebase project
+        kyun chahiye?</strong> Answer: kyunki <strong>Expo Push Service khud FCM/APNs ka replacement nahi hai —
+        ye ek proxy hai</strong>. Jab tumhara backend Expo ko "notification bhejo" bolta hai, Expo internally
+        Android devices ke liye FCM ki actual API call karta hai (uska server key/service account use karke), aur
+        FCM hi asal mein device tak deliver karta hai. Isliye tumhe apna Firebase project banana padta hai,
+        <code>google-services.json</code> download karke app mein daalna padta hai (ya EAS credentials mein
+        upload karna padta hai), taaki Expo ke paas tumhare project ke liye FCM se baat karne ki authority ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>FCM credential flow (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">1. Firebase Console mein project banao                              // Google ka Firebase project — free tier available</span>
+<span class="tok-com">2. Android app add karo (package name match hona chahiye app.json se) // FCM ko pata chalega kaunsi app ye hai</span>
+<span class="tok-com">3. google-services.json download karo                                // isme FCM sender ID, project config hota hai</span>
+<span class="tok-com">4. EAS credentials mein FCM server key/service account upload karo   // "eas credentials" command se, ya EAS dashboard se</span>
+<span class="tok-com">5. Ab Expo Push Service tumhare project ki taraf se FCM ko call kar sakta hai</span></code></pre>
+      </div>
+
+      <p>
+        iOS ke liye equivalent concept hai — Expo ko tumhare Apple Developer account se ek <strong>APNs auth
+        key</strong> chahiye, jo ek <code>.p8</code> file hoti hai jo tum Apple Developer portal se generate karte
+        ho. Ye key EAS credentials mein upload hoti hai, aur Expo isi key se APNs ko authenticate karke tumhari
+        taraf se push bhejta hai. Bina in credentials ke, Expo Push Service ke paas tumhare specific app ke liye
+        FCM/APNs se baat karne ki permission hi nahi hoti — matlab tokens generate honge, lekin actual delivery
+        fail hogi.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Ye samajhna zaroori hai: <strong>Expo Push Service ek routing/abstraction layer hai, ek independent
+          delivery mechanism nahi</strong>. FCM aur APNs hi asal "last mile" hain jo OS tak notification pahunchate
+          hain. Isliye jab production mein push notifications nahi pahunch rahi hoti, debugging ka sahi order hai:
+          pehle check karo Firebase/APNs credentials sahi se EAS mein configured hain ya nahi, phir Expo push
+          receipt (delivery status) check karo, tabhi app-level code debug karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="handling-states">6. Foreground, Background &amp; Killed States</h2>
+
+      <p>
+        App teen alag states mein ho sakta hai jab notification aati hai, aur har state mein behavior different
+        hota hai:
+      </p>
+
+      <ul>
+        <li><strong>Foreground</strong> (app open, user use kar raha hai) — by default OS notification tray mein
+        kuch nahi dikhata (kyunki user already app mein hai); tumhe khud decide karna padta hai kya dikhana hai,
+        <code>setNotificationHandler()</code> ke through.</li>
+        <li><strong>Background</strong> (app minimize hai but killed nahi) — OS automatically notification tray
+        mein dikhata hai, app ka koi JS code nahi chalta jab tak user tap na kare.</li>
+        <li><strong>Killed</strong> (app process poori tarah band) — same, OS tray mein dikhata hai; tap karne pe
+        OS app ko cold-start karta hai aur phir tumhara listener fire hota hai jaise app abhi launch hua ho.</li>
+      </ul>
+
+      <h3>Foreground behavior configure karna</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/handler.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// handler set karne ke liye expo-notifications</span>
+
+<span class="tok-com">// Ye call app ke entry point (jaise App root file) mein ek baar honi chahiye, module-level pe</span>
+Notifications.<span class="tok-fn">setNotificationHandler</span>({ <span class="tok-com">// batata hai ki foreground mein notification aane pe kya karna hai</span>
+  handleNotification: <span class="tok-kw">async</span> () =&gt; ({ <span class="tok-com">// ye function har incoming notification ke liye call hota hai jab app foreground mein ho</span>
+    shouldShowAlert: <span class="tok-kw">true</span>, <span class="tok-com">// alert/banner dikhao (deprecated naming but still used) — user ko turant dikhe</span>
+    shouldPlaySound: <span class="tok-kw">true</span>, <span class="tok-com">// notification sound bhi bajao</span>
+    shouldSetBadge: <span class="tok-kw">false</span>, <span class="tok-com">// app icon badge count mat badhao (business logic ke hisaab se decide karo)</span>
+  }), <span class="tok-com">// return object close</span>
+}); <span class="tok-com">// setNotificationHandler call close</span></code></pre>
+      </div>
+
+      <p>
+        Yahan senior-level decision ye hai ki foreground mein notification dikhani hi chahiye ya nahi — agar
+        tumhara app ek chat app hai aur user already us chat screen pe hai, toh redundant banner dikhana bura UX
+        hai; is case mein tum notification data ko intercept karke seedha UI update kar sakte ho, banner suppress
+        karke.
+      </p>
+
+      <h3>Tap handling + deep-linking via Expo Router</h3>
+      <p>
+        Jab user notification tap karta hai (background ya killed state se), <code>addNotificationResponseReceivedListener</code>
+        fire hota hai. Yahan hum notification ke data payload se ek route nikaal ke Expo Router ke
+        <code>router.push()</code> se us specific screen tak navigate karte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/NotificationTapHandler.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useRef</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// effect ke liye useEffect, subscription ko store karne ke liye useRef</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// listener register karne ke liye</span>
+<span class="tok-kw">import</span> { useRouter } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>; <span class="tok-com">// deep-link navigate karne ke liye Expo Router ka imperative hook</span>
+
+<span class="tok-com">// Notification payload ka expected shape — backend isi format mein "data" bhejega</span>
+<span class="tok-kw">type</span> NotificationData = { screen?: <span class="tok-kw">string</span>; orderId?: <span class="tok-kw">string</span> }; <span class="tok-com">// optional fields, backend ke payload design ke hisaab se</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">NotificationTapHandler</span>() { <span class="tok-com">// dedicated component, kuch render nahi karta, sirf side-effect ke liye</span>
+  <span class="tok-kw">const</span> router = <span class="tok-fn">useRouter</span>(); <span class="tok-com">// Expo Router ka imperative navigation object</span>
+  <span class="tok-kw">const</span> responseListener = <span class="tok-fn">useRef</span><span class="tok-punc">&lt;</span>Notifications.Subscription<span class="tok-punc">&gt;</span>(); <span class="tok-com">// subscription reference, cleanup ke liye zaroori</span>
+
+  <span class="tok-fn">useEffect</span>(() => { <span class="tok-com">// mount pe listener register karo</span>
+    responseListener.current = Notifications.<span class="tok-fn">addNotificationResponseReceivedListener</span>((response) => { <span class="tok-com">// jab user notification TAP kare tab ye fire hota hai</span>
+      <span class="tok-kw">const</span> data = response.notification.request.content.data <span class="tok-kw">as</span> NotificationData; <span class="tok-com">// backend ne jo custom data bheja tha, wo yahan milta hai</span>
+
+      <span class="tok-kw">if</span> (data.screen === <span class="tok-str">"order-details"</span> &amp;&amp; data.orderId) { <span class="tok-com">// agar payload batata hai ki order details screen pe jaana hai</span>
+        router.<span class="tok-fn">push</span>({ <span class="tok-com">// Expo Router ke object-syntax se navigate kar rahe hain (typed routes ke saath compatible)</span>
+          pathname: <span class="tok-str">"/orders/[id]"</span>, <span class="tok-com">// dynamic route pattern jo app/orders/[id].tsx se match karega</span>
+          params: { id: data.orderId }, <span class="tok-com">// actual order ID pass kar rahe hain params mein</span>
+        }); <span class="tok-com">// push call close</span>
+      } <span class="tok-com">// if block close</span>
+    }); <span class="tok-com">// addNotificationResponseReceivedListener close</span>
+
+    <span class="tok-kw">return</span> () => { <span class="tok-com">// cleanup function — unmount hone pe chalega</span>
+      responseListener.current?.<span class="tok-fn">remove</span>(); <span class="tok-com">// listener ko remove karo, memory leak / duplicate firing avoid karne ke liye</span>
+    }; <span class="tok-com">// cleanup function close</span>
+  }, [router]); <span class="tok-com">// router reference change hone pe re-register (usually stable rehta hai)</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// koi UI nahi, sirf listener attach karne ke liye component hai</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Killed-state se app cold-start hoke agar user seedha kisi deep screen pe navigate ho raha hai (jaise
+          order details), toh ye <strong>bilkul deep linking jaisa hi security consideration</strong> hai jo
+          chapter 4 mein dekha tha — notification ke data payload ko bhi untrusted input ki tarah treat karo.
+          <code>orderId</code> ko backend se validate karwao (ki ye actually logged-in user ka hi order hai) uss
+          screen ke apne data-fetching logic mein, sirf notification payload pe bharosa karke UI mat bana do.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="rich-notifications">7. Rich Notifications (iOS Notification Service Extension)</h2>
+
+      <p>
+        Kabhi socha hai ki kuch apps ki notifications mein image thumbnail bhi dikhta hai (jaise ek chat message
+        ke saath sender ki photo, ya news app mein article ka image)? Ye <strong>iOS Notification Service
+        Extension</strong> se hota hai — ye ek chhota, separate native target hai jo tumhare main app ke saath
+        bundle hota hai. Jab APNs se notification aati hai, iOS pehle isi extension ko chance deta hai payload ko
+        <strong>modify</strong> karne ka — jaise ek remote image URL ko download karke usse notification ke saath
+        attach karna — <em>ispe se pehle</em> ki notification actually user ko dikhe.
+      </p>
+
+      <p>
+        Ye ek genuinely native concept hai — isko Expo Go mein test nahi kar sakte, aur isko banane ke liye ek
+        <strong>native/custom build</strong> chahiye (EAS Build ke through, ya bare workflow). <code>expo-notifications</code>
+        ka config plugin isme partial help karta hai — <code>app.json</code> mein plugin config se kuch setup
+        (jaise entitlements, extension target registration) automatically ho jaata hai, lekin agar tumhe truly
+        custom image-processing logic chahiye extension ke andar, tumhe native Swift code likhna padega — ye is
+        chapter ke scope se bahar hai (native modules chapter 16 mein aur depth milegi), lekin high-level samajhna
+        zaroori hai ki "rich push" ka matlab hai ek extra native target, extra build step, aur Expo Go ki poori
+        exit.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app.json — config plugin mention</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"expo"</span>: <span class="tok-punc">{</span>
+    <span class="tok-attr">"plugins"</span>: [
+      [
+        <span class="tok-str">"expo-notifications"</span>,
+        <span class="tok-punc">{</span>
+          <span class="tok-attr">"icon"</span>: <span class="tok-str">"./assets/notification-icon.png"</span>,
+          <span class="tok-attr">"color"</span>: <span class="tok-str">"#d97757"</span>,
+          <span class="tok-attr">"sounds"</span>: [<span class="tok-str">"./assets/notification-sound.wav"</span>]
+        <span class="tok-punc">}</span>
+      ]
+    ]
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p><strong>Legend</strong> — kyunki JSON mein comment nahi likh sakte, har key ka matlab neeche hai:</p>
+      <ul>
+        <li><code>plugins</code> — Expo config plugins ki list, jo build-time pe native project ko modify karte hain</li>
+        <li><code>"expo-notifications"</code> — is plugin ka naam, jo notification-related native setup (permissions, icons, extension registration) automate karta hai</li>
+        <li><code>icon</code> — Android notification tray mein dikhne wala small monochrome icon path</li>
+        <li><code>color</code> — us icon ka accent color (Android notification UI mein use hota hai)</li>
+        <li><code>sounds</code> — custom notification sound files jo bundle honge aur payload mein reference kiye ja sakte hain</li>
+      </ul>
+
+      <!-- ============================================================ -->
+      <h2 id="onesignal-integration">8. OneSignal Integration</h2>
+
+      <p>
+        Agar decide kiya ki OneSignal chahiye (dashboard/segmentation ke liye), integration bhi seedha hai — apna
+        SDK init karna padta hai app start pe:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/onesignal.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { OneSignal } <span class="tok-kw">from</span> <span class="tok-str">"react-native-onesignal"</span>; <span class="tok-com">// OneSignal ka official React Native SDK import</span>
+
+<span class="tok-com">// Ye function app root mein ek baar call honi chahiye, jitni jaldi ho sake startup pe</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">initializeOneSignal</span>(appId: <span class="tok-kw">string</span>): <span class="tok-kw">void</span> { <span class="tok-com">// appId OneSignal dashboard se milta hai, per-app unique</span>
+  OneSignal.<span class="tok-fn">initialize</span>(appId); <span class="tok-com">// SDK ko is app ID ke saath initialize kar rahe hain — internally FCM/APNs registration khud handle karta hai</span>
+
+  OneSignal.Notifications.<span class="tok-fn">requestPermission</span>(<span class="tok-kw">true</span>); <span class="tok-com">// permission prompt trigger karo — true means "fallback to settings if denied before" jaisa behavior</span>
+
+  OneSignal.Notifications.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"click"</span>, (event) => { <span class="tok-com">// jab user notification click kare, ye listener fire hoga</span>
+    <span class="tok-kw">const</span> data = event.notification.additionalData <span class="tok-kw">as</span> { screen?: <span class="tok-kw">string</span> } | <span class="tok-kw">undefined</span>; <span class="tok-com">// custom data jo dashboard/API se bheja gaya tha</span>
+    <span class="tok-fn">console</span>.<span class="tok-fn">log</span>(<span class="tok-str">"OneSignal notification clicked, data:"</span>, data); <span class="tok-com">// yahan bhi Expo Router se navigate kar sakte ho jaise upar dekha</span>
+  }); <span class="tok-com">// addEventListener close</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// User ko OneSignal mein identify karna — taaki backend/dashboard se targeted send ho sake</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">loginOneSignalUser</span>(externalUserId: <span class="tok-kw">string</span>): <span class="tok-kw">void</span> { <span class="tok-com">// externalUserId = tumhare apne backend ka user ID (jaise DB primary key)</span>
+  OneSignal.<span class="tok-fn">login</span>(externalUserId); <span class="tok-com">// OneSignal ke device record ko is user ID se associate kar deta hai</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <p>
+        Trade-off yahan clear hai: OneSignal SDK bundle size mein kuch add karta hai (native binary size thoda
+        badhta hai), aur ek third-party vendor pe dependency create hota hai (unke uptime/pricing pe bharosa karna
+        padta hai) — lekin badle mein tumhe ek poora dashboard milta hai jahan non-technical team members khud
+        campaigns bana sakte hain, A/B test kar sakte hain, aur delivery analytics dekh sakte hain bina engineering
+        involvement ke. Chhoti team/app ke liye ye overhead justify nahi hota; growth-focused product ke liye
+        aksar worth it hota hai.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">9. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Notifications physical device ke bina test nahi ho sakti</div>
+        <p>
+          Push notifications ke liye <strong>real device</strong> chahiye hota hai zyadatar cases mein.
+          Android emulator pe kaam karta hai <em>agar</em> usme Google Play Services installed hai (har emulator
+          image mein nahi hota — "Google Play" wale images use karo, "Google APIs" wale nahi). iOS Simulator pe
+          push notifications ka support Xcode 14+ (aur newer simulators) mein aaya hai, lekin abhi bhi reliability
+          issues aa sakti hain — production testing hamesha real iPhone pe karo.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Push token invalidate ho sakta hai</div>
+        <p>
+          Expo push token permanent nahi hai — app reinstall, OS-level data clear, ya rarely FCM/APNs side
+          invalidation ki wajah se token change ho sakta hai. Agar tumhara backend purana (dead) token pe bhejta
+          rehta hai, delivery silently fail hogi. Isliye <strong>har app launch pe re-registration call karna
+          best practice hai</strong> (jaise humne <code>PushRegistrationEffect</code> mein kiya) — agar naya token
+          same hi hai toh backend ek simple upsert/no-op kar sakta hai, koi harm nahi; agar different hai toh
+          automatically update ho jaayega.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Permission denied ka silent failure</div>
+        <p>
+          Agar user ne permission deny kar diya, <code>getExpoPushTokenAsync()</code> call fail hoga ya empty
+          token dega — lekin agar tumne error handling properly nahi likhi, ye silently ho jaata hai aur tumhe
+          production mein sirf itna pata chalega ki "kuch users ko notifications nahi mil rahi", debug karna
+          mushkil ho jaata hai. Hamesha explicit fallback UX socho — jaise Settings page mein ek banner "Enable
+          notifications in device settings" jab tumhe pata ho ki user ne pehle deny kiya tha
+          (<code>getPermissionsAsync()</code> se check karke).
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Android Notification Channels missing — sabse common missed setup</div>
+        <p>
+          Android 8 (API 26) se, har notification ek <strong>channel</strong> se belong karni chahiye — channels
+          grouping aur importance level (sound, vibration, priority) define karte hain, aur user OS settings mein
+          per-channel control kar sakta hai (jaise "Order Updates" channel on rakhe but "Promotions" channel off
+          kar de). Agar tumne channel set hi nahi ki, notification ya toh default low-priority channel mein chali
+          jaati hai (silently, bina sound ke) ya kabhi-kabhi dikhti hi nahi. Isko explicitly set karna padta hai:
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/channels.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// channel APIs bhi isi module mein hain</span>
+<span class="tok-kw">import</span> { Platform } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// sirf Android pe channels ka concept hai, iOS pe iski zaroorat nahi</span>
+
+<span class="tok-com">// App startup pe ek baar call karo, permission registration se pehle ya turant baad</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">setupNotificationChannels</span>(): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// return void, sirf setup side-effect hai</span>
+  <span class="tok-kw">if</span> (Platform.OS !== <span class="tok-str">"android"</span>) <span class="tok-kw">return</span>; <span class="tok-com">// iOS pe channels exist hi nahi karte, skip karo</span>
+
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setNotificationChannelAsync</span>(<span class="tok-str">"order-updates"</span>, { <span class="tok-com">// channel ID — backend payload mein bhi yahi ID reference karega</span>
+    name: <span class="tok-str">"Order Updates"</span>, <span class="tok-com">// user-facing naam, Android Settings mein dikhega</span>
+    importance: Notifications.AndroidImportance.HIGH, <span class="tok-com">// high priority — heads-up notification ke saath sound bhi dega</span>
+    vibrationPattern: [<span class="tok-num">0</span>, <span class="tok-num">250</span>, <span class="tok-num">250</span>, <span class="tok-num">250</span>], <span class="tok-com">// vibration timing pattern (ms mein): wait, vibrate, wait, vibrate</span>
+    lightColor: <span class="tok-str">"#d97757"</span>, <span class="tok-com">// LED light color (jin devices mein notification LED hai unke liye)</span>
+  }); <span class="tok-com">// setNotificationChannelAsync call close</span>
+
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setNotificationChannelAsync</span>(<span class="tok-str">"promotions"</span>, { <span class="tok-com">// dusra channel, low-priority marketing content ke liye</span>
+    name: <span class="tok-str">"Promotions"</span>, <span class="tok-com">// user-facing naam</span>
+    importance: Notifications.AndroidImportance.LOW, <span class="tok-com">// low priority — silently tray mein jaayega, koi sound/heads-up nahi</span>
+  }); <span class="tok-com">// setNotificationChannelAsync call close</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — User Opt-Out aur Notification Fatigue</div>
+        <p>
+          Sirf technically notifications bhejna kaafi nahi hai — <strong>respect karo ki user ne kya opt-in kiya
+          hai</strong>. Agar tum permission ek baar mil jaane ke baad har cheez ke liye notification bhejna shuru
+          kar do (marketing, reminders, updates, sab kuch), users bahut jaldi <em>notification fatigue</em> mein
+          chale jaate hain aur ya toh app-level settings se sab off kar dete hain, ya OS-level pe hi app ki
+          notifications completely block kar dete hain (jahan se wapas on karwana bahut mushkil hota hai — user
+          ko manually Settings mein jaana padta hai). Production-grade apps mein hamesha granular preferences
+          do (jaise humne "Order Updates" vs "Promotions" channels alag rakhe), aur backend mein bhi per-category
+          opt-out store karo, sirf ek global "notifications on/off" flag nahi. Ek engaged user jo sirf relevant
+          notifications receive karta hai, unse zyada valuable hai jo sab kuch band kar chuka ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">10. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne "happy path" dekha — permission maango, token lo, notification dikhao. Ye teen advanced
+        patterns hain jo senior-level production apps mein aksar chahiye hote hain, aur interview mein bhi frequently
+        pooche jaate hain kyunki inke andar real distributed-systems thinking hai — reliability, eventual
+        consistency, aur platform constraints ke saath kaam karna.
+      </p>
+
+      <h3>10.1 Silent / Data-Only Push Architecture</h3>
+
+      <p>
+        Har push notification mein ek <strong>visible alert</strong> hona zaroori nahi hai. Ek "silent push" (iOS
+        terminology) ya "data-only message" (FCM terminology) aisi notification hoti hai jisme koi banner, sound
+        ya badge nahi hota — sirf ek data payload hota hai jo <strong>app ko background mein briefly wake karta
+        hai</strong> taaki wo kuch kaam kar sake, jaise: naya data server se sync karna, local cache invalidate
+        karna, ya phir khud decide karna ki is data ke basis pe user ko visible notification dikhani hai ya nahi
+        (jaise "agar naya message current open chat ka nahi hai, tab hi banner dikhao").
+      </p>
+
+      <p>
+        iOS pe ye <code>content-available: 1</code> flag se hota hai APNs payload mein (bina <code>alert</code> key
+        ke) — jab wo receive hoti hai, OS app ko background mein thodi der ke liye launch karta hai aur
+        <code>expo-task-manager</code> ke through registered handler ko call karta hai. Android/FCM pe iska
+        equivalent hai <strong>data-only message</strong> — matlab payload mein sirf <code>data</code> object hai,
+        <code>notification</code> key bilkul absent hai; FCM aisi message ko seedha app ke background handler tak
+        deliver kar deta hai, OS khud koi tray notification generate nahi karta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/silentSync.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> TaskManager <span class="tok-kw">from</span> <span class="tok-str">"expo-task-manager"</span>; <span class="tok-com">// background task ko register/define karne ke liye Expo ka task manager module</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// background notification task register karne ke liye Notifications ka helper</span>
+
+<span class="tok-com">// Task ka ek unique naam define kar rahe hain — module-level constant, kyunki register aur define dono jagah same string chahiye</span>
+<span class="tok-kw">const</span> BACKGROUND_SYNC_TASK = <span class="tok-str">"background-notification-sync"</span>; <span class="tok-com">// arbitrary string ID, sirf tumhare app ke andar unique honi chahiye</span>
+
+<span class="tok-com">// Ye task definition file ke top-level pe honi chahiye (module scope mein), component ke andar NAHI —</span>
+<span class="tok-com">// warna OS jab app ko background mein launch karega, ye definition register hi nahi hogi</span>
+TaskManager.<span class="tok-fn">defineTask</span>(BACKGROUND_SYNC_TASK, <span class="tok-kw">async</span> ({ data, error }) => { <span class="tok-com">// jab bhi silent push aayegi, OS is callback ko chalayega</span>
+  <span class="tok-kw">if</span> (error) { <span class="tok-com">// agar OS-level error aaya (jaise task setup fail hua)</span>
+    <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Background sync task error:"</span>, error); <span class="tok-com">// log karo, silently fail mat hone do</span>
+    <span class="tok-kw">return</span>; <span class="tok-com">// aage kuch mat karo, data bhi trustworthy nahi hoga error ke case mein</span>
+  } <span class="tok-com">// if block close</span>
+
+  <span class="tok-kw">const</span> payload = data <span class="tok-kw">as</span> { unreadCount?: <span class="tok-kw">number</span>; syncSince?: <span class="tok-kw">string</span> } | <span class="tok-kw">null</span>; <span class="tok-com">// backend ne jo silent push data bheja, uska expected shape</span>
+
+  <span class="tok-kw">try</span> { <span class="tok-com">// network call fail ho sakta hai (bad connectivity), isliye try/catch zaroori</span>
+    <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">`https://api.myapp.com/sync?since=${payload?.syncSince ?? ""}`</span>); <span class="tok-com">// naya data quietly fetch karke local cache/DB update karne ke liye call</span>
+
+    <span class="tok-kw">if</span> (<span class="tok-kw">typeof</span> payload?.unreadCount === <span class="tok-str">"number"</span>) { <span class="tok-com">// agar backend ne authoritative unread count bhi bheja hai is silent push mein</span>
+      <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setBadgeCountAsync</span>(payload.unreadCount); <span class="tok-com">// badge ko turant sync kar do — user ko dikhega bina koi banner dikhe (badge sync section mein detail hai)</span>
+    } <span class="tok-com">// if block close</span>
+
+    <span class="tok-kw">return</span> TaskManager.<span class="tok-fn">BackgroundFetchResult</span>?.NewData; <span class="tok-com">// OS ko batao ki naya data mila (kuch OS versions is signal se future scheduling adjust karte hain)</span>
+  } <span class="tok-kw">catch</span> (err) { <span class="tok-com">// agar fetch hi fail ho gaya (network down, server down, etc.)</span>
+    <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Silent sync failed:"</span>, err); <span class="tok-com">// log karo debugging ke liye</span>
+    <span class="tok-kw">return</span> TaskManager.<span class="tok-fn">BackgroundFetchResult</span>?.Failed; <span class="tok-com">// OS ko fail signal do, taaki wo retry strategy apna sake</span>
+  } <span class="tok-com">// try/catch close</span>
+}); <span class="tok-com">// defineTask call close</span>
+
+<span class="tok-com">// App startup pe ye call karo taaki OS ko pata ho ki silent push aane pe kaunsa task chalana hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">registerBackgroundSyncTask</span>(): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// return void — sirf registration side-effect hai</span>
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">registerTaskAsync</span>(BACKGROUND_SYNC_TASK); <span class="tok-com">// OS-level registration — batata hai "silent notifications ke liye ye task use karo"</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Silent Push Sirf "Hint" Hai, Guarantee Nahi</div>
+        <p>
+          Yaad rakho — <strong>iOS bahut aggressively silent push execution ko throttle karta hai</strong> battery
+          preserve karne ke liye. Agar tumhara app user ke device pe recently bahut zyada background CPU/network
+          use kar chuka hai, ya device low-power mode mein hai, ya app ko user ne force-quit kiya hai, iOS silent
+          push ko <em>completely drop</em> kar sakta hai, koi error signal ke bina. Isliye silent push ko kabhi bhi
+          "guaranteed delivery mechanism" ki tarah architect mat karo (jaise "critical data sync sirf silent push
+          se hoga") — ye ek <strong>best-effort optimization hint</strong> hai. Critical data ke liye hamesha ek
+          fallback rakho: jab user app khole (foreground), turant ek explicit sync call bhi karo — silent push
+          sirf "jaldi mil jaaye toh accha" wala latency improvement hai, primary reliability mechanism nahi.
+        </p>
+      </div>
+
+      <h3>10.2 Notification Categories &amp; Interactive Actions</h3>
+
+      <p>
+        Kabhi dekha hoga ki kuch apps ki notification pe seedha action buttons hote hain — jaise ek message
+        notification pe "Reply" aur "Mark as Read" buttons, bina app khole. Ye <strong>notification categories</strong>
+        se hota hai — pehle tumhe ek category define karni padti hai jisme kaunse actions available hain, phir
+        jab tum notification bhejte ho, us notification ko us category se tag karte ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/categories.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// category registration bhi isi module se hoti hai</span>
+
+<span class="tok-com">// App startup pe ek baar register karo — native OS ko batata hai ki is category ke actions kya hain</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">setupMessageCategory</span>(): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// return void, sirf setup side-effect hai</span>
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setNotificationCategoryAsync</span>(<span class="tok-str">"message"</span>, [ <span class="tok-com">// category ID "message" — backend push payload mein isi ID ko reference karega</span>
+    { <span class="tok-com">// pehla action object</span>
+      identifier: <span class="tok-str">"mark-read"</span>, <span class="tok-com">// unique action ID — response handler mein isse pehchanenge kaunsa button dabaya</span>
+      buttonTitle: <span class="tok-str">"Mark as Read"</span>, <span class="tok-com">// user-facing button label</span>
+      options: { opensAppToForeground: <span class="tok-kw">false</span> }, <span class="tok-com">// false = app ko foreground mein NAHI laana, sirf background mein action process karo</span>
+    }, <span class="tok-com">// pehla action object close</span>
+    { <span class="tok-com">// doosra action object</span>
+      identifier: <span class="tok-str">"reply"</span>, <span class="tok-com">// unique action ID</span>
+      buttonTitle: <span class="tok-str">"Reply"</span>, <span class="tok-com">// user-facing button label</span>
+      textInput: { submitButtonTitle: <span class="tok-str">"Send"</span>, placeholder: <span class="tok-str">"Type a reply…"</span> }, <span class="tok-com">// text input action — notification ke andar hi ek chhota text box dikhega</span>
+      options: { opensAppToForeground: <span class="tok-kw">false</span> }, <span class="tok-com">// reply bhi bina app khole submit ho sakta hai</span>
+    }, <span class="tok-com">// doosra action object close</span>
+  ]); <span class="tok-com">// setNotificationCategoryAsync call close</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// Action response handle karna — listener wahi hai jo tap handling mein use hota hai, bas ab actionIdentifier check karte hain</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">registerCategoryActionListener</span>(): Notifications.Subscription { <span class="tok-com">// return type Subscription — caller ko cleanup ke liye chahiye</span>
+  <span class="tok-kw">return</span> Notifications.<span class="tok-fn">addNotificationResponseReceivedListener</span>((response) => { <span class="tok-com">// har notification response (tap ya action button) is se guzarta hai</span>
+    <span class="tok-kw">const</span> { actionIdentifier, userText } = response; <span class="tok-com">// actionIdentifier batata hai kaunsa button; userText sirf textInput action mein aata hai</span>
+
+    <span class="tok-kw">if</span> (actionIdentifier === <span class="tok-str">"mark-read"</span>) { <span class="tok-com">// agar user ne "Mark as Read" dabaya</span>
+      <span class="tok-kw">const</span> messageId = response.notification.request.content.data?.messageId; <span class="tok-com">// payload se message ID nikaalo jise mark karna hai</span>
+      <span class="tok-fn">fetch</span>(<span class="tok-str">`https://api.myapp.com/messages/${messageId}/read`</span>, { method: <span class="tok-str">"POST"</span> }); <span class="tok-com">// silently backend ko update karo, koi UI change nahi (app khula bhi nahi hai)</span>
+    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (actionIdentifier === <span class="tok-str">"reply"</span> &amp;&amp; userText) { <span class="tok-com">// agar user ne reply likh ke submit kiya</span>
+      <span class="tok-kw">const</span> messageId = response.notification.request.content.data?.messageId; <span class="tok-com">// same tarah message ID nikaalo</span>
+      <span class="tok-fn">fetch</span>(<span class="tok-str">`https://api.myapp.com/messages/${messageId}/reply`</span>, { <span class="tok-com">// reply text ko backend ko bhejo</span>
+        method: <span class="tok-str">"POST"</span>, <span class="tok-com">// naya reply create karne ke liye POST</span>
+        headers: { <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span> }, <span class="tok-com">// JSON body bhej rahe hain</span>
+        body: <span class="tok-fn">JSON</span>.<span class="tok-fn">stringify</span>({ text: userText }), <span class="tok-com">// actual reply content</span>
+      }); <span class="tok-com">// fetch call close</span>
+    } <span class="tok-com">// if/else-if close</span>
+  }); <span class="tok-com">// addNotificationResponseReceivedListener close, subscription return ho rahi hai</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <p>
+        Backend side pe jab notification bheji jaati hai, payload mein category ID include karni hoti hai (Expo
+        payload mein <code>categoryId: "message"</code> field) — tabhi OS ko pata chalega ki is specific
+        notification pe kaunse action buttons dikhane hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interactive actions ka sabse bada trap ye hai ki <code>opensAppToForeground: false</code> wale actions
+          "headless" context mein chalte hain — matlab tumhare app ka koi UI mount nahi hai, koi React tree nahi
+          hai, sirf ek bare-minimum JS environment hai jitni der ke liye OS allow karta hai (usually kuch seconds).
+          Is context mein Redux store, React Context, ya kisi bhi UI-dependent state pe bharosa mat karo — sirf
+          direct network calls ya local storage writes karo jo apne aap mein self-contained ho, jaise humne upar
+          seedha <code>fetch()</code> use kiya, koi state management library nahi.
+        </p>
+      </div>
+
+      <h3>10.3 Badge Count Sync Architecture</h3>
+
+      <p>
+        App icon pe jo chhota number dikhta hai (badge count), wo <strong>OS automatically maintain nahi karta</strong>
+        — tumhe explicitly <code>Notifications.setBadgeCountAsync(n)</code> call karke set karna padta hai. Bahut
+        se developers galti se sochte hain ki har notification receive hone pe badge apne aap +1 ho jaata hai — ye
+        sach nahi hai (kuch platforms pe kabhi partial default behavior tha, lekin production-grade apps isko kabhi
+        bhi implicit nahi chhodte).
+      </p>
+
+      <p>
+        Yahan ek classic distributed-systems-jaisi bug aati hai: <strong>badge count drift</strong>. Scenario socho
+        — user ke paas do devices hain (phone + tablet), dono pe app installed hai. User tablet pe 5 messages
+        padh leta hai. Ab agar phone ka badge count sirf locally "+1 per notification" increment karke maintain ho
+        raha hai, toh phone ka badge ab bhi purana (higher) number dikhayega — jab tak agla push na aaye. User ko
+        confusing lagta hai: "maine toh padh liya, phir bhi 5 dikha raha hai".
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Bad pattern vs Good pattern (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ BAD — client-side increment, koi source of truth nahi, drift ho jaata hai</span>
+<span class="tok-com">// Har naya push aane pe: currentBadge = currentBadge + 1</span>
+<span class="tok-com">// Problem: dusre device pe read hone ka is device ko pata hi nahi chalega</span>
+
+<span class="tok-com">// ✅ GOOD — server hi authoritative unread count maintain karta hai,</span>
+<span class="tok-com">// aur HAR push payload (chahe visible ho ya silent) mein woh current total count included hota hai</span>
+<span class="tok-com">// Client sirf "set karo is exact number pe" karta hai — kabhi "increment karo" nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/notifications/badgeSync.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Notifications <span class="tok-kw">from</span> <span class="tok-str">"expo-notifications"</span>; <span class="tok-com">// badge API bhi isi module mein hai</span>
+
+<span class="tok-com">// Ye payload shape backend se aana chahiye — HAR push (visible ya silent) mein authoritative count hona chahiye</span>
+<span class="tok-kw">type</span> PushDataWithBadge = { <span class="tok-com">// type definition — sirf documentation/type-safety ke liye</span>
+  authoritativeUnreadCount: <span class="tok-kw">number</span>; <span class="tok-com">// server ka current, ground-truth unread count — client ka apna calculation nahi</span>
+}; <span class="tok-com">// type close</span>
+
+<span class="tok-com">// Ye function har incoming notification (foreground listener ke andar se) call karo</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">syncBadgeFromPushPayload</span>(data: PushDataWithBadge): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// return void, sirf OS-level side-effect hai</span>
+  <span class="tok-kw">if</span> (<span class="tok-kw">typeof</span> data.authoritativeUnreadCount !== <span class="tok-str">"number"</span>) { <span class="tok-com">// defensive check — agar backend ne field bheji hi nahi (bug/old version)</span>
+    <span class="tok-kw">return</span>; <span class="tok-com">// kuch mat karo, purana badge waisa hi rehne do — galat number set karne se better</span>
+  } <span class="tok-com">// if block close</span>
+
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setBadgeCountAsync</span>(data.authoritativeUnreadCount); <span class="tok-com">// SET kar rahe hain (absolute value), INCREMENT nahi — yahi drift-proof pattern hai</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// Jab user app ke andar hi messages ko explicitly read maar de (foreground action)</span>
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">clearBadgeOnRead</span>(): Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span> { <span class="tok-com">// user ne chat khol ke sab padh liya, is case mein</span>
+  <span class="tok-kw">const</span> response = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"https://api.myapp.com/me/unread-count"</span>); <span class="tok-com">// server se fresh authoritative count maango (client ka apna guess mat lo)</span>
+  <span class="tok-kw">const</span> { unreadCount } = <span class="tok-kw">await</span> response.<span class="tok-fn">json</span>(); <span class="tok-com">// response body parse karo</span>
+  <span class="tok-kw">await</span> Notifications.<span class="tok-fn">setBadgeCountAsync</span>(unreadCount); <span class="tok-com">// badge ko is fresh server value pe set karo — dusre devices pe hui activity bhi reflect hogi</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Badge Ko "Set" Karo, "Increment" Nahi</div>
+        <p>
+          Ye ek general distributed-state principle hai jo badge count mein bhi apply hota hai: <strong>jab bhi
+          multiple sources (multiple devices, multiple push events) same counter ko update kar sakte hain, relative
+          operations (increment/decrement) drift-prone hote hain, absolute operations (set to X) nahi.</strong>
+          Server ko hamesha "current total unread count" ka single source of truth maintain karna chahiye, aur wo
+          exact number har relevant push (visible ya silent) ke data payload mein bhejna chahiye. Client ka kaam
+          sirf itna hai — "jo number mila, wahi set kar do". Isse multi-device consistency automatically theek
+          rehti hai, bina kisi extra sync protocol ke.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">11. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level React Native interviews mein push
+        notifications ke topic pe aksar pooche jaate hain — sirf "API kaise call karte ho" wale surface-level
+        nahi, balki internals, trade-offs, aur production debugging ki depth wale.
+      </p>
+
+      <h3>Q1. Backend se leke user ke lock screen tak — ek push notification ka poora path kya hai, step-by-step?</h3>
+      <p>
+        <strong>Answer:</strong> Poora path 6 broad stages mein todha ja sakta hai:
+      </p>
+      <ul>
+        <li><strong>1. Trigger</strong> — backend pe koi event hota hai (naya message, order update) jo notification
+        bhejne ka decision leta hai, aur us user ke stored device token(s) ko DB se nikalta hai.</li>
+        <li><strong>2. Send request</strong> — backend Expo Push API (ya seedha FCM/APNs) ko ek HTTPS request bhejta
+        hai jisme token, title/body, aur custom data payload hota hai.</li>
+        <li><strong>3. Proxy/routing</strong> — agar Expo use ho raha hai, Expo internally tokens ko dekh ke decide
+        karta hai ye Android device hai ya iOS, aur respective platform (FCM/APNs) ki apni auth (service account /
+        APNs .p8 key) use karke unki actual API ko call karta hai.</li>
+        <li><strong>4. Platform delivery</strong> — FCM ya APNs is notification ko us device ke saath maintain
+        ki hui persistent OS-level connection pe queue karta hai. Agar device offline hai, wo store karke rakhte
+        hain (limited time/count ke liye) aur jab device online aata hai deliver karte hain.</li>
+        <li><strong>5. OS handling</strong> — device pe OS ye notification receive karta hai apne background daemon
+        mein (app ka JS process chal raha ho ya nahi, koi farak nahi padta), aur decide karta hai kya karna hai —
+        agar visible alert hai, tray/lock-screen mein render karta hai; agar silent hai, app ko brief background
+        wake dega.</li>
+        <li><strong>6. App-level handling</strong> — agar user tap karta hai, OS app ko launch/foreground karta hai
+        aur <code>expo-notifications</code> ka response listener fire hota hai jahan se hum deep-link navigate karte
+        hain.</li>
+      </ul>
+      <p>
+        Interview mein ye batana important hai ki <strong>step 1-3 hamesha tumhare control mein hai, step 4-5
+        completely OS/platform vendor ke control mein hai</strong> — isliye "notification nahi pahunchi" jaise bugs
+        debug karte waqt in dono halves ko alag treat karna padta hai.
+      </p>
+
+      <h3>Q2. Expo apni khud ki push service kyun banata hai jab FCM/APNs already exist karte hain? Aur kab tum Expo ko skip kar doge?</h3>
+      <p>
+        <strong>Answer:</strong> Expo Push Service ek unification layer hai — FCM aur APNs ke payload format,
+        authentication mechanism (service account JSON vs .p8 key), aur retry semantics bilkul alag hain. Expo ye
+        differences abstract kar deta hai ek single REST API ke peeche, taaki tumhe do alag integrations maintain
+        na karni pade. Trade-off ye hai ki: ek extra network hop (latency), rate limits (Expo ke apne push service
+        pe), aur ek additional dependency/point-of-failure add ho jaata hai.
+      </p>
+      <p>
+        Skip karne ke valid reasons: <strong>(a)</strong> massive scale jahan Expo ka rate limit genuinely bottleneck
+        ban raha ho, <strong>(b)</strong> compliance/data-residency requirement jo kisi third-party proxy se
+        notification data guzarne ko disallow kare, <strong>(c)</strong> tumhe FCM/APNs ke advanced features chahiye
+        jo Expo abhi expose nahi karta (jaise APNs ke kuch niche priority/collapse-id options). In sabke bina, raw
+        FCM/APNs pe migrate karna sirf extra engineering overhead hai bina proportional benefit ke.
+      </p>
+
+      <h3>Q3. Expo ki jagah tum OneSignal kab choose karoge, jab Expo simpler hai setup karne mein?</h3>
+      <p>
+        <strong>Answer:</strong> Decision engineering complexity pe based nahi hota, <em>business need</em> pe hota
+        hai. OneSignal tab justify hota hai jab non-engineering stakeholders (marketing/growth team) ko khud se
+        campaigns banane, A/B test karne, ya user segments target karne ka dashboard chahiye ho — bina har baar
+        engineering ko involve kiye. Agar aisa koi requirement nahi hai aur tum sirf transactional/product
+        notifications bhej rahe ho (order updates, chat messages), Expo Notifications kaafi hai aur unnecessary
+        bundle size + third-party dependency add nahi karta. Senior dev ka job yahan ye hai ki team ko ye samjhaye
+        ki "powerful" aur "necessary" alag cheezein hain.
+      </p>
+
+      <h3>Q4. Users report karte hain ki notifications "kabhi-kabhi" nahi aati. Poori pipeline mein possible failure points kya hain, aur har ek ko kaise debug/instrument karoge?</h3>
+      <p>
+        <strong>Answer:</strong> Ye ek classic distributed-system-debugging question hai — approach hamesha pipeline
+        ko stages mein todkar, har stage pe observability add karna hai:
+      </p>
+      <ul>
+        <li><strong>Stale/invalid token</strong> — backend mein token store outdated ho sakta hai. Fix: Expo/FCM
+        se aane wale <em>push receipts</em> ko check karo — agar receipt <code>DeviceNotRegistered</code> error deta
+        hai, us token ko turant DB se remove karo.</li>
+        <li><strong>Permission revoked</strong> — user ne baad mein Settings se permission off kar diya but backend
+        ko pata nahi. Fix: app launch pe <code>getPermissionsAsync()</code> se current status backend ko sync
+        karo, sirf token registration pe bharosa mat karo.</li>
+        <li><strong>Credentials misconfigured</strong> — Firebase server key ya APNs .p8 key EAS mein expire/galat
+        ho gayi. Fix: send response/receipt ka status code check karo (auth errors turant dikh jaate hain, sabhi
+        users ke liye ek saath fail hoga — ye pattern isolate karne mein help karta hai).</li>
+        <li><strong>OS-level throttling</strong> — iOS Low Power Mode ya Doze (Android) background delivery ko
+        delay/drop kar sakte hain. Fix: is behavior ko accept karo, aggressive silent-push-dependent architecture
+        na banao (jaisa Advanced Deep-Dive section mein discuss kiya).</li>
+        <li><strong>Client-side listener bug</strong> — notification aa gayi lekin app crash ho gaya ya listener
+        register hi nahi hua. Fix: Sentry/crash reporting ke saath breadcrumbs add karo notification lifecycle
+        events pe (received, displayed, tapped) taaki funnel drop-off dikh sake.</li>
+      </ul>
+      <p>
+        Instrumentation ka golden rule: <strong>har stage pe apna khud ka logging/analytics event daalo</strong> —
+        "push sent" (backend), "push delivered to Expo" (Expo response), "receipt confirmed" (async receipt check),
+        "notification received on device" (client listener), "notification tapped" (client listener). Jahan funnel
+        drop hota hai, wahi tumhara failure point hai.
+      </p>
+
+      <h3>Q5. Ek push token invalid ho jaata hai — backend ko iska poora lifecycle kaise handle karna chahiye?</h3>
+      <p>
+        <strong>Answer:</strong> Token lifecycle ek proper state machine ki tarah design karna chahiye:
+      </p>
+      <div class="code-block">
+        <div class="code-title"><span>Token lifecycle states (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">ACTIVE        → app launch pe register hua, backend ke DB mein saved, valid maana jaata hai</span>
+<span class="tok-com">STALE?        → app reinstall/data-clear/OS-invalidation se naya token generate ho sakta hai purane ki jagah</span>
+<span class="tok-com">                (backend ko pata nahi jab tak naya register call na aaye — isliye HAR launch pe re-register zaroori)</span>
+<span class="tok-com">REJECTED      → push service (FCM/APNs/Expo) receipt mein "DeviceNotRegistered" jaisa error deta hai</span>
+<span class="tok-com">                (matlab OS-level pe ye token ab kisi installed app se map nahi hota)</span>
+<span class="tok-com">REMOVED       → backend is token ko turant DB se delete kare jab REJECTED signal mile — future sends</span>
+<span class="tok-com">                is dead token pe waste nahi honge, aur error-rate metrics clean rahenge</span></code></pre>
+      </div>
+      <p>
+        Practically iska matlab hai backend mein do cheezein implement karna: <strong>(1)</strong> ek idempotent
+        <code>upsert</code> endpoint jahan token registration hamesha safe hai dobara call karne ke liye (chahe
+        same token ho ya naya), aur <strong>(2)</strong> ek async job/webhook jo push service ke delivery receipts
+        poll/receive karta hai aur invalid tokens ko proactively clean karta hai — bina is cleanup ke, DB mein
+        dead tokens accumulate hote rehte hain aur send-success rate metrics misleading ho jaati hain.
+      </p>
+
+      <h3>Q6. Foreground mein notification handling background/killed state se fundamentally kyun alag hai?</h3>
+      <p>
+        <strong>Answer:</strong> Jab app foreground mein hai, JS engine already running hai aur tumhara code
+        directly control kar sakta hai ki OS notification tray mein kuch dikhaye ya nahi
+        (<code>setNotificationHandler</code> ke through) — is stage pe tumhare paas full app state (Redux/Context)
+        available hai, isliye tum smart decisions le sakte ho, jaise "agar user already isi chat screen pe hai,
+        banner suppress karke seedha message list update kar do".
+      </p>
+      <p>
+        Background/killed state mein tumhara JS process ya toh suspended hai ya poora khatam ho chuka hai — OS
+        khud hi tray mein notification dikhata hai bina tumhare app ko involve kiye (visible push ke case mein).
+        Tumhara code sirf tab chalta hai jab user <em>tap</em> kare (response listener) ya ek silent push OS ko
+        brief background execution grant kare. Is state mein tumhare paas koi live app state nahi hai — sab kuch
+        fresh cold-start jaisa treat karna padta hai, koi in-memory assumption nahi chalegi.
+      </p>
+
+      <h3>Q7. Silent push ka use-case kya hai, aur is architecture ki reliability limitations kya hain?</h3>
+      <p>
+        <strong>Answer:</strong> Silent push (iOS <code>content-available: 1</code>, FCM data-only message) app ko
+        briefly background mein wake karta hai bina user ko kuch dikhaye — common use-cases hain: naya data
+        proactively sync karna taaki jab user app khole tab tak fresh ho, ya kisi visible notification se pehle
+        server-side decision logic run karna (jaise "kya ye message abhi user ke liye relevant hai?").
+      </p>
+      <p>
+        Limitation ye hai ki ye ek <strong>best-effort mechanism hai, guaranteed delivery nahi</strong>. iOS
+        battery preserve karne ke liye silent push frequency ko heavily throttle karta hai — agar app recently
+        already background resources use kar chuka hai, ya device Low Power Mode mein hai, silent push bilkul
+        deliver hi nahi ho sakti, koi error signal ke saath bhi nahi. Isliye kabhi bhi critical business logic
+        (jaise payment confirmation processing) sirf silent push pe depend nahi honi chahiye — hamesha ek
+        foreground-triggered explicit sync fallback rakho.
+      </p>
+
+      <h3>Q8. Multi-device badge count ka drift bug kya hota hai, aur usse kaise architect karke avoid karte ho?</h3>
+      <p>
+        <strong>Answer:</strong> Badge count ek per-device local value hai jo <code>setBadgeCountAsync()</code> se
+        set hoti hai — OS khud automatically increment/decrement nahi karta. Bug tab hota hai jab tum client-side
+        pe naive "+1 per notification" logic likhte ho: agar user ke multiple devices hain aur ek device pe messages
+        read ho jaate hain, doosre device ka badge count us update se completely unaware rehta hai kyunki uska
+        koi apna local counter hai jo kisi doosre device ki activity se sync hi nahi hai.
+      </p>
+      <p>
+        Sahi architecture: server ko <strong>single source of truth</strong> banao unread count ke liye. Har push
+        payload (chahe visible ho ya silent) mein current authoritative count include karo, aur client sirf
+        <code>setBadgeCountAsync(receivedCount)</code> — absolute set, kabhi relative increment nahi. Isse multi-device
+        consistency automatically maintain rehti hai bina kisi extra sync protocol banaye — ye wahi principle hai
+        jo distributed counters mein "last-write-wins with authoritative source" pattern kehlata hai.
+      </p>
+
+      <h3>Q9. Interactive notification actions (jaise "Reply" button) ko implement karte waqt sabse bada gotcha kya hai?</h3>
+      <p>
+        <strong>Answer:</strong> Sabse bada gotcha ye samajhna hai ki <code>opensAppToForeground: false</code> wale
+        actions <strong>headless JS context</strong> mein chalte hain — app ka koi UI mounted nahi hota, koi React
+        tree exist nahi karta us waqt. Agar tumhara action handler kisi Redux store, React Context, ya kisi bhi
+        UI-bound global state pe dependency rakhta hai, wo undefined/uninitialized milega aur silently fail hoga ya
+        crash karega. Sahi approach: action handlers ko fully self-contained rakho — sirf direct network calls,
+        local storage reads/writes, ya AsyncStorage jaisi standalone APIs use karo jo bina app UI mount hue bhi
+        kaam karti hain. Ye discipline bilkul waisi hi hai jaisi tum background task handlers (jaise silent push ke
+        task) ke liye rakhte ho — assume karo ki tumhare paas sirf bare JS runtime hai, kuch seconds ke liye.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="07-testing.html">
+          <div class="label">← Previous</div>
+          <div class="title">Testing</div>
+        </a>
+        <a class="next" href="09-backend-supabase.html">
+          <div class="label">Next →</div>
+          <div class="title">Backend + Supabase</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payments — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link active" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Payments</div>
+      <div class="progress-pill">Chapter 15 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">RevenueCat · StoreKit · Play Billing · Stripe · PCI</span>
+      <h1>Payments — In-App Purchases, Stripe aur Security</h1>
+      <p class="subtitle">
+        Payments un chapters mein se ek hai jahan ek galat architectural decision seedha tumhara app
+        <strong>App Store se reject</strong> karva sakta hai, ya tumhare business ko revenue mein
+        <strong>15-30% commission</strong> deley sakta hai jo dena zaroori nahi tha, ya worse — production mein
+        aisi security hole chhod sakta hai jisse log free mein premium features unlock kar lein. Ye chapter
+        ch.9 (Backend + Supabase) jaisa hi high-stakes hai — bas is baar security ke saath-saath direct
+        money bhi involved hai. Dhyan se padhna, especially danger callouts.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#basics">1. Payment Basics — The Two Categories</a></li>
+          <li><a href="#revenuecat">2. In-App Purchases with RevenueCat</a></li>
+          <li><a href="#receipts">3. Receipt Validation — Why It Matters</a></li>
+          <li><a href="#stripe">4. Stripe for Real-World Payments</a></li>
+          <li><a href="#pci">5. PCI Compliance — What a Mobile Dev Needs to Know</a></li>
+          <li><a href="#testing">6. Testing Payments</a></li>
+          <li><a href="#gotchas">7. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">9. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="basics" style="border-top:none; padding-top:0; margin-top:28px;">1. Payment Basics — The Two Categories</h2>
+
+      <p>
+        Sabse pehle ek fundamental mental model clear karte hain jo har mobile dev ko pata hona chahiye —
+        chahe wo kabhi Stripe ya RevenueCat na bhi chhue, ye distinction unke career mein kabhi na kabhi
+        matter karega. Mobile payments do bilkul alag categories mein baante jaate hain, aur dono ke liye
+        <strong>alag rules aur alag payment providers</strong> use karne padte hain.
+      </p>
+
+      <h3>Category A — Digital goods/services jo app ke andar consume hote hain (In-App Purchases)</h3>
+      <p>
+        Ye woh cheezein hain jo user app ke <strong>andar hi</strong> use karta hai — premium features unlock
+        karna, ek subscription (jaise ad-free experience ya extra storage), virtual currency/coins, ek game
+        mein extra lives, cloud storage upgrade, waghera. Apple aur Google ke policies <strong>legally require</strong>
+        karte hain ki in cheezon ke liye tumhe unka apna In-App Purchase system use karna hi padega —
+        iOS pe <strong>StoreKit</strong>, Android pe <strong>Google Play Billing</strong>. Tum apna Stripe ya
+        koi bhi external payment gateway digital goods ke liye <strong>use nahi kar sakte</strong> — ye ek
+        App Store/Play Store policy violation hai, aur violate karne pe app reject ho sakta hai ya already
+        live app remove ho sakta hai.
+      </p>
+
+      <h3>Category B — Real-world goods/services (physical ya real-world value)</h3>
+      <p>
+        Ye woh cheezein hain jinki value app ke bahar real duniya mein deliver hoti hai — physical products
+        (jaise Amazon pe kuch order karna), ride-hailing (Uber ek ride book kar raha hai), food delivery
+        (Zomato/Swiggy khana deliver kar rahe hain), ya real-world services (ek plumber book karna, ek hotel
+        room book karna). In cases mein Apple/Google ka 15-30% commission rule <strong>apply nahi hota</strong> —
+        tum free ho Stripe, PayPal, Razorpay, ya kisi bhi payment processor ko directly use karne ke liye.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security/Policy Critical — Category Galat Samajhna App Reject Karva Sakta Hai</div>
+        <p>
+          Ye distinction itna important hai ki Apple/Google ke review teams specifically isi cheez ko check
+          karte hain. Concrete examples jo senior-level business/technical decisions ban chuke hain:
+        </p>
+        <ul>
+          <li>
+            <strong>Netflix aur Spotify iOS pe in-app subscribe nahi karne dete</strong> — ye accident nahi
+            hai. Digital subscription (streaming access) technically Category A (digital good) maana jaata
+            hai, matlab Apple ka 30% cut lagta agar wo StoreKit se subscribe karwate. Business decision: dono
+            companies ne apne app se in-app purchase flow hi hata diya, aur users ko bahar (web browser) pe
+            bhej ke apni website se subscribe karwate hain — isse Apple ka commission completely avoid ho
+            jaata hai. Ye "External Purchase Link" pattern hai jo Apple ne (regulatory pressure ke baad,
+            especially EU mein) allow kiya hai limited cases mein — lekin ye seedha in-app purchase se
+            technically/legally alag treatment hai.
+          </li>
+          <li>
+            <strong>Apps reject hone ka common real-world reason</strong> — koi app jo premium feature ya
+            subscription unlock karne ke liye apna custom Stripe checkout screen app ke andar dikhata hai
+            (bina StoreKit/Play Billing ke), Apple review mein almost guaranteed reject hota hai under
+            <em>Guideline 3.1.1 (In-App Purchase)</em>. Ye ek bahut common first-time-founder mistake hai —
+            "Stripe seedha integrate kar dete hain, RevenueCat/StoreKit complex lagta hai" — aur phir app
+            store review mein reject ho jaata hai.
+          </li>
+          <li>
+            <strong>Uber/Zomato/Swiggy apne payment ke liye Stripe/Razorpay/apna gateway use kar sakte hain</strong>
+            bina kisi policy violation ke, kyunki ride ya khana ek real-world service/good hai — Category B.
+            Yehi wajah hai ki tumne kabhi Uber mein "In-App Purchase" ka Apple/Google confirmation dialog
+            nahi dekha hoga jab tum ride ke liye pay karte ho.
+          </li>
+        </ul>
+        <p>
+          <strong>Rule of thumb jo yaad rakhna:</strong> "Kya user isse app ke andar consume kar raha hai
+          (digital) ya real duniya mein (physical/service)?" — pehla case StoreKit/Play Billing (RevenueCat se
+          wrap karke), doosra case Stripe/koi bhi processor directly.
+        </p>
+      </div>
+
+      <table>
+        <thead><tr><th>Category</th><th>Examples</th><th>Payment method</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>A — Digital goods (IAP)</strong></td>
+            <td>Premium unlock, subscriptions, virtual coins, extra game lives, cloud storage tier</td>
+            <td>Apple StoreKit / Google Play Billing (RevenueCat se wrapped) — <strong>mandatory</strong></td>
+          </tr>
+          <tr>
+            <td><strong>B — Real-world goods/services</strong></td>
+            <td>Physical products, ride-hailing, food delivery, hotel booking, real-world services</td>
+            <td>Stripe / PayPal / Razorpay / koi bhi processor — <strong>free choice</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="revenuecat">2. In-App Purchases with RevenueCat</h2>
+
+      <p>
+        Ab jab humne establish kar liya ki digital goods ke liye StoreKit/Play Billing mandatory hai, agla
+        sawaal — inhe raw use karna kitna painful hai? Bahut. StoreKit aur Play Billing dono <strong>bilkul
+        alag APIs</strong> hain (Swift/Kotlin-level native concepts), receipt validation ka apna alag format
+        hai har platform pe, subscription status track karna (active/expired/grace period/refunded) manually
+        implement karna padta hai, aur "restore purchases" flow khud se sahi banana bhi non-trivial hai.
+        Yehi wajah hai <strong>RevenueCat</strong> jaisi service industry standard ban gayi hai.
+      </p>
+
+      <h3>RevenueCat kya solve karta hai</h3>
+      <ul>
+        <li>
+          <strong>Ek unified API</strong> — iOS StoreKit aur Android Play Billing dono ko ek hi JS/TS SDK
+          (<code>react-native-purchases</code>) ke peeche wrap kar deta hai, matlab tumhe platform-specific
+          purchase code alag se nahi likhna padta.
+        </li>
+        <li>
+          <strong>Server-side receipt validation</strong> — RevenueCat ka backend khud Apple/Google ke servers
+          se receipt verify karta hai (section 3 mein detail), tumhe khud ye complex, error-prone logic
+          likhne ki zaroorat nahi.
+        </li>
+        <li>
+          <strong>Subscription status sync</strong> — RevenueCat "entitlements" ka concept deta hai (jaise
+          <code>"premium"</code>) jo automatically active/inactive reflect karta hai, chahe user ne renew
+          kiya ho, cancel kiya ho, ya refund liya ho — bina tumhe har state manually track kiye.
+        </li>
+        <li>
+          <strong>Cross-platform entitlement management</strong> — agar user ne iOS pe subscribe kiya aur
+          phir Android device pe same account se login kiya, RevenueCat dono platforms ke purchases ko ek
+          hi user identity ke against merge kar sakta hai (via <code>appUserID</code>).
+        </li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Raw StoreKit/Billing kyun avoid karte hain</div>
+        <p>
+          Raw StoreKit integration mein receipt validation ke liye tumhe khud Apple ke verification server
+          (<code>verifyReceipt</code> ya naya App Store Server API) ko hit karna padta hai, response parse
+          karna padta hai, subscription renewal/expiry dates khud calculate karne padte hain, aur "restore
+          purchases" flow manually implement karna padta hai jisme edge cases bahut hain (jaise user ne app
+          delete karke reinstall kiya, ya naya device liya). Ye itna error-prone hai ki bade tech companies
+          bhi is problem ko khud solve karne ke bajaye RevenueCat jaisi managed service use karna prefer
+          karti hain — "build vs buy" ka classic example hai jahan "buy" almost hamesha sahi decision hai.
+        </p>
+      </div>
+
+      <h3>Setup — packages fetch karna aur purchase karna</h3>
+      <p>
+        Poora flow dekhte hain: SDK configure karna, available packages (jaise "Monthly", "Annual" plans)
+        fetch karna, ek purchase initiate karna, aur entitlement check karna.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal — install</span><button class="copy-btn">Copy</button></div>
+        <pre><code>npx expo install react-native-purchases <span class="tok-com"># RevenueCat ka official React Native SDK, expo install version-compatibility resolve karta hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/purchases.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> Purchases, { <span class="tok-fn">LOG_LEVEL</span> } <span class="tok-kw">from</span> <span class="tok-str">"react-native-purchases"</span>; <span class="tok-com">// RevenueCat SDK ka default export aur log-level enum import kiya</span>
+<span class="tok-kw">import</span> { Platform } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// platform check karne ke liye (iOS/Android alag API keys chahiye)</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">configurePurchases</span>() {
+  <span class="tok-com">// production mein verbose logs off rakho, dev build mein debug ke liye ON kar sakte ho</span>
+  Purchases.<span class="tok-fn">setLogLevel</span>(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR); <span class="tok-com">// __DEV__ RN ka built-in global hai jo dev vs production build batata hai</span>
+
+  <span class="tok-kw">const</span> apiKey = Platform.<span class="tok-fn">select</span>({ <span class="tok-com">// har platform ka RevenueCat public SDK key alag hota hai</span>
+    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY, <span class="tok-com">// iOS-specific public key, RevenueCat dashboard se milti hai</span>
+    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY, <span class="tok-com">// Android-specific public key, alag hoti hai iOS se</span>
+  });
+
+  <span class="tok-kw">if</span> (!apiKey) { <span class="tok-com">// safety check — agar key missing hai (misconfigured env), fail fast karo</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"RevenueCat API key missing"</span>); <span class="tok-com">// clear error taaki dev ko turant pata chale, silent fail nahi</span>
+  }
+
+  Purchases.<span class="tok-fn">configure</span>({ apiKey }); <span class="tok-com">// SDK ko is public key se initialize kiya — ye app start hote hi ek baar call hota hai</span>
+}</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Ye "public" API key kyun safe hai</div>
+        <p>
+          RevenueCat ki <code>apiKey</code> yahan client bundle mein hai aur <code>EXPO_PUBLIC_</code> prefix
+          ke saath — ye theek hai kyunki ye ek <strong>public SDK identifier</strong> hai (ch.9 ke
+          Supabase anon key jaisa concept), jiska kaam sirf ye batana hai "ye request kis RevenueCat project
+          se aa rahi hai". Actual purchase security Apple/Google ke apne systems se aati hai, is key se nahi.
+          RevenueCat ka <strong>secret API key</strong> (server-to-server REST API ke liye) alag hoti hai aur
+          wo sirf backend pe honi chahiye — kabhi client mein nahi (ch.9 ka wahi client-vs-server key pattern).
+        </p>
+      </div>
+
+      <h3>Packages fetch karna aur display karna</h3>
+      <p>
+        RevenueCat mein "Offerings" ka concept hai — ek offering ke andar multiple "packages" ho sakte hain
+        (jaise Monthly, Annual). Ye configuration RevenueCat dashboard se aati hai, hardcode nahi karte —
+        isse pricing/plans change karne ke liye app update ki zaroorat nahi padti.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/usePurchases.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state aur lifecycle hooks</span>
+<span class="tok-kw">import</span> Purchases, { <span class="tok-kw">type</span> PurchasesPackage, <span class="tok-kw">type</span> CustomerInfo } <span class="tok-kw">from</span> <span class="tok-str">"react-native-purchases"</span>; <span class="tok-com">// SDK aur uske TS types</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">usePurchases</span>() {
+  <span class="tok-kw">const</span> [packages, setPackages] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>PurchasesPackage[]<span class="tok-punc">&gt;</span>([]); <span class="tok-com">// available plans (Monthly/Annual) ki list</span>
+  <span class="tok-kw">const</span> [isPremium, setIsPremium] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// current user ka premium entitlement status</span>
+  <span class="tok-kw">const</span> [loading, setLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>); <span class="tok-com">// initial fetch complete hua ya nahi</span>
+
+  <span class="tok-com">// customer info se entitlement status derive karne wala helper</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">syncEntitlement</span> = (info: CustomerInfo) => {
+    <span class="tok-kw">const</span> active = <span class="tok-kw">typeof</span> info.entitlements.active[<span class="tok-str">"premium"</span>] <span class="tok-punc">!==</span> <span class="tok-str">"undefined"</span>; <span class="tok-com">// "premium" naam ka entitlement RevenueCat dashboard mein define hota hai</span>
+    <span class="tok-fn">setIsPremium</span>(active); <span class="tok-com">// state update — UI turant is naye status ke hisaab se re-render hoga</span>
+  };
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">load</span>() {
+      <span class="tok-kw">try</span> {
+        <span class="tok-kw">const</span> offerings = <span class="tok-kw">await</span> Purchases.<span class="tok-fn">getOfferings</span>(); <span class="tok-com">// RevenueCat dashboard se configured offerings fetch kiye</span>
+        <span class="tok-kw">if</span> (offerings.current) { <span class="tok-com">// "current" offering wo hai jo dashboard mein active/default set hai</span>
+          <span class="tok-fn">setPackages</span>(offerings.current.availablePackages); <span class="tok-com">// us offering ke andar ke packages (plans) state mein daale</span>
+        }
+
+        <span class="tok-kw">const</span> customerInfo = <span class="tok-kw">await</span> Purchases.<span class="tok-fn">getCustomerInfo</span>(); <span class="tok-com">// current logged-in RevenueCat user ka purchase/entitlement info fetch kiya</span>
+        <span class="tok-fn">syncEntitlement</span>(customerInfo); <span class="tok-com">// premium status turant reflect karo, purani cached value pe depend mat karo</span>
+      } <span class="tok-kw">catch</span> (err) {
+        <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"RevenueCat load failed"</span>, err); <span class="tok-com">// network/config error ko log karo, app crash nahi hona chahiye</span>
+      } <span class="tok-kw">finally</span> {
+        <span class="tok-fn">setLoading</span>(<span class="tok-kw">false</span>); <span class="tok-com">// success ho ya fail, loading state hamesha off karo</span>
+      }
+    }
+
+    <span class="tok-fn">load</span>(); <span class="tok-com">// component mount hote hi offerings + entitlement fetch karo</span>
+
+    <span class="tok-com">// RevenueCat listener — subscription status kahin bhi background mein change ho (jaise renewal), UI auto-sync ho jaaye</span>
+    <span class="tok-kw">const</span> listener = Purchases.<span class="tok-fn">addCustomerInfoUpdateListener</span>(syncEntitlement); <span class="tok-com">// har baar customerInfo update ho, syncEntitlement dobara chalega</span>
+
+    <span class="tok-kw">return</span> () => {
+      Purchases.<span class="tok-fn">removeCustomerInfoUpdateListener</span>(listener); <span class="tok-com">// cleanup — component unmount pe listener hata do, memory leak/dangling callback se bachne ke liye</span>
+    };
+  }, []); <span class="tok-com">// empty deps — sirf mount pe setup, unmount pe cleanup</span>
+
+  <span class="tok-com">// ---------- PURCHASE ----------</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">purchasePackage</span> = <span class="tok-kw">async</span> (pkg: PurchasesPackage) => {
+    <span class="tok-kw">try</span> {
+      <span class="tok-kw">const</span> { customerInfo } = <span class="tok-kw">await</span> Purchases.<span class="tok-fn">purchasePackage</span>(pkg); <span class="tok-com">// ye StoreKit/Play Billing ka native purchase dialog trigger karta hai</span>
+      <span class="tok-fn">syncEntitlement</span>(customerInfo); <span class="tok-com">// purchase complete hote hi entitlement state turant update karo</span>
+      <span class="tok-kw">return</span> <span class="tok-kw">true</span>; <span class="tok-com">// caller ko success signal diya</span>
+    } <span class="tok-kw">catch</span> (err: <span class="tok-kw">any</span>) {
+      <span class="tok-kw">if</span> (!err.userCancelled) { <span class="tok-com">// user ne khud dialog cancel kiya toh error dikhana zaroori nahi</span>
+        <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Purchase failed"</span>, err); <span class="tok-com">// genuine failure (network, declined card, etc.) ko log karo</span>
+      }
+      <span class="tok-kw">return</span> <span class="tok-kw">false</span>; <span class="tok-com">// caller ko failure signal diya</span>
+    }
+  };
+
+  <span class="tok-com">// ---------- RESTORE ----------</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">restorePurchases</span> = <span class="tok-kw">async</span> () => {
+    <span class="tok-kw">const</span> customerInfo = <span class="tok-kw">await</span> Purchases.<span class="tok-fn">restorePurchases</span>(); <span class="tok-com">// Apple/Google account history se pichle purchases wapas link karta hai</span>
+    <span class="tok-fn">syncEntitlement</span>(customerInfo); <span class="tok-com">// agar koi valid purchase mila, entitlement state turant reflect ho</span>
+  };
+
+  <span class="tok-kw">return</span> { packages, isPremium, loading, purchasePackage, restorePurchases }; <span class="tok-com">// hook ka public interface — component isse consume karega</span>
+}</code></pre>
+      </div>
+
+      <h3>UI mein use karna</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/PaywallScreen.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { View, Text, Pressable } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// basic UI primitives</span>
+<span class="tok-kw">import</span> { usePurchases } <span class="tok-kw">from</span> <span class="tok-str">"../hooks/usePurchases"</span>; <span class="tok-com">// humara custom hook jo upar define kiya</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">PaywallScreen</span>() {
+  <span class="tok-kw">const</span> { packages, isPremium, loading, purchasePackage, restorePurchases } = <span class="tok-fn">usePurchases</span>(); <span class="tok-com">// hook se saara state/actions destructure kiye</span>
+
+  <span class="tok-kw">if</span> (loading) <span class="tok-kw">return</span> <span class="tok-tag">&lt;Text&gt;</span>Loading plans...<span class="tok-tag">&lt;/Text&gt;</span>; <span class="tok-com">// abhi offerings/entitlement fetch ho rahe hain</span>
+  <span class="tok-kw">if</span> (isPremium) <span class="tok-kw">return</span> <span class="tok-tag">&lt;Text&gt;</span>Tum already premium ho! 🎉<span class="tok-tag">&lt;/Text&gt;</span>; <span class="tok-com">// entitlement already active hai, paywall dikhane ki zaroorat nahi</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      {packages.<span class="tok-fn">map</span>((pkg) => ( <span class="tok-com">// har available plan (Monthly/Annual) ke liye ek button render karo</span>
+        <span class="tok-tag">&lt;Pressable</span> <span class="tok-attr">key</span>=<span class="tok-punc">{</span>pkg.identifier<span class="tok-punc">}</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>() =&gt; <span class="tok-fn">purchasePackage</span>(pkg)<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+          <span class="tok-tag">&lt;Text&gt;</span>
+            {pkg.product.title} — {pkg.product.priceString} <span class="tok-com">{/* priceString RevenueCat khud user ke App Store territory ke hisaab se localize karta hai */}</span>
+          <span class="tok-tag">&lt;/Text&gt;</span>
+        <span class="tok-tag">&lt;/Pressable&gt;</span>
+      ))}
+
+      <span class="tok-tag">&lt;Pressable</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>restorePurchases<span class="tok-punc">}</span><span class="tok-tag">&gt;</span>
+        <span class="tok-tag">&lt;Text&gt;</span>Restore Purchases<span class="tok-tag">&lt;/Text&gt;</span> <span class="tok-com">{/* Apple guideline ke hisaab se ye button mandatory hai, section 7 mein detail */}</span>
+      <span class="tok-tag">&lt;/Pressable&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> PaywallScreen; <span class="tok-com">// component export kiya reuse ke liye</span></code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="receipts">3. Receipt Validation — Why It Matters</h2>
+
+      <p>
+        Ab ek subtle lekin bahut critical security concept — jab StoreKit/Play Billing kehta hai "purchase
+        successful", iska matlab ye <strong>proof nahi hai</strong> ki payment genuinely complete hua. Ye
+        samajhna zaroori hai kyunki naive implementation is gap ko exploit-able bana deta hai.
+      </p>
+
+      <h3>Problem — client-side "success" event trust nahi kiya ja sakta</h3>
+      <p>
+        Jab tum <code>purchasePackage()</code> call karte ho aur wo resolve ho jaata hai bina error ke, tumhara
+        instinct hoga "great, ab premium unlock kar dete hain client state mein hi". Lekin socho — ye event
+        client device pe fire ho raha hai, jismein tumhare control se bahar bahut cheezein possible hain:
+      </p>
+      <ul>
+        <li>
+          Ek <strong>jailbroken/rooted device</strong> pe tools exist karte hain (jaise Lucky Patcher, ya
+          custom jailbreak tweaks) jo fake purchase success responses inject kar sakte hain bina actual
+          payment kiye — StoreKit/Billing ka response app ko lagta hai genuine, lekin actually intercept/fake
+          kiya gaya hai.
+        </li>
+        <li>
+          Network traffic intercept/modify karke (proxy tools se) response ko tamper kiya ja sakta hai agar
+          verification sirf client-side ho rahi hai aur server kabhi involve hi nahi hota.
+        </li>
+        <li>
+          Simplest attack: agar tumhara app ka logic sirf <code>"purchase succeeded"</code> boolean pe
+          depend karta hai bina kisi cryptographic receipt check ke, koi bhi reverse-engineered build ya
+          modified APK is boolean ko directly true set kar sakta hai.
+        </li>
+      </ul>
+
+      <h3>Solution — receipt validation Apple/Google ke servers ke against</h3>
+      <p>
+        Har purchase ke saath ek <strong>receipt</strong> (iOS) ya <strong>purchase token</strong> (Android)
+        generate hota hai, jo Apple/Google ne cryptographically sign kiya hota hai. Ye receipt Apple/Google ke
+        apne verification servers ko bhej ke confirm karwaya ja sakta hai ki ye genuine hai aur actually valid
+        purchase represent karta hai. RevenueCat ye pura kaam apne backend pe automatically karta hai — jab
+        <code>purchasePackage()</code> resolve hota hai, RevenueCat ka server-side ne already receipt ko Apple/
+        Google se verify kar liya hota hai before entitlement ko "active" mark karne se pehle.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Kabhi Bhi Client-Side Boolean Pe Purely Trust Mat Karo</div>
+        <p>
+          High-value features (jaise ek paid subscription jo real revenue represent karta hai, ya ek
+          in-app currency jo real money se bought hui hai) ke liye <strong>kabhi bhi</strong> sirf ek
+          client-side flag (jaise AsyncStorage mein <code>{ isPremium: true }</code>) pe depend mat karo bina
+          server-side verification ke. Sahi pattern:
+        </p>
+        <ul>
+          <li>
+            RevenueCat/StoreKit/Billing use kar rahe ho toh — RevenueCat ke <code>CustomerInfo.entitlements</code>
+            ko source of truth maano, jo already server-verified hai (jaisa upar discuss kiya).
+          </li>
+          <li>
+            Agar tumhara khud ka backend hai jo premium content serve karta hai (jaise ek API jo premium-only
+            data return karta hai), toh us backend ko <strong>khud RevenueCat/App Store Server API/webhook
+            se entitlement status check</strong> karna chahiye — client se aaya "mai premium hoon" claim kabhi
+            bhi backend ko trust nahi karna chahiye bina independent verification ke.
+          </li>
+          <li>
+            Ek common mistake: sirf client mein entitlement check karke UI hide kar dena (jaise ek premium
+            button ko conditionally render karna), lekin actual data/API endpoint backend mein bina
+            entitlement check ke expose rehna. Ye bilkul waisa hi security gap hai jaisa ch.9 mein RLS
+            missing hone se hota hai — client-side UI hiding koi real security nahi hai, sirf UX hai.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="stripe">4. Stripe for Real-World Payments</h2>
+
+      <p>
+        Ab Category B (real-world goods/services) ke liye Stripe ka standard, secure integration pattern
+        dekhte hain. Ye pattern ch.9 ke BFF (Backend-for-Frontend) concept ka direct extension hai —
+        wahi mental model, bas Stripe ke context mein.
+      </p>
+
+      <h3>Kyun ek backend zaroori hai (client kabhi seedha PaymentIntent nahi bana sakta)</h3>
+      <p>
+        Stripe ke do tarah ke API keys hote hain — <strong>publishable key</strong> (<code>pk_live_...</code>,
+        client mein safe) aur <strong>secret key</strong> (<code>sk_live_...</code>, sirf server-side). Ek
+        payment process karne ke liye pehle ek <strong>PaymentIntent</strong> object banana padta hai Stripe
+        ke saath — is object creation ke liye secret key chahiye hoti hai, kyunki isi step pe amount, currency,
+        aur customer details set hote hain jo agar client control kar sake toh attacker apna amount khud set
+        kar sakta hai (jaise ₹10,000 ka order ₹1 mein pay karne ki koshish).
+      </p>
+
+      <p>Standard secure flow (exactly ch.9 ke API-key-separation model jaisa hai):</p>
+      <ol>
+        <li>Client apne backend (Expo Router API route ya alag server) ko request bhejta hai — "mujhe ye order pay karna hai".</li>
+        <li>Backend, Stripe secret key use karke, ek PaymentIntent banata hai with the correct server-computed amount (client se bheja gaya amount trust nahi karte — backend khud order/cart se amount calculate karta hai).</li>
+        <li>Backend client ko sirf ek <code>client_secret</code> string wapas bhejta hai — ye ek limited-scope token hai jo sirf isi specific PaymentIntent ko confirm karne ke liye use ho sakta hai.</li>
+        <li>Client, publishable key ke saath, <code>@stripe/stripe-react-native</code> use karke us <code>client_secret</code> se payment confirm karta hai (card details enter karke).</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/create-payment-intent+api.ts (backend)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> Stripe <span class="tok-kw">from</span> <span class="tok-str">"stripe"</span>; <span class="tok-com">// Stripe ka official Node SDK, server-side use ke liye</span>
+
+<span class="tok-kw">const</span> stripe = <span class="tok-kw">new</span> <span class="tok-fn">Stripe</span>(process.env.STRIPE_SECRET_KEY<span class="tok-punc">!</span>); <span class="tok-com">// secret key sirf yahan, server env var se — ye file client bundle mein kabhi nahi jaati (+api.ts convention, ch.9)</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">POST</span>(request: Request) {
+  <span class="tok-kw">const</span> { orderId } = <span class="tok-kw">await</span> request.<span class="tok-fn">json</span>(); <span class="tok-com">// client sirf orderId bhejta hai, amount nahi — amount client se kabhi trust nahi karte</span>
+
+  <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> <span class="tok-fn">getOrderFromDatabase</span>(orderId); <span class="tok-com">// apne database se order fetch kiya — real amount yahan se aata hai (helper function, apna DB layer)</span>
+  <span class="tok-kw">if</span> (!order) { <span class="tok-com">// order exist nahi karta toh aage mat badho</span>
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ error: <span class="tok-str">"Order not found"</span> }, { status: <span class="tok-num">404</span> }); <span class="tok-com">// 404 = not found status</span>
+  }
+
+  <span class="tok-kw">const</span> paymentIntent = <span class="tok-kw">await</span> stripe.paymentIntents.<span class="tok-fn">create</span>({ <span class="tok-com">// Stripe ke saath naya PaymentIntent object banaya</span>
+    amount: order.totalInPaise, <span class="tok-com">// backend-computed amount (paise/cents mein), client se aaya amount nahi use kiya</span>
+    currency: <span class="tok-str">"inr"</span>, <span class="tok-com">// currency code, lowercase Stripe convention hai</span>
+    metadata: { orderId: order.id }, <span class="tok-com">// baad mein webhook mein is payment ko order se link karne ke liye reference</span>
+  });
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ clientSecret: paymentIntent.client_secret }); <span class="tok-com">// sirf client_secret return kiya — poora paymentIntent object nahi, sirf jitna client ko chahiye</span>
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/CheckoutScreen.tsx (client)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// local state ke liye</span>
+<span class="tok-kw">import</span> { View, Button, Alert } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>; <span class="tok-com">// UI primitives</span>
+<span class="tok-kw">import</span> { CardField, useStripe } <span class="tok-kw">from</span> <span class="tok-str">"@stripe/stripe-react-native"</span>; <span class="tok-com">// Stripe ka RN SDK — CardField ek pre-built, PCI-safe card input component hai (section 5 mein detail)</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">CheckoutScreen</span>({ orderId }: { orderId: <span class="tok-kw">string</span> }) {
+  <span class="tok-kw">const</span> { confirmPayment } = <span class="tok-fn">useStripe</span>(); <span class="tok-com">// Stripe SDK ka hook, publishable key se already configured (app root mein StripeProvider ke through)</span>
+  <span class="tok-kw">const</span> [loading, setLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// payment process ho raha hai ya nahi, UI disable karne ke liye</span>
+
+  <span class="tok-kw">const</span> <span class="tok-fn">handlePay</span> = <span class="tok-kw">async</span> () => {
+    <span class="tok-fn">setLoading</span>(<span class="tok-kw">true</span>); <span class="tok-com">// button disable/spinner dikhana shuru</span>
+
+    <span class="tok-kw">const</span> res = <span class="tok-kw">await</span> <span class="tok-fn">fetch</span>(<span class="tok-str">"/api/create-payment-intent"</span>, { <span class="tok-com">// apne backend ko call kiya, seedha Stripe ko nahi</span>
+      method: <span class="tok-str">"POST"</span>, <span class="tok-com">// POST request kyunki data create ho raha hai</span>
+      headers: { <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span> }, <span class="tok-com">// JSON body bhej rahe hain</span>
+      body: JSON.<span class="tok-fn">stringify</span>({ orderId }), <span class="tok-com">// sirf orderId bheja, amount nahi (amount backend khud nikaalega)</span>
+    });
+    <span class="tok-kw">const</span> { clientSecret } = <span class="tok-kw">await</span> res.<span class="tok-fn">json</span>(); <span class="tok-com">// backend se mila client_secret parse kiya</span>
+
+    <span class="tok-kw">const</span> { error } = <span class="tok-kw">await</span> <span class="tok-fn">confirmPayment</span>(clientSecret, { <span class="tok-com">// is client_secret se payment confirm kiya, card details CardField se automatically liye jaate hain</span>
+      paymentMethodType: <span class="tok-str">"Card"</span>, <span class="tok-com">// payment method type specify kiya</span>
+    });
+
+    <span class="tok-fn">setLoading</span>(<span class="tok-kw">false</span>); <span class="tok-com">// process complete, loading state off</span>
+
+    <span class="tok-kw">if</span> (error) { <span class="tok-com">// payment fail hua (declined card, insufficient funds, etc.)</span>
+      Alert.<span class="tok-fn">alert</span>(<span class="tok-str">"Payment failed"</span>, error.message); <span class="tok-com">// user ko readable error dikhaya</span>
+    } <span class="tok-kw">else</span> {
+      Alert.<span class="tok-fn">alert</span>(<span class="tok-str">"Success"</span>, <span class="tok-str">"Payment complete!"</span>); <span class="tok-com">// payment successful — real confirmation backend webhook se bhi aayega (section 7)</span>
+    }
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;CardField</span>
+        <span class="tok-attr">postalCodeEnabled</span>=<span class="tok-punc">{</span><span class="tok-kw">false</span><span class="tok-punc">}</span> <span class="tok-com">{/* India ke liye postal code field ki zaroorat nahi */}</span>
+        <span class="tok-attr">style</span>=<span class="tok-punc">{</span>{ height: <span class="tok-num">50</span> }<span class="tok-punc">}</span> <span class="tok-com">{/* Stripe ka native, PCI-safe card input — raw card number kabhi humare code mein nahi aata */}</span>
+      <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-punc">{</span>loading ? <span class="tok-str">"Processing..."</span> : <span class="tok-str">"Pay"</span><span class="tok-punc">}</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>handlePay<span class="tok-punc">}</span> <span class="tok-attr">disabled</span>=<span class="tok-punc">{</span>loading<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> CheckoutScreen; <span class="tok-com">// component export kiya reuse ke liye</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Stripe SECRET Key Kabhi RN App Mein Nahi</div>
+        <p>
+          Bilkul ch.9 ke <code>EXPO_PUBLIC_STRIPE_SECRET_KEY</code> danger callout jaisa hi warning yahan bhi
+          repeat kar rahe hain kyunki ye galti bahut common hai — <strong>Stripe secret key
+          (<code>sk_live_...</code> ya <code>sk_test_...</code>) kabhi bhi kisi bhi form mein RN app ke
+          bundle mein nahi honi chahiye</strong>, chahe env var prefix kuch bhi ho. Agar ye leak ho jaaye,
+          attacker seedha tumhare Stripe account se charges create kar sakta hai, refunds issue kar sakta
+          hai, ya customer payment data access kar sakta hai. Sirf <strong>publishable key</strong>
+          (<code>pk_live_...</code>) client-safe hai — usi naam se hi clear hai ki ye "publish" karne ke
+          liye design hui hai. Secret key sirf server (<code>+api.ts</code> route jaisa BFF layer) ke
+          environment variables mein rehni chahiye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="pci">5. PCI Compliance — What a Mobile Dev Needs to Know</h2>
+
+      <p>
+        <strong>PCI-DSS</strong> (Payment Card Industry Data Security Standard) ek security standard hai jo
+        define karta hai ki card data (number, CVV, expiry) ko kaise handle karna chahiye. Full PCI compliance
+        achieve karna ek bahut heavy process hai — audits, specific infrastructure requirements, ongoing
+        monitoring. Achi khabar ye hai ki ek mobile dev ke roop mein tumhe usually isse directly deal nahi
+        karna padta, agar tum sahi tools use karo.
+      </p>
+
+      <h3>Tokenization — raw card data tumhare code ko touch hi nahi karta</h3>
+      <p>
+        <code>@stripe/stripe-react-native</code> ka <code>CardField</code> component (jo upar use kiya) is
+        wajah se exist karta hai — jab user card number type karta hai, wo directly Stripe ke native SDK ke
+        andar capture hota hai aur seedha Stripe ke servers ko bheja jaata hai <strong>tokenization</strong>
+        ke through. Raw card number kabhi tumhare JavaScript code, tumhare state, ya tumhare backend server
+        ko <strong>touch hi nahi karta</strong> — sirf ek safe, single-use token (jaise upar wala
+        <code>client_secret</code>/payment method reference) tumhare paas aata hai.
+      </p>
+
+      <p>
+        Isi wajah se senior devs almost <strong>kabhi bhi custom card-number input field khud se nahi
+        banate</strong> (jaise ek plain <code>TextInput</code> jisme card number type ho aur tum use apne
+        state mein store karo aur khud apne backend ko bhejo). Agar tum aisa karte ho, raw card data tumhare
+        app/server ke through guzarta hai — jiska matlab tumhara poora app/backend infrastructure ab PCI
+        scope mein aa jaata hai, jisse compliance requirements bahut heavy ho jaate hain (network segmentation,
+        specific encryption standards, regular audits, waghera).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "SAQ A" scope ka fayda</div>
+        <p>
+          Jab tum Stripe/similar provider ke pre-built, tokenizing UI components use karte ho aur raw card
+          data kabhi apne servers ko touch nahi karte, tumhara business typically <strong>PCI SAQ A</strong>
+          (Self-Assessment Questionnaire A) category mein aata hai — ye sabse simple/lightest compliance tier
+          hai, kyunki tumhara infrastructure card data ko kabhi "see" hi nahi karta. Jaise hi tum raw card data
+          khud handle karna shuru karte ho, tum SAQ D jaisi heavy category mein chale jaate ho. Yehi practical
+          reason hai ki "Stripe Elements/CardField use karo, apna card input mat banao" ek universal senior
+          advice hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="testing">6. Testing Payments</h2>
+
+      <p>
+        Payments testing ke liye har provider apna sandbox/test environment deta hai — production/real money
+        involve kiye bina poora flow test karne ke liye. In sandboxes ko use karna sirf convenience nahi,
+        ye <strong>mandatory practice</strong> hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Provider</th><th>Test mechanism</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Apple / StoreKit</strong></td>
+            <td>Sandbox Tester accounts (App Store Connect → Users and Access → Sandbox Testers)</td>
+            <td>Ek dedicated Apple ID banao jo sirf testing ke liye ho, real Apple ID se kabhi sandbox test mat karo. Sandbox mein subscriptions accelerated speed pe renew hoti hain (jaise 1 hafte ki subscription 3 min mein renew ho jaati hai) taaki renewal/expiry flows jaldi test ho sakein.</td>
+          </tr>
+          <tr>
+            <td><strong>Google / Play Billing</strong></td>
+            <td>License Testing accounts (Play Console → Setup → License testing) + internal/closed testing tracks</td>
+            <td>License testers real charge nahi lagte, lekin real purchase flow simulate karte hain, including subscription states.</td>
+          </tr>
+          <tr>
+            <td><strong>RevenueCat</strong></td>
+            <td>Sandbox mode automatically detect hota hai jab app StoreKit/Play sandbox credentials use kar raha ho</td>
+            <td>RevenueCat dashboard mein sandbox vs production purchases alag se dikhte hain, dono ko confuse mat karo jab metrics dekh rahe ho.</td>
+          </tr>
+          <tr>
+            <td><strong>Stripe</strong></td>
+            <td>Test mode API keys (<code>pk_test_...</code>/<code>sk_test_...</code>) + published test card numbers</td>
+            <td>Common test card: <code>4242 4242 4242 4242</code> (successful payment), aur specific decline-simulating numbers Stripe docs mein listed hain (jaise insufficient funds, expired card scenarios).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Real Payment Methods Se Development Mein Kabhi Test Mat Karo</div>
+        <p>
+          Ye tempting lag sakta hai "arre bas ek chhota amount se real test kar leta hoon", lekin isse kai
+          problems hoti hain — real charges lagte hain (jinhe refund karna extra kaam hai), accidental repeat
+          charges ho sakte hain agar test loop mein bug ho, aur agar production Stripe/RevenueCat keys galti
+          se dev build mein reh gayi (jo ek common mistake hai), tum khud apne real customer base ke against
+          test transactions create kar sakte ho. Hamesha test/sandbox keys ko dev builds mein aur live keys
+          ko sirf production builds mein use karo — environment-based config (jaise ch.1 ke <code>app.config.ts</code>
+          pattern) se ye separation enforce karo.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">7. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Restore Purchases" Bhool Jaana — Common Rejection Reason</div>
+        <p>
+          Apple ki guidelines <strong>explicitly require</strong> karti hain ki agar user apna app delete
+          karke reinstall kare, ya naya device pe same Apple ID se login kare, unhe apne pichle non-consumable
+          purchases/subscriptions ko <strong>restore</strong> karne ka option milna chahiye — bina dobara pay
+          kiye. Ye ek deceptively simple lagne wala requirement hai jo bahut baar developers bhool jaate hain
+          jab MVP jaldi ship karna hota hai, aur ye ek bahut common App Store rejection reason hai. Upar wale
+          <code>usePurchases</code> hook mein <code>restorePurchases()</code> function isi liye hai — UI mein
+          ek visible "Restore Purchases" button hamesha rakho (paywall screen pe, ya settings mein).
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Subscription States Sirf "Active/Inactive" Nahi Hain</div>
+        <p>
+          Naya dev sochta hai subscription ek simple boolean hai — active ya inactive. Reality mein bahut
+          zyada states hain jo RevenueCat model karta hai lekin tumhe unke existence ka pata hona chahiye:
+        </p>
+        <ul>
+          <li><strong>Active</strong> — subscription chal rahi hai, payment successful.</li>
+          <li><strong>Grace Period</strong> — renewal payment fail hui (jaise expired card), lekin Apple/Google user ko thoda time dete hain payment method fix karne ke liye — is dauraan access usually maintained rehta hai.</li>
+          <li><strong>Billing Retry</strong> — payment provider automatically retry kar raha hai failed payment ko, kai attempts ke through.</li>
+          <li><strong>Cancelled but not expired</strong> — user ne cancel kar diya hai lekin already paid period ke end tak access milta rehta hai (jaise "cancelled, expires on 15th").</li>
+          <li><strong>Expired/Refunded</strong> — access revoke ho chuka hai.</li>
+        </ul>
+        <p>
+          RevenueCat ye saari states apne <code>CustomerInfo</code> object mein expose karta hai — apna paywall
+          UI aur access-control logic design karte waqt in states ko consider karo, sirf ek simple boolean
+          pe mat rely karo.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Currency/Pricing Territory Differences</div>
+        <p>
+          Ek hi subscription tier har App Store territory mein alag price pe dikh sakta hai (currency
+          conversion, local tax/VAT rules, Apple/Google ke apne pricing tiers ki wajah se). Kabhi bhi price
+          ko hardcode mat karo apne app ke UI mein — hamesha <code>pkg.product.priceString</code> jaisa
+          localized value use karo jo RevenueCat/StoreKit khud provide karta hai, jo already user ke region
+          ke hisaab se correctly formatted hota hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Webhooks Ke Bina Backend Out-of-Sync Ho Sakta Hai</div>
+        <p>
+          Agar tumhara app band hai (user ne force-close kiya, ya phone off hai) jab ek subscription renew
+          hoti hai ya cancel hoti hai, tumhara backend ko is event ka pata kaise chalega? App-side listener
+          (<code>addCustomerInfoUpdateListener</code>) tabhi kaam karta hai jab app open ho. Isliye production
+          setup mein <strong>RevenueCat webhooks</strong> (ya Stripe webhooks, real-world payments ke liye)
+          configure karna zaroori hai — ye tumhare backend ke ek endpoint ko directly hit karte hain jab bhi
+          koi subscription/payment event hota hai (renewal, cancellation, refund, billing failure), chahe
+          app open ho ya nahi. Backend phir apne database mein user ka entitlement status independently update
+          kar sakta hai — isse tumhara server-side data hamesha accurate rehta hai, sirf client ke "jab app
+          khule tab sync ho jaayega" pe depend nahi karna padta.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">8. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne "kaise integrate karein" cover kiya. Ye section ek level upar jaata hai — ek senior
+        RN developer se expect kiya jaata hai ki wo sirf SDK calls na jaane, balki poori
+        <strong>backend architecture</strong> samjhe jo real production payment systems ko reliable banati
+        hai. Ye teen concepts — entitlement caching, subscription state machines, aur proration —
+        interview mein sabse zyada puche jaane wale "senior-level" payment topics hain.
+      </p>
+
+      <h3>8.1 — Server-Side Entitlement Caching Architecture</h3>
+      <p>
+        Section 3 mein humne kaha "backend ko client ke claim pe trust nahi karna chahiye, khud verify karo".
+        Lekin har request pe Apple/Google ke servers ko directly hit karna (jaise ek naya API call jab bhi
+        koi user premium content maangta hai) do problems create karta hai — <strong>latency</strong> (extra
+        network hop har request pe) aur <strong>rate limits</strong> (Apple/Google ke verification APIs pe
+        bhi limits hote hain, agar tumhare paas lakhs users hain toh ye scale nahi karega). Senior-level
+        solution: <strong>webhooks ko source of truth banao, aur ek local cache maintain karo</strong>.
+      </p>
+      <p>
+        Apple <strong>App Store Server Notifications v2</strong> aur Google <strong>Real-Time Developer
+        Notifications (RTDN)</strong> — dono ka concept same hai: jab bhi koi subscription event hota hai
+        (renewal, cancellation, refund, billing failure, grace period start/end), Apple/Google tumhare
+        configured backend endpoint ko ek signed HTTP POST bhejte hain. Tumhara backend is webhook ko receive
+        karke apne database mein user ka entitlement record update karta hai — aur baad mein jab bhi koi
+        request "kya ye user premium hai?" poochti hai, tum seedha apne fast local database se read karte
+        ho, Apple/Google ko dobara hit kiye bina.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Danger — Webhooks Pe "Blindly" Depend Karna Bhi Ek Trap Hai</div>
+        <p>
+          Yahan ek subtle lekin senior-level insight hai jo bahut log miss karte hain: webhooks
+          <strong>guaranteed delivery nahi</strong> dete. Tumhara server down ho sakta hai jab webhook aata
+          hai, network partition ho sakta hai, ya Apple/Google ke side pe hi koi transient issue ho sakta hai
+          — matlab ek webhook event <strong>permanently miss</strong> ho sakta hai agar tumne sirf "wait for
+          webhook" architecture banaya. Agar tumhara backend endpoint ek ghante ke liye down raha (deploy,
+          crash, whatever) aur usi dauraan koi refund/cancellation webhook aaya, wo event <strong>khoya
+          </strong> ja sakta hai — aur ek user jisne refund le liya, uska access forever active reh jaayega
+          jab tak koi manually notice na kare.
+        </p>
+        <p>
+          Sahi production architecture is failure mode ko accept karti hai aur <strong>reconciliation</strong>
+          ke through resilient banti hai — matlab webhooks fast-path hain, lekin ek periodic background job
+          (jaise har 6-12 ghante mein cron/scheduled function) bhi chalta hai jo directly App Store Server API
+          / Google Play Developer API ko poll karke actual subscription status verify karta hai aur agar
+          cache stale mila (webhook miss ho gaya tha), use correct kar deta hai. <strong>Webhook = fast
+          update, reconciliation poll = safety net.</strong> Dono chahiye, sirf ek nahi.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/api/webhooks/app-store+api.ts (backend)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { verifyAndDecodeNotification } <span class="tok-kw">from</span> <span class="tok-str">"../../../lib/appStoreServerLibrary"</span>; <span class="tok-com">// Apple ka signed JWT payload verify/decode karne wala helper (App Store Server Library se banaya)</span>
+<span class="tok-kw">import</span> { updateEntitlementCache } <span class="tok-kw">from</span> <span class="tok-str">"../../../lib/entitlements"</span>; <span class="tok-com">// hamara apna DB-write helper jo cache table update karta hai</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">POST</span>(request: Request) {
+  <span class="tok-kw">const</span> body = <span class="tok-kw">await</span> request.<span class="tok-fn">json</span>(); <span class="tok-com">// Apple ka POST body — ek signed JWS (JSON Web Signature) payload hota hai</span>
+
+  <span class="tok-kw">let</span> payload;
+  <span class="tok-kw">try</span> {
+    payload = <span class="tok-kw">await</span> <span class="tok-fn">verifyAndDecodeNotification</span>(body.signedPayload); <span class="tok-com">// CRITICAL: signature verify karo — warna koi bhi fake POST bhej ke entitlement forge kar sakta hai</span>
+  } <span class="tok-kw">catch</span> (err) {
+    <span class="tok-fn">console</span>.<span class="tok-fn">error</span>(<span class="tok-str">"Invalid App Store notification signature"</span>, err); <span class="tok-com">// signature invalid = untrusted sender, reject karo</span>
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ error: <span class="tok-str">"invalid signature"</span> }, { status: <span class="tok-num">400</span> }); <span class="tok-com">// 400 = bad request, Apple ko batao ye payload accept nahi hua</span>
+  }
+
+  <span class="tok-kw">const</span> notificationType = payload.notificationType; <span class="tok-com">// jaise "DID_RENEW", "EXPIRED", "REFUND", "DID_FAIL_TO_RENEW"</span>
+  <span class="tok-kw">const</span> subtype = payload.subtype; <span class="tok-com">// additional context, jaise "GRACE_PERIOD" ya "BILLING_RETRY"</span>
+  <span class="tok-kw">const</span> transactionInfo = payload.data.signedTransactionInfo; <span class="tok-com">// nested signed transaction info — appUserID/productId/expiresDate yahan se milta hai</span>
+
+  <span class="tok-com">// idempotency check — same webhook Apple kabhi kabhi retry/duplicate bhi bhej sakta hai (at-least-once delivery)</span>
+  <span class="tok-kw">const</span> alreadyProcessed = <span class="tok-kw">await</span> <span class="tok-fn">hasProcessedNotification</span>(payload.notificationUUID); <span class="tok-com">// apna DB check — is UUID ko pehle process kiya hai kya</span>
+  <span class="tok-kw">if</span> (alreadyProcessed) {
+    <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ ok: <span class="tok-kw">true</span> }); <span class="tok-com">// silently 200 return karo — duplicate hai, dobara process mat karo (double-crediting jaisa bug avoid)</span>
+  }
+
+  <span class="tok-com">// entitlement cache table update — yehi wo "fast read" table hai jo har API request use karegi</span>
+  <span class="tok-kw">await</span> <span class="tok-fn">updateEntitlementCache</span>({
+    appUserId: transactionInfo.appAccountToken, <span class="tok-com">// hamara internal user ID, purchase ke time associate kiya gaya tha</span>
+    productId: transactionInfo.productId, <span class="tok-com">// kaunsa subscription tier/plan</span>
+    status: <span class="tok-fn">mapNotificationToStatus</span>(notificationType, subtype), <span class="tok-com">// helper jo Apple ke type/subtype ko humare state machine states mein map karta hai (section 8.2)</span>
+    expiresAt: <span class="tok-kw">new</span> <span class="tok-fn">Date</span>(transactionInfo.expiresDate), <span class="tok-com">// exact expiry timestamp — grace period calculations ke liye zaroori</span>
+    rawNotificationType: notificationType, <span class="tok-com">// debugging/audit trail ke liye raw value bhi store karo</span>
+  });
+
+  <span class="tok-kw">await</span> <span class="tok-fn">markNotificationProcessed</span>(payload.notificationUUID); <span class="tok-com">// idempotency record save kiya taaki future duplicates skip ho sakein</span>
+
+  <span class="tok-kw">return</span> Response.<span class="tok-fn">json</span>({ ok: <span class="tok-kw">true</span> }); <span class="tok-com">// Apple ko 200 OK — agar ye response na mile toh Apple retry karega (at-least-once guarantee)</span>
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — 200 OK Fast Return Karo, Heavy Kaam Async Karo</div>
+        <p>
+          Apple/Google webhook endpoints se <strong>fast response</strong> expect karte hain (usually few
+          seconds ke andar) — agar timeout ho gaya, wo retry karte hain, jisse duplicate processing risk
+          badh jaata hai. Production pattern: webhook handler sirf payload verify + validate karke ek queue
+          (jaise a database job table, ya SQS/Cloud Tasks) mein push kare, aur turant 200 return kar de.
+          Actual heavy processing (DB writes, downstream notifications, analytics) queue consumer mein async
+          hota hai. Isse tumhara webhook endpoint kabhi bhi Apple/Google ko slow response nahi deta, chahe
+          tumhara downstream logic kitna bhi complex ho.
+        </p>
+      </div>
+
+      <h3>8.2 — Subscription State Machine</h3>
+      <p>
+        Section 7 (gotchas) mein humne states list ki thi. Ab senior-level insight — ye states ko
+        <strong>ek boolean (<code>isActive: true/false</code>) ki tarah treat karna bug-prone hai</strong>,
+        kyunki real-world transitions non-obvious hain. Sahi approach ek explicit
+        <strong>state machine</strong> model karna hai jahan har state se sirf specific dusre states mein
+        transition allowed hai, aur har state ka access-control implication clearly defined hai.
+      </p>
+
+      <table>
+        <thead><tr><th>State</th><th>User ko access milta hai?</th><th>Kaise trigger hota hai</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Trial</strong></td>
+            <td>Haan</td>
+            <td>User ne free trial start kiya, abhi tak charge nahi hua</td>
+          </tr>
+          <tr>
+            <td><strong>Active</strong></td>
+            <td>Haan</td>
+            <td>Payment successful, subscription current period ke andar hai</td>
+          </tr>
+          <tr>
+            <td><strong>Grace Period</strong></td>
+            <td>Haan (ye critical hai)</td>
+            <td>Renewal payment fail hua, lekin Apple/Google user ko payment fix karne ka time de rahe hain (typically 16 din tak, configurable)</td>
+          </tr>
+          <tr>
+            <td><strong>Billing Retry</strong></td>
+            <td>Depends (product decision) — often haan grace period ke andar</td>
+            <td>Store automatically failed payment ko retry kar raha hai background mein</td>
+          </tr>
+          <tr>
+            <td><strong>Cancelled (period-end pending)</strong></td>
+            <td>Haan, jab tak current period khatam na ho</td>
+            <td>User ne cancel kiya, lekin already-paid period abhi baaki hai</td>
+          </tr>
+          <tr>
+            <td><strong>Expired</strong></td>
+            <td>Nahi</td>
+            <td>Grace period bhi khatam ho gaya, ya cancel ke baad period end pahunch gaya</td>
+          </tr>
+          <tr>
+            <td><strong>Refunded</strong></td>
+            <td>Nahi (turant)</td>
+            <td>Apple/Google ne refund process kiya (chargeback ya support request)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Danger — Grace Period Mein Access Cut Karna Sabse Common Real-World Bug Hai</div>
+        <p>
+          Ye ek bahut real production incident pattern hai: ek naive implementation sirf webhook ka
+          <code>DID_FAIL_TO_RENEW</code> event dekh ke turant <code>isActive = false</code> set kar deta hai
+          aur user ka access cut kar deta hai. Lekin Apple/Google ka <strong>poora point grace period ka</strong>
+          ye hai ki failed payment ke baad bhi wo automatically retry karte rehte hain (expired card, insufficient
+          funds jaisi temporary issues ke liye) — is dauraan agar tum access already cut kar dete ho, tum ek
+          <strong>paying customer</strong> (jiska card sirf 2 din baad successfully charge ho jaayega) ko
+          galat tarike se lock out kar dete ho. Ye customer support tickets aur churn dono badhata hai. Sahi
+          logic: <code>GRACE_PERIOD</code> subtype ko apni state machine mein ek <em>separate access-granting
+          state</em> ki tarah treat karo, sirf pure "expired" ya "billing retry period bhi exhaust ho gaya" pe
+          hi access cut karo.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>lib/entitlements.ts — state machine helper</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// har state ka explicit "does this grant access" mapping — ye single source of truth hai poore backend ke liye</span>
+<span class="tok-kw">type</span> SubscriptionState =
+  <span class="tok-punc">|</span> <span class="tok-str">"trial"</span> <span class="tok-com">// free trial period chal raha hai</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"active"</span> <span class="tok-com">// normal paid, current period ke andar</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"grace_period"</span> <span class="tok-com">// payment fail hua lekin store retry kar raha hai, access abhi bhi milna chahiye</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"billing_retry"</span> <span class="tok-com">// grace period ke baad bhi retry chal raha, product decision pe depend karta hai</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"cancelled_pending"</span> <span class="tok-com">// cancel kiya lekin period end tak access active</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"expired"</span> <span class="tok-com">// access khatam</span>
+  <span class="tok-punc">|</span> <span class="tok-str">"refunded"</span>; <span class="tok-com">// access turant khatam, money wapas gaya</span>
+
+<span class="tok-com">// yehi ek jagah hai jahan "kaunsa state access deta hai" decide hota hai — baaki poora codebase isi function ko call karega</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">grantsAccess</span>(state: SubscriptionState): <span class="tok-kw">boolean</span> {
+  <span class="tok-kw">return</span> ( <span class="tok-com">// in states mein access true, baaki sab false — grace_period yahan explicitly included hai (upar wale danger callout ka fix)</span>
+    state <span class="tok-punc">===</span> <span class="tok-str">"trial"</span> <span class="tok-punc">||</span>
+    state <span class="tok-punc">===</span> <span class="tok-str">"active"</span> <span class="tok-punc">||</span>
+    state <span class="tok-punc">===</span> <span class="tok-str">"grace_period"</span> <span class="tok-punc">||</span>
+    state <span class="tok-punc">===</span> <span class="tok-str">"cancelled_pending"</span>
+  );
+}
+
+<span class="tok-com">// Apple ke raw notification type/subtype ko humare clean internal state mein translate karta hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">mapNotificationToStatus</span>(type: <span class="tok-kw">string</span>, subtype?: <span class="tok-kw">string</span>): SubscriptionState {
+  <span class="tok-kw">if</span> (type <span class="tok-punc">===</span> <span class="tok-str">"DID_FAIL_TO_RENEW"</span> <span class="tok-punc">&&</span> subtype <span class="tok-punc">===</span> <span class="tok-str">"GRACE_PERIOD"</span>) <span class="tok-kw">return</span> <span class="tok-str">"grace_period"</span>; <span class="tok-com">// payment fail hua par Apple abhi retry kar raha hai — access rakho</span>
+  <span class="tok-kw">if</span> (type <span class="tok-punc">===</span> <span class="tok-str">"DID_FAIL_TO_RENEW"</span>) <span class="tok-kw">return</span> <span class="tok-str">"billing_retry"</span>; <span class="tok-com">// grace period nahi hai, pure retry state</span>
+  <span class="tok-kw">if</span> (type <span class="tok-punc">===</span> <span class="tok-str">"EXPIRED"</span>) <span class="tok-kw">return</span> <span class="tok-str">"expired"</span>; <span class="tok-com">// sab retries exhaust, access cut karo</span>
+  <span class="tok-kw">if</span> (type <span class="tok-punc">===</span> <span class="tok-str">"REFUND"</span>) <span class="tok-kw">return</span> <span class="tok-str">"refunded"</span>; <span class="tok-com">// turant access cut, money wapas gaya</span>
+  <span class="tok-kw">if</span> (type <span class="tok-punc">===</span> <span class="tok-str">"DID_CHANGE_RENEWAL_STATUS"</span> <span class="tok-punc">&&</span> subtype <span class="tok-punc">===</span> <span class="tok-str">"AUTO_RENEW_DISABLED"</span>) <span class="tok-kw">return</span> <span class="tok-str">"cancelled_pending"</span>; <span class="tok-com">// cancel kiya, period end tak access</span>
+  <span class="tok-kw">return</span> <span class="tok-str">"active"</span>; <span class="tok-com">// default — DID_RENEW jaise successful events yahan aate hain</span>
+}</code></pre>
+      </div>
+
+      <h3>8.3 — Proration Handling</h3>
+      <p>
+        Jab ek user apna subscription plan <strong>mid-cycle change</strong> karta hai (jaise Monthly se
+        Annual pe upgrade, ya ek higher tier se lower tier pe downgrade), Apple/Google/Stripe automatically
+        <strong>proration</strong> calculate karte hain — matlab remaining unused time ka credit ya extra
+        charge ka fair adjustment. Important senior-level fact: <strong>ye behavior platform-specific hai
+        aur tumhare control mein nahi hai</strong> — tum proration ka exact formula customize nahi kar sakte,
+        sirf iske around apni UI messaging design kar sakte ho.
+      </p>
+      <ul>
+        <li>
+          <strong>Apple (StoreKit)</strong> — upgrade turant effective hota hai aur remaining time ka
+          prorated credit naye plan ki cost mein apply hota hai. Downgrade <strong>turant nahi</strong> hota
+          — wo current period ke end tak wait karta hai, phir naya (cheaper) plan agle cycle se start hota
+          hai. Ye asymmetry (upgrade immediate, downgrade delayed) bahut users ko confuse karti hai agar UI
+          mein clearly explain na kiya jaaye.
+        </li>
+        <li>
+          <strong>Google (Play Billing)</strong> — multiple proration modes support karta hai jo developer
+          choose kar sakta hai (jaise "immediate with time proration", "immediate without proration",
+          "deferred") — Apple se zyada flexibility deta hai, lekin iska matlab tumhe explicitly decide karna
+          padta hai kaunsa mode chahiye per use-case.
+        </li>
+        <li>
+          <strong>Stripe (real-world payments/subscriptions)</strong> — proration behavior configurable hai
+          (<code>proration_behavior</code> param — <code>create_prorations</code>, <code>none</code>, ya
+          <code>always_invoice</code>), aur tum invoice preview API se exact prorated amount pehle se calculate
+          karke user ko dikha sakte ho checkout se pehle — ye Apple/Google ke comparison mein bahut zyada
+          transparent/controllable hai.
+        </li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — UI Messaging Hi Tumhara Actual Control Point Hai</div>
+        <p>
+          Kyunki proration ka underlying math platform decide karta hai, senior-level product/engineering
+          decision ye hota hai ki apni <strong>UI copy</strong> ko is asymmetry ke hisaab se likho — jaise
+          upgrade button pe "Upgrade now — charged immediately with credit for remaining days" aur downgrade
+          button pe "Downgrade will take effect on your next billing date (DD Mon)" jaisi clear, specific
+          messaging dikhana. Ye avoid karta hai support tickets jaise "maine downgrade kiya lekin abhi bhi
+          purane plan ka paisa kata" — jo actually galat billing nahi hai, sirf expected platform behavior hai
+          jo user ko explain nahi kiya gaya tha.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">9. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un sawaalon ko cover karta hai jo senior/staff-level RN interviews mein payments/monetization
+        ke baare mein poochhe jaate hain — architecture, policy trade-offs, security reasoning, aur
+        real-world debugging scenarios. Answers ek strong senior engineer ki depth se likhe gaye hain, sirf
+        "correct" nahi balki "why" bhi explain karte hue.
+      </p>
+
+      <h3>Q1. Design the backend data model and flow for handling subscription renewals reliably, including what happens if your webhook endpoint is down for an hour.</h3>
+      <p>
+        Core design: ek <code>subscriptions</code> table jisme columns hon — <code>user_id</code>,
+        <code>product_id</code>, <code>state</code> (state machine se, section 8.2), <code>expires_at</code>,
+        <code>store</code> (apple/google/stripe), <code>last_verified_at</code>. Flow do parallel paths se
+        chalta hai:
+      </p>
+      <ol>
+        <li><strong>Fast path (webhook)</strong> — App Store Server Notification/RTDN aata hai, signature verify hoti hai, entitlement cache turant update hota hai. Ye 99% cases mein seconds ke andar sync ho jaata hai.</li>
+        <li><strong>Safety net (reconciliation job)</strong> — ek scheduled job (jaise har 6 ghante) un subscriptions ko pick karta hai jinka <code>last_verified_at</code> purana hai ya jo <code>expires_at</code> ke close hain, aur directly App Store Server API/Play Developer API se unka current status verify karta hai.</li>
+      </ol>
+      <p>
+        Agar webhook endpoint ek ghante ke liye down raha — us dauraan aaye events <strong>lost ho sakte
+        hain</strong> (Apple kuch retries karta hai, lekin infinite nahi). Isliye reconciliation job hi
+        actual safety guarantee deta hai: jab endpoint wapas up ho, agla scheduled reconciliation run
+        automatically stale records ko detect karke correct kar dega, chahe koi specific webhook miss ho
+        gaya ho. Ye design "eventually consistent, never permanently wrong" guarantee deta hai — jo ek pure
+        webhook-only design nahi de sakta.
+      </p>
+
+      <h3>Q2. Explain exactly why Netflix removed the ability to subscribe from within their iOS app — what's the underlying App Store policy and business trade-off?</h3>
+      <p>
+        Streaming subscription Apple ki policy ke hisaab se ek <strong>digital good</strong> maana jaata hai
+        (Category A, section 1) — matlab agar Netflix apne app ke andar StoreKit se subscription becha,
+        Apple <strong>15-30% commission</strong> le sakta hai us revenue pe. Netflix jaisi company ke liye,
+        jiska subscriber base already crores mein hai, ye commission absolute dollar terms mein bahut bada
+        hit hai. Business trade-off: Netflix ne apne app se in-app-purchase flow hi hata diya — naye users
+        ko app ke andar subscribe karne ka option hi nahi milta, unhe bahar (netflix.com, browser mein) bhej
+        diya jaata hai subscribe karne ke liye. Isse Apple ka commission poori tarah avoid ho jaata hai,
+        kyunki subscription transaction Apple ke ecosystem ke bahar hoti hai. Trade-off cost: thoda sa
+        conversion friction (user ko app se bahar jaana padta hai), lekin at Netflix's scale ye friction
+        cost commission-saving se kaafi kam hai. Ye pattern "reader apps" ke liye Apple ne explicitly ek
+        <em>External Purchase Link Entitlement</em> ke through bhi formalize kiya hai (kuch categories mein,
+        regulatory pressure — especially EU DMA — ke baad).
+      </p>
+
+      <h3>Q3. Why is validating a purchase receipt server-side non-negotiable for a subscription-gated feature, even though the client SDK already tells you "purchase succeeded"?</h3>
+      <p>
+        Client-side "success" signal sirf ye batata hai ki <strong>uss specific device pe StoreKit/Billing
+        API ne success return kiya</strong> — ye cryptographically kuch bhi prove nahi karta backend ke
+        liye. Attack surface: jailbroken/rooted devices pe tools exist karte hain jo fake success responses
+        inject kar sakte hain, reverse-engineered/modified app builds client-side boolean ko directly
+        <code>true</code> set kar sakte hain, aur network-level tampering (agar verification hi client-only
+        hai) response modify kar sakta hai. Receipt (iOS) ya purchase token (Android) ek
+        <strong>cryptographically signed proof</strong> hai jo sirf Apple/Google generate kar sakte hain —
+        server-side is receipt ko unke verification API se check karna hi actual "was this real" guarantee
+        deta hai. Bina is step ke, tumhara premium-gated backend endpoint effectively
+        <strong>unauthenticated</strong> hai as far as payment status is concerned — koi bhi client apna
+        request bas "I'm premium" claim karke bhej sakta hai.
+      </p>
+
+      <h3>Q4. A user says they paid but don't have access — walk through your debugging process across app, backend, and store dashboard.</h3>
+      <ol>
+        <li><strong>Get identifiers first</strong> — user ka account ID/email, aur agar possible unka Apple/Google transaction ID ya order ID (screenshot se, ya support ticket se).</li>
+        <li><strong>Check store dashboard</strong> — App Store Connect/Play Console mein us transaction ko search karo. Confirm: payment actually settled hua ya pending/failed reh gaya (jaise "payment declined but user saw a confusing UI that looked like success").</li>
+        <li><strong>Check RevenueCat/webhook logs</strong> — RevenueCat dashboard (ya apne webhook logs) mein dekho — kya event tumhare backend tak pahunchi thi? Agar RevenueCat mein entitlement active dikh raha hai lekin apne DB mein nahi, iska matlab webhook miss hua ya process nahi hua — reconciliation job manually trigger karo.</li>
+        <li><strong>Check your database's entitlement cache</strong> — kya <code>subscriptions</code> table mein us user ka correct state hai? Agar nahi, ye backend-side bug hai (webhook handler mein koi silent failure, ya idempotency check galti se duplicate ko drop kar raha).</li>
+        <li><strong>Check client-side</strong> — kya app khud stale cached state dikha raha hai (jaise app background mein tha jab entitlement update hua, aur listener trigger nahi hua)? Force refresh/restart se resolve ho sakta hai.</li>
+        <li><strong>Cross-platform mismatch check</strong> — kya user ne ek platform pe purchase kiya (jaise iOS) aur doosre pe check kar raha hai (jaise Android web)? Agar <code>appUserID</code>/account linking sahi se set nahi hai, entitlements merge nahi honge.</li>
+      </ol>
+      <p>
+        Root cause identify hone ke baad — agar genuinely backend bug hai, manually entitlement grant karo
+        (support tooling se) aur underlying bug (missed webhook, race condition, waghera) ko fix karo taaki
+        future users affected na hon.
+      </p>
+
+      <h3>Q5. What's the difference between how you'd model "grace period" access versus a simple isActive boolean, and why does this distinction matter at scale?</h3>
+      <p>
+        Ek boolean model sirf do states allow karta hai — true/false. Real subscription lifecycle mein
+        (section 8.2) grace period, billing retry, cancelled-pending jaise states hain jinme access
+        <strong>should still be granted</strong> temporarily. Agar tum boolean use karte ho aur "payment
+        failed" event pe seedha <code>false</code> set karte ho, tum paying customers (jo temporary card
+        issue ke wajah se fail hue, aur jinhe Apple/Google khud hi retry kar rahe hain) ko incorrectly lock
+        out kar dete ho. At scale — agar tumhare paas lakhs subscribers hain aur even 2-3% payments temporarily
+        fail hote hain renewal date pe (common, expired cards ki wajah se), ye ek significant chunk of paying
+        users ko wrongly cut kar dega, jo support tickets aur churn dono spike karega. Ek explicit state
+        machine (enum ke saath, boolean nahi) is nuance ko naturally capture karta hai aur access-control
+        logic ko ek single <code>grantsAccess(state)</code> function mein centralize karta hai (jaisa 8.2
+        code mein dikhaya), jisse consistency guarantee hoti hai poore codebase mein.
+      </p>
+
+      <h3>Q6. Why can't a client directly create a Stripe PaymentIntent with the amount, and what specific attack does the backend-creates-intent pattern prevent?</h3>
+      <p>
+        Agar client apna khud ka amount specify kar sake PaymentIntent creation mein, ek attacker apna app
+        traffic intercept/modify kar sakta hai (proxy tool se) ya reverse-engineered build bana sakta hai
+        jisme wo request body mein amount ko manipulate kare — jaise ek ₹10,000 ka order ₹1 amount ke saath
+        submit karna. Chunki PaymentIntent creation ke liye Stripe <strong>secret key</strong> chahiye
+        (jo sirf server pe honi chahiye), aur secret-key-holding backend hi authoritative amount decide
+        karta hai apne database se (order/cart lookup se, client input se nahi), client ke paas amount
+        tamper karne ka koi rasta nahi bachta. Ye exact same "never trust client input for anything that
+        affects money/security" principle hai jo ch.9 ke RLS/backend-validation discussion mein bhi aata hai.
+      </p>
+
+      <h3>Q7. How would you test subscription renewal, grace period, and cancellation flows without waiting real weeks/months for them to naturally occur?</h3>
+      <p>
+        Apple ka Sandbox environment specifically isi problem ko solve karta hai — sandbox subscriptions
+        <strong>accelerated speed</strong> pe renew hoti hain (jaise ek monthly subscription sandbox mein
+        ~5 minutes mein renew ho jaati hai, weekly kuch minutes mein), taaki tum multiple renewal cycles,
+        grace period transitions, aur expiry ko ek testing session ke andar hi observe kar sako. Google's
+        License Testing similarly accelerated renewal simulate karta hai. Production-grade testing approach:
+        ek dedicated Sandbox Tester Apple ID (kabhi real ID use mat karo), ek test card jo Sandbox mein
+        <strong>deliberately decline</strong> ho (Apple specific test cards provide karta hai jo grace
+        period trigger karte hain), aur apne webhook handler ko in accelerated events ke against test karna
+        — taaki tumhara state machine (Q5) aur reconciliation job (Q1) dono verify ho sakein bina real
+        production users affect kiye.
+      </p>
+
+      <h3>Q8. If RevenueCat (or your IAP provider) has an outage, what's your fallback strategy so paying users aren't locked out?</h3>
+      <p>
+        Ye ek availability/resilience question hai jo senior interviews mein often aata hai. Sahi answer:
+        apna backend entitlement cache (section 8.1) hi tumhara resilience layer hai — agar RevenueCat down
+        hai, tumhara app RevenueCat ko live query nahi karta har baar, balki apne locally-cached entitlement
+        record pe depend karta hai jo pichhle successful sync se already stored hai. Is design mein RevenueCat
+        outage ka impact sirf <strong>naye purchases/renewals ka real-time sync delay</strong> hota hai, na
+        ki existing users ka access loss — kyunki unka cached state already valid hai aur expiry date tak
+        honor hota hai. Additionally, client-side bhi ek short grace-tolerance rakhna sensible hai (jaise agar
+        entitlement check fail ho network issue ki wajah se, turant lock mat karo, last-known-good state pe
+        thodi der trust karo) — isse transient outages user-facing impact nahi banti.
+      </p>
+
+      <h3>Q9. Walk through the security reasoning for why raw card number input (a plain TextInput) is a fundamentally different risk profile than Stripe's CardField component.</h3>
+      <p>
+        Jab card number ek plain <code>TextInput</code> mein type hota hai aur tum use apne JS state mein
+        store karte ho (chahe temporarily) aur apne backend ko bhejte ho, raw card data
+        <strong>tumhare app runtime aur backend infrastructure ke through guzarta hai</strong> — jiska matlab
+        wo poora surface (device memory, network layer, tumhara server, tumhara logging agar accidentally log
+        ho gaya) ab PCI-DSS scope mein aa jaata hai, jisme heavy requirements hote hain (encryption-at-rest,
+        network segmentation, regular penetration testing, audits). <code>CardField</code> is problem ko
+        completely bypass karta hai — card input Stripe ke apne native, sandboxed SDK code ke andar capture
+        hota hai aur seedha tokenize hoke Stripe ke servers ko jaata hai; raw number kabhi tumhare JS runtime
+        ki memory mein bhi nahi aata as a plain string tumhare control mein. Isi wajah se tumhara business
+        lightest compliance tier (SAQ A) mein reh sakta hai — jaisa section 5 mein cover kiya.
+      </p>
+
+      <h3>Q10. Explain the "restore purchases" requirement — what specific bug does it prevent, and why do so many apps get rejected for missing it?</h3>
+      <p>
+        Non-consumable purchases aur subscriptions ek Apple ID/Google account ke against register hote hain,
+        na ki ek specific app install ke against. Agar user apna app delete karke reinstall kare, ya ek naya
+        device le, unka purchase history unke Apple ID/Google account mein already exist karta hai — lekin
+        tumhara app (naya install hone ki wajah se) ye nahi jaanta ki unhone pehle se pay kiya hua hai, jab
+        tak explicitly check na kiya jaaye. Bina restore-purchases option ke, aisa user apna already-paid
+        subscription/feature <strong>dobara access nahi kar paayega</strong> bina dobara pay kiye — jo Apple
+        ki guideline ke against hai (unfair double-charging risk) aur ek bahut poor user experience hai. Yehi
+        wajah hai ye Apple review guidelines mein explicitly mandatory hai aur missing hone pe apps
+        consistently reject hoti hain — ye ek "easy to forget jab MVP jaldi ship karna ho" requirement hai,
+        isliye senior devs isse checklist mein explicitly rakhte hain (jaisa section 7 mein discuss kiya).
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="14-publishing.html">
+          <div class="label">← Previous</div>
+          <div class="title">Publishing</div>
+        </a>
+        <a class="next" href="16-native-modules.html">
+          <div class="label">Next →</div>
+          <div class="title">Native Modules</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

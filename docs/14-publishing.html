@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publishing — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link active" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Publishing</div>
+      <div class="progress-pill">Chapter 14 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 14 · Build &amp; Release</span>
+      <h1>Publishing — Manual Xcode Flow, App Store &amp; Play Store Checklists</h1>
+      <p class="subtitle">
+        Chapter 11 mein humne dekha tha EAS Submit kaise pura submission process automate karta hai — signing,
+        upload, sab kuch ek command se. Is chapter mein hum ek level neeche jaake dekhenge ki <strong>EAS Submit
+        actually kya automate kar raha hai under the hood</strong>, taaki jab wo fail ho (aur ye hoga, kabhi na
+        kabhi), aap manually Xcode se publish kar sako aur exactly samajh sako Xcode Organizer kya dikha raha hai.
+        Uske baad hum App Store aur Play Store dono ke liye ek senior-level, production-grade submission checklist
+        cover karenge — including wo mistakes jo apps ko reject karwate hain ya months baad bhi remove karwa
+        sakte hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#overview">1. Publishing Overview: EAS Submit vs Manual</a></li>
+          <li><a href="#xcode-flow">2. Publishing with Xcode (Manual iOS Flow)</a></li>
+          <li><a href="#appstore-checklist">3. App Store Submission — Full Checklist</a></li>
+          <li><a href="#playstore-checklist">4. Play Store Submission — Full Checklist</a></li>
+          <li><a href="#listing-optimization">5. Store Listing Optimization</a></li>
+          <li><a href="#gotchas">6. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">7. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">8. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="overview" style="border-top:none; padding-top:0; margin-top:28px;">Publishing Overview: EAS Submit vs Manual Publishing</h2>
+
+      <p>
+        Ek reasonable sawal ye hai: agar Chapter 11 mein hum <code>eas submit</code> se ek command mein sab kuch
+        automate kar chuke hain, to manual publishing seekhna kyun zaroori hai? Answer ye hai ki
+        <strong>automation ek abstraction hai, magic nahi</strong> — aur jab abstraction leak karti hai (fail hoti
+        hai, confusing error deti hai, ya kisi edge case ko handle nahi karti), aapko underlying process samajhna
+        hi padta hai debug karne ke liye. Ye bilkul wahi principle hai jo humne EAS Build (Chapter 10) mein dekha
+        tha — EAS Build bhi wahi <code>xcodebuild</code>/Gradle commands chalata hai jo aap locally chalate, bas
+        cloud pe.
+      </p>
+
+      <p>Kuch concrete scenarios jaha manual flow zaroori ban jaata hai:</p>
+      <ul>
+        <li><strong>EAS Submit fail ho raha hai aur error message vague hai</strong> — jaise "Invalid binary" ya
+          "Asset validation failed" jaisi generic errors. Xcode Organizer mein manually upload karne par aapko
+          <em>exact</em> validation error milta hai (missing icon size, invalid Info.plist entry, wrong
+          architecture) — jo CLI output mein kabhi utna detailed nahi hota.</li>
+        <li><strong>Full control chahiye Xcode-level archive/upload steps par</strong> — jaise custom entitlements
+          debug karna, ya ek specific provisioning profile force karna jo EAS ka automatic credential resolution
+          galat pick kar raha hai.</li>
+        <li><strong>Team abhi EAS Submit set up nahi kar payi</strong> — chhoti teams ya freelance projects mein
+          kabhi EAS account ka submit-level access nahi hota (sirf build access), to manual upload hi option
+          bachta hai.</li>
+        <li><strong>App Store Connect ka metadata/listing management</strong> — ye part hum aage dekhenge, EAS
+          Submit sirf binary upload karta hai, store listing (screenshots, description, "what's new") separate
+          kaam hai jo har team ko kabhi na kabhi manually karna padta hai, chahe binary EAS se hi upload ho.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Is chapter ko "EAS Submit ka pehla-principles model" ki tarah socho — jab aap samajh jaate ho ki
+          <code>eas submit</code> actually Xcode Organizer ke Transporter API ko hi internally hit kar raha hai
+          (same underlying Apple upload mechanism), debugging kaafi aasan ho jaati hai. Aap literally same steps
+          manually reproduce kar sakte ho aur exactly dekh sakte ho kaha fail ho raha hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="xcode-flow">Publishing with Xcode (Manual iOS Flow)</h2>
+
+      <p>
+        Manual iOS publishing ke liye sabse pehle aapko ek native <code>ios/</code> project chahiye — agar aap
+        purely EAS Build ke cloud-only flow use kar rahe ho (jaha native folders kabhi locally generate nahi hote,
+        sab kuch cloud pe hota hai), to pehle <code>npx expo prebuild</code> chalana padega taaki native project
+        locally materialize ho. Ye command <code>app.json</code>/<code>app.config.ts</code> aur config plugins ko
+        read karke actual Xcode project generate karta hai (wahi step jo EAS Build cloud pe internally chalata
+        hai, bas ab locally).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>Terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Agar ios/ folder abhi tak generate nahi hua (ya .gitignore mein hai), pehle prebuild chalao</span>
+npx expo prebuild --platform ios <span class="tok-com"># app.config se native Xcode project generate karta hai ios/ folder mein</span>
+
+<span class="tok-com"># Generated project ko Xcode mein directly kholna hai (workspace file, .xcodeproj nahi, kyunki CocoaPods use ho raha hai)</span>
+open ios/*.xcworkspace <span class="tok-com"># .xcworkspace kholna zaroori hai — CocoaPods dependencies sirf isi mein resolve hoti hain</span></code></pre>
+      </div>
+
+      <p>
+        Xcode khulne ke baad, poora manual flow ye hai:
+      </p>
+
+      <ol>
+        <li><strong>Scheme aur device select karo</strong> — top bar mein apna app target select karo aur
+          destination ko <strong>"Any iOS Device (arm64)"</strong> par set karo. Simulator select hone par
+          Archive option disabled rehta hai — Apple ko sirf real-device-compatible binary chahiye.</li>
+        <li><strong>Product → Archive</strong> — Xcode poora release build compile karta hai (debug nahi, release
+          configuration — optimized, no dev tools bundled) aur ek <code>.xcarchive</code> file banata hai. Ye
+          wahi step hai jo EAS Build cloud pe <code>xcodebuild archive</code> command se karta hai.</li>
+        <li><strong>Xcode Organizer khulta hai automatically</strong> — archive complete hone ke baad Organizer
+          window mein aapka naya archive listed dikhega, top pe (date/time ke saath).</li>
+        <li><strong>"Distribute App" click karo</strong> — ek wizard khulta hai jaha aapko distribution method
+          choose karna hai: <strong>App Store Connect</strong> (jo humein chahiye), TestFlight-internal-only,
+          Ad Hoc, ya Enterprise.</li>
+        <li><strong>Signing options</strong> — "Automatically manage signing" (Xcode khud certificate/provisioning
+          profile resolve karta hai, aapke Apple Developer account se) ya "Manually manage signing" (aap specific
+          profile pick karte ho — enterprise setups mein common jaha central team profiles issue karti hai).</li>
+        <li><strong>Upload</strong> — Xcode binary ko validate karta hai locally (icon sizes, missing
+          architectures, Info.plist required keys) <em>before</em> upload — ye wahi validation hai jiske vague
+          errors aapko EAS Submit se milte hain, lekin yaha Xcode exact file/field bata deta hai jo problem hai.
+          Validation pass hone ke baad, binary Apple ke Transporter service ke through upload hota hai.</li>
+        <li><strong>Processing wait</strong> — upload ke baad Apple server-side processing karta hai (few minutes
+          se le kar an hour tak) — iske baad hi build App Store Connect mein "TestFlight" tab ke under select
+          karne ke liye available hota hai.</li>
+      </ol>
+
+      <p>
+        Agar aap curious ho ki <code>npx expo prebuild</code> actually kya generate karta hai, neeche ek annotated
+        tree hai — samajhna zaroori hai kyunki manual Xcode flow mein aap directly isi generated project ke saath
+        kaam karte ho (EAS Build ke cloud flow mein ye sab background mein hota hai, kabhi dikhta nahi):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ios/ (generated by expo prebuild)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>ios/
+├── MyApp.xcworkspace/          <span class="tok-com">// CocoaPods integration ke baad ka "combined" project — ISE hi kholna hai, .xcodeproj nahi, kyunki Pods target bhi isi workspace ke andar hota hai</span>
+├── MyApp.xcodeproj/            <span class="tok-com">// Raw Xcode project (targets, build settings, schemes) — prebuild ne app.config se generate kiya, hand-edit karne se agla prebuild overwrite kar dega</span>
+├── MyApp/                      <span class="tok-com">// Actual native app source — Info.plist, AppDelegate, entry point, assets</span>
+│   ├── AppDelegate.swift       <span class="tok-com">// App lifecycle entry point — RN bridge/JS engine yahin se boot hota hai</span>
+│   ├── Info.plist              <span class="tok-com">// Permissions strings, bundle identifier, orientation config — config plugins isi file ko generate/patch karte hain</span>
+│   ├── Images.xcassets/        <span class="tok-com">// App icon + launch screen assets — 1024px icon yahin se App Store Connect ko bhi resolve hota hai</span>
+│   └── PrivacyInfo.xcprivacy   <span class="tok-com">// Apple ka "privacy manifest" — declare karta hai app/SDK kaunse "required reason" APIs use karte hain (App Privacy label ke sath cross-checked hota hai)</span>
+├── Podfile                     <span class="tok-com">// CocoaPods dependency list — native modules ke iOS pods yahan se resolve hote hain "pod install" ke through</span>
+└── .xcode.env                  <span class="tok-com">// Node binary path jo Xcode build script ko batata hai kaunsa node use karna hai (React Native build phase ke liye zaroori)</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Native folder ko commit karna ya nahi</div>
+        <p>
+          Agar aap purely EAS Build cloud flow use kar rahe ho, convention hai <code>ios/</code>/<code>android/</code>
+          ko <code>.gitignore</code> mein rakhna (EAS har build pe fresh prebuild khud chalata hai). Lekin agar aap
+          manual Xcode publishing regularly karte ho — ya koi custom native code hai jo config plugin se express
+          nahi ho sakta — team ko in folders ko commit karna padta hai taaki sab developers same generated project
+          dekhein. Dono approaches valid hain, bas team-wide consistent hona chahiye.
+        </p>
+      </div>
+
+      <p>
+        <code>eas metadata</code> command store listing metadata (description, keywords, "what's new", support
+        URL, etc.) ko ek local JSON file se App Store Connect / Play Console push karne deta hai — screenshots
+        jaisi binary assets abhi bhi manually upload karni padti hain, lekin text-based metadata ko version-control
+        mein rakhna aur CI se automate karna possible ho jaata hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>store.config.json (eas metadata pattern — teaching comments, real JSON support nahi karta)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"configVersion"</span>: <span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-com">// eas metadata schema version — EAS CLI isse validate karta hai file ka format</span>
+  <span class="tok-attr">"apple"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Apple-specific store listing metadata block</span>
+    <span class="tok-attr">"info"</span>: <span class="tok-punc">{</span> <span class="tok-com">// Locale-keyed metadata — multi-language store listings support karta hai</span>
+      <span class="tok-attr">"en-US"</span>: <span class="tok-punc">{</span> <span class="tok-com">// US English locale ke liye listing content</span>
+        <span class="tok-attr">"title"</span>: <span class="tok-str">"MyApp"</span><span class="tok-punc">,</span> <span class="tok-com">// App Store pe dikhne wala app name</span>
+        <span class="tok-attr">"subtitle"</span>: <span class="tok-str">"Track expenses effortlessly"</span><span class="tok-punc">,</span> <span class="tok-com">// Title ke neeche chhota tagline</span>
+        <span class="tok-attr">"description"</span>: <span class="tok-str">"MyApp helps you..."</span><span class="tok-punc">,</span> <span class="tok-com">// Full description — search indexing mein limited weight, lekin conversion ke liye important</span>
+        <span class="tok-attr">"keywords"</span>: <span class="tok-str">"expense,budget,finance,tracker"</span><span class="tok-punc">,</span> <span class="tok-com">// iOS-specific dedicated search field — comma separated, directly ranking affect karta hai</span>
+        <span class="tok-attr">"releaseNotes"</span>: <span class="tok-str">"Bug fixes and performance improvements."</span> <span class="tok-com">// "What's new in this version" text</span>
+      <span class="tok-punc">}</span> <span class="tok-com">// en-US block close</span>
+    <span class="tok-punc">}</span> <span class="tok-com">// info block close</span>
+  <span class="tok-punc">}</span> <span class="tok-com">// apple block close</span>
+<span class="tok-punc">}</span> <span class="tok-com">// root object close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>Terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Existing App Store Connect listing ko local JSON file mein pull karna (naya project onboard karte waqt useful)</span>
+eas metadata:pull <span class="tok-com"># store.config.json ko current live metadata se populate kar deta hai</span>
+
+<span class="tok-com"># Local JSON file se App Store Connect listing update push karna</span>
+eas metadata:push <span class="tok-com"># store.config.json ka content App Store Connect API ke through upload hota hai</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Binary upload ≠ Store listing complete</div>
+        <p>
+          Yaha ek critical distinction samajhna zaroori hai: <strong>upload karna sirf binary submit karna hai</strong>
+          — jaise ek courier ko package de dena. Actual "store pe kya dikhega" — screenshots, description,
+          keywords, "what's new in this version", pricing — ye sab <strong>App Store Connect ki website par
+          separately fill karna padta hai</strong>. Chahe binary EAS Submit se upload hui ho ya manually Xcode
+          se, listing metadata management ek alag, largely manual step hai (EAS ka <code>eas metadata</code> command
+          isko partially automate karta hai — ek JSON file se metadata push kar sakta hai, lekin screenshots jaisi
+          visual assets aur pehli baar ka store listing setup still mostly manual/App-Store-Connect-UI-driven hota
+          hai in most teams).
+        </p>
+      </div>
+
+      <p>
+        Isliye teams jo EAS Build + EAS Submit dono use karti hain, unhe bhi App Store Connect UI (ya
+        <code>eas metadata</code>) se familiar hona padta hai — kyunki har naye version ke saath "what's new" text
+        update karna, ya har naye feature ke saath screenshots refresh karna, ek recurring manual (ya
+        semi-automated) task hai jo pure build automation se solve nahi hota.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Android ka equivalent manual flow <code>android/</code> folder ko Android Studio mein khol ke
+          <strong>Build → Generate Signed Bundle/APK</strong> karna hai — concept same hai (local native tool se
+          signed artifact banana), bas UI/terminology alag hai. Android side pe manual flow generally kam use
+          hota hai kyunki Gradle command-line se hi (<code>./gradlew bundleRelease</code>) same output easily mil
+          jaata hai bina IDE ke.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="appstore-checklist">App Store Submission — Full Checklist</h2>
+
+      <p>
+        Ye checklist wahi cheezein cover karti hai jo senior devs pehle se verify kar lete hain submit karne se
+        pehle — kyunki har rejection cycle mein Apple review team se dobara turn milne mein 1-3 din lag sakte hain,
+        aur "sirf ek chhoti si cheez missing thi" wali rejection avoid karna hi sabse bada time-saver hai.
+      </p>
+
+      <table>
+        <tr><th>Item</th><th>Detail</th><th>Common mistake</th></tr>
+        <tr>
+          <td><strong>App Icons — all sizes</strong></td>
+          <td>1024×1024 App Store icon (no alpha channel, no rounded corners — Apple khud mask lagata hai) plus
+            in-app sizes jo Xcode asset catalog auto-generate kar sakta hai.</td>
+          <td>1024px icon mein transparency/alpha channel hona — Apple isse silently reject kar deta hai
+            validation step pe hi.</td>
+        </tr>
+        <tr>
+          <td><strong>Privacy Policy URL</strong></td>
+          <td><em>Mandatory</em> — har app ko ek live, publicly accessible privacy policy URL chahiye, chahe app
+            koi personal data collect na kare.</td>
+          <td>URL 404 dena, ya localhost/staging link daal dena jo review team access na kar paye.</td>
+        </tr>
+        <tr>
+          <td><strong>App Privacy "nutrition label"</strong></td>
+          <td>App Store Connect ka questionnaire jaha declare karna hota hai app kaunsa data collect karta hai
+            (contact info, usage data, identifiers, etc.) aur kis purpose ke liye (analytics, advertising,
+            functionality).</td>
+          <td><strong>Sabse common rejection/flag reason</strong> — SDK (analytics, crash reporting, ads) jo data
+            collect karte hain unko declare na karna. Apple ab automated binary scanning se actual SDK usage detect
+            kar leta hai aur mismatch flag karta hai.</td>
+        </tr>
+        <tr>
+          <td><strong>Screenshots — all device sizes</strong></td>
+          <td>6.9" (iPhone 16 Pro Max class) aur 13" iPad required hain agar app universal/iPad-compatible hai;
+            baaki sizes optional but recommended for better presentation.</td>
+          <td>Sirf ek size upload karke sochna ki baaki auto-scale ho jayenge — Apple kuch sizes ke liye specific
+            uploads maangta hai.</td>
+        </tr>
+        <tr>
+          <td><strong>App Review Information</strong></td>
+          <td>Agar app login-gated hai, ek working <strong>demo account (username/password)</strong> dena zaroori
+            hai reviewer ke liye, plus koi special notes (e.g. "OTP ke bajaye ye static code use karein: 123456").</td>
+          <td>Demo account expire ho jaana ya password change ho jaana submission ke baad — reviewer login hi nahi
+            kar paata, straight rejection.</td>
+        </tr>
+        <tr>
+          <td><strong>Age Rating Questionnaire</strong></td>
+          <td>Content types declare karna (violence, gambling references, user-generated content, etc.) — isse
+            final age rating (4+, 12+, 17+) determine hota hai.</td>
+          <td>User-generated content (chat, comments, profiles) wale apps "Unrestricted Web Access" ya moderation
+            questions galat answer kar dete hain.</td>
+        </tr>
+      </table>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Common Rejection Reasons</div>
+        <p>
+          Kuch specific rejection patterns jo baar-baar dikhte hain: <strong>(1) crash on launch during review</strong>
+          — reviewer ka test device/iOS version aapke dev/QA devices se differ kar sakta hai, isliye release build
+          ko multiple iOS versions pe test karna zaroori hai, sirf latest pe nahi. <strong>(2) broken links</strong> —
+          privacy policy, support URL, ya in-app links jo 404 dete hain. <strong>(3) incomplete metadata</strong> —
+          missing "what's new" text, placeholder screenshots, ya description jo abhi tak "Lorem ipsum" hai.
+          <strong>(4) Guideline 4.2 "Minimum Functionality"</strong> — Apple thin/template-generated apps ko reject
+          karta hai jinme substantial functionality nahi hai (jaise sirf ek webview wrapper koi meaningful native
+          feature ke bina) — ye specifically un apps ko target karta hai jo "app store spam" jaisa lagte hain, to
+          agar aapka app genuinely value-add karta hai, isse bachne ke liye review notes mein clearly explain karo
+          ki app kya unique karta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="playstore-checklist">Play Store Submission — Full Checklist</h2>
+
+      <p>
+        Google Play ka process conceptually similar hai lekin details differ karte hain — aur kuch areas mein
+        Google actually zyada strict hai post-launch enforcement mein (jaise hum Gotchas section mein dekhenge).
+      </p>
+
+      <table>
+        <tr><th>Item</th><th>Detail</th><th>Common mistake</th></tr>
+        <tr>
+          <td><strong>Data Safety form</strong></td>
+          <td>Google ka version of App Privacy label — declare karna hota hai kaunsa data collect/share hota hai,
+            encryption in transit hai ya nahi, aur users data delete request kar sakte hain ya nahi.</td>
+          <td><strong>Ye bhi utna hi commonly galat/forgotten hota hai jitna iOS wala</strong> — aur Play Store
+            <strong>inaccurate Data Safety declarations ke liye apps ko reject ya bina warning ke remove</strong>
+            kar deta hai, chahe app already live ho.</td>
+        </tr>
+        <tr>
+          <td><strong>Content Rating Questionnaire</strong></td>
+          <td>IARC (International Age Rating Coalition) questionnaire fill karna — violence, sexual content,
+            gambling, user interaction (chat/UGC) ke sawalon ke jawab dete hain jo automatically per-region rating
+            generate karte hain.</td>
+          <td>Questionnaire ko jaldi mein galat answer karna — jaise "user-generated content" ko "no" bol dena jab
+            app mein comments/chat feature hai.</td>
+        </tr>
+        <tr>
+          <td><strong>Target API level</strong></td>
+          <td>Google har saal minimum target SDK version enforce karta hai (naye apps aur existing app updates
+            dono ke liye) — purani SDK target karne wale builds submit hi nahi ho paate.</td>
+          <td>Ek purana React Native/Expo SDK version use kar rahe ho jiska Android target level ab outdated ho
+            chuka hai — submission "target API level too low" error ke saath reject hoti hai.</td>
+        </tr>
+        <tr>
+          <td><strong>Staged Rollout</strong></td>
+          <td>Play Console mein aap production release ko ek % users tak limit kar sakte ho (jaise 10%, phir 50%,
+            phir 100%) — issues catch karne ka senior practice, especially major version changes ke liye.</td>
+          <td>Har release seedha 100% pe push karna — agar koi crash-inducing bug slip ho jaye, poore user base ko
+            affect karta hai instantly, staged rollout se sirf chhota % affect hota.</td>
+        </tr>
+        <tr>
+          <td><strong>Testing tracks</strong></td>
+          <td>Internal testing (small team, instant), Closed testing (specific tester group, review lagta hai
+            first time), Open testing (public opt-in beta) — production se pehle in tracks se guzarna recommended
+            hai.</td>
+          <td>Directly production track pe upload karna without kabhi kisi testing track se guzre — real device
+            fragmentation ke issues sirf production mein pata chalte hain.</td>
+        </tr>
+      </table>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Data Safety Mismatches — Post-Launch Risk</div>
+        <p>
+          Ye ek non-obvious risk hai jo naye developers ko surprise karta hai: Data Safety declaration sirf
+          submission-time check nahi hai — <strong>Google periodically re-scan karta hai already-live apps ko</strong>
+          aur agar actual app behavior (jaise ek naya analytics SDK add kiya but Data Safety form update nahi kiya)
+          declared data safety se mismatch karta hai, Google app ko <strong>bina warning ke suddenly remove ya
+          suspend</strong> kar sakta hai — chahe app mahino se stable live ho. Senior practice: har baar jab koi
+          naya third-party SDK (analytics, ads, crash reporting) add karo, Data Safety form ko turant review/update
+          karne ka checklist item bana lo — ise "one-time submission task" mat samjho.
+        </p>
+      </div>
+
+      <p>
+        Testing tracks ka structure samajhna bhi zaroori hai — production pe seedha jaane se pehle ye teen tracks
+        available hain, aur senior teams generally sabko sequentially use karti hain:
+      </p>
+
+      <table>
+        <tr><th>Track</th><th>Audience</th><th>Review needed</th><th>Best for</th></tr>
+        <tr>
+          <td><strong>Internal testing</strong></td>
+          <td>Up to 100 specific testers (email list)</td>
+          <td>No review — almost instant availability</td>
+          <td>Daily dev/QA builds, fastest iteration loop</td>
+        </tr>
+        <tr>
+          <td><strong>Closed testing</strong></td>
+          <td>Larger tester groups (Google Group / email list, thousands possible)</td>
+          <td>First submission needs a light review</td>
+          <td>Beta programs, pre-release feedback from real external users</td>
+        </tr>
+        <tr>
+          <td><strong>Open testing</strong></td>
+          <td>Anyone via public opt-in link on the Play Store listing itself</td>
+          <td>Standard review applies</td>
+          <td>Public beta, gathering feedback at scale before full production</td>
+        </tr>
+        <tr>
+          <td><strong>Production (staged)</strong></td>
+          <td>General public, % rollout controlled by you</td>
+          <td>Standard review applies</td>
+          <td>Final release — start small % and increase gradually</td>
+        </tr>
+      </table>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Ek promotable build ka concept bhi hai — agar aapne ek build closed testing track mein already thoroughly
+          test kar liya hai aur wo stable nikla, Play Console mein usi build ko "promote to production" kar sakte
+          ho bina naya artifact upload kiye — ye guarantee karta hai ki jo binary production mein ja raha hai, wo
+          <em>exactly</em> wahi hai jo testers ne already use kiya tha, koi last-minute rebuild ka risk nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="listing-optimization">Store Listing Optimization (Brief Senior Notes)</h2>
+
+      <p>
+        Store listing optimization ek poora field hai apne aap mein (ASO — App Store Optimization), lekin senior
+        level pe kuch practical points jaanna kaafi hai:
+      </p>
+
+      <ul>
+        <li><strong>App Store Connect keywords field</strong> — ye iOS-specific hai, ek dedicated
+          comma-separated keywords field hota hai (visible sirf App Store Connect mein, users ko nahi dikhta) jo
+          directly search ranking affect karta hai. Description text khud search indexing mein utna weight nahi
+          rakhta jitna is dedicated field mein.</li>
+        <li><strong>Play Store — description-based indexing</strong> — Google ka algorithm fundamentally different
+          hai: yaha koi dedicated "keywords" field nahi hota, search ranking mostly title + short description +
+          full description ke natural text se derive hoti hai (jaise ek search engine SEO). Isliye Play Store
+          listing likhte waqt keywords ko naturally description mein weave karna better strategy hai, keyword
+          field stuff karna nahi (jo iOS approach hai).</li>
+        <li><strong>A/B testing store listings</strong> — Play Console mein built-in
+          <strong>"Store listing experiments"</strong> feature hai jisse aap different icons/screenshots/descriptions
+          ko live traffic ke against test kar sakte ho, conversion rate compare karke. iOS side pe Apple ka
+          "Product Page Optimization" similar functionality deta hai (App Store Connect ke andar).</li>
+        <li><strong>Over-optimization ka trade-off</strong> — listing ko itna "sell" mat karo ki actual app
+          experience se expectation mismatch ho jaye. Isse users disappointed feel karte hain install karne ke
+          baad, jo directly bad reviews aur high uninstall rate mein convert hota hai — jo long-term ranking ko
+          listing ke short-term conversion boost se zyada nuksan pahunchata hai.</li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip</div>
+        <p>
+          Practical senior advice: listing copy likhte waqt socho "agar main is app ko pehli baar dekh raha hota,
+          kya ye text mujhe accurately batata ki app kya karta hai" — overselling se short-term downloads badh
+          sakte hain, lekin retention aur rating dono girte hain jo long-term organic discovery ko hurt karta hai
+          (dono stores ka ranking algorithm retention/rating ko heavily weight karta hai).
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ App Store review time — unpredictable</div>
+        <p>
+          Apple review time officially "usually within 24 hours" bola jaata hai, lekin practically ye kuch ghanto
+          se le kar kai din tak vary kar sakta hai — especially holiday seasons (jaise December) mein ya jab koi
+          major iOS release hoti hai (submission volume spike hota hai). Senior practice: <strong>stakeholders ko
+          kabhi exact launch date promise mat karo</strong> jab tak app already "Ready for Sale" status mein na ho
+          — instead ek range communicate karo ("submission ke 1-4 din baad live hone ki expectation rakho") aur
+          agar hard deadline hai (jaise ek marketing event), submission kam se kam 5-7 din pehle kar do buffer ke
+          liye.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Data Safety mismatch — sudden removal even after being live</div>
+        <p>
+          Jaise upar discuss kiya, ye sirf submission-time issue nahi hai — Google periodic re-checks karta hai.
+          Ek real scenario: team ne app launch ke 6 mahine baad ek naya crash-reporting SDK add kiya (jo device
+          identifiers collect karta hai), lekin Data Safety form update karna bhool gaye — kuch hafte baad Google
+          ne mismatch detect kiya aur app ko Play Store se remove kar diya bina prior warning ke, jab tak form
+          correct nahi kiya gaya. Iska direct impact hota hai revenue aur existing users pe (update nahi mil
+          paate) — isliye har dependency update ke saath Data Safety review ek CI/release-checklist item hona
+          chahiye, sirf ek onboarding-time task nahi.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Version code/build number conflicts after a rejection fix</div>
+        <p>
+          Jab ek submission reject hoti hai aur aap fix karke resubmit karte ho, dono stores demand karte hain ki
+          naya build ka version code/build number <em>strictly greater</em> ho purane se — chahe purana build
+          kabhi live hua hi na ho (sirf review mein reject hua tha). Agar aap manually version manage kar rahe ho
+          aur bhool jaate ho ki reject-hui build ne bhi ek versionCode "consume" kar liya tha, resubmission fail
+          ho jaati hai duplicate version error ke saath. Yaha wahi <code>autoIncrement: true</code> practice
+          (Chapter 10) kaam aati hai — ye is class of error ko automatically avoid kar deta hai kyunki har build
+          attempt (chahe reject ho ya accept) naya number leta hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Certificates/provisioning profiles expiring</div>
+        <p>
+          Agar aapki team EAS-managed credentials use nahi kar rahi (self-managed certificates/profiles), ye
+          artifacts ek fixed expiry date rakhte hain (iOS distribution certs typically 1 year, provisioning
+          profiles bhi similar). Agar ye expire ho jaye aur kisi ko pata hi na ho, agli production build/submission
+          suddenly fail hone lagti hai signing errors ke saath — aur naya certificate generate karne mein aur
+          poori team ko distribute karne mein unexpected time lag sakta hai agar urgently chahiye ho (jaise ek
+          critical bugfix release ke waqt). Senior practice: agar EAS-managed credentials use nahi kar rahe, ek
+          calendar reminder/team process banao jo expiry dates se kam se kam ek mahina pehle alert kare — ye
+          exactly wo class of "silent time bomb" hai jo teams ko surprise leta hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ye section un cheezon ko cover karta hai jo checklist-level knowledge se aage senior-level judgment maangti
+        hain — <em>kab</em> ek rollout ruko, <em>kaise</em> metadata ko engineering discipline ki tarah treat karo
+        (manual UI clicks nahi), aur ek app jab multiple markets mein grow karta hai to store presence kaise scale
+        karta hai.
+      </p>
+
+      <h3>Phased Release Strategies — In Depth</h3>
+
+      <p>
+        Humne upar dono stores ke staged rollout ka basic mention kiya, lekin dono ka underlying mechanism aur
+        control level fundamentally different hai — aur ye difference senior-level incident response planning ko
+        directly affect karta hai.
+      </p>
+
+      <table>
+        <tr><th>Aspect</th><th>Apple — Phased Release</th><th>Google Play — Staged Rollout</th></tr>
+        <tr>
+          <td><strong>Applies to</strong></td>
+          <td>Sirf <em>updates</em> ke liye — pehli baar submit ho rahi app pe available hi nahi (naya app seedha
+            100% users ko milta hai jaise hi "Ready for Sale" hota hai).</td>
+          <td>Dono naye app releases aur updates ke liye available — har production release ke liye rollout %
+            control kar sakte ho.</td>
+        </tr>
+        <tr>
+          <td><strong>Ramp mechanism</strong></td>
+          <td><strong>Automatic, fixed 7-day schedule</strong>: Day 1 → 1%, Day 2 → 2%, Day 3 → 5%, Day 4 → 10%,
+            Day 5 → 20%, Day 6 → 50%, Day 7 → 100%. Aap in exact percentages ko change nahi kar sakte.</td>
+          <td><strong>Fully manual</strong> — aap khud har % choose karte ho (jaise 5% → 20% → 50% → 100%) aur
+            khud decide karte ho next % kab push karna hai. Koi fixed schedule nahi hai, aap indefinitely ek % pe
+            ruk sakte ho.</td>
+        </tr>
+        <tr>
+          <td><strong>Halt control</strong></td>
+          <td>App Store Connect mein "Pause" available hai — current % pe freeze ho jaata hai (aage nahi badhta),
+            lekin already-updated users ka rollback nahi hota. Pause ke baad resume ya poori update hi remove karni
+            padti hai (naya build submit karke).</td>
+          <td>"Halt rollout" se turant rollout ruk jaata hai at current %, aur aap direct ek purani, stable release
+            pe <strong>rollback</strong> bhi kar sakte ho — naye users ko purani version milne lagti hai turant,
+            bina naya build submit kiye.</td>
+        </tr>
+        <tr>
+          <td><strong>Senior implication</strong></td>
+          <td>Apple ka fixed schedule ka matlab hai aapke paas <em>kam control window</em> hai — agar metrics Day 3
+            (5%) tak clean lag rahe hain, Day 4 pe automatically 10% ho jaayega chahe aap ready ho ya na ho. Isliye
+            dashboard monitoring cadence ko is fixed schedule ke against align karna padta hai.</td>
+          <td>Google ka manual control zyada senior-friendly hai crisis situations ke liye — aap indefinitely ek
+            safe % pe ruk sakte ho jab tak confidence na aa jaaye, aur rollback ka direct button hai jo Apple ke
+            paas nahi hai.</td>
+        </tr>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Rollout ke dauraan kya dekhna hai</div>
+        <p>
+          Sirf "% badha do" mental model se kaam nahi chalta — har phase ke beech ek senior engineer specific
+          metrics dashboard pe active nazar rakhta hai: <strong>crash-free session rate</strong> (Sentry/Crashlytics
+          se, previous version ke baseline ke against compare karke — koi bhi drop &gt;0.5% typically red flag hai),
+          <strong>ANR rate</strong> (Android-specific — "Application Not Responding" spikes), <strong>key funnel
+          conversion</strong> (jaise checkout completion rate agar payment flow touch hua ho is release mein), aur
+          <strong>backend error rate</strong> (agar naya API contract shipped hua hai, malformed requests spike ho
+          sakti hain naye client version se). Sabse important senior practice: rollout start karne <em>se pehle</em>
+          ek explicit "halt criteria" likh lo (jaise "crash-free rate 1% se zyada girta hai → immediately halt aur
+          rollback") — is decision ko incident ke beech mein panic state mein banane se bahut better hai calm state
+          mein pehle se plan kar lena.
+        </p>
+      </div>
+
+      <h3>App Store Connect API Automation for Metadata</h3>
+
+      <p>
+        <code>eas metadata</code> (jo humne pehle dekha) internally App Store Connect API ko hi hit karta hai — ye
+        ek convenient wrapper hai. Lekin senior teams ke liye ye samajhna zaroori hai ki underlying API directly bhi
+        accessible hai, aur bade teams (jaha custom CI pipelines hain, ya jaha <code>eas metadata</code> ka schema
+        kisi specific field ko support nahi karta) directly App Store Connect API use karte hain. Core idea same
+        rehta hai: <strong>store listing ko version-controlled config ki tarah treat karo</strong>, na ki har
+        release pe App Store Connect ki website pe jaake manually description/keywords retype karna — manual entry
+        typo-prone hai, review-less hai (koi PR review nahi hoti), aur history track nahi hoti (kisne kab kya
+        change kiya, pata nahi chalta).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>generate-token.js — App Store Connect API ke liye JWT banana</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// App Store Connect API ek JWT (JSON Web Token) based auth use karta hai — username/password kabhi nahi</span>
+<span class="tok-kw">const</span> jwt = <span class="tok-fn">require</span>(<span class="tok-str">'jsonwebtoken'</span>); <span class="tok-com">// JWT sign karne ke liye standard npm library</span>
+<span class="tok-kw">const</span> fs = <span class="tok-fn">require</span>(<span class="tok-str">'fs'</span>); <span class="tok-com">// .p8 private key file disk se read karne ke liye</span>
+
+<span class="tok-com">// App Store Connect → Users and Access → Keys se download ki gayi private key file</span>
+<span class="tok-kw">const</span> privateKey = fs.<span class="tok-fn">readFileSync</span>(<span class="tok-str">'./AuthKey_XXXXXXXXXX.p8'</span>); <span class="tok-com">// buffer mein raw key content aata hai</span>
+
+<span class="tok-kw">const</span> token = jwt.<span class="tok-fn">sign</span>(
+  {}, <span class="tok-com">// payload empty rakha — Apple ko sirf header + expiry claims chahiye, body claims nahi</span>
+  privateKey, <span class="tok-com">// isi key se signature verify hoga Apple ke server pe</span>
+  {
+    <span class="tok-attr">algorithm</span>: <span class="tok-str">'ES256'</span>, <span class="tok-com">// Apple sirf ES256 (elliptic curve) signing algorithm accept karta hai, RS256 nahi</span>
+    <span class="tok-attr">expiresIn</span>: <span class="tok-str">'20m'</span>, <span class="tok-com">// Apple ka hard max limit 20 minute hai — isse zyada purana token turant reject ho jaata hai</span>
+    <span class="tok-attr">issuer</span>: <span class="tok-str">'ISSUER_ID'</span>, <span class="tok-com">// App Store Connect "Keys" page se milne wala team-level issuer identifier</span>
+    <span class="tok-attr">header</span>: { <span class="tok-attr">alg</span>: <span class="tok-str">'ES256'</span>, <span class="tok-attr">kid</span>: <span class="tok-str">'KEY_ID'</span> }, <span class="tok-com">// kid = kaunsi specific key se sign hua (team ke paas multiple keys ho sakti hain)</span>
+  }
+); <span class="tok-com">// token ab ek short-lived, single-use-window JWT string ban chuka hai</span>
+
+<span class="tok-fn">console</span>.<span class="tok-fn">log</span>(token); <span class="tok-com">// isi output ko CI step mein env var (e.g. $ASC_TOKEN) mein capture karenge</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>Terminal — generated JWT se metadata fetch karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Pehle upar wala script chalao aur output ko ek env var mein capture karo</span>
+<span class="tok-attr">ASC_TOKEN</span>=<span class="tok-punc">$(</span>node generate-token.js<span class="tok-punc">)</span> <span class="tok-com"># JWT ab is shell session ke liye ready hai</span>
+
+<span class="tok-com"># Us JWT ko Bearer token ki tarah use karke app-level metadata GET karna</span>
+curl -H <span class="tok-str">"Authorization: Bearer $ASC_TOKEN"</span> \ <span class="tok-com"># auth header mein humara short-lived JWT</span>
+  <span class="tok-str">"https://api.appstoreconnect.apple.com/v1/apps/APP_ID/appInfos"</span> <span class="tok-com"># app-level metadata endpoint — naam, primary category, waghera return karta hai</span></code></pre>
+      </div>
+
+      <p>
+        Practically, senior teams isse raw <code>curl</code> se nahi, balki ek thin CI script (ya
+        <code>eas metadata</code> jaisa tool) se wrap karte hain jo <code>store.config.json</code>-jaisi file ko
+        PR review process se guzarti hai — koi bhi listing change (jaise ek naya keyword add karna, ya ek locale
+        ka description update karna) ab ek normal code change ki tarah trackable, revertible, aur reviewable ban
+        jaata hai, exactly jaise koi feature code change hota.
+      </p>
+
+      <h3>Localization at Scale</h3>
+
+      <p>
+        Ek app jab 1-2 languages se 10-15+ locales tak grow karta hai (jo common hota hai jab app multiple regions
+        mein organically discover hoti hai — App Store/Play Store dono automatically visitor ki device language ke
+        hisaab se matching locale ki listing dikhate hain, agar wo locale configured hai), listing management ek
+        alag class ka problem ban jaata hai:
+      </p>
+
+      <ul>
+        <li><strong>Translation workflow</strong> — senior teams generally ek "source of truth" locale (typically
+          en-US) maintain karte hain aur baaki locales ko usse derive karte hain, ya to professional translation
+          service se ya in-house native speakers se. Raw machine translation (Google Translate copy-paste) ko
+          directly production listing mein daalna risky hai — idioms, cultural context, aur even basic grammar
+          galat ho sakte hain jo native speakers ko turant "cheap/untrustworthy app" signal dete hain.</li>
+        <li><strong>Screenshots ka localization</strong> — sirf text translate karna kaafi nahi, screenshots mein
+          agar UI text hai (jaise onboarding screens ke captions), un screenshots ko bhi per-locale generate karna
+          padta hai — ye ek non-trivial asset pipeline problem hai jo scale ke saath automate karna zaroori ho
+          jaata hai (screenshot generation tools jaise Fastlane's <code>snapshot</code>/<code>screengrab</code>
+          is exact problem ko solve karte hain).</li>
+        <li><strong>Consistency ka maintenance overhead</strong> — jab bhi "what's new" text change hota hai ek
+          release ke saath, sabhi 15 locales ke liye update karna padta hai — agar sirf en-US update hokar baaki
+          purana reh jaata hai, users ko ek stale/inconsistent experience milta hai (jaise ek Hindi user ko purana
+          release-note dikhna jab feature already available ho chuka hai).</li>
+        <li><strong>Review scrutiny ka risk</strong> — Apple/Google dono ke paas automated aur human reviewers hain
+          jo listing quality bhi implicitly judge karte hain. Inconsistent ya machine-translated-looking listings
+          (grammatically broken, ya locale ke against culturally off) low-effort/spam app ka signal de sakte hain —
+          especially agar wahi pattern App Store Guideline 4.2 (Minimum Functionality) jaisi checks ke saath combine
+          ho jaaye, jisse ek borderline app ka reject hone ka chance aur badh jaata hai.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Localization ROI framework</div>
+        <p>
+          Har naye locale ko add karna free nahi hai — translation cost, ongoing maintenance cost (har release ke
+          saath), aur QA cost (kya translated text UI mein overflow to nahi kar raha, especially German jaise
+          longer-word languages mein) sab factor karte hain. Senior practice: pehle analytics se dekho konsi
+          countries se already organic installs/traffic aa raha hai (chahe app us locale mein na ho, users ab bhi
+          default/English listing dekh ke install kar rahe honge) — un top countries ko prioritize karo localization
+          ke liye, blanket "sab languages add kar do" approach lene ke bajaye. Ek half-maintained, stale locale
+          <em>koi locale na hone</em> se bhi bura signal de sakta hai users ko.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Neeche wahi tarah ke sawaal hain jo senior RN role ke interviews mein publishing/release process pe pooche
+        jaate hain — process knowledge, risk judgment, aur real incident handling teeno cover karte hue.
+      </p>
+
+      <h3>1. Walk me through your full release checklist from feature-complete to live in both stores.</h3>
+      <p>
+        Ek senior-level answer sequence mein hota hai, har step ka "why" explain karte hue: <strong>(1)</strong>
+        version code/build number bump verify karo (ya <code>autoIncrement: true</code> confirm karo eas.json mein
+        — Chapter 10) taaki duplicate version error na aaye. <strong>(2)</strong> release build ko multiple
+        device/OS versions pe test karo, sirf latest pe nahi — kyunki review team ka test environment differ kar
+        sakta hai. <strong>(3)</strong> App Privacy label (iOS) aur Data Safety form (Android) ko current SDK usage
+        ke against re-verify karo — koi naya analytics/crash SDK add hua ho to declaration update karo. <strong>(4)</strong>
+        store listing metadata (screenshots, description, "what's new") review/update karo — <code>eas
+        metadata:push</code> ya App Store Connect UI se. <strong>(5)</strong> EAS Build se production binary banao,
+        EAS Submit (ya manual Xcode/Android Studio flow) se upload karo. <strong>(6)</strong> Android side pe pehle
+        internal → closed testing track se guzaro before production. <strong>(7)</strong> production release ko
+        staged rollout/phased release ke saath launch karo, halt criteria pehle se defined rakh ke. <strong>(8)</strong>
+        rollout ke dauraan crash-free rate/key metrics dashboard active monitor karo har phase ke beech.
+      </p>
+
+      <h3>2. An update just got rejected for Guideline 4.2 (Minimum Functionality) — what's your response plan, both immediate and long-term?</h3>
+      <p>
+        <strong>Immediate:</strong> pehle Apple ka exact rejection reasoning carefully padho (Resolution Center
+        mein) — 4.2 rejections generic template text ke saath aate hain, isliye specific reviewer notes dhoondo
+        jo bataye kya missing lag raha hai unhe. Agar genuinely lagta hai app substantial hai but reviewer ne
+        misunderstand kiya, ek clear, specific reply likho Resolution Center mein — exactly explain karo app kya
+        unique/native functionality provide karta hai (screenshots/video attach karke agar zaroori ho), sirf
+        "please reconsider" jaisa vague reply mat bhejo. Agar app genuinely thin hai, ye ek signal hai ki actual
+        product gap hai, sirf ek metadata fix se nahi solve hoga. <strong>Long-term:</strong> team ke saath ek
+        review karo ki app mein kya substantial native value-add hai (offline support, push notifications, device
+        integration, meaningful business logic) — agar app sirf ek webview wrapper jaisa lagta hai, roadmap mein
+        genuine native features prioritize karo taaki future submissions is risk se bachein. Bhi ek internal process
+        banao ki naye features/screens add karte waqt hamesha socho "kya ye reviewer ko clearly dikhega ki ye
+        substantial hai" — taaki next submission mein surprise na aaye.
+      </p>
+
+      <h3>3. How would you decide whether to use a phased rollout vs releasing to 100% immediately for a given release?</h3>
+      <p>
+        Ye ek risk-based judgment call hai, blanket rule nahi. Factors jo main consider karunga: <strong>blast
+        radius</strong> — agar release mein core flow (login, payment, main navigation) touch hua hai, phased
+        rollout mandatory hai; agar sirf ek isolated, low-traffic screen ka minor UI tweak hai, risk kam hai.
+        <strong>Test coverage confidence</strong> — agar Maestro E2E suite (Chapter 7) aur closed testing track
+        dono clean pass hue hain aur changes well-covered hain, confidence zyada hota hai fast rollout ke liye.
+        <strong>Native vs OTA-fixable</strong> — agar koi bug OTA update (EAS Update, Chapter 12) se turant fix ho
+        sakta hai bina naye store submission ke, risk tolerance thodi badh sakti hai kyunki rollback fast hai;
+        agar native code change hai jo sirf naye store submission se fix hoga, staged rollout zaroori hai kyunki
+        rollback slow hai. <strong>Urgency</strong> — agar ek critical security patch hai jo sabko turant chahiye,
+        kabhi kabhi fast 100% rollout justified hota hai risk accept karke, especially jab not-fixing ka risk
+        rollout-risk se zyada ho. Overall main default staged rollout ko rakhta hun, aur sirf specific, justified
+        reasons se 100%-immediate ko choose karta hun, opposite nahi.
+      </p>
+
+      <h3>4. What's the actual difference between what EAS Submit automates and what still requires manual App Store Connect / Play Console work?</h3>
+      <p>
+        EAS Submit sirf <strong>binary upload aur submission-trigger</strong> automate karta hai — ye credentials
+        resolve karta hai, binary ko Transporter API (iOS) ya Play Developer API (Android) ke through upload karta
+        hai, aur (optionally) submission ko "for review" trigger kar sakta hai. Ye automate <em>nahi</em> karta:
+        store listing content (screenshots, description, keywords — jab tak <code>eas metadata</code> explicitly
+        use na karo), App Privacy/Data Safety questionnaire answers, age rating questionnaire, demo account info
+        for reviewers, aur pricing/availability settings. Senior interview mein ye distinction clearly bolna
+        important hai kyunki bahut log galti se assume karte hain "EAS Submit = poora publishing automate ho gaya"
+        — jab actual reality ye hai ki binary pipeline automate hui hai, listing/compliance pipeline largely
+        separate concern hai jo apni khud ki discipline maangti hai.
+      </p>
+
+      <h3>5. A build got rejected, you fixed the issue, and now resubmission is failing with a duplicate version error — what happened and how do you prevent it?</h3>
+      <p>
+        Dono stores demand karte hain ki har naya build attempt — chahe wo accept hua ho ya reject — ek unique,
+        strictly-increasing version code/build number consume kare. Jab pehli build reject hui, uska version number
+        "used up" ho chuka tha, chahe wo kabhi live na hui ho. Agar aap manually version numbers maintain kar rahe
+        the aur ye fact bhool gaye, resubmission usi purane number ke saath try hogi aur duplicate error dega.
+        Prevention: <code>eas.json</code> mein <code>"autoIncrement": true</code> set karo (Chapter 10 se) — ye
+        guarantee karta hai har build (chahe reject ho ya accept) apna khud ka fresh, unique number leta hai,
+        automatically, bina kisi manual tracking ke.
+      </p>
+
+      <h3>6. How do you handle the risk of Google Play's post-launch Data Safety re-scanning removing your app without warning?</h3>
+      <p>
+        Sabse pehle iska mental model samajhna zaroori hai: Data Safety declaration ek <em>one-time submission
+        task</em> nahi hai, ye ek <strong>ongoing compliance contract</strong> hai jo Google periodically re-verify
+        karta hai against actual app binary behavior. Senior mitigation: <strong>(1)</strong> har baar jab koi naya
+        third-party SDK (analytics, ads, crash reporting, even a new payment SDK) add ya upgrade hota hai, ek
+        explicit checklist item banao "Data Safety form review/update karo" — isko PR template ya release checklist
+        mein hardcode karo, kisi ke memory pe depend mat karo. <strong>(2)</strong> ideally ek internal audit script
+        rakho jo app ke dependencies scan kare aur flag kare agar koi naya SDK add hua hai jo data collect karta hai
+        (many SDKs ke known data-collection profiles publicly documented hote hain). <strong>(3)</strong> agar app
+        suddenly removed ho jaaye, fastest recovery path hai Data Safety form ko turant correct karna aur Play
+        Console se resubmit/appeal karna — is downtime ko minimize karne ka best tarika hai ye scenario kabhi hone
+        hi na dena, proactive checklist discipline se.
+      </p>
+
+      <h3>7. Why might a senior engineer choose to manage store metadata via App Store Connect API / eas metadata instead of the web UI, even though the web UI works fine?</h3>
+      <p>
+        Manual web UI editing kaam to karta hai, lekin ismein kai engineering-discipline gaps hain jo scale pe
+        problem banate hain: <strong>no version history</strong> — kisne kab kya text change kiya, UI mein track
+        nahi hota; <strong>no review process</strong> — koi bhi directly production listing edit kar sakta hai
+        bina kisi second pair of eyes ke, jabki wahi text bug-jaisa hi user-facing impact rakhta hai; <strong>no
+        reproducibility</strong> — agar aap ek naya locale add kar rahe ho aur usi structure ko doosre app ke liye
+        bhi replicate karna hai, UI se copy-paste error-prone hai. Config-as-code approach (<code>store.config.json</code>
+        + <code>eas metadata:push</code>, ya direct API calls CI se) inn sabko solve karta hai — listing changes
+        ab normal code changes ki tarah PR-reviewed, git-blame-able, aur CI-automatable ban jaate hain. Trade-off ye
+        hai ki initial setup cost thoda zyada hai aur schema ki limitations (jaise screenshots abhi bhi largely
+        manual hain) samajhni padti hain.
+      </p>
+
+      <h3>8. If you had to launch a major redesign (breaking visual/UX change) to production, what release strategy would you use across both platforms?</h3>
+      <p>
+        Ek major redesign high user-visible risk carry karta hai (negative reviews spike ho sakte hain agar users
+        change pasand na karein, chahe koi technical bug na ho), isliye strategy purely technical rollout se aage
+        badhkar hoti hai: <strong>(1)</strong> pehle ek closed/open testing track (Android) ya TestFlight external
+        testing (iOS) se real user feedback lo, sirf internal QA se nahi. <strong>(2)</strong> Android pe ek slow
+        staged rollout use karo (jaise 5% → 10% → 25% → 50% → 100%, har step ke beech kuch din ruk ke) taaki agar
+        negative sentiment/uninstall rate spike ho, halt kar sako fast. <strong>(3)</strong> iOS pe kyunki phased
+        release ka fixed 7-day schedule hai aur control kam hai, main initial launch ko ek "soft announcement" ke
+        saath karta hun (marketing push delay karke) taaki agar early negative feedback aaye, hume respond karne ka
+        time mile before full visibility. <strong>(4)</strong> dono platforms pe in-app feedback mechanism ya
+        analytics events add karta hun specifically redesign ke reception track karne ke liye (jaise "reverted to
+        old UI" button agar feature-flagged rollback possible ho — OTA update, Chapter 12, se ye flag control ho
+        sakta hai bina naye store submission ke). Overall goal: technical rollout safety <em>aur</em> user sentiment
+        monitoring dono ek saath, kyunki redesign ka risk sirf crash-rate se measure nahi hota.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="13-eas-workflows.html">
+          <div class="label">← Previous</div>
+          <div class="title">EAS Workflows</div>
+        </a>
+        <a class="next" href="15-payments.html">
+          <div class="label">Next →</div>
+          <div class="title">Payments</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

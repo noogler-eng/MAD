@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonus — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link active" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Bonus</div>
+      <div class="progress-pill">Chapter 17 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Widgets · SDK Upgrades · Facebook SDK</span>
+      <h1>Bonus</h1>
+      <p class="subtitle">
+        Ye handbook ka aakhri chapter hai — teen alag-alag "real world mein aata hai lekin koi single chapter
+        justify nahi karta" topics cover karenge: Apple Home Screen Widgets (native territory), Expo SDK ko
+        production app mein safely upgrade karne ki senior strategy, aur Meta Ads/Facebook SDK integration
+        (ATT compliance ke saath). Iske baad handbook ka poora 17-chapter journey wrap up karenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#widgets">1. Apple Widgets (Home Screen Widgets)</a></li>
+          <li><a href="#sdk-upgrade">2. Expo SDK Upgrade — A Senior Strategy</a></li>
+          <li><a href="#facebook-sdk">3. Meta Ads &amp; Facebook SDK Integration</a></li>
+          <li><a href="#advanced-deep-dive">4. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">5. 🎯 Interview Questions — Senior React Native Developer</a></li>
+          <li><a href="#closing">6. Closing — Handbook Summary and What's Next</a></li>
+        </ul>
+      </div>
+
+      <h2 id="widgets" style="border-top:none; padding-top:0; margin-top:32px;">1. Apple Widgets (Home Screen Widgets)</h2>
+
+      <p>
+        Pehli galti jo naye RN developers karte hain: sochte hain ki Home Screen Widget bhi "bas ek aur RN screen"
+        hai jo home screen pe render ho jaata hai. <strong>Ye fundamentally galat hai.</strong> iOS Widgets
+        <strong>WidgetKit + SwiftUI</strong> se banaye jaate hain, aur wo aapke main app se <strong>ek completely
+        separate process</strong> mein run hote hain — jise Apple <strong>App Extension</strong> kehta hai. Widget
+        extension ka apna khud ka executable hai, apna memory space hai, apna lifecycle hai — ye aapke React Native
+        app ka JS runtime (Hermes) share nahi karta, kyunki wo bilkul alag process hai jise system khud manage karta
+        hai (widget ko timeline ke hisaab se periodically re-render karne ke liye launch/suspend karta rehta hai,
+        chahe main app background mein bhi na ho).
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Isiliye pure RN/JS mein widget nahi ban sakta</div>
+        <p>
+          Kyunki widget extension ek alag process hai jisme apna JS runtime start karna Apple allow hi nahi karta
+          (extensions ke paas strict memory limits hote hain, aur poora Hermes+RN runtime boot karna un limits ko
+          turant cross kar dega) — widget ka UI code <strong>hamesha native Swift + SwiftUI</strong> hi hoga. Aapko
+          apne Xcode project mein ek chhota <strong>native Widget Extension target</strong> add karna padega. Expo
+          managed workflow mein ye <strong>config plugins</strong> ke through hota hai — jaise
+          <code>@bacons/apple-targets</code> (community plugin jo prebuild ke time extra Xcode targets inject karta
+          hai) — jo <code>ios/</code> folder generate hone se pehle widget target ki configuration app config mein
+          declare karne deta hai, taaki <code>expo prebuild</code>/EAS Build har baar automatically wo target
+          generate kar de bina aapko manually Xcode mein click-through karna pade.
+        </p>
+      </div>
+
+      <h3>Data sharing: App Groups + Shared UserDefaults</h3>
+      <p>
+        Ab sabse important practical question: agar widget alag process hai, to wo aapke main app ka data (jaise
+        "aaj ka step count" ya "last order status") kaise dikhayega? Do separate processes JS variables ya React
+        state share nahi kar sakte — inter-process communication ka koi normal JS-level channel exist nahi karta.
+        Apple ka solution hai <strong>App Groups</strong>: ek shared container jo dono (main app aur widget
+        extension) ko explicitly entitlement ke through access milta hai. Is shared container ke andar aap ek
+        <strong>shared <code>UserDefaults</code> suite</strong> (chhote key-value data ke liye) ya ek
+        <strong>shared file container</strong> (bade data, jaise images/JSON blobs, ke liye) use kar sakte ho. Main
+        app apna data yahan likhta hai (jab bhi relevant state change ho), aur widget extension apne
+        <code>TimelineProvider</code> ke andar wahi shared location se padh leta hai jab system usse refresh ke
+        liye invoke karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>SimpleWidget.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> WidgetKit <span class="tok-com">// Apple ka WidgetKit framework — widget lifecycle, timeline, entry types yahan se aate hain</span>
+<span class="tok-kw">import</span> SwiftUI <span class="tok-com">// Widget ka UI SwiftUI se hi likha jaata hai, koi alternative nahi</span>
+
+<span class="tok-com">// Entry ek single "snapshot" hai jo widget ek specific time pe render karega</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">StepCountEntry</span>: TimelineEntry { <span class="tok-com">// TimelineEntry protocol conform karna zaroori hai WidgetKit ke liye</span>
+    <span class="tok-kw">let</span> date: Date <span class="tok-com">// Ye entry kis time ke liye valid hai — system isse decide karta hai kab next entry dikhana hai</span>
+    <span class="tok-kw">let</span> stepCount: <span class="tok-fn">Int</span> <span class="tok-com">// Actual data jo widget UI mein dikhega — yahan shared container se aayega</span>
+} <span class="tok-com">// struct close</span>
+
+<span class="tok-com">// TimelineProvider batata hai WidgetKit ko ki entries kahan se aayengi aur kab refresh honi hain</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">StepCountProvider</span>: TimelineProvider { <span class="tok-com">// TimelineProvider protocol — WidgetKit ka core data-source contract</span>
+
+    <span class="tok-com">// placeholder(): widget gallery mein loading state ke time dikhne wala dummy data</span>
+    <span class="tok-kw">func</span> <span class="tok-fn">placeholder</span>(in context: Context) -> StepCountEntry { <span class="tok-com">// Widget picker UI mein preview ke liye fake entry chahiye hoti hai</span>
+        StepCountEntry(date: Date(), stepCount: <span class="tok-num">0</span>) <span class="tok-com">// Placeholder data — real data load hone se pehle dikhta hai, isliye safe default (0) rakha</span>
+    } <span class="tok-com">// placeholder close</span>
+
+    <span class="tok-com">// getSnapshot(): widget gallery preview ke liye ek quick, best-effort current entry</span>
+    <span class="tok-kw">func</span> <span class="tok-fn">getSnapshot</span>(in context: Context, completion: <span class="tok-kw">@escaping</span> (StepCountEntry) -> Void) { <span class="tok-com">// System ye tab call karta hai jab user widget add karne se pehle preview dekhta hai</span>
+        <span class="tok-kw">let</span> steps = <span class="tok-fn">readStepsFromSharedContainer</span>() <span class="tok-com">// Shared App Group container se current value read karo (neeche define kiya hai)</span>
+        <span class="tok-kw">let</span> entry = StepCountEntry(date: Date(), stepCount: steps) <span class="tok-com">// Current time aur real data se entry banao</span>
+        completion(entry) <span class="tok-com">// Completion handler call karke WidgetKit ko entry wapas do — async pattern hai isliye completion zaroori</span>
+    } <span class="tok-com">// getSnapshot close</span>
+
+    <span class="tok-com">// getTimeline(): actual home-screen widget ke liye entries ka schedule banata hai</span>
+    <span class="tok-kw">func</span> <span class="tok-fn">getTimeline</span>(in context: Context, completion: <span class="tok-kw">@escaping</span> (Timeline&lt;StepCountEntry&gt;) -> Void) { <span class="tok-com">// System ye periodically call karta hai widget refresh karne ke liye</span>
+        <span class="tok-kw">let</span> steps = <span class="tok-fn">readStepsFromSharedContainer</span>() <span class="tok-com">// Shared container se latest data padho — ye wahi jagah hai jaha main RN app ne likha tha</span>
+        <span class="tok-kw">let</span> entry = StepCountEntry(date: Date(), stepCount: steps) <span class="tok-com">// Ek entry banao current data ke saath</span>
+        <span class="tok-kw">let</span> nextRefresh = Calendar.current.date(byAdding: .minute, value: <span class="tok-num">15</span>, to: Date())! <span class="tok-com">// Agla refresh 15 min baad schedule karo — system exact time guarantee nahi karta, ye ek "hint" hai battery ke hisaab se</span>
+        <span class="tok-kw">let</span> timeline = Timeline(entries: [entry], policy: .after(nextRefresh)) <span class="tok-com">// Timeline banate ho ek ya multiple entries ke saath, policy batata hai kab next fetch trigger ho</span>
+        completion(timeline) <span class="tok-com">// Timeline wapas do WidgetKit ko — ab widget is entry ko render karega jab tak next refresh na aaye</span>
+    } <span class="tok-com">// getTimeline close</span>
+
+    <span class="tok-com">// Helper: App Group ke shared UserDefaults se data read karna</span>
+    <span class="tok-kw">private</span> <span class="tok-kw">func</span> <span class="tok-fn">readStepsFromSharedContainer</span>() -> <span class="tok-fn">Int</span> { <span class="tok-com">// Private helper — sirf is file ke andar use hota hai</span>
+        <span class="tok-kw">let</span> shared = UserDefaults(suiteName: <span class="tok-str">"group.com.mad.app"</span>) <span class="tok-com">// App Group identifier — dono main app aur widget target mein Xcode entitlements mein register hona chahiye, exact same string</span>
+        <span class="tok-kw">return</span> shared?.integer(forKey: <span class="tok-str">"stepCount"</span>) ?? <span class="tok-num">0</span> <span class="tok-com">// Key se value padho, agar suite hi na mile (misconfiguration) to safe default 0 do</span>
+    } <span class="tok-com">// function close</span>
+} <span class="tok-com">// struct close</span>
+
+<span class="tok-com">// Widget ka actual visual UI — pure SwiftUI, RN se koi lena dena nahi</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">StepCountWidgetView</span>: View { <span class="tok-com">// SwiftUI View protocol — is chapter ke ch.6 wale mental model jaisa hi hai</span>
+    <span class="tok-kw">let</span> entry: StepCountEntry <span class="tok-com">// TimelineProvider se aaya hua current entry — is view ka input data</span>
+    <span class="tok-kw">var</span> body: <span class="tok-kw">some</span> View { <span class="tok-com">// body describe karta hai widget kaisa dikhega</span>
+        VStack { <span class="tok-com">// Vertical stack — label aur number ko upar-neeche arrange karta hai</span>
+            Text(<span class="tok-str">"Steps Today"</span>) <span class="tok-com">// Static label text</span>
+                .font(.caption) <span class="tok-com">// Chhota font size — subtitle jaisa</span>
+            Text(<span class="tok-str">"\(entry.stepCount)"</span>) <span class="tok-com">// Dynamic value — shared container se aaya actual number, string interpolation se</span>
+                .font(.title) <span class="tok-com">// Bada, prominent font — widget ka main focus point</span>
+                .bold() <span class="tok-com">// Bold weight taaki number highlight ho</span>
+        } <span class="tok-com">// VStack close</span>
+    } <span class="tok-com">// body close</span>
+} <span class="tok-com">// struct close</span>
+
+<span class="tok-com">// Widget entry point — WidgetKit ko batata hai ki ye widget exist karta hai aur kaise configure hai</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">StepCountWidget</span>: Widget { <span class="tok-com">// Widget protocol — @main jaisa entry point widget extension target ke liye</span>
+    <span class="tok-kw">let</span> kind: <span class="tok-fn">String</span> = <span class="tok-str">"StepCountWidget"</span> <span class="tok-com">// Unique identifier — system internally isse widget ko track karta hai</span>
+    <span class="tok-kw">var</span> body: <span class="tok-kw">some</span> WidgetConfiguration { <span class="tok-com">// Configuration describe karta hai provider, view, aur metadata</span>
+        StaticConfiguration(kind: kind, provider: StepCountProvider()) { entry <span class="tok-kw">in</span> <span class="tok-com">// StaticConfiguration — no user-configurable options (dynamic config bhi possible hai, but simple case ye hai)</span>
+            StepCountWidgetView(entry: entry) <span class="tok-com">// Har entry ke liye view render karo</span>
+        } <span class="tok-com">// StaticConfiguration closure close</span>
+        .configurationDisplayName(<span class="tok-str">"Step Count"</span>) <span class="tok-com">// Widget gallery mein dikhne wala naam</span>
+        .description(<span class="tok-str">"Shows your steps for today."</span>) <span class="tok-com">// Widget gallery mein dikhne wala description</span>
+        .supportedFamilies([.systemSmall]) <span class="tok-com">// Sirf small size support karega — medium/large families alag layout demand karte, is example ke liye skip kiya</span>
+    } <span class="tok-com">// body close</span>
+} <span class="tok-com">// struct close</span></code></pre>
+      </div>
+
+      <p>
+        RN side pe aapko kuch aisa likhna hota hai jo main app ke data ko usi shared App Group container mein
+        likhe — normally ek chhota native module (Expo Modules API se, jo humne Chapter 16 mein likha tha) jo
+        <code>UserDefaults(suiteName:)</code> ko write access deta hai, plus <code>WidgetKit.reloadAllTimelines()</code>
+        call karke widget ko turant refresh trigger karta hai (warna wo apne next scheduled refresh tak purana
+        data dikhata rahega).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Widget ka data hamesha "eventually consistent" treat karo, "real-time" nahi. iOS battery-conscious hai —
+          <code>getTimeline</code> ka <code>policy</code> ek hint hai, guarantee nahi; system apni marzi se refresh
+          budget allocate karta hai (agar widget rarely dikhta hai, refresh kam milega). Isliye widgets un features
+          ke liye best hain jo "roughly up to date" ho sakte hain (step count, last order status, aaj ka quote) —
+          real-time chat ya live-tracking type UI widgets ke liye sahi fit nahi hai.
+        </p>
+      </div>
+
+      <h2 id="sdk-upgrade">2. Expo SDK Upgrade — A Senior Strategy</h2>
+
+      <p>
+        Expo SDK upgrade karna "bas <code>package.json</code> mein version number badal do" jaisa simple nahi hai
+        production app mein — ye ek structured process hai jise senior teams ek maintenance ritual ki tarah treat
+        karte hain, na ki ek panic-inducing event.
+      </p>
+
+      <h3>Step 1 — Changelog pehle padho, upgrade baad mein</h3>
+      <p>
+        Har naye Expo SDK release ke saath ek detailed changelog aata hai (expo.dev/changelog) jisme breaking
+        changes explicitly list hote hain — deprecated APIs, renamed packages, minimum OS version bumps, New
+        Architecture ke related changes. Isse skip karke seedha <code>npx expo install expo@latest</code> chala
+        dena ek common mistake hai — aap breaking changes ke baare mein sirf tab pata chalta hai jab build fail
+        ho jaata hai ya runtime crash aata hai, jab tak ki changelog pehle se na padha ho.
+      </p>
+
+      <h3>Step 2 — Dependency mismatches catch karo tooling se</h3>
+      <p>
+        Expo do built-in tools deta hai exactly is problem ke liye:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># --check flag installed dependencies ko current SDK ke expected versions se compare karta hai</span>
+npx expo install --check <span class="tok-com"># Batata hai kaunse packages Expo SDK ke saath mismatched version pe hain</span>
+
+<span class="tok-com"># expo-doctor ek broader health-check hai — sirf versions nahi, config bhi validate karta hai</span>
+npx expo-doctor <span class="tok-com"># app.json/app.config.ts, native folders, plugin config sab check karta hai common misconfigurations ke liye</span></code></pre>
+      </div>
+
+      <p>
+        <code>expo install --check</code> specifically un packages ko flag karta hai jo Expo SDK ki expected
+        version range se bahar hain (jaise agar <code>react-native-reanimated</code> ek purani version pe atka hai
+        jab SDK ne nayi version expect ki thi). <code>expo-doctor</code> isse ek level aage jaata hai — ye
+        native config files, plugin setup, aur known incompatible patterns ko bhi validate karta hai. Dono ko
+        upgrade se pehle <em>aur</em> baad mein chalana chahiye.
+      </p>
+
+      <h3>Step 3 — Ek baar mein ek hi major version upgrade karo</h3>
+      <p>
+        Ye sabse important discipline hai. Agar aap SDK 48 pe ho aur SDK 52 chahiye, <strong>48 → 49 → 50 → 51 →
+        52</strong> is order mein upgrade karo — seedha 48 → 52 mat karo, chahe technically npm install allow kar
+        de. Har major SDK version breaking changes introduce karta hai jo <em>compound</em> hote hain — SDK 49 ka
+        breaking change SDK 50 ke breaking change ke upar build hota hai, aur agar aap dono ek saath skip karte ho,
+        debugging ke time ye figure karna impossible ho jaata hai ki kaunsa specific change kis crash/build-failure
+        ki wajah bana.
+      </p>
+
+      <h3>Step 4 — Branch pe test karo, full Development Build rebuild ke saath</h3>
+      <p>
+        Kyunki SDK upgrades aksar native dependencies (native modules ki underlying versions) bhi bump karte hain,
+        <strong>sirf JS bundle reload karna kaafi nahi hai</strong> — aapko ek fresh native rebuild chahiye hota
+        hai (naya Development Build, ya <code>expo prebuild --clean</code> agar bare workflow files hain). Isko
+        ek dedicated branch pe karo, kabhi directly <code>main</code> pe nahi:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Nayi branch banao upgrade isolate karne ke liye</span>
+git checkout -b chore/expo-sdk-50-upgrade <span class="tok-com"># main ko touch kiye bina upgrade attempt karne ka safe space</span>
+
+<span class="tok-com"># Expo CLI ka apna upgrade command — SDK aur compatible dependencies dono update karta hai</span>
+npx expo install expo@^50.0.0 <span class="tok-com"># Target SDK version specify karke expo package upgrade karo</span>
+
+<span class="tok-com"># Baaki saare Expo-managed dependencies ko bhi is SDK ke compatible version pe align karo</span>
+npx expo install --fix <span class="tok-com"># --fix automatically mismatched packages ko sahi version pe bump karta hai</span>
+
+<span class="tok-com"># Health check chalao upgrade ke baad</span>
+npx expo-doctor <span class="tok-com"># Confirm karo koi config/version issue bacha to nahi</span>
+
+<span class="tok-com"># Native folders clean regenerate karo — purani native code ke saath naya JS mismatch avoid karne ke liye</span>
+npx expo prebuild --clean <span class="tok-com"># ios/ aur android/ folders fresh generate honge naye SDK ke config ke hisaab se (agar prebuild workflow use kar rahe ho)</span>
+
+<span class="tok-com"># Fresh Development Build banao — sirf yahi confirm karta hai ki native side bhi kaam kar raha hai</span>
+eas build --profile development --platform all <span class="tok-com"># Dono platforms ke liye naya dev client banao, purane cached native binary pe trust mat karo</span></code></pre>
+      </div>
+
+      <h3>Common failure mode — dependency upgrade bina native module upgrade ke</h3>
+      <p>
+        Ek particularly confusing failure jo senior devs bhi kabhi kabhi hit karte hain: aap ek JS-level dependency
+        (jaise <code>react-native-svg</code>) ko manually latest pe bump karte ho kyunki ek naya feature chahiye,
+        lekin uska underlying native module (iOS pod / Android native library) us specific Expo SDK version ke
+        saath test/certified nahi hai. Result: native build fail ho jaata hai (Xcode/Gradle error), ya worse — build
+        to pass ho jaata hai lekin runtime crash aata hai kisi specific native call pe. Root cause hamesha same hota
+        hai: <strong>JS-level dependency version aur uska native counterpart sync mein nahi hain.</strong> Fix:
+        hamesha <code>npx expo install &lt;package&gt;</code> use karo (plain <code>npm install</code> nahi) —
+        Expo CLI ka <code>install</code> command specifically current SDK ke saath compatible version resolve
+        karta hai, jabki plain npm sirf semver satisfy karega, SDK-compatibility ka koi idea nahi rakhta.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — SDK upgrade ko scheduled maintenance banao</div>
+        <p>
+          SDK upgrades ko "jab time milega tab kar lenge" wali backlog item mat banao. Har skip kiya hua version
+          eventual upgrade pain ko multiply karta hai — 2 versions peeche se upgrade karna manageable hai, lekin
+          6 versions peeche se ek saath upgrade karna essentially ek mini-rewrite ban jaata hai (compounded
+          breaking changes, deprecated APIs jo ab poori tarah remove ho chuki hain, dependencies jo ab support
+          hi nahi karte purane React Native version ko). Production teams isse ek <strong>quarterly scheduled
+          task</strong> banate hain — har quarter ek fixed sprint slot rakho sirf "SDK + dependencies ko latest
+          se ek version peeche tak le aao" ke liye, chahe usme koi naya feature na aa raha ho. Ye technical debt
+          hai jo compound interest ki tarah badhta hai agar ignore kiya.
+        </p>
+      </div>
+
+      <h2 id="facebook-sdk">3. Meta Ads &amp; Facebook SDK Integration</h2>
+
+      <p>
+        Apps Facebook SDK integrate kyun karte hain — do main reasons hoti hain. Pehla: <strong>Meta Ads
+        attribution/conversion tracking</strong> — agar aap Facebook/Instagram pe ads chala rahe ho apni app ko
+        promote karne ke liye, Meta ko ye janna hota hai ki kaunsa ad click actually ek install ya purchase mein
+        convert hua (attribution), taaki ad spend ka ROI measure ho sake aur ad targeting improve ho. Doosra:
+        <strong>Facebook Login</strong> — ek auth option jo users ko unke existing Facebook account se sign in
+        karne deta hai, signup friction kam karne ke liye.
+      </p>
+
+      <p>
+        RN ecosystem mein community-maintained wrapper hai <code>react-native-fbsdk-next</code> (original Meta ka
+        official RN SDK deprecated ho chuka hai, ye community fork hi actively maintained hai). Chalo ek basic
+        setup dekhte hain — SDK initialize karna aur ek standard event (purchase) log karna, jo Meta ke ad platform
+        ko conversion signal bhejta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>metaTracking.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Settings, AppEventsLogger } <span class="tok-kw">from</span> <span class="tok-str">'react-native-fbsdk-next'</span>; <span class="tok-com">// Settings SDK config ke liye, AppEventsLogger events log karne ke liye</span>
+
+<span class="tok-com">// SDK initialize karna — app startup pe ek baar call hota hai (jaise App.tsx ke top-level useEffect mein)</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">initMetaSDK</span>(<span class="tok-fn">userHasGrantedTracking</span>: <span class="tok-fn">boolean</span>) { <span class="tok-com">// Param — kya user ne ATT permission di hai (neeche detail mein)</span>
+  Settings.setAdvertiserTrackingEnabled(userHasGrantedTracking); <span class="tok-com">// SDK ko batao ki advertising-tracking-level data (jaise IDFA) collect karna allowed hai ya nahi</span>
+  Settings.setAutoLogAppEventsEnabled(<span class="tok-kw">true</span>); <span class="tok-com">// Standard app events (app open, session length) automatically log karne do</span>
+  Settings.initializeSDK(); <span class="tok-com">// SDK ko actually initialize karo — is call ke baad hi events log karna safe hai</span>
+} <span class="tok-com">// function close</span>
+
+<span class="tok-com">// Purchase event log karna — ad conversion tracking ke liye sabse common standard event</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">logPurchaseEvent</span>(<span class="tok-fn">amount</span>: <span class="tok-fn">number</span>, <span class="tok-fn">currency</span>: <span class="tok-fn">string</span>) { <span class="tok-com">// Params — purchase ki value aur currency code</span>
+  AppEventsLogger.logPurchase(amount, currency); <span class="tok-com">// Meta ka standard "Purchase" event log karo — Ads Manager isse conversion attribute karega us ad click se</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>App.tsx (excerpt)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span> } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>; <span class="tok-com">// Lifecycle hook — app start pe ek baar SDK init karne ke liye</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> TrackingTransparency <span class="tok-kw">from</span> <span class="tok-str">'expo-tracking-transparency'</span>; <span class="tok-com">// ATT permission request karne ke liye Expo ka module</span>
+<span class="tok-kw">import</span> { initMetaSDK } <span class="tok-kw">from</span> <span class="tok-str">'./metaTracking'</span>; <span class="tok-com">// Humara wrapper jo upar define kiya</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">App</span>() { <span class="tok-com">// Root app component</span>
+  <span class="tok-fn">useEffect</span>(() => { <span class="tok-com">// App mount hote hi ye effect chalega — ek baar</span>
+    <span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">setup</span>() { <span class="tok-com">// Async wrapper kyunki permission request Promise return karti hai</span>
+      <span class="tok-kw">const</span> { status } = <span class="tok-kw">await</span> TrackingTransparency.requestTrackingPermissionsAsync(); <span class="tok-com">// iOS ka native ATT prompt dikhata hai — user ko explicit yes/no choice deta hai</span>
+      <span class="tok-kw">const</span> granted = status === <span class="tok-str">'granted'</span>; <span class="tok-com">// Boolean convert karo readability ke liye</span>
+      <span class="tok-fn">initMetaSDK</span>(granted); <span class="tok-com">// Meta SDK ko batao user ne tracking allow ki ya nahi — is decision ke hisaab se SDK IDFA access karega ya nahi</span>
+    } <span class="tok-com">// setup function close</span>
+    <span class="tok-fn">setup</span>(); <span class="tok-com">// Async function ko call karo (fire-and-forget, useEffect khud async nahi ho sakta)</span>
+  }, []); <span class="tok-com">// Empty deps — sirf mount pe ek baar chale</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">null</span>; <span class="tok-com">// Ye sirf setup-logic wala excerpt hai, real app yahan poora navigation tree return karegi</span>
+} <span class="tok-com">// component close</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 App Tracking Transparency (ATT) — bina prompt ke tracking = App Store rejection</div>
+        <p>
+          iOS pe Meta SDK ka advertising-tracking functionality (jisme <strong>IDFA</strong> — Identifier for
+          Advertisers — access karna shamil hai, jo cross-app ad attribution ke liye use hota hai) sirf tab
+          allowed hai jab user ne explicitly <strong>App Tracking Transparency</strong> prompt mein "Allow" choose
+          kiya ho. Ye prompt <code>expo-tracking-transparency</code> ke <code>requestTrackingPermissionsAsync()</code>
+          se trigger hota hai — <strong>ye Apple ka mandatory native permission dialog hai</strong>, koi custom UI
+          nahi chal sakta iske bajaye. Agar aapki app IDFA access kar rahi hai (ya Meta SDK ko advertiser tracking
+          enable kiya hua hai) bina is prompt ke pehle dikhaye, <strong>Apple aisi app ko App Store review mein
+          reject karta hai</strong> — ye ek well-enforced policy hai, edge case nahi. Agar user permission deny
+          karta hai, <code>Settings.setAdvertiserTrackingEnabled(false)</code> call karna zaroori hai taaki SDK
+          IDFA-level data collect na kare — is case mein Meta ka <strong>Aggregated Event Measurement</strong>
+          (privacy-preserving, non-IDFA attribution) fallback use hota hai, jo less precise hai lekin compliant
+          hai.
+        </p>
+      </div>
+
+      <p>
+        Iska ek direct compliance implication bhi hai jo Chapter 14 (Publishing) se connect hota hai: jab aap App
+        Store Connect pe apna <strong>Privacy "Nutrition Label"</strong> (App Privacy details) fill karte ho, agar
+        aapne Facebook SDK ke through advertising data collect/share kiya hai, wo label mein accurately declare
+        hona chahiye ("Data Used to Track You" section mein). Nutrition label aur actual app behavior mismatch
+        hona (jaise label mein "no tracking" bolna jabke SDK IDFA access kar raha hai) apne aap mein ek separate
+        rejection/removal risk hai — ye sirf ek one-time form-filling task nahi hai, ye ek ongoing accuracy
+        responsibility hai jo tab tak rehti hai jab tak SDK integration app mein hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Android pe bhi consider karo</div>
+        <p>
+          ATT sirf iOS-specific requirement hai, lekin Android pe bhi Google Play ki apni Data Safety section hai
+          jaha advertising/attribution data collection declare karna padta hai, aur Google Advertising ID (GAID)
+          ke around bhi similar privacy expectations badh rahi hain. Meta SDK integrate karte waqt dono platforms
+          ke privacy declarations ko saath mein update karna best practice hai, sirf iOS pe focus mat karo.
+        </p>
+      </div>
+
+      <h2 id="advanced-deep-dive">4. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Chapter ke teeno core topics (Widgets, SDK upgrades, Facebook SDK) cover karne ke baad, ab hum us territory
+        mein jaate hain jo interviews mein "aapne production mein kabhi soch ke dekha hai iske aage kya hota hai"
+        wale follow-up questions banata hai — adjacent platform capabilities jo Widgets jaisi hi native-extension
+        family mein aate hain, aur ek OTA-update decision jo har senior RN engineer ko apne career mein kabhi na
+        kabhi make karna padta hai.
+      </p>
+
+      <h3>App Clips (iOS) aur Instant Apps (Android) — bina install ke instant experience</h3>
+      <p>
+        Concept simple hai: user ek QR code scan kare (jaise parking meter pe), NFC tag tap kare, ya ek link click
+        kare (SMS/Maps mein) — aur poori app install kiye bina, ek <strong>chhota, tezi se load hone wala mini
+        version</strong> turant open ho jaaye jisme sirf wahi ek specific task ho (parking pay karna, ek restaurant
+        ka menu dekhna, ek bike unlock karna). Task complete hone ke baad app ko poori install karne ka option
+        diya jaata hai, lekin ye purely optional hai — core use-case bina install ke hi complete ho jaata hai. iOS
+        pe isse <strong>App Clip</strong> kehte hain, Android pe conceptually equivalent feature <strong>Instant
+        Apps</strong> (Google Play Instant) hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Ye size-constrained hai — isliye plain RN mein possible nahi</div>
+        <p>
+          App Clips ke liye Apple ek <strong>strict binary size limit</strong> enforce karta hai (historically
+          ~10MB tha, kuch specific extension scenarios mein thoda flexibility badhi hai, lekin ye hamesha ek bahut
+          tight cap raha hai — exact number Apple docs mein check karna chahiye kyunki ye policy ke saath change
+          hota rehta hai). Ek poora React Native + Hermes runtime, JS bundle, aur uski dependencies is limit ko
+          <strong>turant cross kar dete hain</strong> — chhote se chhota RN app bhi easily 15-20MB+ ka hota hai jab
+          Hermes engine, React runtime, aur core libraries shamil hoti hain. Isliye App Clip <strong>genuinely ek
+          alag, minimal native (Swift/SwiftUI) target</strong> hota hai jo Xcode project mein ek separate App Clip
+          extension ke roop mein add hota hai — same tarah jaise humne is chapter ke Widgets section mein alag
+          Widget Extension target dekha tha, lekin yahan constraint aur bhi tight hai kyunki poora JS runtime hi
+          budget mein fit nahi hota. Isi tarah Android Instant Apps ke liye bhi ek separate, feature-scoped APK
+          module chahiye hota hai jo Google ki size guidelines (typically under 15MB compressed) ke andar fit ho.
+        </p>
+      </div>
+
+      <p>
+        Expo ka is area mein support abhi <strong>immature/limited</strong> hai — first-party config plugin App
+        Clips ke liye Expo SDK mein directly nahi aata (jaise <code>@bacons/apple-targets</code> Widgets ke liye
+        community solution hai, waise hi App Clip target add karne ke liye community-maintained approaches exist
+        karte hain, lekin ye kaafi manual Xcode-level setup maangte hain, aur end-to-end EAS Build pipeline ke saath
+        first-class integration abhi utni mature nahi hai jitni Widgets ke liye ho chuki hai). Android Instant Apps
+        ka bhi RN/Expo ecosystem mein koi ready-made managed-workflow solution nahi hai — dono cases mein aapko bare
+        native Android/iOS project knowledge ke saath directly kaam karna padta hai, ye "install a package aur ho
+        gaya" wala feature nahi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>ParkingClipView.swift (App Clip target — conceptual skeleton)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> SwiftUI <span class="tok-com">// App Clip ka UI bhi pure native SwiftUI hai — RN/JS ka koi role nahi is target ke andar</span>
+<span class="tok-kw">import</span> AppClip <span class="tok-com">// AppClip framework — invocation URL aur clip-specific lifecycle events yahan se milte hain</span>
+
+<span class="tok-com">// App Clip ka entry point — Widgets ke @main Widget struct jaisa hi pattern hai</span>
+<span class="tok-kw">@main</span> <span class="tok-com">// Is target ka actual executable entry point yahan se start hota hai (poore main app se alag binary)</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">ParkingClipApp</span>: App { <span class="tok-com">// SwiftUI App protocol — App Clip target ka apna lifecycle hai</span>
+    <span class="tok-kw">var</span> body: <span class="tok-kw">some</span> Scene { <span class="tok-com">// Scene describe karta hai window/view hierarchy</span>
+        WindowGroup { <span class="tok-com">// Single window — App Clips typically ek hi focused screen dikhate hain</span>
+            ParkingClipRootView() <span class="tok-com">// Root view — sirf ek task ke liye designed (parking meter pay karna), poori app ka navigation nahi</span>
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity <span class="tok-kw">in</span> <span class="tok-com">// QR code/NFC/link se invoke hone pe ye activity milti hai</span>
+                    <span class="tok-kw">guard</span> <span class="tok-kw">let</span> url = activity.webpageURL <span class="tok-kw">else</span> { <span class="tok-kw">return</span> } <span class="tok-com">// URL nikalo jisse App Clip trigger hua (isme parking meter ID jaisa context hota hai)</span>
+                    <span class="tok-fn">handleInvocation</span>(url: url) <span class="tok-com">// URL parse karke relevant meter/context load karo — isi context ke saath UI turant populate hoga</span>
+                } <span class="tok-com">// onContinueUserActivity closure close</span>
+        } <span class="tok-com">// WindowGroup close</span>
+    } <span class="tok-com">// body close</span>
+
+    <span class="tok-com">// Helper — invocation URL se meter ID extract karke local state set karna</span>
+    <span class="tok-kw">func</span> <span class="tok-fn">handleInvocation</span>(url: URL) { <span class="tok-com">// URL se parking meter context nikalne wala function</span>
+        <span class="tok-kw">let</span> meterID = URLComponents(url: url, resolvingAgainstBaseURL: <span class="tok-kw">true</span>)?.queryItems?.first(where: { $0.name == <span class="tok-str">"meter"</span> })?.value <span class="tok-com">// URL query param se meter ID nikalo, jaise ?meter=1234</span>
+        <span class="tok-com">// yahan se seedha payment flow trigger hoga — poora app install/download flow involve nahi hota</span>
+    } <span class="tok-com">// function close</span>
+} <span class="tok-com">// struct close</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — App Clip ko "chhota app" nahi, "ek task" socho</div>
+        <p>
+          Sabse common mistake teams karti hain: App Clip ko "hamari main app ka lite version" bana dete hain,
+          jisme multiple screens, login, aur poora navigation stack squeeze karne ki koshish hoti hai — result
+          hamesha size budget se overflow, aur user experience jo actually "instant" nahi feel hota. Sahi mental
+          model hai: App Clip <strong>ek single, well-defined task</strong> ke liye hona chahiye (payment karna,
+          menu dekhna, unlock karna) — agar user ko poore account/profile/history ki zaroorat hai, wahi moment hai
+          jab unhe full app install karne ka prompt do, App Clip ke andar nahi.
+        </p>
+      </div>
+
+      <h3>Live Activities (iOS) — Lock Screen aur Dynamic Island pe live, updating content</h3>
+      <p>
+        Live Activity ek persistent, real-time-updating UI hai jo <strong>Lock Screen</strong> aur (agar device
+        support karta hai) <strong>Dynamic Island</strong> pe dikhti hai — jaise ek live cricket score, ek food
+        delivery ka "10 min door pe" tracker, ya ek Uber ride ka live ETA. User ko app open karne ki zaroorat nahi
+        padti current status dekhne ke liye — information unke Lock Screen pe hi live update hoti rehti hai.
+      </p>
+
+      <p>
+        Architecturally Live Activities <strong>Widgets ke exact same native-extension family</strong> mein aate
+        hain — inhe <strong>ActivityKit</strong> (lifecycle manage karne wala framework) aur
+        <strong>WidgetKit</strong> (actual UI render karne wala framework, SwiftUI ke through) ke combination se
+        banaya jaata hai. Matlab jo humne is chapter ke Widgets section mein seekha — alag process, apna memory
+        space, koi JS runtime nahi, SwiftUI-only UI — wahi sab fundamentals yahan bhi apply hote hain. Fark sirf
+        itna hai ki Widget "static timeline" model follow karta hai (periodic refresh), jabki Live Activity ek
+        <strong>continuous, push-driven update model</strong> follow karta hai jo real-time events (jaise delivery
+        status change) ke saath sync rehta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>DeliveryActivityAttributes.swift</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> ActivityKit <span class="tok-com">// Live Activity lifecycle (start/update/end) manage karne wala framework</span>
+
+<span class="tok-com">// ActivityAttributes define karta hai Live Activity ka static aur dynamic data shape</span>
+<span class="tok-kw">struct</span> <span class="tok-fn">DeliveryActivityAttributes</span>: ActivityAttributes { <span class="tok-com">// ActivityAttributes protocol conform karna zaroori hai</span>
+    <span class="tok-com">// ContentState — wo data jo activity ke lifetime mein change hoti rahegi (push updates se)</span>
+    <span class="tok-kw">public</span> <span class="tok-kw">struct</span> <span class="tok-fn">ContentState</span>: Codable, Hashable { <span class="tok-com">// Codable zaroori hai kyunki push payload se decode hoga</span>
+        <span class="tok-kw">var</span> etaMinutes: <span class="tok-fn">Int</span> <span class="tok-com">// Dynamic field — har update ke saath change hoga (delivery jaise close aaye, kam hota jaayega)</span>
+        <span class="tok-kw">var</span> status: <span class="tok-fn">String</span> <span class="tok-com">// Dynamic field — jaise "Preparing", "On the way", "Delivered"</span>
+    } <span class="tok-com">// ContentState struct close</span>
+
+    <span class="tok-kw">var</span> orderNumber: <span class="tok-fn">String</span> <span class="tok-com">// Static field — activity ke shuru se end tak fixed rehta hai, ContentState ke bahar</span>
+} <span class="tok-com">// DeliveryActivityAttributes struct close</span>
+
+<span class="tok-com">// Main app ke side pe (RN native module ke through) activity start karna</span>
+<span class="tok-kw">func</span> <span class="tok-fn">startDeliveryActivity</span>(orderNumber: <span class="tok-fn">String</span>) { <span class="tok-com">// Ye function tab call hota hai jab order confirm ho jaaye</span>
+    <span class="tok-kw">let</span> attributes = DeliveryActivityAttributes(orderNumber: orderNumber) <span class="tok-com">// Static attributes ke saath object banao</span>
+    <span class="tok-kw">let</span> initialState = DeliveryActivityAttributes.ContentState(etaMinutes: <span class="tok-num">25</span>, status: <span class="tok-str">"Preparing"</span>) <span class="tok-com">// Starting dynamic state</span>
+    <span class="tok-kw">do</span> { <span class="tok-com">// Activity.request throw kar sakta hai (jaise agar user ne Live Activities disable kar rakhi hain settings mein)</span>
+        <span class="tok-kw">let</span> activity = <span class="tok-kw">try</span> Activity<DeliveryActivityAttributes>.request( <span class="tok-com">// Naya Live Activity start karo system se request karke</span>
+            attributes: attributes, <span class="tok-com">// Static data pass karo</span>
+            contentState: initialState, <span class="tok-com">// Initial dynamic state pass karo</span>
+            pushType: .token <span class="tok-com">// IMPORTANT: .token batata hai ki ye activity remote push (APNs) se updates accept karegi</span>
+        ) <span class="tok-com">// request call close</span>
+        <span class="tok-com">// activity.pushTokenUpdates se milne wala token backend ko bhejna hoga — wahi token APNs push ke liye chahiye</span>
+    } <span class="tok-kw">catch</span> { <span class="tok-com">// Agar request fail ho (permission denied, ya OS version support na kare)</span>
+        <span class="tok-kw">print</span>(<span class="tok-str">"Live Activity start failed:"</span>, error) <span class="tok-com">// Gracefully log karo — Live Activity optional enhancement honi chahiye, core flow block nahi honi chahiye</span>
+    } <span class="tok-com">// do-catch close</span>
+} <span class="tok-com">// function close</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Backend se update kaise push hota hai</div>
+        <p>
+          Ek baar Live Activity <code>pushType: .token</code> ke saath start ho jaaye, system ek unique
+          <strong>push-to-start / update token</strong> generate karta hai (Widget ke <code>UserDefaults</code>
+          waali app-group-based data-sharing se bilkul alag mechanism — ye ek genuine APNs push token hai, jaisa
+          humne Chapter 8 mein regular push notifications ke liye dekha tha). Ye token app se backend ko bhejna
+          hota hai (normal API call se). Jab bhi order status change ho (delivery partner backend ko update kare),
+          backend us token pe ek special <strong>APNs push</strong> bhejta hai jiska payload type
+          <code>content-state</code> hota hai — iske andar naya <code>ContentState</code> (updated ETA, updated
+          status) hota hai. OS us push ko receive karke Live Activity ki UI ko automatically re-render kar deta
+          hai — <strong>app foreground/background/killed kisi bhi state mein ho, farak nahi padta</strong>, kyunki
+          ye update poori tarah OS-level push delivery se drive hoti hai, app ke JS runtime ko involve kiye bina.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Live Activity ek "budget-limited" resource hai</div>
+        <p>
+          Do practical constraints jo interview mein aksar miss ki jaati hain: (1) Ek Live Activity ka maximum
+          lifetime hota hai (roughly 8 ghante ke around, uske baad system automatically usse "stale"/dismiss kar
+          deta hai — isliye long-running scenarios, jaise agle din tak ki tracking, ke liye ek naya activity phir
+          se start karna padta hai). (2) APNs push updates ki bhi ek <strong>rate budget</strong> hoti hai per
+          activity — backend se har second update bhejna anti-pattern hai; sirf <em>meaningful</em> state changes
+          pe push karo (status change, significant ETA jump), na ki continuous polling-jaisa pattern replicate
+          karo push ke through.
+        </p>
+      </div>
+
+      <h3>Android App Bundles aur Dynamic Feature Modules — per-device optimization aur on-demand delivery</h3>
+      <p>
+        Jab hum Chapter 10-11 mein EAS Build/Submit cover kar rahe the, humne mention kiya tha ki Play Store
+        submissions <code>.aab</code> (Android App Bundle) format use karte hain, na ki traditional
+        <code>.apk</code>. Is format ka deeper reasoning samajhna senior-level Android awareness hai: <code>.aab</code>
+        khud ek installable file nahi hai — ye ek "publishing format" hai jisme app ka poora code aur resources
+        (sab densities, sab ABIs — arm64, armeabi-v7a, etc, sab languages) included hote hain. Google Play ka
+        server phir <strong>per-device optimized APKs generate</strong> karta hai on-the-fly — jab ek user apne
+        specific phone (jaise ek specific screen density aur ek specific CPU architecture) pe install karta hai,
+        Play sirf usi device ke liye relevant pieces wala chhota APK deliver karta hai, na ki poora bundle jisme
+        har density/ABI/language shamil ho. Isse download size significantly chhota ho jaata hai bina developer
+        ko manually alag APKs banane ki zaroorat pade.
+      </p>
+
+      <p>
+        Isi App Bundle format ke upar ek aur capability build hoti hai: <strong>Dynamic Feature Modules</strong>
+        (Play Feature Delivery ka part). Concept — app ke kuch features (jaise ek rarely-used "AR try-on" feature,
+        ya ek advanced "video editor" module) ko <em>upfront install ke saath bundle na karke</em>, alag se ek
+        module ke roop mein package karo jo user ki zaroorat padne pe <strong>on-demand download</strong> ho —
+        naa ki har user ke initial install size mein wo feature forcefully shamil karo jise shaayad wo kabhi use
+        hi na kare.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Senior-level awareness, not a day-to-day RN tool</div>
+        <p>
+          Dynamic Feature Modules ka native Android tooling (Kotlin/Java modules ke through) mature hai, lekin
+          React Native ka JS-bundle-centric model iske saath cleanly map nahi hota — RN ka Metro bundler ek single
+          JS bundle produce karta hai (ya limited code-splitting via Hermes bytecode lazy-loading, jo abhi bhi
+          evolving area hai), jabki Play Feature Delivery fundamentally native module-level splitting ke liye
+          design hua hai. Practically, ye pattern zyada relevant hota hai <strong>bade "super apps"</strong> ke
+          liye (jaise ek banking app jisme ek heavy, rarely-used native SDK — jaise video KYC — hai) jo apne
+          initial install size ko chhota rakhna chahte hain aur us specific native-heavy feature ko alag module
+          mein isolate kar sakte hain. Ek typical RN app ke liye ye day-to-day tool nahi hai — lekin ek senior
+          interview mein "install size kaise chhota rakhoge ek bade app mein" jaisa question aaye to ye concept
+          jaanna zaroori hai, chahe aapne khud kabhi implement na kiya ho.
+        </p>
+      </div>
+
+      <h3>CodePush vs EAS Update — OTA solution choose karne ka senior decision framework</h3>
+      <p>
+        Chapter 12 mein humne EAS Update ke fundamentals dekhe the (OTA updates, runtime versions, channels). Ab
+        ek honest comparison — kyunki teams jo naye project shuru kar rahi hain, ya jo ek legacy OTA setup se
+        migrate kar rahi hain, unhe ye decision explicitly lena padta hai:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Criteria</th><th>CodePush (Microsoft / App Center)</th><th>EAS Update</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Maturity</td><td>Bahut purana, well-established, industry mein saalon se use ho raha</td><td>Newer, lekin ab production-grade, actively developed</td></tr>
+          <tr><td>Ecosystem fit</td><td>Standalone tool — koi built-in tie-in Build/Submit ke saath</td><td>EAS Build/Submit/Workflows (Ch 10-13) ke saath tightly integrated — same CLI, same dashboard, same channels concept</td></tr>
+          <tr><td>Current status</td><td><strong>Microsoft ne App Center (jispe CodePush depend karta hai) ko sunset karne ka announcement kiya hai</strong> — ye is waqt ek genuine, real consideration hai kisi bhi naye project ke liye</td><td>Expo ki core roadmap ka active hissa — dedicated long-term investment</td></tr>
+          <tr><td>Best fit for</td><td>Existing legacy apps jo already CodePush pe heavily invested hain aur migration cost abhi justify nahi hoti</td><td>Naye projects, ya koi bhi app jo already Expo/EAS ecosystem (Build/Submit/Workflows) use kar rahi hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior recommendation</div>
+        <p>
+          Kisi bhi <strong>naye</strong> project ke liye, <strong>EAS Update</strong> hi default choice honi
+          chahiye — do concrete reasons se: pehla, App Center ke sunset announcement ki wajah se CodePush pe
+          naya investment karna ek genuine long-term risk hai (aapko eventually migrate karna hi padega, to
+          shuru se hi sahi tool choose karo). Doosra, agar aap already EAS Build/Submit/Workflows use kar rahe ho
+          (jaisa is poore handbook ke Chapter 10-13 mein establish kiya), EAS Update usi pipeline ka natural
+          extension hai — same <code>runtimeVersion</code>/fingerprint concept, same channels, same CLI
+          authentication, same dashboard. Do alag vendors (Expo ka build pipeline + Microsoft ka OTA pipeline)
+          manage karna unnecessary operational overhead hai jab ek hi vendor dono solve kar sakta hai. Sirf ek
+          legacy app jo already deeply CodePush pe invested hai, aur jahan migration cost immediate benefit se
+          zyada hai, wahi CodePush ko short-term continue karne ka legitimate case hai — lekin wahan bhi eventual
+          migration plan hona chahiye, "ignore karte raho" nahi.
+        </p>
+      </div>
+
+      <h2 id="interview-questions">5. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye handbook ka aakhri content section hai, isliye questions ka mix intentionally do tarah ka hai: kuch
+        directly is chapter ke bonus topics (Widgets, SDK upgrades, App Clips, Live Activities, OTA choice) pe
+        specific hain, aur kuch <strong>capstone / system-design style</strong> hain jo poore 17-chapter handbook
+        ke concepts ko ek saath pull karte hain — bilkul waise hi jaise ek real senior/staff RN interview ke aakhri
+        round mein pucha jaata hai, jab interviewer dekhna chahta hai ki aap individual topics ko ek coherent
+        system-level mental model mein connect kar sakte ho ya nahi.
+      </p>
+
+      <h3>1. (Capstone) Ek large-scale React Native e-commerce app ki architecture design karo from scratch — navigation, state management, offline support, aur native modules ke around key decisions kya honge, aur kyun?</h3>
+      <p>
+        Ye ek genuinely capstone question hai jo poore handbook ko touch karta hai. Structured answer:
+      </p>
+      <ul>
+        <li><strong>Navigation (Ch 4):</strong> Expo Router ka file-based routing, route groups se auth-vs-app split
+        (<code>(auth)</code> vs <code>(app)</code>), aur RBAC guard agar multiple user roles hain (customer vs
+        seller vs admin dashboard). Deep linking zaroori hai (product page ka direct link, marketing campaigns).</li>
+        <li><strong>State management:</strong> Server state (product catalog, cart, orders) ke liye ek dedicated
+        data-fetching layer (React Query/TanStack Query style caching, jo Ch 9 ke Supabase/backend patterns ke
+        saath naturally fit hota hai) — <em>local UI state</em> (form inputs, modal open/closed) ke liye simple
+        <code>useState</code>/Context hi kaafi hai. Global client state (jaise cart contents jo offline bhi survive
+        kare) ek lightweight store (Zustand-jaisa) mein, persisted via AsyncStorage/MMKV.</li>
+        <li><strong>Offline support:</strong> Cart aur recently-viewed data locally persist honi chahiye (isse app
+        cold-start pe bhi turant usable feel hoti hai). Checkout jaisi write-operations ke liye ek
+        <strong>offline mutation queue</strong> pattern — user action turant optimistically UI mein reflect ho,
+        actual API call ek queue mein jaaye jo network wapas aane pe retry ho (isi tarah ka pattern jo humne
+        push-token registration/backend-sync mein bhi dekha, Ch 8-9).</li>
+        <li><strong>Native modules (Ch 16):</strong> Payment SDK integration (Ch 15 ke RevenueCat/Stripe pattern),
+        shayad ek barcode/QR scanner (agar in-store pickup hai), aur agar business requirement ho to Widgets/Live
+        Activities (is chapter) order-tracking ke liye — ye sab "existing package na mile to hi likho" wale last-resort
+        native modules honge, first choice nahi.</li>
+        <li><strong>Shipping pipeline (Ch 10-14) aur monetization (Ch 15):</strong> EAS Build/Submit/Workflows se
+        CI/CD, EAS Update se non-native hotfixes ka fast path, aur agar physical goods bhi bikte hain to Stripe
+        (real-world payments) alag rakhna hoga IAP (digital) se — Apple/Google ki policy split (Ch 15) is decision
+        ko drive karega.</li>
+      </ul>
+      <p>
+        Interview mein strong signal ye hai ki aap har decision ko <em>trade-off ke saath</em> justify karo, na ki
+        ek tool list bata do — "hum Zustand use karenge kyunki Redux se lighter hai" jaisa reasoning dikhana zaroori
+        hai, sirf naming nahi.
+      </p>
+
+      <h3>2. (Capstone) Ek user report karta hai "app slow hai" — koi aur detail nahi milta. Diagnosis ka process kya hoga?</h3>
+      <p>
+        Ye ek open-ended systems-thinking question hai jo poore performance-related handbook content ko touch karta
+        hai. Structured process:
+      </p>
+      <ul>
+        <li><strong>Reproduce aur scope narrow karo:</strong> "Slow" ka matlab kya hai — app launch slow (cold
+        start), ek specific screen slow, ek scroll/list slow, ya ek animation janky? In sabka root cause bilkul
+        alag hota hai, isliye pehla step hamesha specific repro case dhoondna hai (device, OS version, network
+        condition sab matter karte hain).</li>
+        <li><strong>Cold start slow:</strong> JS bundle size check karo (Hermes bytecode precompilation on hai ya
+        nahi — Ch 1), app startup pe kitna kaam <code>useEffect</code>/top-level code mein ho raha hai (SDK
+        initializations jaise Meta SDK is chapter mein, analytics, font loading) — inhe defer/lazy karna often
+        biggest win hota hai.</li>
+        <li><strong>List/scroll slow:</strong> Ch 2 ke FlatList/FlashList internals — <code>renderItem</code> ke
+        andar expensive computation, missing <code>keyExtractor</code>/<code>getItemLayout</code>, ya images
+        bina proper caching/sizing (expo-image) ke.</li>
+        <li><strong>Animation janky:</strong> Ch 5 ke worklet/UI-thread mental model — confirm karo animation
+        actually UI thread pe hai (Reanimated shared values) na ki JS-thread-driven state updates pe depend kar
+        rahi hai.</li>
+        <li><strong>Tooling:</strong> React DevTools Profiler (unnecessary re-renders), Flipper/native profilers
+        (actual native-side frame timing), aur agar backend-bound hai to network waterfall check (Ch 9 ka
+        client-server boundary) — "slow" kabhi kabhi UI performance nahi, ek slow API response hoti hai jo UI ko
+        block kar rahi hoti hai.</li>
+      </ul>
+      <p>
+        Senior signal: aap ek <em>hypothesis-driven, elimination-based</em> process describe karo (device/network/
+        specific-screen narrow karke), na ki seedha "main Flipper khol ke dekh lunga" bol do — vague debugging
+        process ek red flag hai senior interviews mein.
+      </p>
+
+      <h3>3. App Clip ke andar user login/auth kaise handle karoge, jab poori app hi install nahi hai?</h3>
+      <p>
+        App Clip aur main app technically <strong>alag binaries</strong> hain lekin same App Group share kar sakte
+        hain (jaisa humne Widgets section mein data-sharing ke liye dekha) — isliye agar user App Clip mein kuch
+        action complete karta hai (jaise guest checkout ek order ke liye) aur baad mein full app install karta hai,
+        App Group ke shared container se wo context (order ID, ek lightweight session token) main app ko
+        automatically mil sakta hai bina user se dobara sab kuch pucche. Practically zyadatar App Clips
+        <strong>guest-mode/no-login</strong> flow design karte hain (parking pay karna bina account banaye) — full
+        authentication (password, OTP) App Clip ke tight size aur "instant" UX expectation ke against jaata hai;
+        agar login zaroori hi hai, ek minimal, single-tap option (Sign in with Apple, jo native aur lightweight
+        hai) prefer kiya jaata hai heavy custom auth flow ke bajaye.
+      </p>
+
+      <h3>4. Live Activity ke updates backend se kaise push hote hain, aur kya constraints hain jo production mein miss ki jaati hain?</h3>
+      <p>
+        Jab Live Activity <code>pushType: .token</code> ke saath start hoti hai, ek unique push token generate
+        hota hai jo app backend ko bhejta hai. Backend us token pe ek <code>content-state</code> type ka APNs push
+        bhejta hai jab bhi meaningful state change ho (order status, ETA) — OS activity ki UI automatically
+        re-render kar deta hai, app running hone ki zaroorat nahi. Do constraints jo aksar miss hoti hain: activity
+        ki <strong>maximum lifetime</strong> (roughly ~8 hours ke around, uske baad naya activity start karna
+        padta hai), aur push updates ki <strong>rate budget</strong> — continuous/high-frequency push bhejna
+        anti-pattern hai, sirf discrete meaningful transitions pe push karo.
+      </p>
+
+      <h3>5. Ek naye project ke liye CodePush ya EAS Update — kaunsa choose karoge, aur decision kis pe depend karta hai?</h3>
+      <p>
+        Naye project ke liye <strong>EAS Update</strong> default recommendation hai — do reasons: Microsoft ne
+        App Center (jispe CodePush depend karta hai) sunset karne ka announcement kiya hai, isliye naya investment
+        risk hai; aur agar project already EAS Build/Submit/Workflows (Ch 10-13) use kar raha hai, EAS Update usi
+        pipeline ka natural, tightly-integrated extension hai — ek hi vendor, ek hi <code>runtimeVersion</code>/
+        fingerprint concept, ek hi dashboard. Decision sirf tab flip hoti hai jab ek <em>existing legacy app</em>
+        already CodePush pe deeply invested hai aur immediate migration cost benefit se zyada hai — us case mein
+        bhi eventual migration plan hona chahiye.
+      </p>
+
+      <h3>6. (Capstone) Ek 2-saal-purani RN app kai major versions peeche hai — upgrade karne ka approach kya hoga?</h3>
+      <p>
+        Ye question is chapter ke SDK Upgrade strategy (section 2) ko Chapter 1 ke New Architecture concepts ke
+        saath jodta hai. Approach:
+      </p>
+      <ul>
+        <li><strong>Assess kaha khade ho:</strong> Current SDK version, Old vs New Architecture status (Ch 1) —
+        agar app abhi bhi Old Architecture (Bridge-based) pe hai, ye upgrade sirf version bump nahi hai, ye ek
+        <em>architectural migration</em> bhi hai, kyunki New Architecture (JSI/Fabric/TurboModules) ka
+        adoption compounding effect rakhta hai third-party dependencies ke saath.</li>
+        <li><strong>One version at a time (is chapter, section 2):</strong> Skip-versions upgrade mat karo —
+        48→49→50→51→52 sequentially, har step pe <code>expo-doctor</code> aur <code>expo install --check</code>
+        chalao, har step pe ek fresh Development Build banao aur regression test karo.</li>
+        <li><strong>Dependency audit:</strong> Har major native dependency (navigation library, gesture handler,
+        reanimated, custom native modules jo Ch 16 ke pattern se likhe gaye hain) ko check karo ki New
+        Architecture-compatible hai ya nahi — kuch bahut purani, unmaintained third-party libraries yahan
+        blocker ban sakti hain, aur unhe replace karna padh sakta hai.</li>
+        <li><strong>Testing safety net (Ch 7):</strong> Agar app ke paas already Jest/RNTL/Maestro coverage hai,
+        upgrade ke har step pe wo suite chalao — regression jaldi pakadne ka ye sabse reliable tareeka hai jab
+        itne compounded changes ek saath aa rahe hon.</li>
+        <li><strong>Timeline expectation set karo:</strong> Stakeholders ko clearly batao ki 6 versions peeche se
+        upgrade karna ek "mini-rewrite" scale ka effort hai, ek weekend task nahi — ye is chapter ke senior note
+        ka hi extension hai ki skip kiya hua upgrade compounding technical debt banata hai.</li>
+      </ul>
+
+      <h3>7. Dynamic Feature Modules (Android) ka concept RN apps mein kyun rarely directly use hota hai?</h3>
+      <p>
+        Play Feature Delivery ka design fundamentally native (Kotlin/Java) module-level code splitting ke around
+        hai, jabki RN ka Metro bundler ek largely single, monolithic JS bundle produce karta hai — JS-level lazy
+        loading/code-splitting is ecosystem mein abhi evolving area hai aur Play's native module splitting ke
+        saath cleanly integrate nahi hoti. Practically ye pattern zyada relevant hota hai bade apps ke liye jo
+        specific heavy <em>native</em> SDKs (video processing, AR, ML models) ko on-demand isolate karna chahte
+        hain, na ki RN JS code ko khud split karne ke liye.
+      </p>
+
+      <h3>8. Widgets, Live Activities, aur App Clips — teeno conceptually kya common share karte hain?</h3>
+      <p>
+        Teeno <strong>native "extension" targets</strong> hain jo main RN app se <em>alag processes/binaries</em>
+        ke roop mein exist karte hain, apna khud ka strict resource/size budget rakhte hain, aur pure native UI
+        (SwiftUI zyadatar) use karte hain kyunki inke andar poora JS runtime boot karna practically ya policy-wise
+        possible nahi hai. Data sharing ke liye ye App Groups jaisa shared-container mechanism use karte hain (JS
+        state directly share nahi kar sakte, kyunki alag processes hain). Interview mein ye pattern-recognition
+        dikhana strong signal hai — "in teeno mein se koi bhi feature maango, main turant bolunga ki ye ek separate
+        native target maangega, RN component nahi" — yehi wo senior-level mental model hai jo is poore chapter ka
+        core theme raha hai.
+      </p>
+
+      <h3>9. (Capstone) Ek third-party ad/tracking SDK (jaise Meta SDK) integrate karte waqt aap kya privacy/compliance trade-offs evaluate karoge?</h3>
+      <p>
+        Ye is chapter ke Facebook SDK section ko Chapter 4 (security) aur Chapter 14 (Publishing) ke saath jodta
+        hai. Key evaluation points: (1) Kya SDK IDFA/advertising-ID jaisa tracking-level data access karta hai —
+        agar haan, ATT prompt (iOS) mandatory hai warna App Store rejection ka risk hai. (2) App Privacy Nutrition
+        Label (Ch 14) accurately declare hona chahiye — SDK ka actual behavior aur declared behavior mismatch
+        hona ek separate rejection/removal risk hai, ye ek one-time form-fill nahi, ongoing accuracy responsibility
+        hai. (3) Android side bhi Data Safety section similarly update honi chahiye, sirf iOS-focused compliance
+        incomplete hai. (4) User jo tracking deny karta hai, uske liye graceful degradation hona chahiye (Meta ka
+        Aggregated Event Measurement fallback) — SDK ko "sab ya kuch nahi" tarah treat nahi karna chahiye.
+      </p>
+
+      <h3>10. (Capstone) New Architecture (JSI, Fabric, TurboModules) explain karo end-to-end, aur ye kaise decide karta hai ki aap custom native module kab likhoge?</h3>
+      <p>
+        Ye Ch 1 ke foundational concept ko Ch 16 ke practical native-module-authoring decision ke saath jodta hai.
+        <strong>JSI</strong> ek C++ layer hai jo JS engine (Hermes) ko native C++ objects ke saath directly,
+        synchronously bind karta hai — purane Bridge ke async JSON-serialization overhead ko eliminate karta hai.
+        <strong>Fabric</strong> is JSI foundation ke upar ka naya renderer hai jo UI commits ko native side pe
+        efficiently process karta hai (Yoga layout engine ke saath), aur <strong>TurboModules</strong> JSI ke
+        upar native modules ko <em>lazily</em> load karne ka mechanism hai (poore app startup pe har module eagerly
+        load nahi hota, sirf jab pehli baar reference ho). Decision framework for custom native module (Ch 16):
+        pehle confirm karo ki existing package (Expo SDK ya community) requirement solve nahi karta, phir confirm
+        karo ki ye truly ek native capability hai (JS se access na ho sakne wala OS-level API/hardware), aur tabhi
+        Expo Modules API se apna TurboModule likho — ye "last resort" decision honi chahiye, first instinct nahi,
+        kyunki custom native module ka <em>ownership cost</em> (maintenance, dono platforms pe keep karna, OS
+        version updates ke saath breakage risk) genuinely high hai.
+      </p>
+
+      <h3>11. (Staff-level) Ek super app mein install size budget kaise allocate karoge jab Widgets, App Clip, aur dynamic modules sab candidates hain?</h3>
+      <p>
+        Ye ek prioritization/trade-off question hai jo staff-level thinking test karta hai. Approach: sabse pehle
+        <strong>core install size</strong> ka hard budget set karo (jaise "main app 60MB se neeche rahegi") aur
+        usse against measure karo ki kaunse features is budget ko pressure kar rahe hain. Rarely-used, heavy
+        native SDKs (video editor, AR) ko <strong>dynamic feature modules</strong> (Android) ya on-demand
+        download pattern (iOS ka equivalent kam mature hai, so often iOS pe ye trade-off differently handle hota
+        hai) mein move karo. Features jo <em>bina install ke hi</em> value dete hain (jaise ek single task — parking
+        pay karna) ek separate <strong>App Clip</strong> target ke roop mein design karo — ye main app ka size
+        directly affect nahi karta kyunki ye ek completely alag, chhota binary hai. Engagement features jo
+        real-time status dikhati hain (order tracking) ke liye <strong>Widgets/Live Activities</strong> add karo —
+        ye bhi main app size ko significantly affect nahi karte (extension targets chhote hote hain), lekin
+        engagement/retention pe disproportionate positive impact daal sakte hain. Key staff-level insight: ye sab
+        features "size ka trade-off" nahi hain agar sahi architecture (separate extension targets) use ki jaaye —
+        problem sirf tab aati hai jab teams inhe galat tareeke se (jaise poori RN app ko App Clip mein squeeze
+        karna) implement karne ki koshish karti hain.
+      </p>
+
+      <h3>12. (Capstone) Ek OTA update (EAS Update) ko 100% users tak rollout karne se pehle aap kaunse automated gates lagayenge?</h3>
+      <p>
+        Ye Ch 7 (Testing), Ch 12 (EAS Update), aur Ch 13 (EAS Workflows) ko ek pipeline mein jodta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.eas/workflows/ota-release.yml (conceptual)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># EAS Workflows YAML nahi JS/JSON hai — real file mein comments allowed hain, ye teaching-comment style hai</span>
+name: ota-release <span class="tok-com"># Workflow ka naam — EAS dashboard mein isi naam se dikhega</span>
+on: <span class="tok-com"># Trigger conditions define karta hai</span>
+  push: <span class="tok-com"># Git push event pe trigger ho</span>
+    branches: [<span class="tok-str">"main"</span>] <span class="tok-com"># Sirf main branch pe push hone pe chale, feature branches pe nahi</span>
+
+jobs: <span class="tok-com"># Pipeline ke actual steps</span>
+  test: <span class="tok-com"># Pehla job — automated test suite (Ch 7)</span>
+    steps:
+      - name: run_jest <span class="tok-com"># Jest unit/integration tests chalao</span>
+        run: npm test <span class="tok-com"># Agar koi unit test fail ho, poora pipeline yahin ruk jaana chahiye</span>
+      - name: run_maestro <span class="tok-com"># Maestro E2E flows chalao Dev Build ke against</span>
+        run: maestro test .maestro/critical-flows.yaml <span class="tok-com"># Critical user flows (checkout, login) automated E2E se verify karo</span>
+
+  publish_preview: <span class="tok-com"># Doosra job — sirf test job pass hone ke baad chalega</span>
+    needs: [test] <span class="tok-com"># Dependency declare — test job fail hua to ye job skip ho jaayega</span>
+    steps:
+      - name: eas_update_preview <span class="tok-com"># Update ko pehle ek "preview" channel pe publish karo, production pe nahi</span>
+        run: eas update --branch preview --message "Automated preview from CI" <span class="tok-com"># Sirf internal/staging users is channel ko dekhte hain</span>
+
+  promote_production: <span class="tok-com"># Teesra job — manual approval gate ke baad hi chalega (production ke liye)</span>
+    needs: [publish_preview] <span class="tok-com"># Preview publish hone ke baad hi ye eligible hai</span>
+    steps:
+      - name: eas_update_production <span class="tok-com"># Same update ko ab production channel pe promote karo</span>
+        run: eas update --branch production --message "Promoted after manual QA sign-off" <span class="tok-com"># Ye step ideally manual trigger/approval ke peeche gated hona chahiye, auto-run nahi</span></code></pre>
+      </div>
+
+      <p>
+        Key senior points jo answer mein highlight karne chahiye: (1) Automated tests <em>before</em> publish, na
+        ki publish ke baad discover. (2) Ek <strong>preview/staging channel</strong> ka use — production users
+        seedha naye update ka target nahi hone chahiye, ek internal group pehle validate kare. (3) OTA update
+        khud bhi <code>runtimeVersion</code>/fingerprint boundary respect kare (Ch 12) — agar update accidentally
+        koi native-code-requiring change include kar leta hai, isse catch karna chahiye, warna production mein
+        crash-loop ban sakta hai jise sirf ek naya native build hi fix kar sakta hai, OTA rollback nahi. (4) Agar
+        rollout ke baad crash rate spike ho, <code>eas update:rollback</code> ka fast path ready hona chahiye —
+        ye is chapter ke maintenance-discipline theme ka hi extension hai: OTA "instant fix" hai, lekin bina
+        gates/rollback plan ke, ye instant breakage bhi ban sakta hai.
+      </p>
+
+      <h2 id="closing">6. Closing — Handbook Summary and What's Next</h2>
+
+      <p>
+        Chaliye ek kadam peeche jaake poori 17-chapter journey ko ek senior lens se dekhte hain — kyunki individual
+        chapters mein deep-dive karte waqt bada picture kabhi kabhi blur ho jaata hai.
+      </p>
+
+      <ul>
+        <li><strong>Fundamentals (Ch 1-5)</strong> — RN ka New Architecture (JSI, Fabric, TurboModules), core
+        components aur reusable component design, styling/design tokens/dark mode, file-based routing + auth/RBAC,
+        aur Reanimated worklets se 60fps animations. Ye foundation hai jispe baaki sab kuch tika hai.</li>
+        <li><strong>Native-adjacent UI (Ch 6)</strong> — Expo UI se samjha ki truly native SwiftUI/Compose views
+        JS se kaise drive hoti hain, aur kab regular RN components hi better choice hain.</li>
+        <li><strong>Quality (Ch 7)</strong> — Jest, RNTL, aur Maestro se ek testing pyramid jo confidence deta hai
+        bina shipping velocity ko kill kiye.</li>
+        <li><strong>Engagement (Ch 8)</strong> — Push notifications ka poora stack, FCM/APNs internals tak.</li>
+        <li><strong>Data (Ch 9)</strong> — Supabase, RLS, aur secure API key handling — backend-as-a-service ko
+        security-first tareeke se use karna.</li>
+        <li><strong>Shipping pipeline (Ch 10-14)</strong> — EAS Build (native binaries), EAS Submit (store
+        automation), EAS Update (OTA), EAS Workflows (CI/CD), aur Publishing (manual submission checklists) — ye
+        paanch chapters mil ke ek complete "code se store tak" pipeline banate hain.</li>
+        <li><strong>Monetization (Ch 15)</strong> — RevenueCat/Stripe se payments aur PCI-relevant security
+        boundaries.</li>
+        <li><strong>Extensibility (Ch 16)</strong> — Expo Modules API se apna khud ka native module/view likhna,
+        jab koi existing package aapki zaroorat poori na kare.</li>
+        <li><strong>Platform-specific polish (Ch 17 — ye chapter)</strong> — Widgets (separate process native
+        UI), SDK maintenance discipline, aur third-party ad SDK compliance.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ab aapke paas poori picture hai</div>
+        <p>
+          Jo cheez ek mid-level RN developer ko ek senior se alag karti hai wo sirf "components banana aana" nahi
+          hai — wo hai <strong>system ke har layer ko samajhna</strong>: JS runtime kaise kaam karta hai (Ch 1),
+          UI kaise render/layout hoti hai (Ch 2-3, 6), navigation aur security kaise interact karte hain (Ch 4),
+          performance kahan se aati hai (Ch 5), quality kaise maintain hoti hai scale pe (Ch 7), backend ke saath
+          trust boundary kaha hai (Ch 9), aur code developer ke laptop se lekar user ke phone tak kaise safely
+          pahunchta hai (Ch 10-14), business model kaise support hota hai (Ch 15), platform ke limits kaha khatam
+          hote hain aur native code kab zaroori ban jaata hai (Ch 16-17). Ye 17 chapters mil ke exactly wahi
+          root-level mental model banate hain jo production RN apps ko confidently ship karne, debug karne, aur
+          scale karne ke liye chahiye hoti hai.
+        </p>
+      </div>
+
+      <p>
+        Ye poora handbook ek living document hai — technology (Expo SDK versions, RN New Architecture, tooling)
+        aage badhta rahega, aur is project ka <code>readme.md</code> file exactly isi wajah se maintain kiya gaya
+        hai: har chapter ka summary, design system reference, aur roadmap tracking wahan hamesha available rahega.
+        Agar kabhi kisi specific chapter ka quick recap chahiye ho bina poora HTML file dobara padhe, <code>readme.md</code>
+        hi sabse fast reference point hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Final Note</div>
+        <p>
+          Handbook complete ho gaya — lekin seekhna yahan khatam nahi hota. Har chapter mein jo "Senior Dev Note"
+          callouts the, unhe dobara padhna sabse zyada value dega jab aap actual production app pe kaam kar rahe
+          ho aur wahi specific decision (jaise "Expo UI use karu ya nahi", ya "SDK upgrade kab karu") saamne aaye.
+          Theory ek baar padhna kaafi nahi hota — jab real situation aaye tab wapas aake relevant section refresh
+          karna hi asli learning hai.
+        </p>
+      </div>
+
+      <div class="prevnext">
+        <a class="prev" href="16-native-modules.html">
+          <div class="label">← Previous</div>
+          <div class="title">Native Modules</div>
+        </a>
+        <a class="next" href="18-state-management.html">
+          <div class="label">Next →</div>
+          <div class="title">State Management</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

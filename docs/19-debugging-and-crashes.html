@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debugging &amp; Crash Analysis — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link active" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Debugging &amp; Crashes</div>
+      <div class="progress-pill">Chapter 19 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chapter 19 · Production Reliability</span>
+      <h1>Debugging &amp; Crash Analysis — Root Se Production Tak</h1>
+      <p class="subtitle">
+        Ye chapter humare readme mein bahut dino se ek open gap tha — <strong>"Debugging &amp; Crash Analysis
+        chapter — still open"</strong>. Ab tak humne features banana, ship karna, aur payments/native modules
+        jaisi advanced cheezein cover ki hain, lekin ek senior developer ka asli test tab hota hai jab production
+        mein kuch toot jaata hai aur aapke paas sirf ek crash report hota hai, koi live debugger nahi. Is chapter
+        mein hum dev-time tools se lekar Sentry setup, crash symbolication, ANRs, aur "works on my machine"
+        production bugs tak — sab root se cover karenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is Chapter Mein</div>
+        <ul>
+          <li><a href="#dev-time-tools">1. Development-Time Debugging Tools</a></li>
+          <li><a href="#sentry-setup">2. Setting Up Sentry for Crash Reporting</a></li>
+          <li><a href="#symbolication">3. Crash Symbolication Deep-Dive</a></li>
+          <li><a href="#js-vs-native">4. JS Errors vs Native Crashes — Different Failure Modes</a></li>
+          <li><a href="#anrs">5. Debugging ANRs (Android)</a></li>
+          <li><a href="#works-locally">6. "Works Locally, Crashes in Production" Bugs</a></li>
+          <li><a href="#perf-profiling">7. Performance Profiling</a></li>
+          <li><a href="#gotchas">8. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">10. Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="dev-time-tools" style="border-top:none; padding-top:0; margin-top:28px;">Development-Time Debugging Tools</h2>
+
+      <p>
+        Pehle baat karte hain us duniya ki jahan aapke paas full control hota hai — <strong>local development</strong>.
+        Yahan aapke paas kai tools available hain jo production mein simply exist hi nahi karte (kyunki
+        release build mein performance/security ke liye inhe strip kar diya jaata hai). Senior dev banne ka ek
+        hissa ye samajhna hai ki <em>kaunsa tool kab reach karna hai</em> — sirf console.log pe reliance karna
+        ek junior habit hai.
+      </p>
+
+      <h3>React Native DevTools (Flipper ka successor)</h3>
+      <p>
+        Purane React Native versions mein <strong>Flipper</strong> official debugging platform tha — ek
+        desktop app jo aapke device/emulator se connect hoke network requests, layout inspector, aur
+        AsyncStorage jaisa data expose karta tha. New Architecture ke saath, React Native team ne apna khud
+        ka <strong>React Native DevTools</strong> bana diya hai (Chrome DevTools jaisa interface, Hermes ke
+        debugger protocol pe based) jo ab default debugging experience hai — <code>j</code> key dabao Metro
+        terminal mein ya dev menu se "Open DevTools" select karo.
+      </p>
+      <ul>
+        <li><strong>Network tab</strong> — har fetch/XHR request dikhata hai, request/response headers, body, timing — bilkul browser DevTools jaisa. Ye debug karne ke liye zaroori hai ki API call fail kyun hui, ya galat payload kyun gaya.</li>
+        <li><strong>Console</strong> — <code>console.log</code>/<code>warn</code>/<code>error</code> yahan dikhte hain, filterable aur searchable.</li>
+        <li><strong>Sources/Debugger</strong> — actual JS breakpoints laga sakte ho, step-through debugging kar sakte ho, call stack inspect kar sakte ho — real debugger experience, sirf print statements nahi.</li>
+      </ul>
+      <p>
+        <strong>AsyncStorage/MMKV contents inspect karna</strong> — agar Flipper legacy setup use kar rahe ho
+        (kuch teams abhi bhi karte hain, especially jinke paas custom Flipper plugins hain), uska AsyncStorage
+        plugin directly stored key-value pairs dikhata hai device pe — bahut useful jab debug karna ho "kya
+        cached data corrupt hai ya stale hai".
+      </p>
+
+      <h3>React DevTools — component tree aur Profiler</h3>
+      <p>
+        Ye ek alag tool hai jo specifically <strong>React component tree</strong> ke liye hai — kaunse
+        components render hue, unke props/state kya hain, aur (sabse important senior-level use case)
+        <strong>Profiler tab</strong> jisse aap dekh sakte ho <em>kaunsa component kitni baar re-render hua aur
+        kyun</em>. Chapter 2 mein humne component fundamentals dekhe the; yahan hum usi tree ko debug-lens se
+        dekh rahe hain.
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Jab koi bole "app slow lag raha hai" — sabse pehla step React DevTools Profiler kholna hona chahiye,
+          guess karna nahi. Profiler literally dikhata hai kaunsa component render mein kitna time le raha hai
+          aur <em>kis wajah se re-render trigger hua</em> (props change, state change, ya parent re-render se
+          cascade). Bina isko dekhe performance optimization karna almost hamesha galat jagah time waste karna
+          hota hai.
+        </p>
+      </div>
+
+      <h3><code>console.log</code>/<code>console.warn</code> ki limitation — production mein ye no-op hai</h3>
+      <p>
+        Ye ek critical cheez hai jo naye developers ko surprise karti hai: <strong>Hermes (default JS engine)
+        release/production builds mein <code>console.log</code> calls ko strip kar deta hai ya unhe effectively
+        no-op bana deta hai</strong> by default, kyunki logging ek performance aur binary-size cost hai jo
+        production mein waste hai. Matlab agar aapki debugging strategy hai "main production issue console.log
+        se dhoondh loonga" — wo strategy <strong>silently fail</strong> hogi, kyunki wo log kahin jaayega hi
+        nahi jo aap dekh sako.
+      </p>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Maine log daala, kuch dikha nahi" — production build mein classic confusion</div>
+        <p>
+          Development build mein <code>console.log</code> perfectly kaam karta hai (Metro terminal ya DevTools
+          console mein dikhta hai). Lekin agar aap same code ko production/release build mein test kar rahe ho
+          aur expect kar rahe ho ki log kahin dikhega — wo nahi dikhega, kyunki user ke device se connected
+          koi terminal hai hi nahi jo use capture kare. Ye exact reason hai ki humein ek dedicated crash/error
+          reporting tool (Sentry) chahiye — jo is section ke aage cover hoga.
+        </p>
+      </div>
+
+      <h3>Reactotron — ek alternative jo kuch teams prefer karti hain</h3>
+      <p>
+        <strong>Reactotron</strong> ek open-source desktop app hai jo React Native DevTools se pehle popular
+        tha aur aaj bhi kuch teams use karti hain kyunki iska Redux/state-management integration bahut mature
+        hai — har dispatched action, state diff, custom "display" commands (aap khud custom debug panels bana
+        sakte ho) sab ek timeline mein dikhte hain. Agar aapki team heavy Redux use kar rahi hai (Chapter 18 ka
+        topic), Reactotron ka action-timeline view React DevTools se zyada readable lag sakta hai state
+        transitions ke liye.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>Best for</th><th>Kab reach karo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>React Native DevTools</td>
+            <td>Network requests, console, breakpoint debugging</td>
+            <td>Default day-to-day debugging — API calls fail ho rahe hain, ya step-through debugging chahiye</td>
+          </tr>
+          <tr>
+            <td>React DevTools (Profiler)</td>
+            <td>Component tree, props/state, re-render analysis</td>
+            <td>"App slow hai" / "component bahut baar re-render ho raha hai" jaisi complaints</td>
+          </tr>
+          <tr>
+            <td>Reactotron</td>
+            <td>Redux/state timeline, custom debug displays</td>
+            <td>Heavy Redux-based apps jaha state transitions ka clear timeline chahiye</td>
+          </tr>
+          <tr>
+            <td>Sentry (production)</td>
+            <td>Real crash/error reports from actual user devices</td>
+            <td>Hamesha, production app ke liye — non-negotiable (agla section)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2 id="sentry-setup">Setting Up Sentry for Crash Reporting</h2>
+
+      <p>
+        Ab dev-time se production tak jaate hain — aur ye is chapter ka sabse important practical section hai.
+        Ek simple lekin bahut senior-level truth: <strong>jab aapka app production mein kisi user ke device pe
+        crash karta hai, aap uska console nahi dekh sakte, uska terminal connect nahi kar sakte, aur unse pooch
+        nahi sakte "exact steps batao kya kiya tha"</strong>. Crash reporting tool (jaise Sentry) hi aapki
+        <strong>only window</strong> hai us device pe actually kya hua ye jaanne ka.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Ye non-negotiable kyun hai</div>
+        <p>
+          Bina crash reporting ke, aapka "monitoring" strategy literally ye hai: <strong>wait for user
+          complaints on app store reviews or support tickets</strong>. Ye ek reactive, slow, aur incomplete
+          signal hai — zyadatar users jinka app crash hota hai, wo review nahi likhte, sirf app delete kar dete
+          hain (ya use karna band kar dete hain). Crash reporting ke bina aapko pata hi nahi chalega ki kitne
+          users affected hain, kaunsa device/OS version pattern hai, ya crash exactly kis line pe ho raha hai.
+          Har production RN app mein ye day-1 setup hona chahiye, feature launch se pehle.
+        </p>
+      </div>
+
+      <h3>Step 1 — Installation</h3>
+      <p>
+        Sentry ka official React Native SDK <code>@sentry/react-native</code> hai. Expo projects ke liye Sentry
+        ka apna wizard bhi hai jo automatically config wire kar deta hai, lekin manual setup samajhna zaroori
+        hai taaki aapko pata ho actually kya ho raha hai under the hood.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>terminal</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Sentry ka official React Native SDK install karna — crash reporting, error tracking, performance monitoring sab isi package mein hai</span>
+npx expo install @sentry/react-native
+
+<span class="tok-com"># Sentry ka wizard chalana — ye automatically app.json/app.config.ts, EAS Build hooks, aur source-map upload config wire kar deta hai</span>
+npx @sentry/wizard@latest -i reactNative -p ios android
+
+<span class="tok-com"># Wizard aapse Sentry account login aur project selection maangega — DSN (Data Source Name, aage explain kiya gaya) automatically fetch ho jaata hai</span></code></pre>
+      </div>
+
+      <h3>Step 2 — App entry point mein initialize karna</h3>
+      <p>
+        Sentry ko app ke <strong>sabse pehle</strong> load hone wali file mein initialize karna hota hai —
+        taaki agar app boot hone ke turant baad bhi crash ho, Sentry us crash ko already capture kar chuka ho.
+        Neeche har line commented hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx (ya index.js — app ka entry point)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Sentry ka poora React Native SDK import karna — init, ErrorBoundary, wrap jaise sab helpers isi se aate hain</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Sentry <span class="tok-kw">from</span> <span class="tok-str">'@sentry/react-native'</span>;
+<span class="tok-com">// React import — hooks aur JSX ke liye zaroori</span>
+<span class="tok-kw">import</span> React <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-com">// Expo Router ka root Slot component — poore app ki route tree yahin render hoti hai</span>
+<span class="tok-kw">import</span> { Slot } <span class="tok-kw">from</span> <span class="tok-str">'expo-router'</span>;
+
+<span class="tok-com">// Sentry.init — SDK ko configure karna, ye app boot ke bilkul shuru mein, module-level pe call hona chahiye (kisi component ke andar nahi)</span>
+Sentry.init({
+  <span class="tok-com">// dsn (Data Source Name) — Sentry project ka unique endpoint URL jahan crash reports bhejne hain, wizard ne ye automatically generate/inject kiya hoga</span>
+  dsn: <span class="tok-str">'https://examplePublicKey@o0.ingest.sentry.io/0'</span>,
+
+  <span class="tok-com">// environment — batata hai ye report kis environment se aayi (production/staging/development) — dashboard pe filter karne ke liye zaroori</span>
+  environment: __DEV__ ? <span class="tok-str">'development'</span> : <span class="tok-str">'production'</span>,
+
+  <span class="tok-com">// release — current app version + build number, taaki crash report ko exact build se link kiya ja sake (symbolication ke liye critical, aage dekhenge)</span>
+  release: <span class="tok-str">'mad-app@1.4.0+42'</span>,
+
+  <span class="tok-com">// tracesSampleRate — performance monitoring transactions ka kitna percentage sample karna hai (1.0 = 100%, production mein aksar 0.2 jaisa lower value use karte hain cost control ke liye)</span>
+  tracesSampleRate: __DEV__ ? <span class="tok-num">1.0</span> : <span class="tok-num">0.2</span>,
+
+  <span class="tok-com">// enableNative — native-level crash capture (Swift/Kotlin crashes) bhi enable karna, sirf JS errors nahi — Chapter ke JS-vs-native section mein iski importance dekhenge</span>
+  enableNative: <span class="tok-kw">true</span>,
+
+  <span class="tok-com">// debug — sirf development mein true rakho, ye Sentry SDK ke apne internal logs console mein print karta hai taaki setup verify kar sako</span>
+  debug: __DEV__,
+});
+
+<span class="tok-com">// RootLayout — app ka root component, is poore tree ko hum aage Sentry.wrap() se wrap karenge automatic error-boundary capture ke liye</span>
+<span class="tok-kw">function</span> RootLayout() {
+  <span class="tok-com">// Slot — Expo Router ki current matched route ko yahan render karta hai</span>
+  <span class="tok-kw">return</span> &lt;Slot /&gt;;
+}
+
+<span class="tok-com">// Sentry.wrap — root component ko wrap karta hai, ye automatically ek top-level error boundary + navigation breadcrumb tracking inject kar deta hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> Sentry.wrap(RootLayout);</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 DSN kya hota hai, simple terms mein</div>
+        <p>
+          DSN (Data Source Name) bas ek URL hai jo Sentry ko batata hai "ye crash report kis project ki hai".
+          Isko public key treat karo — ye secret nahi hai (client-side code mein hi rehta hai), lekin ise
+          galat project mein daalne se aapki team ko galat project ke dashboard pe crashes dikhenge, isliye
+          har environment (dev/staging/prod) ke liye sahi DSN match karna zaroori hai agar alag Sentry projects
+          use kar rahe ho.
+        </p>
+      </div>
+
+      <h3>Step 3 — EAS Build ke saath source-map aur symbol upload wire karna</h3>
+      <p>
+        Sentry wizard normally ye automatically <code>eas.json</code> aur native build files mein wire kar
+        deta hai, lekin samajhna zaroori hai ki ho kya raha hai — har production build ke baad, ek build
+        script automatically JS source maps aur native debug symbols (agla section) Sentry ko upload karta
+        hai, taaki crash reports readable hon.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>eas.json (teaching-annotated, real JSON mein comments nahi hote)</span><button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-com">// "build" — Chapter 10 mein dekhe gaye build profiles, yahan hum "production" profile ke andar hooks add kar rahe hain</span>
+  <span class="tok-attr">"build"</span>: {
+    <span class="tok-attr">"production"</span>: {
+      <span class="tok-com">// "env" — build-time environment variables, SENTRY_AUTH_TOKEN yahan secret ke roop mein EAS secrets se aata hai (kabhi hardcode mat karo)</span>
+      <span class="tok-attr">"env"</span>: {
+        <span class="tok-attr">"SENTRY_AUTH_TOKEN"</span>: <span class="tok-str">"$SENTRY_AUTH_TOKEN"</span>
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — automatic upload hi asli value hai</div>
+        <p>
+          Bahut teams Sentry install karte hain lekin symbol/source-map upload step ko properly automate nahi
+          karte — result: SDK crashes capture kar raha hai, lekin dashboard pe sirf minified/unreadable stack
+          traces dikhte hain. <strong>Sentry install karna sirf aadha kaam hai</strong> — dusra aadha ye
+          ensure karna hai ki har production build automatically apne symbols/source-maps Sentry ko bheje,
+          bina kisi manual step ke. Ye CI/EAS Build pipeline ka permanent, automated hissa hona chahiye.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="symbolication">Crash Symbolication Deep-Dive</h2>
+
+      <p>
+        Chapter 16 mein humne isko brief mein touch kiya tha jab native module crashes discuss kiye the. Ab
+        hum isko poori depth mein samjhenge, kyunki symbolication samajhna crash reports ko actually useful
+        banane ke liye zaroori hai.
+      </p>
+
+      <h3>Problem statement — hex address kyun aata hai</h3>
+      <p>
+        Jab aap Swift/Kotlin/C++ code ko production ke liye compile karte ho, compiler <strong>optimize aur
+        strip</strong> karta hai — readable function/variable names (jinhe "symbols" bola jaata hai) binary
+        se hata diye jaate hain, taaki app ka size chhota rahe aur reverse-engineering thoda harder ho. Result:
+        jab crash hota hai, operating system sirf ye bata sakta hai "crash hua memory address
+        <code>0x0000000104a3f2c8</code> pe" — kyunki us address ka corresponding function name binary ke
+        andar kahin store hi nahi hai.
+      </p>
+
+      <h3>dSYM files — iOS ka symbol table</h3>
+      <p>
+        <strong>dSYM (Debug SYMbol) file</strong> ek separate file hai jo Xcode build ke time generate hoti
+        hai, alag se binary se — isme exactly wo mapping hoti hai jo strip ho gayi thi: "memory address X,
+        function <code>DeviceFingerprintModule.getBuildFingerprint()</code>, file
+        <code>DeviceFingerprintModule.swift</code>, line 305". Jab aap crash report ke saath sahi dSYM file
+        upload karte ho (usi exact build version ka), Sentry (ya koi bhi crash tool) automatically hex address
+        ko is readable stack trace mein convert kar deta hai — ise <strong>symbolication</strong> kehte hain.
+      </p>
+
+      <h3>mapping.txt / ProGuard / R8 — Android ka equivalent</h3>
+      <p>
+        Android side pe do alag cheezein symbolication ke liye chahiye hoti hain:
+      </p>
+      <ul>
+        <li>
+          <strong>ProGuard/R8 mapping file (<code>mapping.txt</code>)</strong> — Android release builds
+          <strong>code minification/obfuscation</strong> use karte hain (ProGuard ya naya R8 tool), jo Java/Kotlin
+          class aur method names ko chhote, meaningless names mein rename kar deta hai (jaise
+          <code>DeviceFingerprintModule</code> ban jaata hai <code>a.b.c</code>) taaki APK size chhota ho aur
+          reverse-engineering harder ho. <code>mapping.txt</code> file wo mapping store karti hai original naam
+          se obfuscated naam tak — bina iske, crash report mein sirf obfuscated (meaningless) class/method names
+          dikhenge.
+        </li>
+        <li>
+          <strong>Native symbol files (<code>.so</code> ke liye)</strong> — agar crash native C++ code
+          (jaise Hermes engine internal, ya JNI-level native module) mein hota hai, us native library
+          (<code>.so</code> file) ke apne debug symbols alag se upload karne padte hain, dSYM ke concept jaisa
+          hi lekin Android native libraries ke liye.
+        </li>
+      </ul>
+
+      <table>
+        <thead>
+          <tr><th>Platform</th><th>Symbol file</th><th>Kab generate hoti hai</th><th>Bina iske kya dikhta hai</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>iOS</td>
+            <td>dSYM (Debug Symbols)</td>
+            <td>Har Xcode/EAS build ke saath automatically generate hoti hai</td>
+            <td>Raw memory hex addresses, koi function/line info nahi</td>
+          </tr>
+          <tr>
+            <td>Android (JS/Java/Kotlin layer)</td>
+            <td>ProGuard/R8 <code>mapping.txt</code></td>
+            <td>Har release build ke saath jab minification enabled ho (production mein almost hamesha)</td>
+            <td>Obfuscated class/method names (<code>a.b.c</code> jaisa), unreadable</td>
+          </tr>
+          <tr>
+            <td>Android (native <code>.so</code> layer)</td>
+            <td>Native debug symbols</td>
+            <td>Native build ke saath, agar strip enabled hai to alag se export karni padti hai</td>
+            <td>Raw hex addresses, native crashes ke liye</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>EAS Build + Sentry integration — automation pipeline</h3>
+      <p>
+        Manually har build ke baad ye files dhoondh kar upload karna impractical hai — isliye Sentry ka EAS
+        Build integration (wizard ne jo setup kiya tha) ye automate karta hai: har production build complete
+        hone ke baad, ek build hook automatically dSYM (iOS) aur mapping.txt (Android) ko locate karke,
+        <code>release</code> field (jo humne <code>Sentry.init()</code> mein set kiya tha) ke saath tag karke
+        Sentry ko upload kar deta hai. Matlab <strong>aapko kabhi manually koi symbol file dhoondh kar upload
+        nahi karni padti</strong> — pipeline handle karta hai, bas usko properly wire hona chahiye.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Common failure mode — ek specific build version ke symbols missing</div>
+        <p>
+          Ye ek bahut realistic aur frustrating scenario hai jo har production team kabhi na kabhi face karti
+          hai: version <strong>1.4.2</strong> production mein ship hui, symbols upload pipeline mein koi
+          transient failure hua (network issue, EAS secret expire ho gaya, ya koi CI misconfiguration) aur
+          kisi ne notice nahi kiya. Ab agar version 1.4.2 crash karti hai kisi user ke device pe, Sentry
+          dashboard pe sirf hex addresses/obfuscated names dikhenge — <strong>us exact build ke liye
+          symbolication permanently impossible ho chuka hai</strong> (jab tak aapke paas locally wahi exact
+          build artifact save na ho, jo rarely hota hai). Team ko us crash ka root cause kabhi pata nahi
+          chalega jab tak koi naya build (jisme symbols sahi se upload hue) same crash reproduce na kare. Isi
+          wajah se symbol-upload step ki <strong>health monitoring</strong> (build logs mein check karna ki
+          upload step successfully complete hua) apne aap mein ek important CI discipline hai, sirf "set it
+          and forget it" nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="js-vs-native">JS Errors vs Native Crashes — Different Failure Modes</h2>
+
+      <p>
+        Ye ek senior-level distinction hai jo bahut developers surface-level samajhte hain lekin deeply nahi —
+        aur jo interview mein bhi frequently poocha jaata hai. Teen alag categories hain, aur har ek ka
+        debugging/recovery approach completely different hai.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Failure type</th><th>Kya hota hai</th><th>Recovery possible hai?</th><th>Kaise track karte hain</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>JS-level unhandled error</strong></td>
+            <td>Ek JS exception jo kisi <code>try/catch</code> se catch nahi hui — jaise ek component render ke andar null pointer access</td>
+            <td>Haan — ek <strong>Error Boundary</strong> (React ka built-in mechanism) is error ko catch kar sakta hai aur fallback UI dikha sakta hai, poora app crash nahi hota</td>
+            <td>Sentry JS error capture (automatic, <code>Sentry.wrap</code> ke through)</td>
+          </tr>
+          <tr>
+            <td><strong>Genuine native crash</strong></td>
+            <td>Native (Swift/Kotlin/C++) level pe ek fatal signal (jaise segmentation fault, null pointer dereference at native level)</td>
+            <td><strong>Nahi</strong> — poora app process immediately terminate ho jaata hai OS level pe. Koi JS-level recovery possible nahi hai kyunki JS runtime khud hi mar chuka hota hai us process ke saath</td>
+            <td>Sentry native crash capture (<code>enableNative: true</code>), ya Crashlytics/Bugsnag ka native layer</td>
+          </tr>
+          <tr>
+            <td><strong>ANR (Android-specific)</strong></td>
+            <td>Main/UI thread 5+ seconds tak blocked rehta hai, OS "app isn't responding" dialog dikhata hai</td>
+            <td>Technically app crash nahi hota (process zinda rehta hai), lekin user experience severely degrade hoti hai — user aksar force-close kar deta hai</td>
+            <td>Play Console's Android vitals dashboard (agla section)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Error Boundary sirf JS errors ke liye hai</div>
+        <p>
+          Ek bahut common misconception ye hai ki React ka Error Boundary "sab kuch" catch kar sakta hai. Ye
+          galat hai — Error Boundary sirf <strong>React component tree ke render phase mein hone wale JS
+          errors</strong> ko catch karta hai (aur kuch lifecycle methods mein). Ye event handlers ke andar
+          errors catch <em>nahi</em> karta (unhe normal try/catch chahiye), aur ye <strong>bilkul bhi native
+          crashes catch nahi karta</strong> — kyunki native crash ka matlab hai poora process hi mar gaya, JS
+          runtime samet. Isi wajah se production app ko dono chahiye: JS-level error boundary (graceful
+          degradation ke liye) aur native-level crash reporting (OS-level fatal signals capture karne ke
+          liye) — dono alag mechanisms hain, ek dusre ka substitute nahi.
+        </p>
+      </div>
+
+      <p>
+        ANR ko is table mein separately isliye rakha hai kyunki ye technically "crash" nahi hai — process
+        terminate nahi hota, JS bhi zinda hota hai — lekin user ke liye experience crash se zyada bura ho sakta
+        hai (app poori tarah frozen dikhta hai, koi feedback nahi milta). Google Play Console ANR ko
+        <strong>severity metric ke roop mein alag se track karta hai</strong> apne "Android vitals" dashboard
+        mein, aur ek high ANR rate aapki Play Store ranking/visibility ko negatively affect kar sakta hai —
+        isi wajah se ise seriously lena zaroori hai, chahe technically "crash" na ho.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="anrs">Debugging ANRs (Android)</h2>
+
+      <h3>ANR actually hota kya hai</h3>
+      <p>
+        ANR (Application Not Responding) Android ka mechanism hai jo detect karta hai jab
+        <strong>main/UI thread</strong> kaafi der tak (typically 5 seconds input events ke liye, ya kam
+        broadcast receivers jaise cases mein) blocked rehta hai aur OS ko respond nahi kar pata. Jab ye hota
+        hai, Android user ko ek dialog dikhata hai jisme "Wait" aur "Close app" options hote hain.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Critical nuance — JS thread block hona ANR ke barabar NAHI hai</div>
+        <p>
+          Ye ek bahut important distinction hai jo bahut RN developers confuse karte hain. React Native mein
+          <strong>JS thread</strong> alag hota hai Android ke <strong>native main/UI thread</strong> se. Agar
+          aapka JS thread block ho jaata hai (jaise ek heavy synchronous JS computation, ya Chapter 16 mein
+          dekha gaya <code>Function()</code> jo bahut der leta hai) — result hota hai <strong>JS-driven UI
+          frozen/jank</strong> (animations ruk jaati hain, taps respond nahi karte kyunki JS event handlers
+          nahi chal pa rahe) — lekin ye ek <strong>true Android ANR nahi hai</strong>, kyunki native main thread
+          khud technically responsive hai. Ek genuine ANR specifically tab hota hai jab <strong>native main
+          thread</strong> block ho — jaise ek native module ka <code>Function()</code> jo synchronously kuch
+          blocking I/O kare directly native side pe, ya koi native code jo main thread pe heavy kaam kare
+          bina background thread pe offload kiye.
+        </p>
+      </div>
+
+      <p>
+        Ye distinction practically matter karta hai kyunki fix alag hota hai: agar problem JS thread blocking
+        hai, fix hai JS-side code ko optimize karna ya heavy computation ko break karna (jaise
+        <code>InteractionManager</code> use karna, ya computation ko chunks mein split karna). Agar problem
+        genuine native main-thread blocking hai (jaise Chapter 16 mein discuss kiya gaya "native module ka
+        blocking I/O jo background thread pe offload nahi hua"), fix hai us native code ko properly async
+        banana — <code>AsyncFunction()</code> use karke, jaisa humne native modules chapter mein dekha tha.
+      </p>
+
+      <h3>ANR reports kahan dhoondhein</h3>
+      <p>
+        <strong>Google Play Console → Quality → Android vitals → ANR rate</strong> yahan aapko production
+        devices se aggregate ANR data milta hai — kitne users affected hue, kaunse device/OS version pe zyada
+        hue, aur (sabse important) <strong>ANR trace</strong> — ek stack-trace-jaisi report jo dikhati hai
+        crash ke time har thread kya kar raha tha, especially main thread.
+      </p>
+
+      <h3>Systematic debugging approach</h3>
+      <ol>
+        <li>
+          <strong>ANR trace kholo aur main thread ka stack dekho</strong> — Play Console ka ANR trace exactly
+          dikhata hai us moment pe main thread kis function/call ke andar "stuck" tha jab ANR trigger hua.
+        </li>
+        <li>
+          <strong>Pattern dhoondo</strong> — kya ye ek specific screen/action se juda hai (jaise app launch
+          ke turant baad, ya ek specific button tap ke baad)? Device/OS-version breakdown check karo — kya
+          sirf low-end devices pe zyada hota hai (jo signal hai ki ye ek performance/timing issue hai, na ki
+          pure logic bug)?
+        </li>
+        <li>
+          <strong>Native module involvement check karo</strong> — agar koi custom native module hai jo main
+          thread pe synchronous kaam karta hai (Chapter 16 ka blocking-<code>Function()</code> anti-pattern),
+          ye pehla suspect hona chahiye.
+        </li>
+        <li>
+          <strong>Fix karo aur re-measure karo</strong> — fix deploy karne ke baad, Android vitals dashboard
+          mein ANR rate ko track karte raho agle kuch releases tak, confirm karne ke liye ki fix actually
+          effective tha.
+        </li>
+      </ol>
+
+      <!-- ============================================================ -->
+      <h2 id="works-locally">Debugging "Works Locally, Crashes in Production" Bugs</h2>
+
+      <p>
+        Ye category bugs sabse zyada frustrating hote hain — code aapke machine pe, aapke dev build mein
+        perfectly kaam karta hai, lekin production build mein (ya kisi specific user ke device pe) crash karta
+        hai. Ek senior dev ke paas iske liye ek <strong>systematic checklist</strong> honi chahiye, random
+        guessing nahi. Ye checklist order mein run karo:
+      </p>
+
+      <ol>
+        <li>
+          <strong>Hermes vs JSC difference hai kya?</strong> — Hermes (default engine) aur JavaScriptCore
+          kabhi kabhi subtly different JS engine behavior dete hain (jaise kuch bahut edge-case
+          <code>Intl</code> API behavior, ya timing/GC-related differences). Agar aapka dev build kisi wajah
+          se JSC use kar raha tha (purana setup, ya specific debug config) aur production Hermes use kar raha
+          hai — ye divergence ka source ho sakta hai. Confirm karo dono builds same engine use kar rahe hain.
+        </li>
+        <li>
+          <strong>Kya ek dev-only code path accidentally ship ho gaya?</strong> — <code>if (__DEV__) { ... }</code>
+          guards ke andar rakha debug tooling kabhi kabhi assumption karta hai ki koi specific mock/stub data
+          available hoga jo production mein nahi hota. Agar koi non-<code>__DEV__</code>-guarded code accidentally
+          us dev-only assumption pe depend karta hai (jaise ek mock API response ka specific shape), production
+          mein real API ka different response shape crash cause kar sakta hai.
+        </li>
+        <li>
+          <strong>Minification/ProGuard ne kuch strip to nahi kiya jo runtime pe chahiye tha?</strong> — Ye
+          bahut Android-specific gotcha hai. Agar aap reflection use kar rahe ho (jaise kuch libraries JSON
+          parsing ke liye class names reflection se resolve karti hain), ProGuard/R8 minification us class ka
+          naam change/remove kar sakta hai agar usko explicitly "keep rules" mein specify nahi kiya gaya —
+          result: dev build (jahan minification disabled hoti hai) perfectly kaam karta hai, production build
+          (minified) crash karta hai kyunki reflection ko wo class naam se milta hi nahi.
+        </li>
+        <li>
+          <strong>Kya ek production environment variable missing hai?</strong> — Ek bahut common cause: dev
+          <code>.env</code> file mein ek variable set tha (jaise ek API key ya feature flag), lekin EAS
+          Build/CI secrets mein wahi variable production profile ke liye configure nahi kiya gaya. Code us
+          variable ko <code>undefined</code> maan kar crash kar sakta hai jaha usne assume kiya tha wo hamesha
+          set hoga.
+        </li>
+        <li>
+          <strong>Kya ye ek timing-dependent race condition hai?</strong> — Development build slower hota hai
+          (Metro bundler, debug instrumentation, wagera ki wajah se) — is slowness ki wajah se kabhi kabhi ek
+          race condition "accidentally" mask ho jaati hai (jaise ek async operation jo dev mein itni der leti
+          hai ki dusra operation pehle complete ho jaata hai, lekin production ki fast execution mein order
+          badal jaata hai aur race condition expose hoti hai). Ye sabse debug-karne-mein-mushkil category hai
+          kyunki reliably reproduce karna hard hota hai.
+        </li>
+      </ol>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Practical tip — production build ko locally bhi test karo</div>
+        <p>
+          Sabse effective habit ye hai ki feature ship karne se pehle ek baar actual production/release build
+          (<code>eas build --profile production --local</code>, ya <code>npx expo run:android --variant
+          release</code>) local device pe chalao, sirf dev build pe reliance mat karo. Bahut saari is
+          checklist ki cheezein (minification issues, missing env vars) tabhi surface hoti hain jab aap
+          genuinely production-configured build test karte ho.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="perf-profiling">Performance Profiling</h2>
+
+      <p>
+        Crash aur ANR ke alawa, ek teesri category ki production issue hai — <strong>performance degradation</strong>
+        jo crash nahi karta lekin user experience ko slowly kharab karta hai (jank, slow screens, memory
+        bloat). Iske liye tools ka combination chahiye — JS-level aur native-level dono.
+      </p>
+
+      <h3>React DevTools Profiler (recap)</h3>
+      <p>
+        Chapter 2 mein humne is tool ko brief mein dekha tha. Ye JS/React level pe kaam karta hai — kaunsa
+        component render ho raha hai, kitni der le raha hai, aur kyun re-render trigger hua. Ye
+        <strong>excessive re-renders</strong> aur <strong>slow component render logic</strong> jaisi issues
+        ke liye pehla tool hona chahiye.
+      </p>
+
+      <h3>Xcode Instruments aur Android Studio Profiler — native-level issues</h3>
+      <p>
+        Kuch performance issues genuinely native-level hote hain aur JS-level profiler unhe simply dikha hi
+        nahi sakta — jaise ek <strong>memory leak</strong> jo native view creation se ho raha hai (agar
+        koi list/screen har baar naya native `UIView`/Android `View` bana raha hai bina purane ko properly
+        clean up kiye), ya native-level CPU/GPU bottleneck.
+      </p>
+      <ul>
+        <li>
+          <strong>Xcode Instruments (iOS)</strong> — Apple ka native profiling suite, isme "Leaks" instrument
+          memory leaks detect karta hai (retain cycles, jo humne Chapter 16 mein discuss kiya tha), "Time
+          Profiler" CPU usage ko function-level granularity pe dikhata hai — sab native level pe, JS ke
+          bahar.
+        </li>
+        <li>
+          <strong>Android Studio Profiler</strong> — Android ka equivalent, CPU/Memory/Network/Energy profiling
+          native level pe. Memory profiler specifically useful hai excessive native view allocation ya JVM
+          heap growth pattern dhoondhne ke liye.
+        </li>
+      </ul>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — kab native profiler tak jaana chahiye</div>
+        <p>
+          Rule of thumb: agar React DevTools Profiler mein sab kuch normal lag raha hai (components fast
+          render ho rahe hain, unnecessary re-renders nahi hain) lekin app phir bhi slow/janky feel ho raha
+          hai, ya memory usage time ke saath badhta ja raha hai (leak ka signal) — tabhi native-level
+          profiler tak jaana chahiye. JS-level profiling "kya React slow hai" ka jawab deta hai; native
+          profiling "kya underlying platform slow hai" ka jawab deta hai — dono alag layers hain.
+        </p>
+      </div>
+
+      <h3><code>why-did-you-render</code> — unnecessary re-renders catch karna</h3>
+      <p>
+        Development ke dauran, <code>why-did-you-render</code> library ek useful addition hai — ye automatically
+        console mein warn karta hai jab koi component re-render hota hai jiski props/state actually
+        (deep-equality se) change nahi hui thi. Ye React DevTools Profiler se complementary hai — Profiler
+        aapko dikhata hai <em>kya</em> re-render hua, ye library proactively bata deta hai <em>kab ek
+        re-render truly avoidable tha</em>.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ console.log strip hone ka silent failure</div>
+        <p>
+          Jaisa is chapter ke shuru mein dekha, release builds mein Hermes <code>console.log</code> ko strip
+          kar deta hai. Iska matlab ye hai ki agar aapki debugging strategy purely logs pe based hai, wo
+          production mein <strong>silently</strong> fail hogi — koi error nahi aayega, bas aapka signal
+          simply exist nahi karega. Fix: production debugging ke liye <strong>Sentry breadcrumbs</strong> use
+          karo (agle section mein full example hai) — ye Sentry SDK ke through explicitly record hote hain aur
+          strip nahi hote, kyunki inka purpose hi crash reports ke saath travel karna hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Source maps upload na hona — JS ka "dSYM problem"</div>
+        <p>
+          Bilkul waise jaise dSYM/mapping files ke bina native crash reports unreadable hote hain, agar JS
+          <strong>source maps</strong> Sentry ko properly upload nahi hue (ya <code>release</code> field
+          match nahi karta jo build ke time use hua tha), Sentry dashboard pe minified JS stack traces
+          dikhenge — jaise <code>at t (index.android.bundle:1:45231)</code>, jo practically unreadable hai.
+          Ye JS-level exact equivalent hai us native symbolication problem ka jo humne pehle dekha — same
+          root cause (production build compressed/transformed code), same fix pattern (build pipeline mein
+          automated, verified upload).
+        </p>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🔒 Sensitive data ko crash reports mein kabhi mat log karo</div>
+        <p>
+          Ye ek security/privacy discipline hai jo bahut easily overlook ho jaata hai: crash reporting tools
+          (Sentry included) third-party services hain — aapka crash data unke servers pe jaata hai. Agar
+          aapke breadcrumbs, extra context, ya error messages mein accidentally <strong>auth tokens, passwords,
+          credit card numbers, ya PII (personally identifiable information)</strong> log ho jaata hai, ye ek
+          real data-exposure risk ban jaata hai — chahe Sentry khud secure ho, ye data ab ek additional
+          third-party system mein exist karta hai jo aapke primary security perimeter se bahar hai. Sentry
+          <code>beforeSend</code> hook offer karta hai jisse aap explicitly sensitive fields ko scrub/redact
+          kar sakte ho bhejne se pehle — ye har production setup mein configure hona chahiye, "hum bas
+          careful rahenge" ek reliable strategy nahi hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne dekha crashes ko capture aur symbolicate kaise karte hain. Ab senior-level territory —
+        <em>context</em> kaise capture karein taaki sirf "kaha crash hua" nahi balki "user kya kar raha tha
+        jab crash hua" pata chale, releases ki health kaise ek KPI ke roop mein monitor karein, aur ek custom
+        error boundary kaise banayein jo genuinely production-grade ho.
+      </p>
+
+      <h3>Sentry Breadcrumbs — crash tak pahunchne wala trail</h3>
+      <p>
+        <strong>Breadcrumbs</strong> Sentry ka mechanism hai user actions aur system events ka ek
+        chronological trail record karne ka — screen navigations, button taps, network calls, console logs —
+        sab automatically ya manually breadcrumbs ke roop mein collect hote hain. Jab crash hota hai, crash
+        report ke saath ye poora trail attach hota hai, taaki aap sirf "crash kaha hua" nahi, balki
+        <strong>"crash se pehle user ne exactly kya kiya"</strong> reconstruct kar sako — ye debugging speed
+        ko dramatically improve karta hai kyunki aapko manually user se reproduction steps nahi poochne padte.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(tabs)/checkout.tsx — manual breadcrumbs ka example</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Sentry SDK import karna breadcrumb aur error-capture functions ke liye</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Sentry <span class="tok-kw">from</span> <span class="tok-str">'@sentry/react-native'</span>;
+
+<span class="tok-com">// handlePayment — checkout screen ka main payment-trigger function</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> handlePayment(amount: <span class="tok-kw">number</span>, method: <span class="tok-kw">string</span>) {
+  <span class="tok-com">// Sentry.addBreadcrumb — ek manual breadcrumb add karna jo batata hai user ne "pay" button dabaya, kis amount/method ke saath</span>
+  Sentry.addBreadcrumb({
+    <span class="tok-com">// category — breadcrumb ko group karne ke liye, dashboard filtering mein useful</span>
+    category: <span class="tok-str">'checkout'</span>,
+    <span class="tok-com">// message — human-readable description jo trail mein dikhega</span>
+    message: <span class="tok-str">`User initiated payment: amount=</span>${amount}<span class="tok-str">, method=</span>${method}<span class="tok-str">`</span>,
+    <span class="tok-com">// level — severity level, "info" normal flow events ke liye</span>
+    level: <span class="tok-str">'info'</span>,
+  });
+
+  <span class="tok-kw">try</span> {
+    <span class="tok-com">// Actual payment API call — Chapter 15 mein dekha gaya Stripe/payment provider ka call jaisa</span>
+    <span class="tok-kw">const</span> result = <span class="tok-kw">await</span> processPayment(amount, method);
+
+    <span class="tok-com">// Success case ke liye bhi ek breadcrumb — taaki success/failure dono trail mein reflect hon</span>
+    Sentry.addBreadcrumb({
+      category: <span class="tok-str">'checkout'</span>,
+      message: <span class="tok-str">'Payment succeeded'</span>,
+      level: <span class="tok-str">'info'</span>,
+    });
+
+    <span class="tok-com">// Function ka result return karna, caller ko success signal dene ke liye</span>
+    <span class="tok-kw">return</span> result;
+  } <span class="tok-kw">catch</span> (error) {
+    <span class="tok-com">// Sentry.captureException — actual error ko Sentry ko explicitly bhejna, saath mein wahi breadcrumb trail attach hoga automatically</span>
+    Sentry.captureException(error, {
+      <span class="tok-com">// extra context — is specific error ke saath additional data attach karna, jaise amount/method jo crash ke time relevant tha</span>
+      extra: { amount, method },
+    });
+    <span class="tok-com">// Error ko re-throw karna, taaki calling code (jaise UI layer) bhi apna error-handling kar sake (jaise error toast dikhana)</span>
+    <span class="tok-kw">throw</span> error;
+  }
+}</code></pre>
+      </div>
+
+      <p>
+        Automatic breadcrumbs bhi hote hain — Sentry SDK khud-ba-khud navigation changes (Expo Router ke
+        saath integration se), network requests (fetch/XHR interception), aur console logs ko breadcrumbs
+        bana deta hai bina manual code ke. Manual breadcrumbs (upar wale example jaisa) tab add karo jab
+        aapko genuinely business-specific context chahiye ho (jaise "user ne kaunsa payment method select
+        kiya") jo automatic tracking capture nahi karta.
+      </p>
+
+      <h3>Release Health — crash-free rate ek KPI ke roop mein</h3>
+      <p>
+        Ek senior-level practice ye hai ki crash reporting ko sirf "reactive debugging tool" na treat karo,
+        balki ek <strong>proactive monitoring metric</strong> ke roop mein bhi use karo. Sentry (aur similar
+        tools) <strong>Release Health</strong> dashboard provide karte hain jisme <strong>crash-free session
+        rate</strong> aur <strong>crash-free user rate</strong> jaise metrics har release ke against track
+        hote hain — matlab "is version ko use karne wale kitne % sessions/users ne bina kisi crash ke app
+        use kiya".
+      </p>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ye Chapter 12 aur 14 se directly connect hota hai</div>
+        <p>
+          Chapter 12 mein humne EAS Update se OTA rollouts dekhe the, aur Chapter 14 mein phased/staged
+          rollouts store submissions ke liye. Crash-free rate exactly wo metric hai jo <strong>in dono
+          strategies ko meaningful banata hai</strong> — agar aap ek OTA update ya phased rollout kar rahe ho,
+          crash-free rate ka real-time dashboard hi wo signal hai jisse aap decide karte ho "is rollout ko
+          aage badhaana hai ya rollback karna hai". Ek badi problem wali release almost turant crash-free rate
+          mein ek visible dip ke roop mein dikhegi — agar aap is metric ko actively watch kar rahe ho, aap
+          issue ko un users tak pahunchne se pehle hi rollback kar sakte ho jinhe abhi update nahi mila
+          (staged rollout ka poora point yahi hai).
+        </p>
+      </div>
+      <p>
+        Practical setup: production release ke turant baad (especially phased rollout ke pehle few hours),
+        crash-free rate dashboard ko actively monitor karo. Agar rate baseline se meaningfully gir jaaye
+        (jaise 99.5% se 97% pe), ye ek immediate signal hai ki release mein kuch break hua hai, chahe abhi
+        tak individual crash reports detail mein na dekhe ho.
+      </p>
+
+      <h3>Custom Error Boundary — fallback UI + automatic Sentry reporting</h3>
+      <p>
+        <code>Sentry.wrap()</code> ek default error boundary provide karta hai, lekin production apps mein
+        aksar ek <strong>custom</strong> error boundary chahiye hoti hai jisme aap apna khud ka fallback UI
+        dikha sako (generic "Something went wrong" screen ki jagah kuch on-brand), aur explicitly control
+        karo kya reporting hoti hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>components/AppErrorBoundary.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// React import — Component class aur ReactNode type ke liye</span>
+<span class="tok-kw">import</span> React, { Component, <span class="tok-kw">type</span> ReactNode } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-com">// RN ke basic View/Text/Button components — fallback UI banane ke liye</span>
+<span class="tok-kw">import</span> { View, Text, Button, StyleSheet } <span class="tok-kw">from</span> <span class="tok-str">'react-native'</span>;
+<span class="tok-com">// Sentry SDK — error ko explicitly capture karne ke liye</span>
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> Sentry <span class="tok-kw">from</span> <span class="tok-str">'@sentry/react-native'</span>;
+
+<span class="tok-com">// Props interface — children hi required prop hai, jo normal ek error boundary wrap karta hai</span>
+<span class="tok-kw">interface</span> Props {
+  <span class="tok-com">// children — wo poora subtree jise ye boundary protect karega</span>
+  children: ReactNode;
+}
+
+<span class="tok-com">// State interface — sirf ek boolean track karta hai ki koi error hua hai ya nahi</span>
+<span class="tok-kw">interface</span> State {
+  <span class="tok-com">// hasError — jab true ho, fallback UI render hogi instead of children</span>
+  hasError: <span class="tok-kw">boolean</span>;
+}
+
+<span class="tok-com">// AppErrorBoundary — class component hona MANDATORY hai, kyunki error boundaries sirf class components mein hi kaam karte hain (React ka current limitation, hooks se possible nahi)</span>
+<span class="tok-kw">export</span> <span class="tok-kw">class</span> AppErrorBoundary <span class="tok-kw">extends</span> Component&lt;Props, State&gt; {
+  <span class="tok-com">// Constructor — initial state set karna, boundary shuru mein "no error" state mein hoti hai</span>
+  <span class="tok-kw">constructor</span>(props: Props) {
+    <span class="tok-com">// super(props) call karna React class components mein mandatory hai</span>
+    <span class="tok-kw">super</span>(props);
+    <span class="tok-com">// Initial state — hasError false, matlab children normally render honge</span>
+    <span class="tok-kw">this</span>.state = { hasError: <span class="tok-kw">false</span> };
+  }
+
+  <span class="tok-com">// getDerivedStateFromError — React lifecycle method, error hote hi turant call hota hai render se pehle</span>
+  <span class="tok-kw">static</span> getDerivedStateFromError(_error: Error): State {
+    <span class="tok-com">// hasError ko true karna — agli render pe fallback UI dikhegi</span>
+    <span class="tok-kw">return</span> { hasError: <span class="tok-kw">true</span> };
+  }
+
+  <span class="tok-com">// componentDidCatch — dusra lifecycle method, error aur react component stack info yahan milta hai, side-effects (jaise reporting) yahan karte hain</span>
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    <span class="tok-com">// Sentry.captureException — error ko explicitly Sentry ko bhejna, saath mein component stack bhi extra context ke roop mein</span>
+    Sentry.captureException(error, {
+      extra: {
+        <span class="tok-com">// componentStack — batata hai kaunse components ki tree mein error propagate hua, debugging mein bahut useful</span>
+        componentStack: errorInfo.componentStack,
+      },
+    });
+  }
+
+  <span class="tok-com">// handleReset — user ke "Try Again" tap pe state reset karna, taaki boundary dobara children render karne ki koshish kare</span>
+  handleReset = () => {
+    <span class="tok-com">// hasError ko false karke fallback UI hataana aur children ko dobara mount karna</span>
+    <span class="tok-kw">this</span>.setState({ hasError: <span class="tok-kw">false</span> });
+  };
+
+  <span class="tok-com">// render — agar hasError true hai, fallback UI dikhaana; warna normal children render karna</span>
+  render() {
+    <span class="tok-kw">if</span> (<span class="tok-kw">this</span>.state.hasError) {
+      <span class="tok-com">// Fallback UI JSX — on-brand error screen, generic crash screen ki jagah</span>
+      <span class="tok-kw">return</span> (
+        &lt;View style={styles.container}&gt;
+          <span class="tok-com">// Fallback heading — user-friendly message, technical error detail nahi dikhaate end-user ko</span>
+          &lt;Text style={styles.title}&gt;Kuch galat ho gaya&lt;/Text&gt;
+          &lt;Text style={styles.subtitle}&gt;Hum isse fix karne ki koshish kar rahe hain. Please dobara try karo.&lt;/Text&gt;
+          <span class="tok-com">// Retry button — handleReset call karta hai taaki user bina app restart kiye recover kar sake</span>
+          &lt;Button title=<span class="tok-str">"Try Again"</span> onPress={<span class="tok-kw">this</span>.handleReset} /&gt;
+        &lt;/View&gt;
+      );
+    }
+    <span class="tok-com">// Normal case — koi error nahi hua, children ko as-is render karna</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span>.props.children;
+  }
+}
+
+<span class="tok-com">// StyleSheet — fallback UI ki basic styling</span>
+<span class="tok-kw">const</span> styles = StyleSheet.create({
+  <span class="tok-com">// container — poori screen center mein content dikhane ke liye</span>
+  container: { flex: <span class="tok-num">1</span>, justifyContent: <span class="tok-str">'center'</span>, alignItems: <span class="tok-str">'center'</span>, padding: <span class="tok-num">24</span> },
+  <span class="tok-com">// title — heading text style</span>
+  title: { fontSize: <span class="tok-num">20</span>, fontWeight: <span class="tok-str">'700'</span>, marginBottom: <span class="tok-num">8</span> },
+  <span class="tok-com">// subtitle — description text style</span>
+  subtitle: { fontSize: <span class="tok-num">14</span>, color: <span class="tok-str">'#666'</span>, textAlign: <span class="tok-str">'center'</span>, marginBottom: <span class="tok-num">16</span> },
+});</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx — custom boundary ko wire karna</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Apna custom error boundary import karna</span>
+<span class="tok-kw">import</span> { AppErrorBoundary } <span class="tok-kw">from</span> <span class="tok-str">'../components/AppErrorBoundary'</span>;
+<span class="tok-com">// Expo Router ka root Slot component</span>
+<span class="tok-kw">import</span> { Slot } <span class="tok-kw">from</span> <span class="tok-str">'expo-router'</span>;
+
+<span class="tok-com">// RootLayout — ab poore Slot tree ko humare custom AppErrorBoundary se wrap kar rahe hain, Sentry.wrap() ke bajaye</span>
+<span class="tok-kw">function</span> RootLayout() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-com">// AppErrorBoundary ke andar Slot rakhna — agar kahin bhi is tree mein render error aaye, poori app crash hone ki jagah fallback UI dikhegi</span>
+    &lt;AppErrorBoundary&gt;
+      &lt;Slot /&gt;
+    &lt;/AppErrorBoundary&gt;
+  );
+}
+
+<span class="tok-com">// Export karte waqt Sentry.wrap() abhi bhi laga sakte ho — dono ek saath kaam karte hain, Sentry.wrap native-level aur navigation-tracking wire karta hai, humara custom boundary JS render-error UI handle karta hai</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> RootLayout;</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Sharad ke liye — class component kyun, hooks kyun nahi</div>
+        <p>
+          Ye poore codebase mein shayad ek-do jagah hi hai jaha class component genuinely zaroori hai — React
+          ka error boundary mechanism specifically <code>getDerivedStateFromError</code> aur
+          <code>componentDidCatch</code> lifecycle methods pe based hai, jinka koi hook-based equivalent
+          abhi tak exist nahi karta React mein. Isliye agar aap ek custom error boundary bana rahe ho, class
+          component syntax use karna hi padega — ye ek deliberate exception hai, function components ki
+          general philosophy se conflict nahi hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye section un questions ko cover karta hai jo senior/staff-level React Native interviews mein
+        debugging, crash analysis, aur production reliability ke around poochhe jaate hain. Har answer
+        detailed hai, taaki aap concept genuinely samajh kar confidently explain kar sako, sirf "sahi jawab"
+        ratt kar nahi.
+      </p>
+
+      <h3>1. Explain exactly why a crash report shows unreadable hex addresses without the right symbol files, and how uploading them fixes it.</h3>
+      <p>
+        Production build ke compilation ke time, compiler readable symbol names (function/variable/class
+        names) ko binary se <strong>strip</strong> kar deta hai, size aur reverse-engineering resistance ke
+        liye. Jab crash hota hai, OS crash report ko sirf raw memory addresses ke roop mein generate karta
+        hai (jaise <code>0x0000000104a3f2c8</code>) kyunki us address ka corresponding readable naam binary
+        ke andar exist hi nahi karta. Ye mapping (address → function name + file + line number) ek alag file
+        mein store hoti hai jo compile-time pe hi generate hoti hai — iOS pe <strong>dSYM</strong>, Android pe
+        <strong>ProGuard/R8 mapping file</strong>. Jab aap us exact build version ka matching symbol file
+        crash reporting tool ko upload karte ho, tool ye mapping use karke hex addresses ko readable stack
+        trace mein convert kar deta hai — is process ko <strong>symbolication</strong> kehte hain. Bina
+        matching symbol file ke (jaise galat build version ka file upload ho gaya, ya upload hua hi nahi), ye
+        conversion possible nahi hai — mapping exist hi nahi karti tool ke paas.
+      </p>
+
+      <h3>2. A crash-free rate metric drops sharply right after a release — walk through your incident response.</h3>
+      <p>
+        Sabse pehle, <strong>severity assess karo</strong> — kitna bada drop hai (99.5% se 97% chhota signal
+        hai, 99.5% se 80% emergency hai), aur ye kis platform/device pe concentrated hai. Agar aap phased/staged
+        rollout use kar rahe ho (Chapter 14), <strong>immediately rollout ko pause/halt karo</strong> taaki
+        aur users affected na hon — ye sabse pehla action hona chahiye, root cause investigation se bhi pehle,
+        kyunki ye reversible damage-control hai. Phir crash reporting tool (Sentry) ke top crashes dekho us
+        release version ke against — konsa specific crash sabse zyada frequency se aa raha hai. Symbolicated
+        stack trace se root cause identify karo. Agar fix fast hai, hotfix release karo (ya agar ye pure JS
+        change hai jo native code touch nahi karta, ek EAS Update OTA push bhi kar sakte ho, Chapter 12 ka
+        concept). Agar fix complex hai, decide karo poori release ko rollback karna hai (Play Store/App Store
+        pe previous version restore, ya staged rollout ko 0% pe le jaana) jab tak fix ready na ho. Poore
+        incident ke throughout crash-free rate dashboard ko monitor karte raho confirm karne ke liye ki
+        fix/rollback effective hai.
+      </p>
+
+      <h3>3. How would you debug a bug that only reproduces on one specific low-end Android device model?</h3>
+      <p>
+        Pehle Sentry/crash-tool ke device breakdown se confirm karo ki ye genuinely device-specific hai (na ki
+        sirf coincidence — check karo kitne total crashes hain aur unka device-distribution). Phir, agar
+        possible ho, <strong>exact wahi device model physically arrange karo testing ke liye</strong> — emulator
+        low-end hardware constraints (limited RAM, slower CPU, specific GPU driver quirks) ko accurately
+        replicate nahi karta. Common root causes jo specifically low-end/specific-OEM devices pe hote hain:
+        memory pressure (device kam RAM ki wajah se app ko background mein kill kar raha hai, ya OOM crash),
+        OEM-specific Android build differences (Samsung/Xiaomi custom ROMs kabhi kabhi standard Android
+        behavior se deviate karte hain), ya ek specific chipset/architecture issue (ARM32 vs ARM64). ANR
+        trace ya crash stack se pattern dekho — agar memory-related lagta hai, Android Studio Profiler us
+        (ya similar) device pe use karke memory usage timeline observe karo.
+      </p>
+
+      <h3>4. Why can't a JS-level Error Boundary catch every kind of app failure?</h3>
+      <p>
+        Error Boundary React ka mechanism hai jo specifically <strong>React component tree ke render/lifecycle
+        phase mein hone wale JS exceptions</strong> ko catch karta hai. Ye teen categories ki failures catch
+        nahi karta: (1) <strong>event handler ke andar errors</strong> — jaise onPress callback ke andar
+        thrown error, kyunki ye React render cycle ke bahar execute hota hai, isko normal try/catch chahiye;
+        (2) <strong>async code ke andar errors</strong> jo directly render se trigger nahi hue (jaise ek
+        setTimeout ke andar thrown error); aur sabse importantly (3) <strong>genuine native crashes</strong>
+        — jaha poora app process hi OS level pe terminate ho jaata hai. Jab native crash hota hai, JS runtime
+        khud us process ke saath mar jaata hai, isliye koi JS-level code (Error Boundary included) ko chance
+        hi nahi milta react karne ka — process already gone hai. Isi wajah se production apps ko dono chahiye:
+        Error Boundary (JS render errors ke liye graceful degradation) aur native-level crash reporting
+        (genuine process-level crashes capture karne ke liye) — ye dono complementary hain, ek dusre ka
+        replacement nahi.
+      </p>
+
+      <h3>5. What's the difference between a true Android ANR and JS-thread blocking that causes UI jank? Why does this distinction matter?</h3>
+      <p>
+        React Native mein JS thread aur Android ka native main/UI thread do alag threads hain. Agar
+        <strong>JS thread block ho</strong> (jaise ek heavy synchronous JS loop, ya ek native
+        <code>Function()</code> jo bahut der leta hai calling JS thread pe), result hota hai JS-driven UI
+        frozen — animations ruk jaate hain, taps respond nahi karte — lekin native main thread khud
+        technically responsive rehta hai, isliye Android OS ANR trigger <strong>nahi</strong> karta. Ek
+        genuine <strong>ANR</strong> specifically tab hota hai jab native main thread khud block ho — jaise
+        koi native module code jo synchronously blocking I/O kare directly main thread pe, bina background
+        thread pe offload kiye. Distinction matter isliye karta hai kyunki fix bilkul different hai: JS
+        thread blocking ka fix hai JS-side optimization (computation break karna, background threads pe
+        JS-level kaam offload karna jaise `InteractionManager`), jabki genuine ANR ka fix hai native code ko
+        properly async banana (jaise Chapter 16 ka <code>AsyncFunction()</code> pattern). Galat diagnosis
+        (JS jank ko ANR samajh kar native code fix karna, ya vice versa) time waste karta hai galat jagah pe.
+      </p>
+
+      <h3>6. Your team ships a build where the symbol upload step silently failed in CI. What's your process for handling crashes from that specific version?</h3>
+      <p>
+        Ye ek genuinely hard situation hai kyunki us exact build ke symbols ab permanently missing hain
+        (jab tak build artifact locally preserved na ho, jo rarely hota hai). Process: (1) <strong>Confirm
+        karo</strong> ki genuinely symbols missing hain (Sentry dashboard mein us release ke "symbolication
+        status" check karo — kabhi kabhi delay hota hai upload mein, immediately conclude mat karo failed
+        hai). (2) Agar genuinely missing hain aur build artifact bhi retrievable nahi hai, dekho crash pattern
+        (device/OS breakdown, frequency, kis screen/action se juda) se kuch inference nikal sakte ho bina full
+        symbolication ke — jaise agar crash rate ek specific recently-changed feature ke around concentrated
+        hai. (3) <strong>Immediate priority</strong>: agla hotfix release ship karo jisme symbol upload
+        properly verify ho — taaki agar wahi crash phir se hoti hai naye build mein, ab aapke paas readable
+        stack trace ho. (4) <strong>Root cause karo CI pipeline mein</strong> — kyun upload silently fail
+        hua (auth token expire, network issue, misconfigured hook)? Fix ye add karo ki upload step ki failure
+        build ko hi fail kare (loud failure), silent failure na rahe — taaki future mein ye issue immediately
+        visible ho, kisi crash ke baad discover na ho.
+      </p>
+
+      <h3>7. What's the practical difference between how you'd set up crash reporting for JS errors vs native crashes in Sentry?</h3>
+      <p>
+        JS error capture Sentry mein largely automatic hai — <code>Sentry.wrap()</code> app root ko wrap
+        karne se React render errors automatically capture hote hain, aur `Sentry.captureException()`
+        explicit try/catch blocks ke andar use hota hai. Native crash capture ke liye,
+        <code>Sentry.init()</code> mein <code>enableNative: true</code> set karna hota hai — ye Sentry ke
+        native-level SDK layer (Swift/Kotlin side pe embedded) ko activate karta hai jo OS-level fatal signals
+        (segfaults, native exceptions) ko intercept karta hai crash hone se pehle bhi (kyunki technically
+        process crash ho raha hai, Sentry ko ek crash handler register karna padta hai jo process terminate
+        hone se theek pehle report likh sake disk pe, aur agli app launch pe use upload kare). Iske alawa,
+        native crashes ke liye dSYM/mapping file upload critical hai (jo JS ke liye source-map upload ke
+        equivalent hai) — bina iske native crashes symbolicate nahi honge chahe capture ho bhi rahe hon.
+      </p>
+
+      <h3>8. Why is "it works in dev, crashes in production" often harder to debug than a crash that reproduces consistently everywhere?</h3>
+      <p>
+        Kyunki root cause almost hamesha koi <strong>environmental difference</strong> hota hai jo aapke local
+        setup mein replicate karna hard hota hai — production minification/ProGuard obfuscation, production
+        environment variables, ya timing differences jo dev ki slower execution mein race conditions ko mask
+        kar dete hain. Aapko root cause dhoondhne ke liye systematically har possible difference ko rule out
+        karna padta hai (Hermes vs JSC, dev-only code paths, minification stripping, missing env vars, race
+        conditions) — ek checklist approach zaroori hai kyunki koi ek "obvious" jagah nahi hoti dekhne ki. Iske
+        alawa, aap production issue ko locally reproduce hi nahi kar sakte agar aap sirf dev build test karte
+        raho — jab tak aap explicitly ek genuine production-configured build (minified, real env vars) locally
+        test na karo, aap us category ke bugs kabhi hit hi nahi karoge apne dev environment mein.
+      </p>
+
+      <h3>9. How do Sentry breadcrumbs improve debugging compared to just having a stack trace at the crash point?</h3>
+      <p>
+        Ek stack trace sirf batata hai <strong>"crash exactly kaha hua"</strong> — kaunsa function, kaunsi
+        line. Ye batata nahi ki <strong>user crash tak pahuncha kaise</strong> — kaunsi screens navigate ki,
+        kaunse buttons dabaye, kaunse API calls hue us se pehle. Breadcrumbs ye poora chronological trail
+        capture karte hain (automatic — navigation, network requests, console logs; aur manual — business-specific
+        events jo aap explicitly add karte ho jaise "payment initiated"). Result: jab crash report dekhte ho,
+        aapke paas sirf ek isolated crash point nahi, balki ek poori <strong>story</strong> hai jo dikhati hai
+        exact sequence of events jo crash tak leke gayi. Ye dramatically debugging time reduce karta hai
+        kyunki aapko manually user se "kya kar rahe the crash se pehle" poochne ki zaroorat nahi padti — jo
+        aksar unreliable/incomplete jawab deta hai kyunki users exact steps yaad nahi rakhte.
+      </p>
+
+      <h3>10. Why must a custom Error Boundary be a class component, and what does that tell you about a limitation in React's current hooks API?</h3>
+      <p>
+        Error Boundary mechanism specifically do lifecycle methods pe depend karta hai —
+        <code>static getDerivedStateFromError()</code> (jo error hote hi turant, render se pehle state derive
+        karta hai) aur <code>componentDidCatch()</code> (jo error aur component-stack info deta hai side-effects
+        ke liye, jaise Sentry reporting). Ye dono class-component-specific lifecycle methods hain — React ne
+        abhi tak inka koi hook-based equivalent introduce nahi kiya hai (jaise <code>useDerivedStateFromError</code>
+        jaisa kuch exist nahi karta). Ye batata hai ki React ka hooks API, jitna comprehensive hai, <strong>har
+        class-component capability ko fully replace nahi karta</strong> — error boundaries ek deliberate,
+        acknowledged exception hain jaha class components abhi bhi genuinely zaroori hain, sirf legacy code ke
+        liye nahi balki koi alternative na hone ki wajah se.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="18-state-management.html">
+          <div class="label">← Previous</div>
+          <div class="title">State Management</div>
+        </a>
+        <a class="next" href="20-accessibility-i18n.html">
+          <div class="label">Next →</div>
+          <div class="title">Accessibility &amp; i18n</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

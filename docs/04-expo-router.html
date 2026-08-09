@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expo Router — MAD Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>MAD Docs</span></div>
+    <div class="tagline">React Native + Expo — basic se production tak, Hinglish mein.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-introduction.html"><span class="num">1</span> Introduction</a>
+      <a class="nav-link" href="02-components-and-apis.html"><span class="num">2</span> Components &amp; APIs</a>
+      <a class="nav-link" href="03-style-and-design.html"><span class="num">3</span> Style &amp; Design</a>
+      <a class="nav-link active" href="04-expo-router.html"><span class="num">4</span> Expo Router</a>
+      <a class="nav-link" href="05-animations-and-gestures.html"><span class="num">5</span> Animations &amp; Gestures</a>
+      <a class="nav-link" href="06-expo-ui.html"><span class="num">6</span> Expo UI</a>
+      <a class="nav-link" href="07-testing.html"><span class="num">7</span> Testing</a>
+      <a class="nav-link" href="08-push-notifications.html"><span class="num">8</span> Push Notifications</a>
+      <a class="nav-link" href="09-backend-supabase.html"><span class="num">9</span> Backend + Supabase</a>
+      <a class="nav-link" href="10-eas-build.html"><span class="num">10</span> EAS Build</a>
+      <a class="nav-link" href="11-eas-submit.html"><span class="num">11</span> EAS Submit</a>
+      <a class="nav-link" href="12-eas-update.html"><span class="num">12</span> EAS Update</a>
+      <a class="nav-link" href="13-eas-workflows.html"><span class="num">13</span> EAS Workflows</a>
+      <a class="nav-link" href="14-publishing.html"><span class="num">14</span> Publishing</a>
+      <a class="nav-link" href="15-payments.html"><span class="num">15</span> Payments</a>
+      <a class="nav-link" href="16-native-modules.html"><span class="num">16</span> Native Modules</a>
+      <a class="nav-link" href="17-bonus.html"><span class="num">17</span> Bonus</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Extra Topics</div>
+      <a class="nav-link" href="18-state-management.html"><span class="num">18</span> State Management</a>
+      <a class="nav-link" href="19-debugging-and-crashes.html"><span class="num">19</span> Debugging &amp; Crashes</a>
+      <a class="nav-link" href="20-accessibility-i18n.html"><span class="num">20</span> Accessibility &amp; i18n</a>
+      <a class="nav-link" href="21-capstone-free-app.html"><span class="num">21</span> Capstone: Free Full App</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Docs <span>/</span> Expo Router</div>
+      <div class="progress-pill">Chapter 4 of 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">React Native · Expo Router v3 · TypeScript</span>
+      <h1>Expo Router — File-Based Routing, Auth &amp; Deep Linking</h1>
+      <p class="subtitle">
+        Ye chapter sabse zyada security aur architecture heavy hai. Yahan hum dekhenge ki Expo Router internally
+        route tree kaise banata hai, auth guard kaise likhte hain bina "flash of wrong screen" ke, RBAC kaise
+        layer karte hain, aur deep linking ko safely handle kaise karte hain — kyunki yahi wo jagah hai jahan
+        production apps mein real security bugs aate hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#fundamentals">1. File-Based Routing Fundamentals</a></li>
+          <li><a href="#dynamic-routes">2. Dynamic Routes</a></li>
+          <li><a href="#stack-tabs">3. Stack &amp; Tabs Navigation</a></li>
+          <li><a href="#router-hooks">4. Router Hooks Deep-Dive</a></li>
+          <li><a href="#auth-flow">5. Authentication Flow (Protected Routes)</a></li>
+          <li><a href="#rbac">6. Role-Based Access Control (RBAC)</a></li>
+          <li><a href="#deep-linking">7. Deep Linking</a></li>
+          <li><a href="#gotchas">8. Real-World Gotchas</a></li>
+          <li><a href="#advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</a></li>
+          <li><a href="#interview-questions">10. 🎯 Interview Questions — Senior React Native Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="fundamentals" style="border-top:none; padding-top:0; margin-top:28px;">1. File-Based Routing Fundamentals</h2>
+
+      <p>
+        Expo Router ka core idea simple hai — <strong>filesystem hi tumhara route config hai</strong>. Jitna bhi
+        <code>app/</code> folder ke andar file structure banaoge, utna hi tumhara navigation graph ban jaayega.
+        Koi separate <code>Navigator</code> config file nahi likhni padti jaise React Navigation mein pehle likhte the.
+      </p>
+
+      <p>
+        Internally kya hota hai: build/dev time pe Expo CLI (Metro ke integration ke through) <code>app/</code>
+        directory ko recursively scan karta hai aur ek <strong>route manifest</strong> banata hai — basically ek tree
+        data structure jisme har node ek file ya folder ko represent karta hai. Ye manifest phir <code>expo-router</code>
+        ke runtime ko diya jaata hai jo internally <strong>React Navigation</strong> ke primitives (
+        <code>NavigationContainer</code>, <code>Stack.Navigator</code>, <code>Tab.Navigator</code>, linking config)
+        use karke actual navigator tree render karta hai. Matlab Expo Router "React Navigation ke upar ek code-gen +
+        convention layer" hai, replacement nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>File structure → Route mapping</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">app/</span>                    <span class="tok-com">// root routing folder — filesystem yahan se hi navigation tree derive karta hai</span>
+<span class="tok-com">├── _layout.tsx</span>          <span class="tok-com">// Root layout — sabse pehle mount hota hai, isliye auth-check/splash-hold logic yahan likhi jaati hai</span>
+<span class="tok-com">├── index.tsx</span>            <span class="tok-com">// "/" route — top-level pe rakha taaki app khulte hi koi default landing decision ho sake (redirect to auth/app)</span>
+<span class="tok-com">├── (auth)/</span>              <span class="tok-com">// Route GROUP — URL mein "(auth)" nahi aata, sirf isliye group kiya taaki inka shared _layout + auth-guard target ho</span>
+<span class="tok-com">│   ├── _layout.tsx</span>      <span class="tok-com">// sirf auth screens ke liye layout — logged-in screens ke layout se isolate, taaki dono independently evolve kar sakein</span>
+<span class="tok-com">│   ├── login.tsx</span>        <span class="tok-com">// route: "/login" — is group ke andar isliye ki auth guard poore group ko ek unit ki tarah redirect kar sake</span>
+<span class="tok-com">│   └── signup.tsx</span>       <span class="tok-com">// route: "/signup" — same reason, login/signup dono unauthenticated-only screens hain</span>
+<span class="tok-com">├── (app)/</span>               <span class="tok-com">// dusra group — logged-in area, (auth) se alag naam isliye taaki dono tree clearly distinguish ho sakein guard logic mein</span>
+<span class="tok-com">│   ├── _layout.tsx</span>      <span class="tok-com">// is group ka apna layout — yahan RBAC check bhi laga sakte hain kyunki har (app) route yahan se guzarta hai</span>
+<span class="tok-com">│   ├── (tabs)/</span>          <span class="tok-com">// nested group — Tab navigator ke liye, (app) ke andar nested isliye taaki tabs sirf logged-in area mein hi ho</span>
+<span class="tok-com">│   │   ├── _layout.tsx</span>  <span class="tok-com">// yahan &lt;Tabs&gt; component define hota hai — is level pe isliye kyunki sirf yahi files tab-bar mein dikhni hain</span>
+<span class="tok-com">│   │   ├── index.tsx</span>    <span class="tok-com">// route: "/" (tab 1, home) — index.tsx naam se hi wo folder ka default route ban jaata hai</span>
+<span class="tok-com">│   │   └── profile.tsx</span>  <span class="tok-com">// route: "/profile" — flat rakha (nested folder nahi) kyunki profile ka apna sub-navigation nahi hai</span>
+<span class="tok-com">│   └── settings.tsx</span>     <span class="tok-com">// route: "/settings" — tabs ke bahar isliye kyunki ye tab-bar mein nahi dikhta, sirf profile se navigate hota hai</span>
+<span class="tok-com">└── product/</span>             <span class="tok-com">// dynamic-route group — top-level isliye kyunki product detail kisi bhi tab se open ho sakta hai</span>
+<span class="tok-com">    └── [id].tsx</span>         <span class="tok-com">// dynamic route: "/product/42" — [id] bracket syntax filename ko URL param mein convert karta hai</span></code></pre>
+      </div>
+
+      <h3>_layout.tsx — nested layouts ka backbone</h3>
+      <p>
+        Har folder mein ek <code>_layout.tsx</code> daal sakte ho jo us folder ke andar ke saare routes ko
+        "wrap" karta hai — same jaise Next.js ke <code>layout.tsx</code> concept se inspired hai. Ye file
+        <code>&lt;Slot /&gt;</code>, <code>&lt;Stack /&gt;</code> ya <code>&lt;Tabs /&gt;</code> return karti hai,
+        jo batata hai ki child routes kaise render/navigate honge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Stack } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">RootLayout</span>() {
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span>
+    <span class="tok-tag">&lt;Stack</span> <span class="tok-attr">screenOptions</span>=<span class="tok-punc">{{</span> headerShown: <span class="tok-kw">false</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-tag">&lt;Stack.Screen</span> <span class="tok-attr">name</span>=<span class="tok-str">"(auth)"</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Stack.Screen</span> <span class="tok-attr">name</span>=<span class="tok-str">"(app)"</span> <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/Stack&gt;</span>
+  <span class="tok-punc">)</span>;
+}</code></pre>
+      </div>
+
+      <h3>(group) folders — URL invisible, organisation visible</h3>
+      <p>
+        Parenthesis wale folders — jaise <code>(auth)</code>, <code>(app)</code>, <code>(tabs)</code> — sirf
+        <strong>organizational purpose</strong> ke liye hote hain. Router in folder names ko URL segment
+        <em>nahi</em> banata. Isliye <code>app/(app)/(tabs)/profile.tsx</code> ka actual route <code>/profile</code>
+        hi rahega, na ki <code>/(app)/(tabs)/profile</code>. Ye extremely useful hai jab tum related screens ko
+        alag layout/context ke andar group karna chahte ho bina URL ganda kiye.
+      </p>
+
+      <h3>index.tsx — default route resolver</h3>
+      <p>
+        Kisi bhi folder ke andar <code>index.tsx</code> us folder ke "root" URL ko resolve karta hai — exactly
+        jaise web pe <code>index.html</code>. Toh <code>app/(app)/(tabs)/index.tsx</code> tab navigator ka default
+        (pehla) tab render karega jab URL <code>/</code> hoga.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Route tree build-time pe generate hota hai lekin dev mode mein Metro ke file-watcher ke through
+          <strong>hot re-generate</strong> bhi hota hai — matlab naya file banate hi (bina restart kiye) naya route
+          available ho jaata hai. Production build mein ye tree static ho jaata hai aur bundle mein bake ho jaata
+          hai, isliye file naming conventions (jaise <code>[id].tsx</code>, <code>_layout.tsx</code>) ko strictly
+          follow karna zaroori hai — typo kiya toh silently route match nahi hoga, koi build error nahi milega.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="dynamic-routes">2. Dynamic Routes</h2>
+
+      <p>
+        Dynamic segments file name mein square brackets se define hote hain — <code>[id].tsx</code>. Router
+        internally is filename ko regex-jaisa pattern bana ke store karta hai, aur URL match karte waqt us
+        segment ki actual value ko params object mein daal deta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/product/[id].tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>;
+<span class="tok-kw">import</span> { View, Text, ActivityIndicator } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>;
+<span class="tok-kw">import</span> { useLocalSearchParams } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+
+<span class="tok-kw">type</span> Product = { id: <span class="tok-kw">string</span>; title: <span class="tok-kw">string</span>; price: <span class="tok-kw">number</span> };
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">ProductScreen</span>() {
+  <span class="tok-com">// id yahan hamesha string | string[] type ka hota hai</span>
+  <span class="tok-kw">const</span> { id } = useLocalSearchParams<span class="tok-punc">&lt;</span>{ id: <span class="tok-kw">string</span> }<span class="tok-punc">&gt;</span>();
+  <span class="tok-kw">const</span> [product, setProduct] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>Product | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>);
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-fn">fetch</span>(<span class="tok-str">`https://api.myapp.com/products/${id}`</span>)
+      .then((res) => res.<span class="tok-fn">json</span>())
+      .then(setProduct);
+  }, [id]);
+
+  <span class="tok-kw">if</span> (!product) <span class="tok-kw">return</span> <span class="tok-tag">&lt;ActivityIndicator /&gt;</span>;
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>{product.title}<span class="tok-tag">&lt;/Text&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>₹{product.price}<span class="tok-tag">&lt;/Text&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <h3>Catch-all routes — [...missing].tsx</h3>
+      <p>
+        Agar koi route match hi nahi hota (galat URL, ya deep link jo exist nahi karta), toh usko handle karne ke
+        liye ek catch-all file banate hain <code>[...missing].tsx</code>. Ye "rest params" jaisa syntax hai — jitne
+        bhi extra segments URL mein honge sab ek array mein capture ho jaate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/[...missing].tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Link, useLocalSearchParams } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+<span class="tok-kw">import</span> { View, Text } <span class="tok-kw">from</span> <span class="tok-str">"react-native"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">NotFoundScreen</span>() {
+  <span class="tok-kw">const</span> { missing } = useLocalSearchParams<span class="tok-punc">&lt;</span>{ missing: <span class="tok-kw">string</span>[] }<span class="tok-punc">&gt;</span>();
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>404 — Route not found: /{missing?.<span class="tok-fn">join</span>(<span class="tok-str">"/"</span>)}<span class="tok-tag">&lt;/Text&gt;</span>
+      <span class="tok-tag">&lt;Link</span> <span class="tok-attr">href</span>=<span class="tok-str">"/"</span><span class="tok-tag">&gt;</span>Go home<span class="tok-tag">&lt;/Link&gt;</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <h3>Typed Routes — compile-time route safety</h3>
+      <p>
+        Expo Router ka <strong>Typed Routes</strong> feature (<code>app.json</code> mein
+        <code>"experiments": { "typedRoutes": true }</code> enable karke) build-time pe saare valid routes ka ek
+        TypeScript union type generate karta hai (<code>.expo/types/router.d.ts</code> mein). Isse
+        <code>router.push("/product/42")</code> jaisi calls compile-time pe hi check ho jaati hain — agar tumne
+        typo kiya ya non-existent route diya, TS error dega, runtime crash nahi milega.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Quick Tip</div>
+        <p>
+          Typed routes ke saath dynamic segments ke liye tumhe object syntax use karna padta hai:
+          <code>router.push({ pathname: "/product/[id]", params: { id: "42" } })</code> — ye zyada verbose hai
+          lekin autocomplete + type-check dono milte hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="stack-tabs">3. Stack &amp; Tabs Navigation</h2>
+
+      <p>
+        <code>&lt;Stack /&gt;</code> aur <code>&lt;Tabs /&gt;</code> — ye dono <code>_layout.tsx</code> files ke
+        andar use hone wale "layout primitives" hain jo React Navigation ke <code>createNativeStackNavigator</code>
+        aur <code>createBottomTabNavigator</code> ko internally wire karte hain, bas declarative JSX API ke through.
+      </p>
+
+      <h3>Common pattern: Tabs at root, Stack inside each tab</h3>
+      <p>
+        Real apps mein bottom tabs hoti hain (Home, Search, Profile), aur har tab ke andar apna khud ka navigation
+        stack hota hai (jaise Home tab se product detail pe push karna, but tab bar hamesha visible rehna chahiye).
+        Isko achieve karte hain <strong>nested layouts</strong> se — ek folder ke andar dusra <code>_layout.tsx</code>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/(tabs)/_layout.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Tabs } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+<span class="tok-kw">import</span> { Ionicons } <span class="tok-kw">from</span> <span class="tok-str">"@expo/vector-icons"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">TabsLayout</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;Tabs</span> <span class="tok-attr">screenOptions</span>=<span class="tok-punc">{{</span> headerShown: <span class="tok-kw">false</span> <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+      <span class="tok-tag">&lt;Tabs.Screen</span>
+        <span class="tok-attr">name</span>=<span class="tok-str">"index"</span>
+        <span class="tok-attr">options</span>=<span class="tok-punc">{{</span>
+          title: <span class="tok-str">"Home"</span>,
+          tabBarIcon: ({ color, size }) =&gt; <span class="tok-tag">&lt;Ionicons</span> <span class="tok-attr">name</span>=<span class="tok-str">"home"</span> <span class="tok-attr">size</span>=<span class="tok-punc">{</span>size<span class="tok-punc">}</span> <span class="tok-attr">color</span>=<span class="tok-punc">{</span>color<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>,
+        <span class="tok-punc">}}</span>
+      <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Tabs.Screen</span> <span class="tok-attr">name</span>=<span class="tok-str">"profile"</span> <span class="tok-attr">options</span>=<span class="tok-punc">{{</span> title: <span class="tok-str">"Profile"</span> <span class="tok-punc">}}</span> <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/Tabs&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/(tabs)/home/_layout.tsx (nested stack inside a tab)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Stack } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">HomeStackLayout</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;Stack&gt;</span>
+      <span class="tok-tag">&lt;Stack.Screen</span> <span class="tok-attr">name</span>=<span class="tok-str">"index"</span> <span class="tok-attr">options</span>=<span class="tok-punc">{{</span> title: <span class="tok-str">"Home"</span> <span class="tok-punc">}}</span> <span class="tok-tag">/&gt;</span>
+      <span class="tok-tag">&lt;Stack.Screen</span>
+        <span class="tok-attr">name</span>=<span class="tok-str">"details/[id]"</span>
+        <span class="tok-attr">options</span>=<span class="tok-punc">{{</span> title: <span class="tok-str">"Details"</span>, presentation: <span class="tok-str">"modal"</span> <span class="tok-punc">}}</span>
+      <span class="tok-tag">/&gt;</span>
+    <span class="tok-tag">&lt;/Stack&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <p>
+        Yahan tab bar hamesha screen ke bottom pe rahega, chahe tum <code>home/index</code> pe ho ya
+        <code>home/details/42</code> pe — kyunki nested Stack sirf tab ke <em>content area</em> ko control karta hai,
+        outer Tabs navigator ko affect nahi karta.
+      </p>
+
+      <h3>Header customization</h3>
+      <p>
+        Har screen apne <code>Stack.Screen options</code> prop se apna header customize kar sakta hai, ya screen
+        component ke andar se hi <code>navigation.setOptions()</code> jaisa hook, <code>useNavigation()</code> ke
+        through call kar sakte ho dynamically (jaise API se title fetch karke set karna).
+      </p>
+
+      <div class="table">
+        <table>
+          <thead><tr><th>Option</th><th>Kaam</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td>Header ka text</td></tr>
+            <tr><td><code>headerShown</code></td><td>Header dikhana hai ya nahi</td></tr>
+            <tr><td><code>presentation</code></td><td><code>"modal"</code>, <code>"card"</code>, <code>"transparentModal"</code></td></tr>
+            <tr><td><code>headerBackTitleVisible</code></td><td>iOS back button ke text ko hide karna</td></tr>
+            <tr><td><code>gestureEnabled</code></td><td>Swipe-to-go-back gesture on/off</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="router-hooks">4. Router Hooks Deep-Dive</h2>
+
+      <h3>useRouter() — push vs replace vs back vs dismiss</h3>
+      <p>
+        <code>useRouter()</code> ek imperative API deta hai navigation ke liye. Internally ye React Navigation ke
+        underlying navigation object ko wrap karta hai, aur native stack ke actual behavior ko expose karta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>router methods</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> router = useRouter();
+
+router.<span class="tok-fn">push</span>(<span class="tok-str">"/product/42"</span>);   <span class="tok-com">// naya screen STACK PE ADD karta hai</span>
+router.<span class="tok-fn">replace</span>(<span class="tok-str">"/login"</span>);   <span class="tok-com">// current screen ko HATA ke naya daalta hai</span>
+router.<span class="tok-fn">back</span>();                 <span class="tok-com">// ek step peeche (pop)</span>
+router.<span class="tok-fn">dismiss</span>();              <span class="tok-com">// modal ko close karta hai</span>
+router.<span class="tok-fn">dismissAll</span>();           <span class="tok-com">// saare modals ek saath close</span></code></pre>
+      </div>
+
+      <p>
+        Difference clearly samjho: <code>push</code> native stack mein ek naya entry <strong>add</strong> karta
+        hai — back button dabane pe user previous screen pe wapas ja sakta hai. <code>replace</code> current entry
+        ko stack se <strong>hata ke</strong> uski jagah naya daal deta hai — matlab back button se wapas us screen
+        pe nahi ja sakte. Isliye login ke baad home pe jaate waqt hamesha <code>replace</code> use karo, warna user
+        back dabake login screen pe wapas pahunch jaayega (bad UX + security anti-pattern).
+      </p>
+
+      <h3>usePathname() aur useSegments()</h3>
+      <p>
+        <code>usePathname()</code> current URL path deta hai as a string (jaise <code>"/product/42"</code>).
+        <code>useSegments()</code> usi path ko array of segments ke roop mein deta hai — including group names
+        (jaise <code>["(app)", "(tabs)", "profile"]</code>). Ye segments hook especially auth guarding ke liye
+        critical hai, jo hum next section mein dekhenge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>segments example</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// URL: /profile, actual file: app/(app)/(tabs)/profile.tsx</span>
+<span class="tok-kw">const</span> segments = useSegments();
+<span class="tok-com">// segments = ["(app)", "(tabs)", "profile"]</span>
+
+<span class="tok-kw">const</span> pathname = usePathname();
+<span class="tok-com">// pathname = "/profile"</span></code></pre>
+      </div>
+
+      <h3>useFocusEffect — screen-focus based logic</h3>
+      <p>
+        Native stack mein screens <strong>unmount nahi hoti</strong> jab tum push karte ho — wo bas background
+        mein reh jaati hain memory mein (performance ke liye). Isliye agar tumhe kuch karna hai jab screen
+        <em>phir se focus</em> mein aaye (bina full remount ke) — jaise list refresh karna — <code>useEffect</code>
+        kaafi nahi hai, tumhe <code>useFocusEffect</code> chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>useFocusEffect example</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useCallback } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>;
+<span class="tok-kw">import</span> { useFocusEffect } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+
+<span class="tok-fn">useFocusEffect</span>(
+  <span class="tok-fn">useCallback</span>(() => {
+    <span class="tok-fn">refreshFeed</span>();
+    <span class="tok-kw">return</span> () => {
+      <span class="tok-com">// cleanup jab screen blur ho (dusri screen pe navigate ho jaaye)</span>
+    };
+  }, [])
+);</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          <code>useFocusEffect</code> ke andar <code>useCallback</code> lagana mandatory hai — nahi lagaoge toh
+          har render pe effect re-run hoga kyunki callback reference change hota rahega. Ye ek common perf bug hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="auth-flow">5. Authentication Flow (Protected Routes)</h2>
+
+      <p>
+        Ye sabse important pattern hai kisi bhi production RN app mein. Standard architecture: ek
+        <code>AuthContext</code> jo poore app ko wrap karta hai aur auth state (user, token, loading) provide
+        karta hai, aur root <code>_layout.tsx</code> jo <code>useSegments()</code> dekh ke decide karta hai user
+        <code>(auth)</code> group mein hona chahiye ya <code>(app)</code> group mein.
+      </p>
+
+      <h3>Step 1 — AuthContext</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>context/AuthContext.tsx</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { createContext, useContext, useEffect, useState } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>;
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> SecureStore <span class="tok-kw">from</span> <span class="tok-str">"expo-secure-store"</span>;
+
+<span class="tok-kw">type</span> User = { id: <span class="tok-kw">string</span>; email: <span class="tok-kw">string</span>; role: <span class="tok-str">"admin"</span> | <span class="tok-str">"user"</span> };
+<span class="tok-kw">type</span> AuthContextType = {
+  user: User | <span class="tok-kw">null</span>;
+  isLoading: <span class="tok-kw">boolean</span>;
+  signIn: (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) =&gt; Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span>;
+  signOut: () =&gt; Promise<span class="tok-punc">&lt;</span><span class="tok-kw">void</span><span class="tok-punc">&gt;</span>;
+};
+
+<span class="tok-kw">const</span> AuthContext = <span class="tok-fn">createContext</span><span class="tok-punc">&lt;</span>AuthContextType | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>);
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">AuthProvider</span>({ children }: { children: React.ReactNode }) {
+  <span class="tok-kw">const</span> [user, setUser] = <span class="tok-fn">useState</span><span class="tok-punc">&lt;</span>User | <span class="tok-kw">null</span><span class="tok-punc">&gt;</span>(<span class="tok-kw">null</span>);
+  <span class="tok-kw">const</span> [isLoading, setIsLoading] = <span class="tok-fn">useState</span>(<span class="tok-kw">true</span>);
+
+  <span class="tok-fn">useEffect</span>(() => {
+    (<span class="tok-kw">async</span> () => {
+      <span class="tok-kw">const</span> token = <span class="tok-kw">await</span> SecureStore.<span class="tok-fn">getItemAsync</span>(<span class="tok-str">"session_token"</span>);
+      <span class="tok-kw">if</span> (token) {
+        <span class="tok-kw">const</span> me = <span class="tok-kw">await</span> <span class="tok-fn">fetchCurrentUser</span>(token);
+        <span class="tok-fn">setUser</span>(me);
+      }
+      <span class="tok-fn">setIsLoading</span>(<span class="tok-kw">false</span>);
+    })();
+  }, []);
+
+  <span class="tok-kw">const</span> signIn = <span class="tok-kw">async</span> (email: <span class="tok-kw">string</span>, password: <span class="tok-kw">string</span>) =&gt; {
+    <span class="tok-kw">const</span> { token, user: u } = <span class="tok-kw">await</span> <span class="tok-fn">loginApi</span>(email, password);
+    <span class="tok-kw">await</span> SecureStore.<span class="tok-fn">setItemAsync</span>(<span class="tok-str">"session_token"</span>, token);
+    <span class="tok-fn">setUser</span>(u);
+  };
+
+  <span class="tok-kw">const</span> signOut = <span class="tok-kw">async</span> () =&gt; {
+    <span class="tok-kw">await</span> SecureStore.<span class="tok-fn">deleteItemAsync</span>(<span class="tok-str">"session_token"</span>);
+    <span class="tok-fn">setUser</span>(<span class="tok-kw">null</span>);
+  };
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;AuthContext.Provider</span> <span class="tok-attr">value</span>=<span class="tok-punc">{{</span> user, isLoading, signIn, signOut <span class="tok-punc">}}</span><span class="tok-tag">&gt;</span>
+      {children}
+    <span class="tok-tag">&lt;/AuthContext.Provider&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> useAuth = () =&gt; useContext(AuthContext)!;</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Token Storage</div>
+        <p>
+          <strong>Kabhi bhi JWT ya session token ko <code>AsyncStorage</code> mein plain text mein mat rakho</strong>
+          — especially sensitive apps (banking, fintech, health) ke liye. <code>AsyncStorage</code> unencrypted
+          hota hai (SQLite/flat files ke roop mein disk pe), aur rooted/jailbroken device pe ya even ADB backup
+          se koi bhi is data ko easily nikal sakta hai. Iski jagah <strong><code>expo-secure-store</code></strong>
+          use karo — ye internally iOS pe <strong>Keychain</strong> aur Android pe <strong>Keystore</strong> use
+          karta hai, jo hardware-backed encryption provide karte hain. Agar tumhara app financial ya highly
+          sensitive data handle karta hai, toh ek layer aur add karo — <strong>SSL/certificate pinning</strong>
+          (jaise <code>react-native-ssl-pinning</code> ya native config). Isse agar attacker MITM proxy laga ke
+          TLS certificate bhi compromise kar de (jaise corporate proxy ya malicious wifi pe fake CA install karke),
+          tab bhi app un requests ko reject kar dega kyunki server ka certificate pinned public key se match nahi
+          karega.
+        </p>
+      </div>
+
+      <h3>Step 2 — Root layout guard logic</h3>
+      <p>
+        Ab asli magic yahan hota hai. Root <code>_layout.tsx</code> mein hum <code>useSegments()</code> se pata
+        karte hain user currently kis group mein hai, aur auth state ke against compare karke redirect karte hain.
+        Splash screen ko hold karke rakhte hain jab tak auth check complete na ho jaaye — isse
+        "flash of wrong screen" (pehle login dikhna phir turant home pe switch ho jaana, ya vice versa) avoid
+        hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx (auth guard)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>;
+<span class="tok-kw">import</span> { Slot, useRouter, useSegments } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+<span class="tok-kw">import</span> * <span class="tok-kw">as</span> SplashScreen <span class="tok-kw">from</span> <span class="tok-str">"expo-splash-screen"</span>;
+<span class="tok-kw">import</span> { AuthProvider, useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../context/AuthContext"</span>;
+
+<span class="tok-com">// Splash screen ko manually hide hone tak rokna — auto-hide off</span>
+SplashScreen.<span class="tok-fn">preventAutoHideAsync</span>();
+
+<span class="tok-kw">function</span> <span class="tok-fn">RootLayoutNav</span>() {
+  <span class="tok-kw">const</span> { user, isLoading } = <span class="tok-fn">useAuth</span>();
+  <span class="tok-kw">const</span> segments = <span class="tok-fn">useSegments</span>();
+  <span class="tok-kw">const</span> router = <span class="tok-fn">useRouter</span>();
+
+  <span class="tok-fn">useEffect</span>(() => {
+    <span class="tok-kw">if</span> (isLoading) <span class="tok-kw">return</span>; <span class="tok-com">// auth state abhi resolve nahi hua, wait karo</span>
+
+    <span class="tok-kw">const</span> inAuthGroup = segments[<span class="tok-num">0</span>] === <span class="tok-str">"(auth)"</span>;
+
+    <span class="tok-kw">if</span> (!user &amp;&amp; !inAuthGroup) {
+      <span class="tok-com">// user logged in nahi hai but protected area access kar raha hai</span>
+      router.<span class="tok-fn">replace</span>(<span class="tok-str">"/(auth)/login"</span>);
+    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (user &amp;&amp; inAuthGroup) {
+      <span class="tok-com">// user login hai but login/signup screen dekh raha hai</span>
+      router.<span class="tok-fn">replace</span>(<span class="tok-str">"/(app)/(tabs)"</span>);
+    }
+
+    <span class="tok-com">// jab decision ho chuka, tab hi splash screen hataao</span>
+    SplashScreen.<span class="tok-fn">hideAsync</span>();
+  }, [user, isLoading, segments]);
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Slot /&gt;</span>;
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">RootLayout</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;AuthProvider&gt;</span>
+      <span class="tok-tag">&lt;RootLayoutNav /&gt;</span>
+    <span class="tok-tag">&lt;/AuthProvider&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <p>
+        Notice karo — <code>&lt;Slot /&gt;</code> use kiya hai <code>&lt;Stack /&gt;</code> ki jagah, kyunki root
+        level pe humein sirf child route render karna hai (auth ka decision hi navigator hai). Actual
+        <code>&lt;Stack&gt;</code>/<code>&lt;Tabs&gt;</code> respective <code>(auth)/_layout.tsx</code> aur
+        <code>(app)/_layout.tsx</code> mein define hoga.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          <code>SplashScreen.hideAsync()</code> ko <code>useEffect</code> ke andar, decision lene ke <em>baad</em>
+          call karna critical hai. Agar tum ise turant component mount pe call kar doge (auth check se pehle),
+          user ko ek split-second ke liye galat screen (login/home) dikh jaayegi, phir turant redirect hoga —
+          isko hi "flash of wrong screen" bolte hain aur ye ek bahut common bug hai jo naye developers karte hain.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="rbac">6. Role-Based Access Control (RBAC)</h2>
+
+      <p>
+        Auth guard ka extension — ab sirf "logged in hai ya nahi" nahi, balki "kis role ka user hai" bhi check
+        karna hai. Pattern same rehta hai, bas condition mein role bhi add ho jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/_layout.tsx (role guard)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Redirect, Slot } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+<span class="tok-kw">import</span> { useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../../context/AuthContext"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">AppLayout</span>() {
+  <span class="tok-kw">const</span> { user } = <span class="tok-fn">useAuth</span>();
+
+  <span class="tok-com">// safety net — ideally root layout hi yahan tak nahi aane dega</span>
+  <span class="tok-kw">if</span> (!user) <span class="tok-kw">return</span> <span class="tok-tag">&lt;Redirect</span> <span class="tok-attr">href</span>=<span class="tok-str">"/(auth)/login"</span> <span class="tok-tag">/&gt;</span>;
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Slot /&gt;</span>;
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/(app)/admin/_layout.tsx (admin-only route group)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { Redirect, Slot } <span class="tok-kw">from</span> <span class="tok-str">"expo-router"</span>;
+<span class="tok-kw">import</span> { useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../../../context/AuthContext"</span>;
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">AdminLayout</span>() {
+  <span class="tok-kw">const</span> { user } = <span class="tok-fn">useAuth</span>();
+
+  <span class="tok-kw">if</span> (user?.role !== <span class="tok-str">"admin"</span>) {
+    <span class="tok-com">// unauthorized role → wapas home bhej do, admin screens tak pahunchne hi mat do</span>
+    <span class="tok-kw">return</span> <span class="tok-tag">&lt;Redirect</span> <span class="tok-attr">href</span>=<span class="tok-str">"/(app)/(tabs)"</span> <span class="tok-tag">/&gt;</span>;
+  }
+
+  <span class="tok-kw">return</span> <span class="tok-tag">&lt;Slot /&gt;</span>;
+}</code></pre>
+      </div>
+
+      <p>
+        Tab bar mein bhi role ke hisab se items conditionally render kar sakte ho — jaise "Admin" tab sirf
+        admin role wale users ko dikhe:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>conditional tab rendering</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">&lt;Tabs.Screen</span>
+  <span class="tok-attr">name</span>=<span class="tok-str">"admin"</span>
+  <span class="tok-attr">options</span>=<span class="tok-punc">{{</span>
+    title: <span class="tok-str">"Admin"</span>,
+    href: user?.role === <span class="tok-str">"admin"</span> ? <span class="tok-kw">undefined</span> : <span class="tok-kw">null</span>, <span class="tok-com">// null = tab hide ho jaata hai</span>
+  <span class="tok-punc">}}</span>
+<span class="tok-tag">/&gt;</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          Sirf UI mein tab/button hide karna <strong>security nahi hai</strong> — ye sirf UX hai. Actual
+          authorization <em>hamesha backend API pe bhi enforce hona chahiye</em>, kyunki client-side code ko
+          kisi bhi reverse-engineer/proxy tool se bypass kiya ja sakta hai. Route guard + hidden tab sirf
+          accidental access rokte hain, malicious access nahi.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="deep-linking">7. Deep Linking</h2>
+
+      <p>
+        Deep linking ka matlab hai — ek external URL (custom scheme jaise <code>myapp://product/42</code>, ya
+        universal/app link jaise <code>https://myapp.com/product/42</code>) directly app ke andar us specific
+        screen tak navigate kare, jaise wo screen app ke andar se hi navigate ki gayi ho.
+      </p>
+
+      <h3>Ye internally kaise resolve hota hai</h3>
+      <p>
+        Expo Router ka poora linking config <strong>unified</strong> hai — jo route tree <code>app/</code> se
+        generate hota hai, wahi tree deep link resolution ke liye bhi use hota hai. Jab OS (iOS/Android) app ko
+        ek URL ke saath launch/resume karta hai, React Navigation ka linking system us URL ko parse karke path
+        segments nikalta hai, aur unhe exactly usi tarah route tree ke against match karta hai jaise ek in-app
+        <code>router.push()</code> call match hoti. Matlab <code>myapp://product/42</code> aur in-app
+        <code>router.push("/product/42")</code> dono <strong>same code path</strong> se guzarte hain —
+        <code>app/product/[id].tsx</code> render hoga aur <code>id = "42"</code> milega, chahe navigation kahin
+        se bhi trigger hui ho.
+      </p>
+
+      <h3>app.json config</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>app.json</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-attr">"expo"</span>: <span class="tok-punc">{</span>
+    <span class="tok-attr">"scheme"</span>: <span class="tok-str">"myapp"</span>,
+    <span class="tok-attr">"ios"</span>: <span class="tok-punc">{</span>
+      <span class="tok-attr">"bundleIdentifier"</span>: <span class="tok-str">"com.mycompany.myapp"</span>,
+      <span class="tok-attr">"associatedDomains"</span>: [<span class="tok-str">"applinks:myapp.com"</span>]
+    <span class="tok-punc">}</span>,
+    <span class="tok-attr">"android"</span>: <span class="tok-punc">{</span>
+      <span class="tok-attr">"package"</span>: <span class="tok-str">"com.mycompany.myapp"</span>,
+      <span class="tok-attr">"intentFilters"</span>: [
+        <span class="tok-punc">{</span>
+          <span class="tok-attr">"action"</span>: <span class="tok-str">"VIEW"</span>,
+          <span class="tok-attr">"data"</span>: [{ <span class="tok-attr">"scheme"</span>: <span class="tok-str">"https"</span>, <span class="tok-attr">"host"</span>: <span class="tok-str">"myapp.com"</span> }],
+          <span class="tok-attr">"category"</span>: [<span class="tok-str">"BROWSABLE"</span>, <span class="tok-str">"DEFAULT"</span>]
+        <span class="tok-punc">}</span>
+      ]
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        <code>scheme</code> custom scheme (<code>myapp://</code>) enable karta hai. Universal links
+        (<code>https://myapp.com/...</code>) ke liye iOS pe <code>associatedDomains</code> chahiye (jo apple-app-site-association
+        file host pe honi chahiye), aur Android pe <code>intentFilters</code> + <code>assetlinks.json</code>
+        server pe honi chahiye — dono verify karte hain ki tumhare pass actually us domain ka ownership hai.
+      </p>
+
+      <h3>Testing deep links locally</h3>
+
+      <div class="code-block">
+        <div class="code-title"><span>iOS Simulator</span><button class="copy-btn">Copy</button></div>
+        <pre><code>xcrun simctl openurl booted <span class="tok-str">"myapp://product/42"</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>Android Emulator</span><button class="copy-btn">Copy</button></div>
+        <pre><code>adb shell am start -W -a android.intent.action.VIEW -d <span class="tok-str">"myapp://product/42"</span> com.mycompany.myapp</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Never Trust Deep Link Params</div>
+        <p>
+          Deep link se aane wala <strong>koi bhi param untrusted input hai</strong> — bilkul waise hi jaise
+          web pe query string untrusted hoti hai. Attacker bahut easily custom URL craft kar sakta hai
+          (jaise message, email, ya malicious website ke through) aur usse tumhari app ko trigger kar sakta hai.
+          Sabse common real-world mistake: deep link se ek arbitrary <code>url</code> param le ke seedha
+          <code>WebView</code> mein load kar dena — <code>myapp://open-webview?url=https://evil.com/phishing</code>
+          — isse attacker tumhari trusted app ke andar phishing page dikha sakta hai jo user ko legit lagega
+          (kyunki app ka UI/chrome trusted hai). <strong>Hamesha:</strong> incoming params ko validate/sanitize
+          karo, aur agar URL navigate karna hi hai toh strict <strong>allowlist</strong> against check karo
+          (sirf apne known domains ko allow karo), IDs ko type/format check karo (jaise numeric product id),
+          aur kabhi bhi deep link param ko directly kisi sensitive action (payment, account change) ko trigger
+          karne ke liye mat use karo bina additional confirmation/auth ke.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>safe deep link param validation example</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> ALLOWED_HOSTS = [<span class="tok-str">"myapp.com"</span>, <span class="tok-str">"cdn.myapp.com"</span>];
+
+<span class="tok-kw">function</span> <span class="tok-fn">isSafeUrl</span>(rawUrl: <span class="tok-kw">string</span>): <span class="tok-kw">boolean</span> {
+  <span class="tok-kw">try</span> {
+    <span class="tok-kw">const</span> parsed = <span class="tok-kw">new</span> <span class="tok-fn">URL</span>(rawUrl);
+    <span class="tok-kw">return</span> parsed.protocol === <span class="tok-str">"https:"</span> &amp;&amp; ALLOWED_HOSTS.<span class="tok-fn">includes</span>(parsed.hostname);
+  } <span class="tok-kw">catch</span> {
+    <span class="tok-kw">return</span> <span class="tok-kw">false</span>; <span class="tok-com">// malformed URL — reject</span>
+  }
+}
+
+<span class="tok-com">// usage in a deep-link-driven webview screen</span>
+<span class="tok-kw">if</span> (!<span class="tok-fn">isSafeUrl</span>(url)) {
+  router.<span class="tok-fn">replace</span>(<span class="tok-str">"/"</span>); <span class="tok-com">// silently bounce back, never load untrusted url</span>
+} <span class="tok-kw">else</span> {
+  <span class="tok-fn">setWebviewUrl</span>(url);
+}</code></pre>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="gotchas">8. Real-World Gotchas</h2>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Infinite redirect loops</div>
+        <p>
+          Agar tumhara auth guard logic dono conditions (logged-in check aur auth-group check) galat order mein
+          likh do, ya <code>segments</code> dependency array mein missing ho, toh <code>router.replace()</code>
+          baar-baar fire hota rehta hai aur app freeze/flicker karti hai. Hamesha ensure karo ki guard sirf tab
+          fire ho jab actual mismatch ho (condition already-correct state pe dobara replace na kare), aur
+          <code>isLoading</code> ka check sabse pehle ho.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Deep link kaam nahi kar raha — but sirf dev build mein</div>
+        <p>
+          Agar <code>intentFilters</code> (Android) ya <code>associatedDomains</code> (iOS) config karne ke baad
+          bhi deep link kaam nahi kar raha, yaad rakho — <strong>Expo Go</strong> in native configs ko support
+          nahi karta (kyunki Expo Go ek generic pre-built app hai jiska apna hi bundle ID/scheme hai). Ye configs
+          sirf tab effective hote hain jab tum ek <strong>fresh native build</strong> banao — <code>expo prebuild</code>
+          ya <code>eas build</code> ke through. Har baar jab in configs ko change karo, native project ko rebuild
+          karna padega, sirf JS reload se kaam nahi chalega.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Stale navigation state after hot reload</div>
+        <p>
+          Fast Refresh/hot reload ke baad kabhi-kabhi navigation state "stuck" reh jaata hai — jaise ek screen
+          jo already unmount ho chuki hai wo phir bhi navigation stack mein "ghost" entry ke roop mein dikhti
+          hai, ya params purane values retain karte hain. Ye sirf dev-time cosmetic issue hai (production build
+          mein nahi hota), lekin agar confusing lage toh full reload (<code>r</code> Metro terminal mein, ya
+          simulator/device pe shake menu se "Reload") karke state reset kar do.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="advanced-deep-dive">9. Advanced Deep-Dive — Beyond the Basics</h2>
+
+      <p>
+        Ab tak humne Expo Router ke "how to use" wale patterns dekhe. Is section mein hum wahi patterns
+        <strong>internals level</strong> pe todenge — kyunki senior interview mein sirf "kaise likhte hain" nahi
+        poocha jaata, "andar kya ho raha hai" poocha jaata hai. Ye 4 topics production RN apps mein sabse zyada
+        confusion/bugs create karte hain: universal links ka actual verification mechanism, navigation state
+        persistence ka deep-link ke saath interaction, auth-guard race conditions ka exact timeline, aur
+        permission-based RBAC jab roles ki jagah granular permissions chahiye hote hain.
+      </p>
+
+      <h3>9.1 — Universal Links / App Links: exact verification mechanism</h3>
+      <p>
+        Section 7 mein humne dekha ki <code>app.json</code> mein <code>associatedDomains</code> (iOS) aur
+        <code>intentFilters</code> (Android) daalte hain. Lekin ye config <strong>akela kaafi nahi hai</strong> —
+        ye sirf app ko "batata" hai ki wo in domains ke liye universal link handler banna chahta hai. Actual
+        <em>proof of ownership</em> ek alag mechanism se hota hai, aur yahi wo part hai jo interview mein depth
+        test karta hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Verification kyun zaroori hai</div>
+        <p>
+          Agar sirf <code>app.json</code> ka config kaafi hota (bina server-side file verify kiye), toh
+          <strong>koi bhi malicious app</strong> apne <code>associatedDomains</code> mein
+          <code>"applinks:instagram.com"</code> daal ke Instagram ke links hijack kar sakta tha — bina Instagram
+          ki domain pe kabhi access hue. Isliye Apple/Google ne ek <strong>server-side verification step</strong>
+          mandatory kiya: OS khud us domain pe jaake ek well-known file fetch karke check karta hai ki domain ka
+          <em>actual owner</em> ne is app ko explicitly authorize kiya hai. Ye ek security control hai — "sirf
+          claim karna kaafi nahi, proof do."
+        </p>
+      </div>
+
+      <p>
+        <strong>iOS — apple-app-site-association (AASA):</strong> tumhe apne server pe (Vercel/Nginx/S3+CloudFront
+        jo bhi) ek file host karni hoti hai <code>https://yourdomain.com/.well-known/apple-app-site-association</code>
+        pe — notice karo, is file ka koi <code>.json</code> extension <strong>nahi</strong> hota, aur usse
+        <code>Content-Type: application/json</code> header ke saath serve karna hota hai (kayi hosting providers
+        default extension-less files ko galat content-type dete hain, isliye ye ek common gotcha hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.well-known/apple-app-site-association (JSON — asli file mein comments nahi chalte, ye sirf teaching ke liye hain)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-com">// "applinks" key — Apple universal links ke liye reserved top-level key hai</span>
+  <span class="tok-attr">"applinks"</span>: <span class="tok-punc">{</span>
+    <span class="tok-com">// "details" — array of app configs jinhe is domain ke links handle karne ki permission hai</span>
+    <span class="tok-attr">"details"</span>: [
+      <span class="tok-punc">{</span>
+        <span class="tok-com">// appID = "<TEAM_ID>.<bundle identifier>" — TEAM_ID Apple Developer account se aata hai, isse spoof nahi kar sakte</span>
+        <span class="tok-attr">"appID"</span>: <span class="tok-str">"AB12CD34EF.com.mycompany.myapp"</span>,
+        <span class="tok-com">// "paths" — kaunse URL paths is app ko route karne hain; "*" ka matlab sab paths</span>
+        <span class="tok-attr">"paths"</span>: [ <span class="tok-str">"/product/*"</span>, <span class="tok-str">"/reset-password/*"</span> ]
+      <span class="tok-punc">}</span>
+    ]
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Jab tum app install karte ho (ya OS periodically re-check karta hai), iOS <strong>khud</strong> Apple ke
+        CDN (<code>app-site-association.cdn-apple.com</code>) ke through is file ko fetch karke cache kar leta
+        hai. Us cached copy mein agar tumhare app ka <code>appID</code> list mein match karta hai, tabhi OS us
+        domain ke links ko "universal link" treat karke seedha app open karega — warna wo link normal Safari mein
+        khulega. Ye <strong>fetch-and-cache</strong> mechanism hi wo "verification" hai jo <code>associatedDomains</code>
+        config ko akele se stronger banata hai.
+      </p>
+
+      <p>
+        <strong>Android — assetlinks.json:</strong> same idea, alag file. Host karna hota hai
+        <code>https://yourdomain.com/.well-known/assetlinks.json</code> pe, aur isme tumhare app ke signing
+        certificate ka <strong>SHA256 fingerprint</strong> hona chahiye — matlab jis keystore se tumne app sign
+        kiya hai, uska hash yahan match hona chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>.well-known/assetlinks.json (JSON — teaching comments)</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">[</span>
+  <span class="tok-punc">{</span>
+    <span class="tok-com">// "relation" — batata hai ki kis type ki permission grant ho rahi hai app ko is domain ke against</span>
+    <span class="tok-attr">"relation"</span>: [<span class="tok-str">"delegate_permission/common.handle_all_urls"</span>],
+    <span class="tok-attr">"target"</span>: <span class="tok-punc">{</span>
+      <span class="tok-com">// namespace — Android app hone ka indicator</span>
+      <span class="tok-attr">"namespace"</span>: <span class="tok-str">"android_app"</span>,
+      <span class="tok-com">// package_name — app.json ke android.package se match hona chahiye exactly</span>
+      <span class="tok-attr">"package_name"</span>: <span class="tok-str">"com.mycompany.myapp"</span>,
+      <span class="tok-com">// sha256_cert_fingerprints — release keystore se generate hota hai (keytool se), yehi asli "proof" hai</span>
+      <span class="tok-attr">"sha256_cert_fingerprints"</span>: [<span class="tok-str">"14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"</span>]
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">]</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha</div>
+        <p>
+          Agar tum EAS Build use karte ho aur Play App Signing enabled hai, toh actual release signing key
+          <strong>Google ke paas</strong> hota hai (tumhare upload key se alag) — matlab
+          <code>sha256_cert_fingerprints</code> mein tumhe Google Play Console ke "App signing" tab se fingerprint
+          nikal ke daalna hoga, apni local keystore se nahi. Ye ek bahut common "assetlinks match nahi ho raha"
+          debugging trap hai.
+        </p>
+      </div>
+
+      <h3>9.2 — Navigation state persistence aur restoration</h3>
+      <p>
+        Expo Router ke neeche React Navigation ka <code>NavigationContainer</code> hi kaam kar raha hota hai,
+        aur usme ek built-in capability hoti hai — <strong>navigation state ko serialize karke persist karna</strong>
+        (jaise <code>AsyncStorage</code> mein), taaki app force-close hone ke baad bhi user <em>wahin se</em>
+        resume kare jahan chhoda tha, instead of hamesha home screen pe restart hona.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>app/_layout.tsx — navigation state persistence pattern</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> AsyncStorage <span class="tok-kw">from</span> <span class="tok-str">"@react-native-async-storage/async-storage"</span>; <span class="tok-com">// persistence storage — state sensitive nahi hai isliye AsyncStorage theek hai (token ke liye nahi use karna, wo SecureStore mein)</span>
+<span class="tok-kw">import</span> { <span class="tok-fn">useEffect</span>, <span class="tok-fn">useState</span> } <span class="tok-kw">from</span> <span class="tok-str">"react"</span>; <span class="tok-com">// state/ref hooks persistence flow manage karne ke liye</span>
+
+<span class="tok-kw">const</span> NAV_STATE_KEY = <span class="tok-str">"NAVIGATION_STATE_V1"</span>; <span class="tok-com">// versioned key — agar route tree structure change ho toh version bump karke purana corrupt state ignore kar sakte hain</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">useNavigationPersistence</span>() {
+  <span class="tok-kw">const</span> [isReady, setIsReady] = <span class="tok-fn">useState</span>(<span class="tok-kw">false</span>); <span class="tok-com">// jab tak stored state load nahi ho jaata, navigator ko render hi mat karo</span>
+  <span class="tok-kw">const</span> [initialState, setInitialState] = <span class="tok-fn">useState</span>(); <span class="tok-com">// AsyncStorage se load hua state yahan store hoga</span>
+
+  <span class="tok-fn">useEffect</span>(() => {
+    (<span class="tok-kw">async</span> () => {
+      <span class="tok-kw">try</span> {
+        <span class="tok-kw">const</span> raw = <span class="tok-kw">await</span> AsyncStorage.<span class="tok-fn">getItem</span>(NAV_STATE_KEY); <span class="tok-com">// disk se last-saved nav state fetch karo</span>
+        <span class="tok-kw">const</span> state = raw ? <span class="tok-fn">JSON</span>.<span class="tok-fn">parse</span>(raw) : <span class="tok-kw">undefined</span>; <span class="tok-com">// agar kuch bhi save nahi hai toh undefined rakho (fresh start)</span>
+        <span class="tok-kw">if</span> (state) <span class="tok-fn">setInitialState</span>(state); <span class="tok-com">// parsed state ko initial state ke roop mein set karo</span>
+      } <span class="tok-kw">finally</span> {
+        <span class="tok-fn">setIsReady</span>(<span class="tok-kw">true</span>); <span class="tok-com">// parse fail ho ya succeed, ready mark karna zaroori hai warna app hamesha loading pe atki rahegi</span>
+      }
+    })();
+  }, []);
+
+  <span class="tok-kw">const</span> onStateChange = (state: <span class="tok-kw">unknown</span>) =>
+    AsyncStorage.<span class="tok-fn">setItem</span>(NAV_STATE_KEY, <span class="tok-fn">JSON</span>.<span class="tok-fn">stringify</span>(state)); <span class="tok-com">// har navigation change pe latest state disk pe likhte raho (debounce karna production mein better hai perf ke liye)</span>
+
+  <span class="tok-kw">return</span> { isReady, initialState, onStateChange }; <span class="tok-com">// root layout isse consume karke NavigationContainer/Slot ko wire karega</span>
+}</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security Critical — Deep link vs persisted state conflict</div>
+        <p>
+          Ye interaction bahut logon ko surprise karta hai: agar app force-closed thi (persisted state disk pe
+          hai) aur user ek <strong>deep link</strong> pe tap karke app open karta hai, toh race hoti hai —
+          <strong>kaun jeetega, persisted state ya deep link?</strong> React Navigation ka default behavior: agar
+          linking config ek incoming URL detect karta hai, toh wo <em>usi URL se derived state ko priority deta
+          hai</em>, persisted <code>initialState</code> ko ignore kar diya jaata hai — lekin ye tumhe explicitly
+          control karna chahiye, default pe blindly depend nahi karna chahiye, especially agar tumhara persisted
+          state kisi auth-protected screen ko point karta ho. <strong>Sahi pattern:</strong> jab bhi ek incoming
+          deep-link URL maujood ho, persisted state ko <em>discard</em> karo aur sirf link se navigate hone do —
+          isse ek stale/wrong-permission screen restore hone ka risk khatam ho jaata hai (jaise koi purana
+          admin-only screen state accidentally restore ho jaana kisi non-admin session mein).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>deep link ko persisted state se priority dena</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> * <span class="tok-kw">as</span> Linking <span class="tok-kw">from</span> <span class="tok-str">"expo-linking"</span>; <span class="tok-com">// initial URL check karne ke liye (app kis URL se khula, agar khula)</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">getSafeInitialState</span>(persisted: <span class="tok-kw">unknown</span>) {
+  <span class="tok-kw">const</span> initialUrl = <span class="tok-kw">await</span> Linking.<span class="tok-fn">getInitialURL</span>(); <span class="tok-com">// agar app ek deep link se cold-launch hua hai toh yahan URL milega, warna null</span>
+  <span class="tok-kw">if</span> (initialUrl) {
+    <span class="tok-kw">return</span> <span class="tok-kw">undefined</span>; <span class="tok-com">// deep link maujood hai — persisted state ko explicitly discard karo, linking config ko navigate karne do</span>
+  }
+  <span class="tok-kw">return</span> persisted; <span class="tok-com">// koi deep link nahi — normal case, persisted state restore karna safe hai</span>
+}</code></pre>
+      </div>
+
+      <h3>9.3 — Auth guard race condition: exact timeline</h3>
+      <p>
+        Section 5 mein humne "flash of wrong screen" fix dikhaya tha. Ab uski <strong>exact sequence</strong>
+        samjho, kyunki interview mein "step by step batao" poocha jaata hai:
+      </p>
+
+      <div class="table">
+        <table>
+          <thead><tr><th>Step</th><th>Kya hota hai</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Native splash screen dikh rahi hai (OS-level, JS load hone se pehle hi visible)</td></tr>
+            <tr><td>2</td><td>JS bundle load + execute hota hai — <code>SplashScreen.preventAutoHideAsync()</code> yahin call ho chuka hota hai, isliye native splash abhi bhi screen pe hold hai</td></tr>
+            <tr><td>3</td><td>React tree mount hota hai — <code>AuthProvider</code> ka <code>isLoading = true</code> state ke saath render hota hai, SecureStore se token abhi fetch ho hi raha hai (async)</td></tr>
+            <tr><td>4</td><td><strong>Agar guard na ho:</strong> router ko pata nahi user logged in hai ya nahi, toh wo apna default/last-known route render kar sakta hai — ye galat screen frame ban sakta hai, bas splash ke peeche chhupa hua (abhi tak invisible hai kyunki native splash upar hai)</td></tr>
+            <tr><td>5</td><td>SecureStore se token resolve hota hai (kuch milliseconds baad), <code>isLoading = false</code> ho jaata hai, <code>useEffect</code> fire hota hai jo actual redirect decide karta hai</td></tr>
+            <tr><td>6</td><td>Redirect (agar zaroori ho) apply ho jaata hai — ab React tree "correct" state mein hai</td></tr>
+            <tr><td>7</td><td>Tabhi jaake <code>SplashScreen.hideAsync()</code> call hota hai — native splash hatta hai aur user ko seedha <strong>final correct screen</strong> dikhti hai, koi flicker nahi</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Bug tab aata hai jab step 4 ke baad hi (galat guess ke saath) splash hide kar di jaaye — user ko login
+        screen ka ek frame dikhega, phir turant home pe switch hoga (ya vice versa). Isiliye
+        <strong>loading spinner dikhana bhi galat fix hai</strong> agar wo content ke baad aata hai —
+        asli fix ye hai ki galat content <em>kabhi render hi na ho jab tak wo visible ho</em>, aur splash ko
+        exactly step 7 tak hold karna is guarantee ko deta hai, kyunki native splash ke peeche jo bhi render ho
+        raha hai wo user ko dikhta hi nahi.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note</div>
+        <p>
+          Interview mein agar bola jaaye "spinner dikha do jab tak auth check ho raha hai" — ye <em>partially</em>
+          sahi hai lekin subtle mismatch hai: spinner ka matlab hai content pehle se mount ho chuka hai aur uske
+          upar spinner overlay hai — jo phir bhi ek flash create kar sakta hai agar layering sahi na ho. Sabse
+          robust pattern hai native splash screen ko hi authoritative "loading gate" banana, kyunki wo pure JS
+          render cycle se completely independent hai — usme kabhi bhi galat content leak nahi ho sakta.
+        </p>
+      </div>
+
+      <h3>9.4 — RBAC at scale: permission-based access control</h3>
+      <p>
+        Simple role check (<code>user.role === "admin"</code>) chhoti apps ke liye theek hai, lekin jaise app
+        grow karta hai (multiple teams, granular features — "can_edit_billing", "can_view_reports",
+        "can_delete_users"), role string comparisons har jagah scatter ho jaate hain aur maintain karna nightmare
+        ban jaata hai. Senior-level pattern: <strong>permission-based RBAC</strong> — roles ko permissions ke
+        saath map karo (backend se aana chahiye, hardcode nahi), aur ek single centralized hook se sab jagah
+        check karo.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title"><span>hooks/usePermission.ts</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { useAuth } <span class="tok-kw">from</span> <span class="tok-str">"../context/AuthContext"</span>; <span class="tok-com">// current user + uske permissions yahan se milte hain</span>
+
+<span class="tok-com">// Permission ek granular string hai, role nahi — backend hi decide karta hai kis role ko kaunsi permissions milengi</span>
+<span class="tok-kw">type</span> Permission =
+  | <span class="tok-str">"can_edit_billing"</span>
+  | <span class="tok-str">"can_view_reports"</span>
+  | <span class="tok-str">"can_delete_users"</span>
+  | <span class="tok-str">"can_access_admin_panel"</span>;
+
+<span class="tok-com">// Single source of truth — role → permissions mapping, ideally ye bhi backend se aata hai (JWT claims ya /me API)</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">usePermission</span>(permission: Permission): <span class="tok-kw">boolean</span> {
+  <span class="tok-kw">const</span> { user } = <span class="tok-fn">useAuth</span>(); <span class="tok-com">// current logged-in user context se nikalo</span>
+  <span class="tok-kw">if</span> (!user) <span class="tok-kw">return</span> <span class="tok-kw">false</span>; <span class="tok-com">// logged out user ke paas koi bhi permission nahi hoti</span>
+
+  <span class="tok-com">// user.permissions backend se aata hai (array of granted permission strings) — isse role string kahin bhi compare nahi karna padta</span>
+  <span class="tok-kw">return</span> user.permissions?.<span class="tok-fn">includes</span>(permission) ?? <span class="tok-kw">false</span>; <span class="tok-com">// agar array missing ho toh safe default false</span>
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title"><span>usage — kahin bhi component/layout mein</span><button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">BillingScreen</span>() {
+  <span class="tok-kw">const</span> canEditBilling = <span class="tok-fn">usePermission</span>(<span class="tok-str">"can_edit_billing"</span>); <span class="tok-com">// ek hi jagah se permission check — role string kahin nahi dikhta</span>
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;View&gt;</span>
+      <span class="tok-tag">&lt;Text&gt;</span>Billing Details<span class="tok-tag">&lt;/Text&gt;</span>
+      {canEditBilling &amp;&amp; <span class="tok-tag">&lt;Button</span> <span class="tok-attr">title</span>=<span class="tok-str">"Edit"</span> <span class="tok-attr">onPress</span>=<span class="tok-punc">{</span>openEditModal<span class="tok-punc">}</span> <span class="tok-tag">/&gt;</span>} <span class="tok-com">// button sirf permission hone pe render hota hai</span>
+    <span class="tok-tag">&lt;/View&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Kyun ye scale karta hai</div>
+        <p>
+          Role-based approach mein agar kal ko ek naya role "billing_manager" aata hai jo sirf billing edit kar
+          sake but admin panel access na kare, toh tumhe har jagah <code>role === "admin" || role === "billing_manager"</code>
+          jaisi conditions dhoondh ke update karni padti hain — error-prone aur scattered. Permission-based
+          approach mein sirf <strong>backend</strong> pe naye role ki permissions define karni hain
+          (<code>["can_edit_billing"]</code>), frontend code <em>bilkul nahi</em> badalta kyunki wo permission
+          string se hi check kar raha hai, role name se nahi. Ye same principle hai jo large-scale systems
+          (AWS IAM, Kubernetes RBAC) use karte hain — roles sirf permissions ka ek "bundle/label" hote hain,
+          asli authorization decision permission granularity pe hoti hai.
+        </p>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2 id="interview-questions">10. 🎯 Interview Questions — Senior React Native Developer</h2>
+
+      <p>
+        Ye chapter security aur architecture heavy hai, isliye interview questions bhi usi weight ke hain. Neeche
+        internals, security, trade-offs, aur real debugging scenarios ka mix hai — jaisa ek senior/staff RN round
+        mein poocha jaata hai.
+      </p>
+
+      <h3>Q1. Universal link pe tap karne se leke correct screen render hone tak — step by step exact flow batao.</h3>
+      <p>
+        <strong>Answer:</strong> (1) User kisi link (Messages/email/browser) pe tap karta hai jo tumhare
+        <code>associatedDomains</code> mein registered domain ka hai. (2) iOS check karta hai apne cached
+        <strong>AASA verification</strong> data mein — agar tumhara app iss URL path ke liye authorized hai
+        (verification pehle hi background mein ho chuki thi jab app install hui thi, actual network call is
+        tap ke time nahi hoti). (3) Agar match hota hai, OS app ko launch/resume karta hai aur URL ko
+        <code>application(_:continue:restorationHandler:)</code> (native side) ke through pass karta hai, jo Expo
+        ke native module se React Native layer tak bubble hota hai. (4) <code>expo-linking</code> is URL ko parse
+        karke path segments nikalta hai. (5) React Navigation ka linking config (jo Expo Router ne route tree se
+        auto-generate kiya) is path ko match karke ek navigation <code>state</code> object banata hai — exactly
+        wahi state jo <code>router.push()</code> call se bhi banta. (6) Agar root layout mein auth guard hai
+        (jaisa humne Section 5 mein dekha), guard pehle apna decision le sakta hai (agar user logged-in nahi hai
+        toh <code>(auth)/login</code> pe redirect, deep link ka target discard) — warna navigation state apply
+        hoke matching screen component mount hoti hai, params (jaise <code>id</code>) us screen ko mil jaate hain.
+      </p>
+
+      <h3>Q2. Deep link se aaya hua ek <code>url</code> parameter directly WebView mein load karne mein kya risk hai? Concrete attack scenario do.</h3>
+      <p>
+        <strong>Answer:</strong> Deep link params <strong>untrusted user input</strong> hain — koi bhi attacker
+        arbitrary URL craft karke SMS/email/WhatsApp/QR code ke through victim ko bhej sakta hai. Concrete attack:
+        attacker <code>myapp://open-webview?url=https://evil.com/bank-login-clone</code> jaisa link bhejta hai.
+        Agar app blindly is <code>url</code> ko WebView mein load kar deta hai, user ko lagta hai wo tumhari
+        trusted app ke andar hi hai (app ka header/chrome/branding trusted dikhta hai) but actually ek phishing
+        page dekh raha hai jo credentials churane ke liye bana hai. Agar WebView mein JS injection bhi allowed
+        ho (<code>injectedJavaScript</code>, cookie sharing), toh attacker session hijacking ya XSS-style attacks
+        bhi try kar sakta hai. <strong>Fix:</strong> hostname ko strict allowlist ke against validate karo
+        (Section 7 ka <code>isSafeUrl</code> function), protocol <code>https:</code> hi allow karo, aur WebView
+        ko sandboxed rakho (no arbitrary JS injection, restricted cookie access).
+      </p>
+
+      <h3>Q3. <code>expo-secure-store</code> mein token kyun rakhte hain, <code>AsyncStorage</code> mein kyun nahi? Kya ye poora token-theft problem solve kar deta hai?</h3>
+      <p>
+        <strong>Answer:</strong> <code>AsyncStorage</code> internally unencrypted SQLite/flat files use karta hai
+        disk pe — koi bhi jo device ke filesystem tak physical/root access paa le (rooted device, jailbroken
+        device, ADB backup extraction, ya malware jo sandboxing bypass kar de) us data ko plaintext mein padh
+        sakta hai. <code>expo-secure-store</code> iOS pe <strong>Keychain</strong> aur Android pe
+        <strong>Keystore</strong> use karta hai — hardware-backed encryption, aur OS-level access control jo
+        sirf tumhari app (same signing identity) ko decrypt karne deta hai. <strong>Lekin ye poora solution
+        nahi hai</strong> — agar device already compromised hai (malware ne UI automation/accessibility
+        permissions le li hain, ya app khud memory-dump ke through token expose kar de jab wo runtime pe RAM
+        mein hai), token phir bhi chhupaya nahi ja sakta. Isliye defense-in-depth chahiye: short-lived access
+        tokens + refresh token rotation, SSL pinning (MITM se bachne ke liye), aur server-side pe suspicious
+        session detection.
+      </p>
+
+      <h3>Q4. Deep link app khuli hone pe kaam karta hai but app killed state mein nahi — kya check karoge?</h3>
+      <p>
+        <strong>Answer:</strong> Ye ek classic "warm vs cold launch" bug hai. App already open hone pe
+        <code>Linking.addEventListener("url", ...)</code> (runtime listener) fire hota hai, jo har naye incoming
+        URL ko catch kar leta hai. Lekin jab app <strong>killed</strong> state mein hoti hai, tumhe
+        <code>Linking.getInitialURL()</code> call karna padta hai app-launch ke time pe taaki wo URL nikal sako
+        jisse app cold-launch hui thi — Expo Router ye internally handle karta hai, lekin agar tumne custom
+        linking config likha hai ya kahin bahut jaldi navigation trigger kar diya (root layout mount hone se
+        pehle hi), initial URL miss ho sakta hai. Check karne wali cheezein: (1) native config sahi hai ya nahi —
+        <strong>Expo Go mein ye kabhi kaam nahi karega</strong> for custom schemes/universal links (Gotcha
+        section mein dekha), fresh dev-build zaroori hai. (2) <code>app.json</code> mein
+        <code>intentFilters</code>/<code>associatedDomains</code> rebuild ke baad hi effective hote hain — sirf
+        JS reload se nahi. (3) Root layout ka guard logic <code>isLoading</code> resolve hone se pehle hi
+        navigate toh nahi kar raha (initial URL ko overwrite kar sakta hai). (4) iOS pe AASA file cache-stale toh
+        nahi (naya path add kiya but file update/CDN propagate nahi hui).
+      </p>
+
+      <h3>Q5. Navigation state persist karne ka pattern samjhao — aur ye deep linking ke saath kaise conflict kar sakta hai?</h3>
+      <p>
+        <strong>Answer:</strong> React Navigation/Expo Router ka underlying <code>NavigationContainer</code>
+        <code>onStateChange</code> callback deta hai jisme current serialized nav state milta hai — usse
+        <code>AsyncStorage</code> mein save karke, app restart pe <code>initialState</code> prop se restore kar
+        sakte hain. Conflict tab hota hai jab app ek deep link se cold-launch hui ho <em>aur</em> disk pe purana
+        persisted state bhi maujood ho — dono "initial state" ke candidate hain. Agar priority explicitly set
+        nahi ki, framework/implementation defaults pe depend karna risky hai, especially agar persisted state
+        kisi auth-sensitive screen ko point kare. Sahi approach: <code>Linking.getInitialURL()</code> check karo
+        pehle — agar wo non-null hai, persisted state ko discard karo aur link ko priority do (Section 9.2 mein
+        code example).
+      </p>
+
+      <h3>Q6. "Flash of wrong screen" bug ka exact root cause kya hai, aur loading spinner isko fully fix kyun nahi karta?</h3>
+      <p>
+        <strong>Answer:</strong> Root cause: JS bundle load hone ke turant baad, auth state abhi
+        <code>isLoading = true</code> hoti hai (SecureStore se async fetch chal raha hai) — is window mein agar
+        router ko koi definite decision nahi diya gaya, wo apna default/fallback route render kar sakta hai jo
+        galat ho sakta hai (jaise logged-in user ko login screen dikhna, ek split second ke liye). Spinner ek
+        <em>alag layer</em> render karke iss problem ko "mask" karta hai but underlying issue solve nahi karta —
+        agar spinner ka mount/unmount timing thoda bhi off ho (race condition, animation ka ek frame), galat
+        content ka glimpse phir bhi leak ho sakta hai. Robust fix: native
+        <code>SplashScreen.preventAutoHideAsync()</code> se splash ko authoritative gate banao, aur
+        <code>hideAsync()</code> sirf tabhi call karo jab auth decision <em>definitively</em> ho chuka ho (Section
+        9.3 ka 7-step timeline) — is tarah galat content kabhi user ko visible hi nahi hota, chahe render cycle
+        mein kya bhi ho raha ho.
+      </p>
+
+      <h3>Q7. Role-based RBAC ki limitation kya hai jab app scale karta hai, aur permission-based approach kaise better hai?</h3>
+      <p>
+        <strong>Answer:</strong> Role-based check (<code>role === "admin"</code>) mein role aur uske access ka
+        mapping <strong>frontend code mein hardcoded/scattered</strong> ho jaata hai — jaise-jaise granular
+        features badhte hain (billing edit, reports view, user delete — sab alag-alag), conditions
+        <code>role === "admin" || role === "manager"</code> jaisi har jagah duplicate hone lagti hain, aur naya
+        role add karne pe multiple files touch karne padte hain. Permission-based approach mein role sirf ek
+        <em>label</em> hai — asli authorization decision granular permission strings (<code>"can_edit_billing"</code>)
+        pe hoti hai, jo backend se aati hain. Naya role add karna sirf backend config change hai, frontend code
+        bilkul nahi badalta. Centralize karne ke liye ek single <code>usePermission()</code> hook use karo taaki
+        koi bhi permission-check logic scattered na ho (Section 9.4).
+      </p>
+
+      <h3>Q8. Tumhare paas ek admin-only route group hai jo layout-level guard se protected hai. Kya ye kaafi hai security ke liye?</h3>
+      <p>
+        <strong>Answer:</strong> Nahi — <strong>client-side route guard sirf UX hai, security nahi.</strong> Koi
+        bhi attacker app ke JS bundle ko decompile/patch kar sakta hai, ya API calls ko directly (bina app UI ke)
+        Postman/curl se hit kar sakta hai, bypass karke guard ko completely skip kar sakta hai. Route guard sirf
+        <em>accidental</em> access rokta hai (jaise normal user galti se admin URL type kar de) —
+        <strong>malicious</strong> access sirf backend pe enforce hoke rukta hai: har admin API endpoint pe
+        server-side authorization check hona chahiye (JWT claims verify karke, ya session lookup karke), regardless
+        of what the client sent. Frontend guard + backend enforcement — dono zaroori hain, ek dusre ka substitute
+        nahi.
+      </p>
+
+      <h3>Q9. Certificate pinning kya solve karta hai jo normal HTTPS/TLS nahi karta? Kab zaroori hai?</h3>
+      <p>
+        <strong>Answer:</strong> Normal HTTPS/TLS device ke trusted CA store pe depend karta hai — agar koi
+        attacker ek malicious CA certificate device pe install karwa de (corporate MDM proxy, malicious wifi
+        captive portal, ya user ko social-engineer karke "security certificate" install karwana), toh wo MITM
+        proxy laga ke saara HTTPS traffic decrypt/read/modify kar sakta hai, kyunki device us fake CA ko
+        "trusted" maanta hai. Certificate pinning is trust ko device ke CA store se hata ke <strong>app ke
+        andar hardcoded</strong> kar deta hai — app sirf ek specific certificate/public-key ko hi accept karta
+        hai, chahe device ka CA store kuch bhi kahe. Isse upar wala MITM attack fail ho jaata hai kyunki attacker
+        ka certificate pinned value se match nahi karega. Zaroori hai fintech, banking, health apps ke liye jahan
+        data-in-transit ka compromise directly financial/privacy damage kare. Trade-off: certificate rotation
+        harder ho jaata hai (agar backend cert renew ho aur app update na ho, requests fail hone lagte hain) —
+        isliye backup pins aur graceful update strategy chahiye hoti hai.
+      </p>
+
+      <h3>Q10. AASA file host karne ke baad bhi universal link Safari mein khul raha hai, app mein nahi — debug kaise karoge?</h3>
+      <p>
+        <strong>Answer:</strong> Systematic checklist: (1) File extension-less honi chahiye
+        (<code>apple-app-site-association</code>, no <code>.json</code>) aur
+        <code>Content-Type: application/json</code> ke saath serve honi chahiye — galat content-type (jaise
+        <code>text/plain</code>) OS ko parse karne se rok sakta hai. (2) <code>appID</code> (<code>TEAM_ID.bundleId</code>)
+        exact match hona chahiye — TEAM_ID Apple Developer account se lena, typo common hai. (3)
+        <code>paths</code> array mein wo specific path included hai ya nahi jo tum test kar rahe ho. (4) iOS
+        <strong>caches</strong> AASA file — naya deploy karne ke baad bhi turant reflect nahi hoga, device
+        restart ya app reinstall se force-refresh karna padta hai testing ke waqt. (5) App ko
+        <strong>Expo Go</strong> se nahi, ek fresh native build (<code>eas build</code> ya
+        <code>expo prebuild</code>) se test kar rahe ho — Expo Go apna khud ka bundle ID use karta hai, tumhara
+        <code>associatedDomains</code> config usme apply hi nahi hota. (6) Link ko directly type/paste karke test
+        mat karo Notes app mein — universal links sirf tab trigger hote hain jab wo ek "trusted context" se aaye
+        (jaise Messages, Mail) ya user ne khud tap kiya ho, address bar mein type karna kaam nahi karega.
+      </p>
+
+      <h3>Q11. <code>push</code>, <code>replace</code>, aur <code>Redirect</code> component mein kya farak hai — aur galat use se kya security/UX issue ban sakta hai?</h3>
+      <p>
+        <strong>Answer:</strong> <code>router.push()</code> stack mein naya entry add karta hai — back button se
+        wapas ja sakte hain. <code>router.replace()</code> current entry ko hata ke naya daal deta hai — back se
+        wapas nahi ja sakte. <code>&lt;Redirect /&gt;</code> ek declarative component hai jo render hote hi
+        (render-time pe hi) replace-jaisa navigation trigger karta hai — layout guards ke andar imperative
+        <code>useEffect</code> ki jagah use karna cleaner hota hai. Galat use ka security/UX issue: agar login ke
+        baad <code>push("/home")</code> use kar do (replace ki jagah), login screen stack mein reh jaata hai —
+        user back button dabaake login screen pe wapas pahunch sakta hai, jahan se agar session state stale ho
+        (jaise ek dusra logged-out flow chal raha ho) confusing ya inconsistent UI state ban sakta hai. Isi tarah
+        agar sensitive action ke baad (jaise password change) <code>push</code> use kiya, user back jaake dobara
+        wahi form submit kar sakta hai — <code>replace</code> is class ke bugs ko structurally prevent karta hai.
+      </p>
+
+      <div class="prevnext">
+        <a class="prev" href="03-style-and-design.html">
+          <div class="label">← Previous</div>
+          <div class="title">Style &amp; Design</div>
+        </a>
+        <a class="next" href="05-animations-and-gestures.html">
+          <div class="label">Next →</div>
+          <div class="title">Animations &amp; Gestures</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
