@@ -37,10 +37,14 @@ export default {
     // Merged back from app.json
     ios: {
       supportsTablet: true,
+      infoPlist: {
+        // Lets the app check for/launch installed UPI apps from the Razorpay WebView checkout
+        LSApplicationQueriesSchemes: ["upi", "gpay", "phonepe", "paytmmp", "tez", "credpay"],
+      },
     },
     android: {
       package: "com.sharadpoddar.myapp",
-      googleServicesFile: "./google-services.json",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/android-icon-foreground.png",
@@ -54,7 +58,7 @@ export default {
       bundler: "metro",
     },
     // expo-router config plugin
-    plugins: ["expo-router", "expo-notifications"],
+    plugins: ["expo-router", "expo-notifications", "./plugins/withUpiManifestQueries.js"],
     experiments: {
       typedRoutes: true,
     },
