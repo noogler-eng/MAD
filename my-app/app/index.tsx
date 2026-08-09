@@ -16,7 +16,7 @@ export default function LandingScreen() {
         <Pressable style={styles.primaryButton} onPress={() => router.push("/login")}>
           <Text style={styles.primaryButtonText}>Login</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.push("/signup")}>
+        <Pressable style={styles.secondaryButton} onPress={() => router.push("/home")}>
           <Text style={styles.secondaryText}>Signup</Text>
         </Pressable>
       </View>

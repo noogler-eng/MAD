@@ -39,6 +39,8 @@ export default {
       supportsTablet: true,
     },
     android: {
+      package: "com.sharadpoddar.myapp",
+      googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/android-icon-foreground.png",

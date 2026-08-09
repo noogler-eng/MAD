@@ -82,12 +82,18 @@ export async function sendTokenToBackend(
       },
       body: JSON.stringify({
         token: token,
-        userId: userId ?? null
+        user_id: userId ?? "anonymous", // backend "user_id" (snake_case) expect karta hai, "userId" nahi — aur null ki jagah fallback string
       }),
     });
 
+    if (!response.ok) { // fetch() sirf network failure pe throw karta hai, 4xx/5xx pe nahi — isliye status khud check karna zaroori hai
+      const errorText = await response.text(); // backend ka error detail padh rahe hain (e.g. Pydantic validation error)
+      console.log("token register FAILED, status:", response.status, errorText);
+      return;
+    }
+
     console.log("token register successfully!");
   } catch (error) {
-    console.log("error while regesting token with backend");
+    console.log("error while registering token with backend:", error); // actual error object bhi log kar rahe hain, sirf message nahi
   }
 }

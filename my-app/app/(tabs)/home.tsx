@@ -13,7 +13,7 @@ export default function HomeScreen() {
     registerForPushNotificationsAsync().then((token) => {
       if (token) {
         setPushToken(token);
-        sendTokenToBackend(token);
+        sendTokenToBackend(token, "sharad"); // fixed user_id testing ke liye, taaki curl se bhi isi user_id se query kar sakein
       }
     });
   }, []);

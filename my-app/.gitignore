@@ -40,3 +40,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# ignore credentials file
+credentials.json
+google-services.json
+my-app-4e36b-firebase-adminsdk-fbsvc-af7b7a23cc.json
