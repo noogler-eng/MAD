@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.container {
+  width: 100%;
+  max-width: 1280px; /* Standard laptop width limit */
+  margin: 0 auto;   /* Centers the content on large desktop displays */
+  padding: 0 20px;  /* Adds breathing room on smaller screens */
+}
