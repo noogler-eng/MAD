@@ -1,7 +1,8 @@
 # MAD
 
-Mobile App Development — learning + build workspace. Ek jagah 4 related sub-projects hain: ek RN app,
-uska backend, ek self-hosted RN/Expo handbook, aur ek standalone Python learning project.
+Mobile App Development — learning + build workspace. Ek jagah 5 related sub-projects hain: ek RN app,
+uska backend, ek self-hosted RN/Expo handbook, ek standalone Python learning project, aur ek general
+frontend/web engineering knowledge base.
 
 ## Table of Contents
 
@@ -19,6 +20,7 @@ uska backend, ek self-hosted RN/Expo handbook, aur ek standalone Python learning
 | [`my-app/`](my-app/readme.md) | Expo Router based React Native app — real hands-on project jahan handbook ke concepts practically implement kiye. Push Notifications aur Razorpay Payments features working hain. | [my-app/readme.md](my-app/readme.md) |
 | [`fastapi/`](fastapi/README.md) | `my-app` ka backend (Python/FastAPI) — push token registration + trigger, Razorpay order creation + signature verification | [fastapi/README.md](fastapi/README.md) |
 | [`file-parsing/`](file-parsing/readme.md) | Standalone Python learning project — CSV/Excel/PDF read aur write, format-specific libraries ke saath | [file-parsing/readme.md](file-parsing/readme.md) |
+| [`frontend/`](frontend/readme.md) | General frontend/web engineering knowledge base (12 chapters) — API calling, GraphQL, TanStack Query, Next.js, rendering strategies, CDN, caching, performance, bundling, testing, accessibility, security | [frontend/readme.md](frontend/readme.md) |
 
 ---
 
@@ -38,10 +40,17 @@ Chronological order mein jo practically seekha/banaya gaya:
 4. **File Parsing** (`file-parsing/`) — CSV, Excel, PDF ko Python se read/write karna, format-specific
    libraries ke internals samajhna (quoting rules, cell/formula model, PDF ka inverted coordinate
    system). Full detail: [file-parsing/readme.md](file-parsing/readme.md).
+5. **Frontend Knowledge Base** (`frontend/`) — mobile (RN) se hatke general web engineering — API
+   calling patterns, GraphQL internals, TanStack Query, Next.js (Server/Client Components), rendering
+   strategies (CSR/SSR/SSG/ISR), CDN, full caching hierarchy, performance (Core Web Vitals), bundling,
+   testing, web accessibility, aur security (XSS/CSRF/CORS). Full detail:
+   [frontend/readme.md](frontend/readme.md).
 
 **Recurring pattern jo har feature mein dikha:** client sirf "request/intent" bhejta hai, **sensitive
 decisions (payment verify, notification trigger) backend mein hoti hain** — ye ek core architectural
-principle hai jo push notifications aur payments dono mein repeat hua.
+principle hai jo push notifications aur payments dono mein repeat hua, aur `frontend/12-security.md`
+(client-side validation kabhi security boundary nahi hoti) mein isi principle ko web ke context mein
+formally cover kiya gaya.
 
 ---
 
