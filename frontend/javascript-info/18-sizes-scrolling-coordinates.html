@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sizes, Scrolling, Coordinates — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link active" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 18</div>
+      <div class="progress-pill">18 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">DOM · Geometry · Layout</span>
+      <h1>Sizes, Scrolling, Coordinates</h1>
+      <p class="subtitle">
+        DOM tree navigate karna aur attributes modify karna seekh liya — ab agla root-level skill hai:
+        <strong>ek element kahan hai, kitna bada hai, aur kitna scroll hua hai</strong> ye exactly nikalna.
+        Ye sab drag-drop, tooltips, custom scrollbars, infinite scroll, aur "sticky header" jaisi cheezon
+        ka foundation hai. Upar se ek bahut important perf gotcha bhi hai — ye properties padhna khud
+        ek <strong>synchronous layout</strong> trigger kar sakta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#geometry-props">Element geometry properties (offset/client/scroll)</a></li>
+          <li><a href="#geometry-table">Comparison table — offset vs client vs scroll</a></li>
+          <li><a href="#layout-thrashing">Forced synchronous layout — root perf gotcha</a></li>
+          <li><a href="#scroll-set">scrollTop/scrollLeft set karke programmatic scroll</a></li>
+          <li><a href="#window-size">Window size: innerWidth vs documentElement.clientWidth</a></li>
+          <li><a href="#window-scroll">Window scroll: pageXOffset/pageYOffset, scrollTo/scrollBy/scrollIntoView</a></li>
+          <li><a href="#coordinates">Coordinate systems: viewport vs document-relative</a></li>
+          <li><a href="#gbcr">getBoundingClientRect() ka exact return shape</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="geometry-props">Element geometry properties</h2>
+      <p>
+        Har DOM element ke paas ek set of read-only (mostly) numeric properties hote hain jo uska size
+        aur border/padding/scroll layout batate hain. Inhe samajhne ka best tareeka ek concrete box
+        socho: ek element jiska CSS <code>width: 300px</code>, <code>padding: 20px</code>,
+        <code>border: 25px</code> hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Geometry box — CSS setup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"example"</span> <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-str">"width:300px; padding:20px; border:25px solid;"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">...</span>content yahaan...
+<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;!-- box-sizing: content-box (default) maan ke chal rahe hain --&gt;</span></code></pre>
+      </div>
+
+      <p>Is box ke liye geometry properties kya return karengi:</p>
+
+      <div class="code-block">
+        <div class="code-title">geometry-read.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">elem</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'example'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// hamara test element pakda</span>
+
+<span class="tok-com">// offsetWidth/offsetHeight — SABSE BAAHAR ki dimension: content + padding + border</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>offsetWidth<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 390 → 300 (content) + 40 (padding 20+20) + 50 (border 25+25)</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>offsetHeight<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// content height + padding + border (content ki height content pe depend karti)</span>
+
+<span class="tok-com">// clientWidth/clientHeight — border EXCLUDE, padding INCLUDE, scrollbar bhi exclude</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>clientWidth<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 340 → 300 (content) + 40 (padding) — 50px border yahan count nahi hota</span>
+
+<span class="tok-com">// clientTop/clientLeft — bas border ki thickness (offset se client tak ka gap)</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>clientTop<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// 25 → top border ki width (LTR languages mein clientLeft bhi bas border hi hota)</span>
+
+<span class="tok-com">// scrollWidth/scrollHeight — poore CONTENT ka size, chahe overflow ki wajah se hidden ho</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>scrollHeight<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// agar content clientHeight se bada hai, scrollHeight us poore content ko batayega</span>
+
+<span class="tok-com">// scrollTop/scrollLeft — INHI DO ko set bhi kiya ja sakta hai (baaki sab read-only hain)</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>scrollTop<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 0 abhi — kitna content upar se "scroll ho ke chhup gaya" hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ display:none wale element ki geometry saari 0 hoti hai</div>
+        <p>
+          Agar element ya uska koi ancestor <code>display:none</code> hai, to
+          <code>offsetWidth</code>, <code>offsetHeight</code>, <code>offsetParent</code> sab
+          <code>0</code>/<code>null</code> return karte hain — root cause: browser ne is element ke liye
+          layout hi nahi compute kiya, isliye geometry exist hi nahi karti. Isi property ka use
+          "is this element actually visible" check karne ke liye hota hai:
+          <code>if (!elem.offsetWidth &amp;&amp; !elem.offsetHeight) { /* hidden hai */ }</code>.
+          Note: <code>visibility:hidden</code> se ye trick kaam nahi karega, kyunki wahan layout space
+          reserved rehta hai — sirf <code>display:none</code> ke liye reliable hai.
+        </p>
+      </div>
+
+      <h2 id="geometry-table">Comparison table — offset vs client vs scroll</h2>
+      <p>Ye teeno families ka farak root mein "kya include hota hai" ka hai:</p>
+      <table>
+        <thead>
+          <tr><th>Property</th><th>Content</th><th>Padding</th><th>Border</th><th>Scrollbar</th><th>Hidden overflow content</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>offsetWidth/Height</code></td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅ (agar reserved space le raha ho)</td><td>❌</td>
+          </tr>
+          <tr>
+            <td><code>clientWidth/Height</code></td>
+            <td>✅</td><td>✅</td><td>❌</td><td>❌ (scrollbar space subtract ho jaata)</td><td>❌</td>
+          </tr>
+          <tr>
+            <td><code>scrollWidth/Height</code></td>
+            <td>✅ (POORA content, visible ho ya na ho)</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Yaad rakhne ka mental model: <strong>offset = sabse outer box</strong> (jaisa browser use screen
+        pe render karta hai, border ke saath), <strong>client = "visible inner" area</strong> (jahan
+        content dikhta hai, scroll ho ya na ho), <strong>scroll = "total inner" area</strong> (agar
+        content itna bada hai ki scroll karna pade, to poora content ka size).
+      </p>
+      <p>
+        Common use-case — scroll ke bottom tak kitna baaki hai check karna:
+      </p>
+      <div class="code-block">
+        <div class="code-title">scroll-remaining.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">scrollBottom</span> <span class="tok-punc">=</span> elem<span class="tok-punc">.</span>scrollHeight <span class="tok-punc">-</span> elem<span class="tok-punc">.</span>scrollTop <span class="tok-punc">-</span> elem<span class="tok-punc">.</span>clientHeight<span class="tok-punc">;</span>
+<span class="tok-com">// scrollHeight = poora content, scrollTop = kitna upar se chhup gaya, clientHeight = kitna abhi visible</span>
+<span class="tok-com">// teeno mila ke pata chalta hai neeche kitna aur scroll karna baaki hai</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>scrollBottom <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// agar 0 hai, matlab user bilkul bottom tak scroll kar chuka</span>
+  console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Bottom pe pahunch gaye — next page load karo'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// e.g. infinite scroll pagination trigger</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <h2 id="layout-thrashing">Forced synchronous layout — root perf gotcha</h2>
+      <p>
+        Ye geometry properties <em>innocent</em> nahi hain — inhe padhna free operation nahi hai. Root
+        mechanism: browser <strong>lazily</strong> layout compute karta hai. Jab tum DOM/CSS badalte ho
+        (style set karna, class add karna, node insert karna), browser turant layout recompute nahi
+        karta — wo isse ek "dirty" flag maar ke queue mein daal deta hai aur agle animation frame tak
+        batch karta hai (performance ke liye).
+      </p>
+      <p>
+        Lekin jaise hi tum <code>offsetWidth</code>, <code>clientHeight</code>,
+        <code>getBoundingClientRect()</code> jaisi koi bhi geometry property <strong>padhte</strong> ho,
+        browser ko turant, synchronously, us pending layout ko force-compute karna padta hai — kyunki
+        tumhe ek accurate number chahiye, aur wo tabhi de sakta hai jab layout up-to-date ho. Isko
+        <strong>"forced synchronous layout"</strong> ya <strong>"layout thrashing"</strong> kehte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">BAD — layout thrashing (read-write-read-write loop)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">boxes</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">querySelectorAll</span><span class="tok-punc">(</span><span class="tok-str">'.box'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 100 boxes maan lo</span>
+
+boxes<span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-punc">(</span>box<span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">width</span> <span class="tok-punc">=</span> box<span class="tok-punc">.</span>offsetWidth<span class="tok-punc">;</span>       <span class="tok-com">// READ: layout force-compute (pehli baar) — abhi ke liye theek</span>
+  box<span class="tok-punc">.</span>style<span class="tok-punc">.</span>width <span class="tok-punc">=</span> width <span class="tok-punc">+</span> <span class="tok-num">10</span> <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span> <span class="tok-com">// WRITE: is se layout dobara "dirty" ho gaya</span>
+  <span class="tok-com">// agli iteration ke offsetWidth read pe browser ko FIR SE layout recompute karna padega —</span>
+  <span class="tok-com">// kyunki pichhli write ne dirty kar diya. 100 boxes = 100 forced synchronous layouts!</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">GOOD — batch reads, then batch writes<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">boxes</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">querySelectorAll</span><span class="tok-punc">(</span><span class="tok-str">'.box'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Step 1: SAB reads pehle karo — sirf ek hi forced layout lagega (pehli read pe)</span>
+<span class="tok-kw">const</span> <span class="tok-fn">widths</span> <span class="tok-punc">=</span> Array<span class="tok-punc">.</span><span class="tok-fn">from</span><span class="tok-punc">(</span>boxes<span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span><span class="tok-punc">(</span>box<span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> box<span class="tok-punc">.</span>offsetWidth<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// ab layout "clean" hai, aur humare paas cached widths array mein hain</span>
+
+<span class="tok-com">// Step 2: SAB writes baad mein karo — koi read beech mein nahi, isliye recompute trigger nahi hota</span>
+boxes<span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-punc">(</span>box<span class="tok-punc">,</span> i<span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  box<span class="tok-punc">.</span>style<span class="tok-punc">.</span>width <span class="tok-punc">=</span> widths<span class="tok-punc">[</span>i<span class="tok-punc">]</span> <span class="tok-punc">+</span> <span class="tok-num">10</span> <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span> <span class="tok-com">// WRITE-only, cached width use kiya</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// Result: 100 forced layouts ki jagah sirf 1 — DevTools Performance tab mein ye</span>
+<span class="tok-com">// "Recalculate Style" / "Layout" purple blocks repeatedly dikhega agar tum ye pattern na follow karo</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Kaunsi properties layout ko force karti hain</div>
+        <p>
+          Sirf geometry-related properties/methods hi is trap mein daalte hain:
+          <code>offsetWidth/Height/Left/Top</code>, <code>clientWidth/Height/Left/Top</code>,
+          <code>scrollWidth/Height/Left/Top</code>, <code>getBoundingClientRect()</code>,
+          <code>getComputedStyle()</code> (kuch properties ke liye), aur <code>window.getSelection()</code>
+          jaise kuch aur. Simple property read (jaise <code>elem.className</code>) ya style set karna
+          isse trigger nahi karta — sirf jab tumhe ek <strong>layout-dependent number</strong> chahiye,
+          tabhi browser force karta hai. Production mein isko "layout thrashing" bolte hain aur ye
+          scroll handlers, resize handlers, aur loops mein sabse zyada visible hota hai (janky scroll/drag).
+        </p>
+      </div>
+
+      <h2 id="scroll-set">scrollTop/scrollLeft: programmatic element scroll</h2>
+      <p>
+        Geometry family mein <code>scrollTop</code> aur <code>scrollLeft</code> hi aise properties hain
+        jo <strong>writable</strong> bhi hain — inhe set karna element ko scroll kar deta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">element-scroll.js<button class="copy-btn">Copy</button></div>
+        <pre><code>elem<span class="tok-punc">.</span>scrollTop <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>          <span class="tok-com">// scrollTop = 0 set karna → element ko top tak scroll kar deta hai</span>
+elem<span class="tok-punc">.</span>scrollTop <span class="tok-punc">+=</span> <span class="tok-num">100</span><span class="tok-punc">;</span>       <span class="tok-com">// current scroll se 100px neeche scroll karo (relative increment)</span>
+elem<span class="tok-punc">.</span>scrollTop <span class="tok-punc">=</span> <span class="tok-num">1e9</span><span class="tok-punc">;</span>        <span class="tok-com">// bahut bada number daalo → browser khud clamp karke bottom tak le jaayega</span></code></pre>
+      </div>
+      <p>
+        Root cause ki wajah se ye smooth <em>nahi</em> hota by default — ye instant jump hai. Smooth
+        scroll ke liye CSS <code>scroll-behavior: smooth</code> use karo ya <code>Element.scrollTo()</code>
+        method ko <code>behavior: 'smooth'</code> option ke saath.
+      </p>
+
+      <h2 id="window-size">Window ka size: innerWidth vs documentElement.clientWidth</h2>
+      <p>
+        Window (poora browser viewport) ke liye do alag APIs hain, aur inka farak <strong>scrollbar</strong>
+        hai — root gotcha yahi hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">window-size.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// window.innerWidth/innerHeight — SCROLLBAR ko bhi include karta hai apni width mein</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>window<span class="tok-punc">.</span>innerWidth<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// e.g. 1920 — agar vertical scrollbar 15px le raha hai, wo bhi count hai</span>
+
+<span class="tok-com">// document.documentElement.clientWidth/clientHeight — scrollbar EXCLUDE karta hai</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>document<span class="tok-punc">.</span>documentElement<span class="tok-punc">.</span>clientWidth<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// e.g. 1905 — actual usable content width, scrollbar minus</span>
+<span class="tok-com">// FARAK = scrollbar ki width. Agar tum kisi cheez ko "poora viewport content area" ke</span>
+<span class="tok-com">// hisaab se position/size karna chahte ho (jaise ek full-width overlay), clientWidth sahi hai —</span>
+<span class="tok-com">// innerWidth use karoge to overlay scrollbar ke neeche thoda chhup jaayega ya overflow karega</span></code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ documentElement.offsetWidth mat use karo window size ke liye</div>
+        <p>
+          Kai developers galti se <code>document.documentElement.offsetWidth</code> use kar lete hain —
+          lekin <code>&lt;html&gt;</code> element ke liye <code>offsetWidth</code> spec-wise reliably
+          "poore viewport" ko represent nahi karta cross-browser. Window size ke liye sirf do sahi options
+          hain: <code>window.innerWidth/innerHeight</code> (scrollbar included) ya
+          <code>documentElement.clientWidth/clientHeight</code> (scrollbar excluded) — jo tumhare use-case
+          ke hisaab se sahi ho.
+        </p>
+      </div>
+      <p>
+        Poore document (page content, jo viewport se bada ho sakta hai) ka total size nikalna aur bhi
+        tricky hai kyunki purane WebKit browsers mein inconsistency thi — isliye <code>Math.max</code> se
+        sabse safe multiple sources ka max liya jaata hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">full-document-height.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">scrollHeight</span> <span class="tok-punc">=</span> Math<span class="tok-punc">.</span><span class="tok-fn">max</span><span class="tok-punc">(</span>
+  document<span class="tok-punc">.</span>body<span class="tok-punc">.</span>scrollHeight<span class="tok-punc">,</span> document<span class="tok-punc">.</span>documentElement<span class="tok-punc">.</span>scrollHeight<span class="tok-punc">,</span> <span class="tok-com">// dono body aur html check</span>
+  document<span class="tok-punc">.</span>body<span class="tok-punc">.</span>offsetHeight<span class="tok-punc">,</span> document<span class="tok-punc">.</span>documentElement<span class="tok-punc">.</span>offsetHeight<span class="tok-punc">,</span> <span class="tok-com">// fallback source</span>
+  document<span class="tok-punc">.</span>body<span class="tok-punc">.</span>clientHeight<span class="tok-punc">,</span> document<span class="tok-punc">.</span>documentElement<span class="tok-punc">.</span>clientHeight  <span class="tok-com">// ek aur fallback</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// root cause: Chrome/Safari/Opera mein agar scroll hi nahi hai, to documentElement.scrollHeight</span>
+<span class="tok-com">// kabhi kabhi clientHeight se bhi KAM aa sakta hai — isliye single property pe bharosa nahi karte</span></code></pre>
+      </div>
+
+      <h2 id="window-scroll">Window scroll: pageXOffset/pageYOffset aur scroll methods</h2>
+      <p>
+        Current scroll position padhne ke liye <code>window.pageXOffset</code> aur
+        <code>window.pageYOffset</code> use karo (ye <code>window.scrollX</code>/<code>scrollY</code>
+        ke read-only aliases hain, purane naam backward-compat ke liye zinda hain):
+      </p>
+      <div class="code-block">
+        <div class="code-title">read-scroll.js<button class="copy-btn">Copy</button></div>
+        <pre><code>console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Vertical scroll:'</span><span class="tok-punc">,</span> window<span class="tok-punc">.</span>pageYOffset<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// kitna neeche scroll hua hai, pixels mein</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Horizontal scroll:'</span><span class="tok-punc">,</span> window<span class="tok-punc">.</span>pageXOffset<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// kitna right scroll hua hai</span>
+<span class="tok-com">// documentElement.scrollLeft/scrollTop se READ mat karo — purane WebKit (Safari) browsers</span>
+<span class="tok-com">// mein iske liye document.body chahiye tha, documentElement nahi — pageXOffset/pageYOffset</span>
+<span class="tok-com">// ye historical inconsistency abstract kar deta hai, isliye reading ke liye ye hi safe hai</span></code></pre>
+      </div>
+
+      <p>Scroll karne ke liye teen main tools hain:</p>
+      <div class="code-block">
+        <div class="code-title">window-scroll-methods.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// scrollTo(x, y) — ABSOLUTE document coordinates pe jump karta hai</span>
+window<span class="tok-punc">.</span><span class="tok-fn">scrollTo</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// document ke bilkul top pe le jao</span>
+window<span class="tok-punc">.</span><span class="tok-fn">scrollTo</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">top</span><span class="tok-punc">:</span> <span class="tok-num">500</span><span class="tok-punc">,</span> <span class="tok-attr">behavior</span><span class="tok-punc">:</span> <span class="tok-str">'smooth'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 500px se smooth animate karke jao</span>
+
+<span class="tok-com">// scrollBy(x, y) — RELATIVE, current position se itna aur scroll karo</span>
+window<span class="tok-punc">.</span><span class="tok-fn">scrollBy</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">100</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// jahan ho wahan se 100px neeche scroll karo</span>
+
+<span class="tok-com">// elem.scrollIntoView(top) — kisi specific element ko viewport mein le aao</span>
+<span class="tok-kw">const</span> <span class="tok-fn">section</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'pricing'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+section<span class="tok-punc">.</span><span class="tok-fn">scrollIntoView</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true (default) → element ka TOP viewport ke top se align hoga</span>
+section<span class="tok-punc">.</span><span class="tok-fn">scrollIntoView</span><span class="tok-punc">(</span><span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// false → element ka BOTTOM viewport ke bottom se align hoga</span>
+section<span class="tok-punc">.</span><span class="tok-fn">scrollIntoView</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">behavior</span><span class="tok-punc">:</span> <span class="tok-str">'smooth'</span><span class="tok-punc">,</span> <span class="tok-attr">block</span><span class="tok-punc">:</span> <span class="tok-str">'center'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// modern options-object form</span></code></pre>
+      </div>
+
+      <p>Scroll ko poori tarah rokna (e.g. modal open hone pe) is trick se hota hai:</p>
+      <div class="code-block">
+        <div class="code-title">disable-scroll.js<button class="copy-btn">Copy</button></div>
+        <pre><code>document<span class="tok-punc">.</span>body<span class="tok-punc">.</span>style<span class="tok-punc">.</span>overflow <span class="tok-punc">=</span> <span class="tok-str">'hidden'</span><span class="tok-punc">;</span> <span class="tok-com">// scroll disable — page apni current scroll position pe FREEZE ho jaata hai</span>
+<span class="tok-com">// gotcha: scrollbar gayab ho jaata hai, jisse content thoda right shift ho sakta hai (reflow)</span>
+<span class="tok-com">// fix: pehle scrollbar ki width measure karo (offsetWidth - clientWidth trick se), phir utna</span>
+<span class="tok-com">// padding-right body pe add kar do taaki total width same rahe aur layout shift na ho</span>
+
+document<span class="tok-punc">.</span>body<span class="tok-punc">.</span>style<span class="tok-punc">.</span>overflow <span class="tok-punc">=</span> <span class="tok-str">''</span><span class="tok-punc">;</span>       <span class="tok-com">// modal close hote hi wapas normal overflow restore karo</span></code></pre>
+      </div>
+
+      <h2 id="coordinates">Coordinate systems: viewport vs document-relative</h2>
+      <p>
+        JavaScript mein element ki "position" do fundamentally alag coordinate systems mein express ki
+        ja sakti hai — dono hi valid hain, bas <strong>reference point alag hai</strong>:
+      </p>
+      <ul>
+        <li>
+          <strong>Window-relative (viewport) coordinates</strong> — <code>clientX/clientY</code> jaisa,
+          measure hota hai <em>visible window</em> ke top-left corner se. CSS
+          <code>position: fixed</code> jaisa behavior — scroll karo to ye coordinates
+          <strong>change ho jaate hain</strong> kyunki element viewport ke relative move hua.
+        </li>
+        <li>
+          <strong>Document-relative coordinates</strong> — <code>pageX/pageY</code> jaisa, measure hota
+          hai <em>poore document</em> ke top-left se (jo viewport se bada ho sakta hai). CSS
+          <code>position: absolute</code> (document root pe) jaisa behavior — scroll karo to ye
+          <strong>same rehte hain</strong>, kyunki element document ke relative move nahi hua.
+        </li>
+      </ul>
+      <p>
+        In dono ka relation seedha hai: <code>pageY = clientY + (scrolled-out vertical part ki height)</code>.
+        Jitna scroll ho chuka hai, document-relative coordinate utna hi zyada hota hai viewport-relative
+        se.
+      </p>
+
+      <h2 id="gbcr">getBoundingClientRect() — viewport-relative geometry</h2>
+      <p>
+        Kisi element ki exact position/size nikalne ka primary tool <code>elem.getBoundingClientRect()</code>
+        hai. Ye ek <code>DOMRect</code> object return karta hai — aur yaad rakho, ye
+        <strong>hamesha viewport-relative</strong> hota hai, document-relative nahi:
+      </p>
+      <div class="code-block">
+        <div class="code-title">gbcr-shape.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">elem</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'target'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-kw">const</span> <span class="tok-fn">rect</span> <span class="tok-punc">=</span> elem<span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// FORCED SYNCHRONOUS LAYOUT trigger hoti hai yahan</span>
+
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>rect<span class="tok-punc">.</span>x<span class="tok-punc">,</span> rect<span class="tok-punc">.</span>y<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// x,y = rectangle ka origin (top-left), viewport ke top-left se</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>rect<span class="tok-punc">.</span>width<span class="tok-punc">,</span> rect<span class="tok-punc">.</span>height<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// element ki actual rendered width/height (fractional ho sakta hai)</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>rect<span class="tok-punc">.</span>top<span class="tok-punc">,</span> rect<span class="tok-punc">.</span>left<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// top === y, left === x — derived, convenience ke liye</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>rect<span class="tok-punc">.</span>bottom<span class="tok-punc">,</span> rect<span class="tok-punc">.</span>right<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// bottom = y + height, right = x + width — bhi derived</span>
+<span class="tok-com">// NOTE: agar element viewport se upar scroll ho chuka hai, top/y NEGATIVE bhi ho sakta hai —</span>
+<span class="tok-com">// ye "off-screen upar" ko represent karta hai, error nahi</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: rect scroll ke saath badalta rehta hai</div>
+        <p>
+          <code>getBoundingClientRect()</code> ek <em>snapshot</em> hai us exact moment ka jab tum ise
+          call karte ho — ye <strong>live/reactive nahi hai</strong>. Agar page scroll ho, tumhare
+          purane <code>rect.top</code> ki value stale ho jaati hai. Isliye scroll-tracking UI (jaise
+          "sticky highlight jab section viewport mein aaye") ke liye har scroll event pe dobara call
+          karna padta hai — jo expensive hai (forced layout, upar dekha). Production mein iske liye
+          <code>IntersectionObserver</code> API prefer kiya jaata hai, jo browser ko async, batched,
+          non-blocking tareeke se "element ab viewport mein aaya/gaya" notify karne deta hai, bina
+          manual scroll-listener + rect-read loop ke.
+        </p>
+      </div>
+
+      <p>
+        Document-relative coordinates chahiye ho (jaise <code>position:absolute</code> se koi tooltip
+        document ke root pe place karna hai, jo scroll ke saath page ke saath move ho), to
+        <code>pageXOffset</code>/<code>pageYOffset</code> add karna padta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">to-document-coords.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">getCoords</span><span class="tok-punc">(</span>elem<span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// viewport-relative rect ko document-relative mein convert karta hai</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">box</span> <span class="tok-punc">=</span> elem<span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// pehle viewport-relative rect nikalo</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">{</span>
+    top<span class="tok-punc">:</span> box<span class="tok-punc">.</span>top <span class="tok-punc">+</span> window<span class="tok-punc">.</span>pageYOffset<span class="tok-punc">,</span>     <span class="tok-com">// viewport-top + jitna scroll upar se chhupa = document-top</span>
+    left<span class="tok-punc">:</span> box<span class="tok-punc">.</span>left <span class="tok-punc">+</span> window<span class="tok-punc">.</span>pageXOffset<span class="tok-punc">,</span>  <span class="tok-com">// same logic horizontal ke liye</span>
+    bottom<span class="tok-punc">:</span> box<span class="tok-punc">.</span>bottom <span class="tok-punc">+</span> window<span class="tok-punc">.</span>pageYOffset<span class="tok-punc">,</span>
+    right<span class="tok-punc">:</span> box<span class="tok-punc">.</span>right <span class="tok-punc">+</span> window<span class="tok-punc">.</span>pageXOffset
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Usage: kisi element ke exact "document space" mein neeche ek tooltip absolute-position karna</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showTooltipUnder</span><span class="tok-punc">(</span>elem<span class="tok-punc">,</span> html<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">tooltip</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'div'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// naya div banaya tooltip ke liye</span>
+  tooltip<span class="tok-punc">.</span>style<span class="tok-punc">.</span>cssText <span class="tok-punc">=</span> <span class="tok-str">'position:absolute;'</span><span class="tok-punc">;</span> <span class="tok-com">// absolute so ki document coords se match ho</span>
+
+  <span class="tok-kw">const</span> <span class="tok-fn">coords</span> <span class="tok-punc">=</span> <span class="tok-fn">getCoords</span><span class="tok-punc">(</span>elem<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// document-relative coordinates nikale upar wale function se</span>
+  tooltip<span class="tok-punc">.</span>style<span class="tok-punc">.</span>left <span class="tok-punc">=</span> coords<span class="tok-punc">.</span>left <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span> <span class="tok-com">// left position document ke hisaab se set</span>
+  tooltip<span class="tok-punc">.</span>style<span class="tok-punc">.</span>top <span class="tok-punc">=</span> coords<span class="tok-punc">.</span>bottom <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span>  <span class="tok-com">// top = element ke bottom se thoda neeche</span>
+  tooltip<span class="tok-punc">.</span>innerHTML <span class="tok-punc">=</span> html<span class="tok-punc">;</span>          <span class="tok-com">// tooltip ka actual content daal do</span>
+
+  document<span class="tok-punc">.</span>body<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span>tooltip<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// body mein append — ab ye page ke saath scroll bhi hoga (absolute hai)</span>
+  <span class="tok-kw">return</span> tooltip<span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Iska ulta bhi useful hai — <code>document.elementFromPoint(x, y)</code> viewport coordinates
+        deke wahan pe sabse "nested" (innermost) element return karta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">element-from-point.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">centerX</span> <span class="tok-punc">=</span> window<span class="tok-punc">.</span>innerWidth <span class="tok-punc">/</span> <span class="tok-num">2</span><span class="tok-punc">;</span>  <span class="tok-com">// viewport ka horizontal center nikala</span>
+<span class="tok-kw">const</span> <span class="tok-fn">centerY</span> <span class="tok-punc">=</span> window<span class="tok-punc">.</span>innerHeight <span class="tok-punc">/</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// viewport ka vertical center nikala</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">el</span> <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">elementFromPoint</span><span class="tok-punc">(</span>centerX<span class="tok-punc">,</span> centerY<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// VIEWPORT coords chahiye, document-relative nahi</span>
+console<span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>el<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// jo bhi element screen ke bilkul beech mein render ho raha hai</span>
+<span class="tok-com">// gotcha: agar (x,y) visible viewport ke bahar hai, ye null return karta hai — kabhi kabhi</span>
+<span class="tok-com">// negative ya bahut bada coordinate accidentally pass ho jaaye to null-check zaroor karo</span></code></pre>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>offsetWidth/Height</strong> = content + padding + border (sabse outer box); <strong>clientWidth/Height</strong> = content + padding, border/scrollbar excluded; <strong>scrollWidth/Height</strong> = poora content, chahe overflow ki wajah se hidden ho.</li>
+        <li>Sirf <strong>scrollTop/scrollLeft</strong> writable hain geometry family mein — inhe set karke element ko programmatically scroll karte hain.</li>
+        <li>Geometry properties (<code>offsetWidth</code>, <code>getBoundingClientRect()</code>, etc.) padhna ek <strong>forced synchronous layout</strong> trigger karta hai — DOM writes ke beech-beech mein inhe read karne se "layout thrashing" hota hai. Fix: sab reads ek saath batch karo, phir sab writes.</li>
+        <li>Window size ke liye <code>window.innerWidth/innerHeight</code> (scrollbar included) vs <code>documentElement.clientWidth/clientHeight</code> (scrollbar excluded) — use-case ke hisaab se choose karo, <code>documentElement.offsetWidth</code> avoid karo.</li>
+        <li>Current window scroll padhne ke liye <code>window.pageXOffset/pageYOffset</code> use karo (scrollX/scrollY ke aliases), scrolling ke liye <code>scrollTo</code>, <code>scrollBy</code>, <code>elem.scrollIntoView()</code>.</li>
+        <li><strong>getBoundingClientRect()</strong> hamesha <strong>viewport-relative</strong> hota hai — scroll hone pe values change hoti rehti hain. Document-relative coordinates chahiye ho to <code>+ window.pageYOffset/pageXOffset</code> karo.</li>
+        <li>Frequent rect-reads ke liye (scroll-triggered visibility checks) <code>IntersectionObserver</code> prefer karo — manual rect-polling se better performance.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>offsetWidth, clientWidth, aur scrollWidth mein exact farak batao ek example ke saath.</strong><br>Hint: offset = border+padding+content; client = padding+content (no border/scrollbar); scroll = poora content chahe hidden ho — element jiska overflow hai wahan scrollWidth &gt; clientWidth hoga.</li>
+        <li><strong>"Forced synchronous layout" kya hota hai aur ye kaise perf issue create karta hai? Fix kya hai?</strong><br>Hint: geometry reads pending layout ko synchronously force-compute karte hain; DOM writes ke beech reads dalne se repeated recompute hota hai (layout thrashing); fix = batch reads, phir batch writes.</li>
+        <li><strong>getBoundingClientRect() viewport-relative hai ya document-relative? Document-relative coordinates kaise nikaalte ho?</strong><br>Hint: viewport-relative (scroll ke saath badalta rehta hai) — document-relative ke liye rect.top/left mein window.pageYOffset/pageXOffset add karo.</li>
+        <li><strong>window.innerWidth aur document.documentElement.clientWidth mein kab-kaunsa use karoge?</strong><br>Hint: farak scrollbar hai — innerWidth scrollbar include karta hai, clientWidth exclude karta hai; content-area-accurate sizing ke liye clientWidth better.</li>
+        <li><strong>display:none element ki geometry properties kya return karti hain, aur kyun?</strong><br>Hint: sab 0/null — browser ne layout compute hi nahi kiya kyunki element render tree mein hai hi nahi; visibility:hidden se ye trick kaam nahi karta kyunki space reserved rehta hai.</li>
+        <li><strong>scroll ke bottom tak kitna baaki hai, ye kaise calculate karoge sirf geometry properties se?</strong><br>Hint: scrollHeight - scrollTop - clientHeight; result 0 hone pe element fully bottom-scrolled hai — infinite scroll pagination trigger ke liye common pattern.</li>
+        <li><strong>Scroll-triggered "element visible ho gaya" detection ke liye getBoundingClientRect() polling ke bajaye kya use karna chahiye, aur kyun?</strong><br>Hint: IntersectionObserver — async, browser-batched, main thread block nahi karta, jabki manual scroll-listener + rect read forced layout ko repeatedly trigger karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="17-attributes-modifying-dom.html">
+        <div class="label">← Previous</div>
+        <div class="title">Attributes &amp; Modifying DOM</div>
+      </a>
+      <a class="next" href="19-events-fundamentals.html">
+        <div class="label">Next →</div>
+        <div class="title">Events Fundamentals</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

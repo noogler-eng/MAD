@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOM Tree &amp; Navigation — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link active" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 16</div>
+      <div class="progress-pill">16 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Browser · DOM · Tree Navigation</span>
+      <h1>DOM Tree &amp; Navigation</h1>
+      <p class="subtitle">
+        Ab tak humne pure JS language padha — koi browser involved nahi tha. Ab Part 2 shuru hota hai:
+        <strong>browser environment</strong>. Browser humein ek <code>window</code> object deta hai jiske
+        andar poora page ek <strong>tree of objects</strong> ke roop mein represent hota hai — DOM. Ye
+        chapter root-level samjhata hai ki ye tree kaise bana hai, class hierarchy kaisi hai
+        (<code>Node</code> → <code>Element</code> → <code>HTMLElement</code>), tree ko kaise walk karte
+        hain, elements kaise search karte hain, aur <code>innerHTML</code>/<code>textContent</code> jaise
+        properties internally kya karte hain — performance aur security dono angle se.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#browser-env">Browser environment: window, DOM, BOM</a></li>
+          <li><a href="#dom-tree">DOM tree ka structure — node types</a></li>
+          <li><a href="#class-hierarchy">Node class hierarchy (root-level)</a></li>
+          <li><a href="#walking">Walking the DOM — parentNode, children, siblings</a></li>
+          <li><a href="#searching">Searching elements — querySelector, getElementBy*, closest, matches</a></li>
+          <li><a href="#live-vs-static">Live vs static collections — real gotcha</a></li>
+          <li><a href="#node-props">nodeType, nodeName vs tagName, innerHTML/outerHTML/textContent</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="browser-env">Browser environment: window, DOM, BOM</h2>
+      <p>
+        Browser mein JavaScript engine (V8, SpiderMonkey, etc.) akela nahi hota — usse ek <strong>host
+        environment</strong> milta hai jo extra objects aur functions provide karta hai jo pure language
+        spec ka hissa nahi hain. Browser ke case mein us host environment ka <strong>root object</strong>
+        hai <code>window</code>. Ye do roles play karta hai ek saath:
+      </p>
+      <ol>
+        <li>Ye JavaScript ka <strong>global object</strong> hai — top-level <code>var</code> aur global
+          functions <code>window</code> ke properties ban jaate hain.</li>
+        <li>Ye "browser window" ko represent karta hai — <code>window.innerHeight</code>,
+          <code>window.open()</code>, etc. iske through browser control hota hai.</li>
+      </ol>
+      <div class="code-block">
+        <div class="code-title">window: global object + browser window, dono ek saath<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// top-level function declaration — global scope mein define ho rahi hai</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// simple alert call</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// proof: global function automatically window ki property ban gayi — global object hai isliye</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">innerHeight</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// yahaan window "browser window" ke role mein hai — viewport height batata hai</span></code></pre>
+      </div>
+      <p>
+        Root-level pe browser environment 3 pillars pe khada hai:
+      </p>
+      <ul>
+        <li><strong>DOM (Document Object Model)</strong> — page ka pura content (HTML) objects ke tree
+          ke roop mein represent karta hai. Entry point hai <code>document</code>. Standard maintain karta
+          hai <a href="https://dom.spec.whatwg.org" target="_blank" rel="noopener">DOM Living Standard</a>
+          — matlab ye sirf JS ka feature nahi, ek independent cross-language spec hai (Python, PHP se bhi
+          DOM manipulate ho sakta hai agar binding available ho).</li>
+        <li><strong>CSSOM (CSS Object Model)</strong> — stylesheets aur rules ko represent karta hai,
+          separate spec.</li>
+        <li><strong>BOM (Browser Object Model)</strong> — document ke alawa browser jo kuch bhi deta hai:
+          <code>navigator</code> (browser/OS info), <code>location</code> (current URL, redirect),
+          <code>alert</code>/<code>confirm</code>/<code>prompt</code>. BOM ka koi alag formal spec nahi
+          hai — HTML spec ke andar hi cover hota hai ("HTML spec sirf tags/attributes ke baare mein nahi,
+          bahut se browser-specific objects/methods bhi define karta hai").</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">DOM aur BOM ka farak — ek quick demo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-attr">background</span> <span class="tok-punc">=</span> <span class="tok-str">"red"</span><span class="tok-punc">;</span> <span class="tok-com">// DOM manipulation — page content/style badla</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">location</span><span class="tok-punc">.</span><span class="tok-fn">href</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// BOM — current page ka URL, DOM se koi lena-dena nahi</span>
+<span class="tok-fn">location</span><span class="tok-punc">.</span><span class="tok-fn">href</span> <span class="tok-punc">=</span> <span class="tok-str">"https://wikipedia.org"</span><span class="tok-punc">;</span> <span class="tok-com">// BOM — browser ko naye URL pe navigate karwa diya</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root mechanism: DOM sirf HTML ke liye nahi hai</div>
+        <p>
+          DOM spec generically "any structured document" ke liye bana hai — HTML aur XML dono is model se
+          represent hote hain. Browser HTML parser jo bhi parse karta hai, wo isi generic tree model mein
+          convert hota hai. Isliye <code>document.querySelector</code> jaisi APIs XML documents pe bhi kaam
+          karti hain (jaise SVG, jo XML-based hai) — kyunki wo DOM ke upar operate karti hain, HTML-specific
+          nahi hain.
+        </p>
+      </div>
+
+      <h2 id="dom-tree">DOM tree ka structure — node types</h2>
+      <p>
+        Browser HTML ko parse karke ek <strong>tree of node objects</strong> banata hai — is tree ka
+        formal naam hai DOM. Har HTML tag ek <strong>element node</strong> banta hai, aur tags ke andar ka
+        text ek <strong>text node</strong> banta hai. Root object <code>document</code> hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Ek simple HTML aur uska DOM tree<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!DOCTYPE</span> <span class="tok-tag">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>About elk<span class="tok-punc">&lt;/</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>  <span class="tok-com">&lt;!-- text node "About elk" title ke andar --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+  The <span class="tok-punc">&lt;</span><span class="tok-tag">a</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"http://ya.ru"</span><span class="tok-punc">&gt;</span>elk<span class="tok-punc">&lt;/</span><span class="tok-tag">a</span><span class="tok-punc">&gt;</span> lives.
+  <span class="tok-com">&lt;!-- Comment --&gt;</span>                        <span class="tok-com">&lt;!-- ye bhi ek node hai — comment node, DOM tree ka part banta hai --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Practice mein 4 node types matter karte hain:
+      </p>
+      <ul>
+        <li><strong>Document node</strong> — poore tree ka root, JS mein <code>document</code> object.</li>
+        <li><strong>Element nodes</strong> — har HTML tag (<code>&lt;html&gt;</code>,
+          <code>&lt;body&gt;</code>, <code>&lt;a&gt;</code>, ...).</li>
+        <li><strong>Text nodes</strong> — tags ke beech ka text, including whitespace/newlines. "Spaces
+          aur newlines bhi valid characters hain" — inse bhi text node bante hain. Isliye
+          <code>&lt;head&gt;</code> ke andar <code>&lt;title&gt;</code> se pehle indentation ka whitespace
+          bhi ek separate <code>#text</code> node hota hai.</li>
+        <li><strong>Comment nodes</strong> — <code>&lt;!-- ... --&gt;</code> bhi tree ka part banta hai,
+          "har cheez HTML mein, comments tak, DOM ka hissa ban jaati hai." Screen pe render nahi hota,
+          lekin <code>document.body.childNodes</code> mein dikhega.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: browser HTML ko autocorrect karta hai</div>
+        <p>
+          Jo tree banta hai wo tumhare likhe hue raw HTML se match nahi karta — browser ka HTML parser
+          malformed ya incomplete markup ko silently <strong>fix</strong> kar deta hai. Agar
+          <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, <code>&lt;body&gt;</code> missing hain, wo
+          automatically insert ho jaate hain. Agar tumne <code>&lt;table&gt;</code> likha bina
+          <code>&lt;tbody&gt;</code> ke, HTML spec ke rules ke mutabik parser khud
+          <code>&lt;tbody&gt;</code> insert kar dega. Iska practical impact: jab tum
+          <code>table.children</code> access karoge, ek extra <code>&lt;tbody&gt;</code> level milega
+          jo tumne source mein likha hi nahi tha — bahut common confusion point hai naye devs ke liye.
+        </p>
+      </div>
+
+      <h2 id="class-hierarchy">Node class hierarchy — DOM sirf "objects ka tree" nahi, ek real class system hai</h2>
+      <p>
+        Root-level samajhna zaroori hai: DOM nodes plain objects nahi hain, ye ek <strong>proper JS class
+        hierarchy</strong> ke instances hain (specification mein defined). Har node type apni class se
+        aata hai, aur ye classes inherit karti hain ek dusre se:
+      </p>
+      <ul>
+        <li><code>EventTarget</code> — sabse upar, sirf events ke liye (addEventListener capability).</li>
+        <li><code>Node</code> — isse saare node types inherit karte hain (Element, Text, Comment,
+          Document). <code>parentNode</code>, <code>childNodes</code> jaisi properties yahin define hain.</li>
+        <li><code>Element</code> — sirf element nodes ke liye base class. <code>children</code>,
+          <code>querySelector</code>, <code>closest</code> yahin define hain.</li>
+        <li><code>HTMLElement</code> — HTML-specific elements ke liye, <code>innerHTML</code>,
+          <code>hidden</code>, <code>style</code> yahaan define hote hain.</li>
+        <li>Aur phir tag-specific classes jaise <code>HTMLInputElement</code>, <code>HTMLAnchorElement</code>
+          — jinke apne specific properties hote hain (<code>input.value</code>, <code>a.href</code>).</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">Inheritance chain ko console mein dekho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> elem <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">;</span>              <span class="tok-com">// &lt;body&gt; element node reference le liya</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span><span class="tok-kw">constructor</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "HTMLBodyElement" — sabse specific class jo body tag ko represent karti hai</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem <span class="tok-kw">instanceof</span> HTMLBodyElement<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — exact class match</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem <span class="tok-kw">instanceof</span> HTMLElement<span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// true — chain mein upar HTMLElement se inherit karta hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem <span class="tok-kw">instanceof</span> Element<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true — aur upar Element se bhi</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem <span class="tok-kw">instanceof</span> Node<span class="tok-punc">)</span><span class="tok-punc">;</span>             <span class="tok-com">// true — sabse upar Node se bhi</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>elem <span class="tok-kw">instanceof</span> EventTarget<span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — root class, event listeners yahin se milte hain</span></code></pre>
+      </div>
+      <p>
+        Isi hierarchy ki wajah se <code>children</code>, <code>closest()</code> sirf <em>Element</em>
+        nodes pe available hain (text/comment nodes pe nahi — unke paas ye method hi nahi hota,
+        prototype chain mein missing hai), jabki <code>parentNode</code>, <code>childNodes</code> sab
+        node types pe kaam karte hain kyunki wo <code>Node</code> level pe define hain — ye pure OOP
+        design hai, arbitrary rule nahi.
+      </p>
+
+      <h2 id="walking">Walking the DOM — parentNode, children, siblings</h2>
+      <p>
+        DOM navigation properties do categories mein bat jaate hain: <strong>"all nodes"</strong>
+        properties (text/comment bhi include) aur <strong>"element only"</strong> properties (sirf tags).
+      </p>
+      <div class="code-block">
+        <div class="code-title">All-node navigation vs element-only navigation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ---- ALL NODES (Node class se aati hain — text/comment bhi count hote hain) ----</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">parentNode</span><span class="tok-punc">;</span>          <span class="tok-com">// immediate parent node (koi bhi type ho sakta hai)</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">childNodes</span><span class="tok-punc">;</span>          <span class="tok-com">// LIVE collection — elements + text nodes + comment nodes, sab kuch</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">firstChild</span><span class="tok-punc">;</span>          <span class="tok-com">// pehla child, chahe wo whitespace text node hi kyun na ho</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">lastChild</span><span class="tok-punc">;</span>           <span class="tok-com">// aakhri child node</span>
+
+<span class="tok-com">// ---- ELEMENT ONLY (Element class se aati hain — sirf tags, koi text/comment nahi) ----</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">children</span><span class="tok-punc">;</span>            <span class="tok-com">// LIVE collection — sirf element children, whitespace filter ho gaya</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">firstElementChild</span><span class="tok-punc">;</span> <span class="tok-com">// pehla ELEMENT child (text node skip ho jaata hai)</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">lastElementChild</span><span class="tok-punc">;</span>  <span class="tok-com">// aakhri element child</span>
+
+<span class="tok-kw">let</span> elem <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'li'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// koi ek &lt;li&gt; element pakad liya reference ke liye</span>
+elem<span class="tok-punc">.</span><span class="tok-fn">nextElementSibling</span><span class="tok-punc">;</span>        <span class="tok-com">// agla sibling ELEMENT (agle whitespace text node ko ignore karke)</span>
+elem<span class="tok-punc">.</span><span class="tok-fn">previousElementSibling</span><span class="tok-punc">;</span>    <span class="tok-com">// pichla sibling element</span>
+elem<span class="tok-punc">.</span><span class="tok-fn">parentElement</span><span class="tok-punc">;</span>              <span class="tok-com">// parent — lekin sirf agar wo Element ho (document nahi)</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ children vs childNodes — real gotcha jo bugs deta hai</div>
+        <p>
+          Ye difference sirf naming convention nahi hai — production bugs ka ek common source hai. Agar
+          tum <code>element.childNodes[0]</code> use karke "pehla child element" pakadne ki koshish karoge,
+          aur us element ke andar HTML source mein indentation/newline hai (jo almost hamesha hota hai
+          jab tum HTML ko readable format mein likhte ho), to <code>childNodes[0]</code> ek
+          <strong>whitespace text node</strong> hoga, koi element nahi. Result: <code>.tagName</code>
+          access karne pe <code>undefined</code>, ya silent wrong behavior. Rule: jab tumhe sirf
+          <strong>elements</strong> chahiye (manipulation, styling, structure ke liye), <code>children</code>
+          /<code>firstElementChild</code> use karo. Jab tumhe <strong>text content bhi</strong> chahiye ho
+          (parsing, jaise text nodes ko directly modify karna), tabhi <code>childNodes</code> use karo.
+        </p>
+      </div>
+
+      <p>
+        Table elements extra convenience properties dete hain jo underlying tree navigation ka shortcut
+        hain — ye bhi Element hierarchy ke specific subclasses (<code>HTMLTableElement</code>,
+        <code>HTMLTableRowElement</code>) pe define hote hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Table-specific navigation shortcuts<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> table <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'table'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// table element pakda</span>
+
+<span class="tok-kw">let</span> td <span class="tok-punc">=</span> table<span class="tok-punc">.</span><span class="tok-fn">rows</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">cells</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">;</span>      <span class="tok-com">// rows[0]: pehli &lt;tr&gt;, phir cells[1]: usme dusra &lt;td&gt;/&lt;th&gt;</span>
+td<span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-attr">backgroundColor</span> <span class="tok-punc">=</span> <span class="tok-str">'red'</span><span class="tok-punc">;</span>       <span class="tok-com">// ab uss specific cell ka background change kar diya</span>
+
+<span class="tok-com">// table.rows automatically &lt;tbody&gt;/&lt;thead&gt;/&lt;tfoot&gt; ke andar se rows nikaal deta hai,</span>
+<span class="tok-com">// manually .querySelector('tbody').children se navigate karne ki zaroorat nahi</span></code></pre>
+      </div>
+
+      <h2 id="searching">Searching elements — querySelector, getElementBy*, closest, matches</h2>
+      <p>
+        Direct tree-walking (<code>children</code>, <code>firstElementChild</code>) chhote, known-shape
+        structures ke liye theek hai, lekin real apps mein hum usually seedha ek specific element ya set
+        of elements <strong>search</strong> karte hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Search methods — ek comparison<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// getElementById — sirf document pe call hota hai, single element, sabse fast</span>
+<span class="tok-kw">let</span> elem <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'main'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// id="main" wala element, ya null agar exist nahi karta</span>
+
+<span class="tok-com">// querySelectorAll — koi bhi CSS selector, STATIC NodeList return karta hai</span>
+<span class="tok-kw">let</span> items <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelectorAll</span><span class="tok-punc">(</span><span class="tok-str">'ul > li:last-child'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                            <span class="tok-com">// har &lt;ul&gt; ke andar aakhri &lt;li&gt; — powerful CSS selector syntax</span>
+
+<span class="tok-com">// querySelector — pehla match, querySelectorAll(sel)[0] ke barabar lekin FASTER</span>
+<span class="tok-kw">let</span> first <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'.card'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// pehla .card class wala element, ya null</span>
+
+<span class="tok-com">// getElementsByClassName / TagName / Name — LEGACY, LIVE collection return karte hain</span>
+<span class="tok-kw">let</span> cards <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">getElementsByClassName</span><span class="tok-punc">(</span><span class="tok-str">'card'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// sab .card elements, live HTMLCollection</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">closest() aur matches() — event delegation ki foundation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// matches(selector): current element khud us selector se match karta hai kya, boolean return</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>elem<span class="tok-punc">.</span><span class="tok-fn">matches</span><span class="tok-punc">(</span><span class="tok-str">'a[href$="zip"]'</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// href .zip pe end hota hai kya, check</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"zip link!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// tab hi ye chalega</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// closest(selector): khud se shuru karke UPWARD walk karta hai jab tak selector match na ho</span>
+<span class="tok-kw">let</span> chapter <span class="tok-punc">=</span> elem<span class="tok-punc">.</span><span class="tok-fn">closest</span><span class="tok-punc">(</span><span class="tok-str">'.chapter'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// elem khud ya uska nearest ancestor jo .chapter class rakhta ho</span>
+
+<span class="tok-com">// EVENT DELEGATION pattern — closest() ka sabse bada real-world use case (Chapter 19 mein detail)</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'click'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>event<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> button <span class="tok-punc">=</span> event<span class="tok-punc">.</span><span class="tok-fn">target</span><span class="tok-punc">.</span><span class="tok-fn">closest</span><span class="tok-punc">(</span><span class="tok-str">'.btn'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                    <span class="tok-com">// click chahe button ke andar ke &lt;span&gt; icon pe hua ho, closest() khud button tak upar chala jaata hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>button<span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>       <span class="tok-com">// agar click .btn ke bahar hua (koi ancestor match nahi), ignore kar do</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'button clicked:'</span><span class="tok-punc">,</span> button<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ek hi listener, saare buttons ke liye — chahe DOM mein baad mein add hue hon</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        <code>closest()</code> internally almost <code>matches()</code> ko har ancestor pe repeatedly call
+        karne jaisa hi kaam karta hai — ye hi mechanism hai jo event delegation ko possible banata hai:
+        ek single listener parent pe laga do, aur andar <code>event.target.closest(selector)</code> se
+        pata karo ki actual click kis logical element pe tha, chahe DOM structure kitna bhi nested ho.
+      </p>
+
+      <h2 id="live-vs-static">Live vs static collections — modify-while-iterate gotcha</h2>
+      <p>
+        Ye ek core distinction hai jo har senior dev ko yaad hona chahiye: <code>getElementsBy*</code>
+        family <strong>live</strong> collections return karti hai, jabki <code>querySelectorAll</code>
+        <strong>static</strong> collection deta hai (ek snapshot, uss moment ka). <code>childNodes</code> /
+        <code>children</code> bhi live hote hain (Node/Element class level pe defined).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Live collection ka real gotcha — infinite loop tak ban sakta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> divs <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">getElementsByTagName</span><span class="tok-punc">(</span><span class="tok-str">'div'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// LIVE HTMLCollection — DOM se hamesha sync rehta hai</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> divs<span class="tok-punc">.</span>length<span class="tok-punc">;</span> i<span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> clone <span class="tok-punc">=</span> divs<span class="tok-punc">[</span>i<span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">cloneNode</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// har div ka deep clone banaya</span>
+  <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">appendChild</span><span class="tok-punc">(</span>clone<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// naya div DOM mein daal diya</span>
+  <span class="tok-com">// BUG: divs.length ab AUR BADH GAYA hai (naya div bhi 'div' tag hai, live collection mein turant aa gaya)</span>
+  <span class="tok-com">// so loop kabhi khatam nahi hoga jab tak koi limit na ho — practically infinite loop!</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// FIX 1: static collection use karo, jo iteration ke beech DOM change se unaffected rahe</span>
+<span class="tok-kw">let</span> staticDivs <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelectorAll</span><span class="tok-punc">(</span><span class="tok-str">'div'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// snapshot loop start hone se pehle liya gaya, baad ke changes reflect nahi honge</span>
+
+<span class="tok-com">// FIX 2: agar live hi use karna hai, to pehle Array mein convert kar lo (khud static ban jaayega)</span>
+<span class="tok-kw">let</span> arr <span class="tok-punc">=</span> Array<span class="tok-punc">.</span><span class="tok-fn">from</span><span class="tok-punc">(</span>divs<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// snapshot le liya, ab safely iterate kar sakte hain, map/filter bhi use kar sakte hain</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Live collections read-only hain, but "reactive"</div>
+        <p>
+          <code>childNodes[i] = something</code> jaisa direct assignment kaam nahi karta — collections
+          array nahi hain, unke paas <code>push</code>/<code>splice</code> jaise methods bhi nahi hote.
+          Sirf DOM structure badalne se (appendChild, removeChild) ye automatically update hoti hain — ye
+          "reactive" hain lekin "mutable via index assignment" nahi. Array methods chahiye to
+          <code>Array.from(collection)</code> ya spread <code>[...collection]</code> use karo.
+        </p>
+      </div>
+
+      <h2 id="node-props">Node type/tag/content properties</h2>
+      <p>
+        Har node object kuch core properties expose karta hai jo uska type aur content batate hain —
+        inheritance hierarchy ke exact level pe defined (Node vs Element vs HTMLElement, jaisa upar
+        discuss kiya).
+      </p>
+      <div class="code-block">
+        <div class="code-title">nodeType, nodeName vs tagName<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">nodeType</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 1 — ELEMENT_NODE constant (numeric, read-only, purani style checking)</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">nodeType</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 9 — DOCUMENT_NODE, document khud bhi ek node hai (root)</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">tagName</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "BODY" — sirf Element nodes pe available (Element class ki property)</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">tagName</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// undefined — document Element nahi hai, isliye tagName exist hi nahi karta</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">nodeName</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "BODY" — nodeName Node class pe defined hai, HAR node type pe kaam karta hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">nodeName</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "#document" — non-element nodes ke liye descriptive string milti hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">innerHTML vs outerHTML vs textContent — internals aur perf<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// innerHTML: element ke ANDAR ka HTML string ke roop mein — reading aur writing dono</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">innerHTML</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// current markup string ke roop mein padh liya</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">innerHTML</span> <span class="tok-punc">+=</span> <span class="tok-str">"&lt;div&gt;new&lt;/div&gt;"</span><span class="tok-punc">;</span>
+      <span class="tok-com">// DANGER: += ka matlab "purana + naya" ko STRING ban ke phir se PARSE karo</span>
+      <span class="tok-com">// pura subtree destroy hoke naye sirse banta hai — images reload, event listeners LOST, scroll reset,</span>
+      <span class="tok-com">// selection/focus lost — expensive re-parse + re-render, sirf ek div add karne ke liye</span>
+
+<span class="tok-com">// outerHTML: element SAMET uska HTML — assign karne pe DOM mein element REPLACE ho jaata hai</span>
+<span class="tok-kw">let</span> div <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'div'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+div<span class="tok-punc">.</span><span class="tok-fn">outerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">"&lt;p&gt;New&lt;/p&gt;"</span><span class="tok-punc">;</span> <span class="tok-com">// DOM mein purana &lt;div&gt; hat gaya, naya &lt;p&gt; aa gaya</span>
+<span class="tok-com">// GOTCHA: 'div' variable ab bhi PURANE (ab DOM se disconnected) element ko point karta hai —</span>
+<span class="tok-com">// JS reference update nahi hota, sirf actual DOM tree replace hota hai</span>
+
+<span class="tok-com">// textContent: sirf PLAIN TEXT — koi HTML parsing nahi, tags literally text ban jaate hain</span>
+<span class="tok-kw">let</span> userInput <span class="tok-punc">=</span> <span class="tok-str">"&lt;img src=x onerror=alert(1)&gt;"</span><span class="tok-punc">;</span> <span class="tok-com">// maan lo ye kisi user ne type kiya</span>
+
+elem<span class="tok-punc">.</span><span class="tok-fn">innerHTML</span> <span class="tok-punc">=</span> userInput<span class="tok-punc">;</span>  <span class="tok-com">// DANGEROUS: browser is string ko HTML samajh ke parse karega — img tag ban jaayega, onerror FIRE hoga → XSS</span>
+elem<span class="tok-punc">.</span><span class="tok-fn">textContent</span> <span class="tok-punc">=</span> userInput<span class="tok-punc">;</span> <span class="tok-com">// SAFE: string literal text ban jaata hai, "&lt;img...&gt;" as-is screen pe dikhega, code execute nahi hoga</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ innerHTML + user input = XSS risk</div>
+        <p>
+          Root cause samjho: <code>innerHTML</code> assign karte hi browser us string ko ek
+          <strong>HTML parser</strong> se guzarta hai — string mein jo bhi valid HTML tags/attributes hain,
+          wo real DOM nodes ban jaate hain, event handler attributes (<code>onerror</code>,
+          <code>onclick</code>) samet. Agar wo string kisi bhi tarah user-controlled hai (form input, URL
+          query param, API response jo kisi aur user ne likha), attacker apna JS inject kar sakta hai —
+          classic <strong>stored/reflected XSS</strong>. Note: agar tum directly
+          <code>&lt;script&gt;</code> tag <code>innerHTML</code> ke through insert karo, browser use HTML
+          ka part to bana deta hai lekin <strong>execute nahi karta</strong> (spec-level protection) — par
+          <code>onerror</code>/<code>onload</code> jaisi inline event attributes wale tags (img, svg, etc.)
+          isse bach nikalte hain aur turant fire ho jaate hain. Rule: user-supplied ya untrusted content
+          ke liye <strong>hamesha</strong> <code>textContent</code> use karo, ya agar HTML render karna hi
+          hai to ek sanitization library (DOMPurify) se pehle clean karo.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: innerHTML+= ka real perf cost — production framework ka jaisa hi</div>
+        <p>
+          Jab tum <code>innerHTML</code> ko read karte ho, browser current DOM subtree ko wapas HTML string
+          mein <strong>serialize</strong> karta hai. Jab tum assign karte ho, wo string ko phir se
+          <strong>parse</strong> karke ek naya subtree banata hai, aur purana <strong>poora subtree destroy</strong>
+          kar deta hai — chahe tumne sirf ek chhota sa change kiya ho. Yehi wajah hai ki React/Vue jaisi
+          frameworks raw <code>innerHTML +=</code> se bachti hain aur ek <strong>virtual DOM diffing</strong>
+          layer use karti hain — taaki sirf actual changed nodes update ho, poora subtree nahi. Agar tum
+          vanilla JS mein bade DOM subtrees frequently update kar rahe ho, seedha
+          <code>innerHTML +=</code> use karne ki jagah targeted <code>appendChild</code>/
+          <code>textContent</code> updates ya <code>DocumentFragment</code> batching use karo — ye agla
+          chapter (17) mein cover hoga.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>window</strong> = global object + browser window control, dono ek saath; DOM/CSSOM/BOM teeno milke browser environment banate hain.</li>
+        <li>DOM ek real <strong>class hierarchy</strong> hai — <code>Node</code> → <code>Element</code> → <code>HTMLElement</code> → tag-specific classes. Property kis level pe available hai, ye batata hai kaunsa node type usse use kar sakta hai.</li>
+        <li><strong>children</strong> (elements only) vs <strong>childNodes</strong> (elements + text + comments, whitespace samet) — HTML indentation ki wajah se production bugs ka common source.</li>
+        <li><strong>getElementsBy*</strong> family <strong>live</strong> collections deti hai — iterate karte hue DOM modify karna infinite-loop-jaisa bug bana sakta hai. <strong>querySelectorAll</strong> <strong>static</strong> snapshot deta hai.</li>
+        <li><strong>closest()</strong>/<strong>matches()</strong> event delegation ki foundation hain — ek listener, dynamic child elements.</li>
+        <li><strong>innerHTML</strong> re-parse + rebuild karta hai (expensive, listeners/state lose hote hain); <strong>textContent</strong> plain text ke liye fast aur XSS-safe hai.</li>
+        <li>User-controlled data ko kabhi seedha <code>innerHTML</code> mein mat daalo — <code>textContent</code> use karo ya sanitize karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>children aur childNodes mein farak samjhao, aur ek real bug scenario batao jaha ye farak matter karta hai.</strong><br>Hint: childNodes text/comment nodes bhi include karta hai (whitespace se bane), children sirf elements. <code>childNodes[0]</code> pe blindly access karna bahut baar whitespace text node de deta hai.</li>
+        <li><strong>Live aur static collections mein kya farak hai? Ek scenario batao jahan live collection bug create kar sakta hai.</strong><br>Hint: getElementsByTagName live hai — loop ke andar naye elements add karne se collection.length badhta rehta hai, potential infinite loop.</li>
+        <li><strong>closest() internally kaise kaam karta hai, aur ye event delegation mein kyun critical hai?</strong><br>Hint: khud se shuru karke ancestors ki taraf upar walk karta hai jab tak selector match na ho; ek listener parent pe lagakar bhi specific dynamic children ko target kar sakte hain.</li>
+        <li><strong>innerHTML ke through user input insert karna kyun dangerous hai, aur exact mechanism kya hai jisse XSS hota hai?</strong><br>Hint: innerHTML string ko HTML parser se guzarta hai, jismein inline event attributes (onerror, onload) turant fire ho sakte hain; script tag khud execute nahi hota par attribute-based vectors bach nikalte hain.</li>
+        <li><strong>innerHTML += "..." expensive kyun hai, chahe tum sirf ek chhota element add kar rahe ho?</strong><br>Hint: pura subtree serialize hota hai to string, phir poora naya subtree parse+build hota hai, purana completely destroy — listeners/state/scroll sab lost.</li>
+        <li><strong>nodeName aur tagName mein farak batao — kaunsi node types pe kaunsi available hai aur kyun?</strong><br>Hint: tagName sirf Element class pe defined hai (isliye document jaise non-element pe undefined), nodeName Node class pe hai isliye sab node types (text, comment, document) pe kaam karta hai.</li>
+        <li><strong>parentNode aur parentElement mein ek exception case batao jahan ye alag result dete hain.</strong><br>Hint: document.documentElement (&lt;html&gt;) ka parentNode document hai, lekin document Element nahi hai (Document node hai), isliye documentElement.parentElement null return karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="15-misc-js.html">
+        <div class="label">← Previous</div>
+        <div class="title">Miscellaneous JS</div>
+      </a>
+      <a class="next" href="17-attributes-modifying-dom.html">
+        <div class="label">Next →</div>
+        <div class="title">Attributes &amp; Modifying DOM</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

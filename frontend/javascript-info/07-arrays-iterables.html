@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrays &amp; Iterables — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link active" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 7</div>
+      <div class="progress-pill">7 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Arrays · Iterables</span>
+      <h1>Arrays &amp; Iterables</h1>
+      <p class="subtitle">
+        Array JS mein "special" nahi hai — ye ek regular object hi hai jispe engine kuch extra internal
+        tricks apply karta hai taaki ordered, index-based data fast handle ho sake. Is chapter mein hum
+        dekhenge array andar se kaise kaam karta hai, kaunsa method mutate karta hai kaunsa nahi, aur
+        <code>for...of</code> ke peeche ka <code>Symbol.iterator</code> protocol jisse tum khud ke
+        custom iterable objects bana sakte ho.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#arrays-as-objects">Arrays objects hi hain — special handling ke saath</a></li>
+          <li><a href="#push-pop-shift-unshift">push/pop/shift/unshift — internals aur performance</a></li>
+          <li><a href="#loops">Array loop karne ke tareeke</a></li>
+          <li><a href="#splice-slice-concat">splice, slice, concat</a></li>
+          <li><a href="#foreach-search">forEach, indexOf/includes, find/filter</a></li>
+          <li><a href="#map-sort">map aur sort — comparator ka gotcha</a></li>
+          <li><a href="#reduce">reduce — step-by-step mechanics</a></li>
+          <li><a href="#mutating-table">Mutating vs non-mutating — cheat table</a></li>
+          <li><a href="#iterables">Iterable protocol — Symbol.iterator</a></li>
+          <li><a href="#custom-iterable">Custom iterable object banana</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="arrays-as-objects">Arrays objects hi hain — special handling ke saath</h2>
+      <p>
+        Root-level truth ye hai: <code>typeof []</code> "object" return karta hai. Array ek regular
+        object hi hai jiski property keys numeric strings hoti hain ("0", "1", "2"...), aur uske upar
+        ek special <strong>auto-updating <code>length</code> property</strong> hoti hai. Bracket
+        notation <code>arr[0]</code> wahi object property access syntax hai jo <code>obj["0"]</code>
+        karta — bas array ke case mein engine internally is pattern ko recognize karke ek optimized,
+        contiguous memory layout use karta hai (jaisa C arrays mein hota hai), jab tak tum us pattern
+        ko todo nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">length property — auto-tracking greatest index<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">]</span><span class="tok-punc">;</span>                 <span class="tok-com">// array literal — 5 elements, indexes 0 se 4</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// 5 — highest index (4) + 1, engine ye khud maintain karta hai</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">[</span><span class="tok-num">100</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"boom"</span><span class="tok-punc">;</span>                          <span class="tok-com">// index 100 pe direct assign — koi error nahi, arrays sparse ho sakte hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// 101 — length khud-ba-khud "highest index + 1" pe update ho gaya</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-punc">length</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span>                                 <span class="tok-com">// length ko WRITE karna bhi allowed hai — special behavior</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// [1, 2] — array TRUNCATE ho gaya, baaki elements permanently delete</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-punc">length</span> <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>                                 <span class="tok-com">// length badha diya, lekin naye slots "empty" hain (holes), values nahi</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">[</span><span class="tok-num">3</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// undefined — slot exist karta hai but koi value assign nahi hui</span></code></pre>
+      </div>
+      <p>
+        <code>length</code> koi "computed getter" nahi hai jo har baar array scan karke count nikaale —
+        engine ise ek internal field ki tarah maintain karta hai, har mutating operation (push, pop,
+        direct index assignment) ke saath sync mein update karta hai. Isiliye <code>arr.length</code>
+        read karna O(1) hai, O(n) scan nahi.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Array ko "generic object" ki tarah treat mat karo</div>
+        <p>
+          V8 (Chrome/Node ka engine) arrays ke liye do internal representations rakhta hai —
+          <strong>packed</strong> (dense, sab elements same type, koi gap nahi — fast, contiguous memory)
+          aur <strong>dictionary mode</strong> (jab tum non-numeric properties add karte ho, gaps
+          (sparse arrays) banate ho, ya reverse order mein fill karte ho). Ek baar dictionary mode mein
+          gaya array wapas packed nahi hota, aur uske baad ke saare operations slower ho jaate hain —
+          engine ab optimized fast-path use nahi kar sakta.
+        </p>
+      </div>
+
+      <h2 id="push-pop-shift-unshift">push/pop/shift/unshift — internals aur performance</h2>
+      <p>
+        Ye 4 methods array ke dono ends (start/end) pe elements add/remove karte hain — lekin inki
+        performance <strong>bilkul alag</strong> hai, aur ye difference internal memory model se directly
+        nikalta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">push/pop — end pe operate karte hain (fast)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">fruits</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Apple"</span><span class="tok-punc">,</span> <span class="tok-str">"Orange"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>            <span class="tok-com">// array with 2 elements, indexes 0 aur 1</span>
+
+<span class="tok-punc">fruits</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span><span class="tok-str">"Pear"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// index 2 pe naya element daalo — kisi aur element ka index nahi badalta</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">fruits</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// ["Apple", "Orange", "Pear"]</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">last</span> <span class="tok-punc">=</span> <span class="tok-punc">fruits</span><span class="tok-punc">.</span><span class="tok-fn">pop</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// last index (2) ka element hata ke return karo</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">last</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                              <span class="tok-com">// "Pear" — jo element pop hua wahi return hota hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">fruits</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// ["Apple", "Orange"] — baaki dono elements ka index waisa hi raha (0, 1)</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">shift/unshift — start pe operate karte hain (slow)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">fruits</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Apple"</span><span class="tok-punc">,</span> <span class="tok-str">"Orange"</span><span class="tok-punc">,</span> <span class="tok-str">"Pear"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>  <span class="tok-com">// 3 elements, indexes 0,1,2</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">first</span> <span class="tok-punc">=</span> <span class="tok-punc">fruits</span><span class="tok-punc">.</span><span class="tok-fn">shift</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// index 0 ka element nikaalo aur return karo</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">first</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                             <span class="tok-com">// "Apple"</span>
+
+<span class="tok-com">// yahaan internally: "Orange" jo index 1 pe tha, wo index 0 pe SHIFT hua,</span>
+<span class="tok-com">// "Pear" jo index 2 pe tha, wo index 1 pe SHIFT hua — HAR remaining element move hua</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">fruits</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// ["Orange", "Pear"] — indexes re-numbered 0,1</span>
+
+<span class="tok-punc">fruits</span><span class="tok-punc">.</span><span class="tok-fn">unshift</span><span class="tok-punc">(</span><span class="tok-str">"Apple"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// index 0 pe naya element daalo</span>
+
+<span class="tok-com">// internally: "Orange" (index 0) ko index 1 pe MOVE karo, "Pear" (index 1) ko index 2 pe MOVE karo,</span>
+<span class="tok-com">// TAB jaake "Apple" ko index 0 pe likho — insert se pehle HAR element ko ek slot right shift karna padta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">fruits</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// ["Apple", "Orange", "Pear"]</span></code></pre>
+      </div>
+      <p>
+        Root cause: array ka index ordering hi uski identity hai — <code>arr[0]</code> hamesha
+        "first" element hona chahiye. Jab <code>pop</code> last element hataata hai, kisi doosre
+        element ka index badalta hi nahi — sirf <code>length</code> ek se kam ho jaata hai aur last slot
+        free ho jaata hai. Isliye <code>push</code>/<code>pop</code> <strong>O(1)</strong>
+        (amortized constant time) hote hain.
+      </p>
+      <p>
+        Lekin <code>shift</code>/<code>unshift</code> ke case mein, agar index 0 pe kuch add/remove
+        karna hai, to baaki <strong>saare N elements</strong> ka index shift karna padega taaki ordering
+        sahi rahe. Ye <strong>O(n)</strong> operation hai — jitne zyada elements array mein, utna zyada
+        time. Ek 1-million-element array pe baar-baar <code>unshift</code> karna production mein real
+        performance bottleneck ban sakta hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: queue implement karna ho to</div>
+        <p>
+          Agar tumhe FIFO queue chahiye jisme frequently front se remove ho, to plain array pe
+          <code>shift()</code> loop mein mat lagao — O(n²) ban jaayega. Ya to array ko reverse order
+          mein maintain karo aur <code>pop</code>/<code>push</code> use karo (dono O(1)), ya phir ek
+          index pointer maintain karke "logical shift" simulate karo (elements delete na karke bas
+          pointer aage badhao), ya real linked-list-based structure use karo. React/Redux jaise large
+          state trees mein bhi yahi wajah hai ki array ke <em>start</em> mein insert/delete se bachte
+          hain — end pe operate karna hamesha cheaper hota hai.
+        </p>
+      </div>
+
+      <h2 id="loops">Array loop karne ke tareeke</h2>
+      <div class="code-block">
+        <div class="code-title">for vs for...of vs for...in<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"a"</span><span class="tok-punc">,</span> <span class="tok-str">"b"</span><span class="tok-punc">,</span> <span class="tok-str">"c"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;</span> <span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// classic index-based for loop — fastest, engine sabse zyada optimize karta hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">[</span><span class="tok-punc">i</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                             <span class="tok-com">// i se manually index access karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">item</span> <span class="tok-kw">of</span> <span class="tok-punc">arr</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                        <span class="tok-com">// for...of — Symbol.iterator protocol use karta hai (neeche detail mein)</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">item</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// direct VALUE milta hai, index nahi — cleanest syntax</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">key</span> <span class="tok-kw">in</span> <span class="tok-punc">arr</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                         <span class="tok-com">// for...in — ARRAYS ke liye AVOID karo</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// key yahaan STRING hai ("0","1","2"), number nahi</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        <code>for...in</code> object ki <strong>saari enumerable properties</strong> ko iterate karta
+        hai — sirf numeric indexes nahi. Agar kisi ne array pe ek extra custom property add ki hai
+        (jaise <code>arr.someLabel = "x"</code>), to <code>for...in</code> use bhi loop mein include kar
+        lega, jabki <code>for...of</code> aur index-based loop sirf actual array elements dekhte hain.
+        Ye general-purpose object-iteration ke liye design hua tha, arrays ke liye nahi — isliye
+        engines isse array-specific fast-path optimize nahi kar paate, aur real-world benchmarks mein
+        ye 10-100x slower dikhta hai bade arrays pe.
+      </p>
+
+      <h2 id="splice-slice-concat">splice, slice, concat</h2>
+      <div class="code-block">
+        <div class="code-title">splice — mutates original, remove+insert dono<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"I"</span><span class="tok-punc">,</span> <span class="tok-str">"study"</span><span class="tok-punc">,</span> <span class="tok-str">"JavaScript"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">splice</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// index 1 se shuru karke 1 element REMOVE karo — original ARRAY mutate hoga</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// ["I", "JavaScript"] — "study" gaya</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">removed</span> <span class="tok-punc">=</span> <span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">splice</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-str">"Let's"</span><span class="tok-punc">,</span> <span class="tok-str">"dance"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// index 0 se 1 hataao, wahan 2 naye insert karo</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// ["Let's", "dance", "JavaScript"]</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">removed</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                           <span class="tok-com">// ["I"] — splice hataye gaye elements ka NAYA array return karta hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">slice — original ko touch nahi karta, copy return karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"t"</span><span class="tok-punc">,</span> <span class="tok-str">"e"</span><span class="tok-punc">,</span> <span class="tok-str">"s"</span><span class="tok-punc">,</span> <span class="tok-str">"t"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// index 1 se 3 TAK (3 EXCLUDE) — ["e","s"], NAYA array</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-punc">-</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                       <span class="tok-com">// negative index — end se count, ["s","t"]</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// ["t","e","s","t"] — original BILKUL untouched</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">copy</span> <span class="tok-punc">=</span> <span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                       <span class="tok-com">// bina arguments — pura shallow-copy banane ka common idiom</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">concat — arrays/values merge karke naya array<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">concat</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// [1,2,3,4] — arrays ke andar ke elements FLATTEN hoke merge hote hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">concat</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">]</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-num">6</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>           <span class="tok-com">// [1,2,3,4,5,6] — plain values direct push ho jaate hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// [1,2] — arr khud MUTATE NAHI hua, naya array return hua</span></code></pre>
+      </div>
+
+      <h2 id="foreach-search">forEach, indexOf/includes, find/filter</h2>
+      <div class="code-block">
+        <div class="code-title">forEach + searching methods<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">[</span><span class="tok-str">"Bilbo"</span><span class="tok-punc">,</span> <span class="tok-str">"Gandalf"</span><span class="tok-punc">,</span> <span class="tok-str">"Nazgul"</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">item</span><span class="tok-punc">,</span> <span class="tok-punc">index</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span> <span class="tok-com">// callback ko (element, index) milta hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`${index}: ${item}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// forEach ka return value HAMESHA undefined hai — koi array nahi banta</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-kw">false</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">indexOf</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                       <span class="tok-com">// 1 — strict === comparison se dhundta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">includes</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                      <span class="tok-com">// true — indexOf se NAYA (SameValueZero algorithm), NaN bhi handle karta hai</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">users</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">{</span><span class="tok-attr">id</span><span class="tok-punc">:</span><span class="tok-num">1</span><span class="tok-punc">,</span><span class="tok-attr">name</span><span class="tok-punc">:</span><span class="tok-str">"John"</span><span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-punc">{</span><span class="tok-attr">id</span><span class="tok-punc">:</span><span class="tok-num">2</span><span class="tok-punc">,</span><span class="tok-attr">name</span><span class="tok-punc">:</span><span class="tok-str">"Pete"</span><span class="tok-punc">}</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">users</span><span class="tok-punc">.</span><span class="tok-fn">find</span><span class="tok-punc">(</span><span class="tok-punc">item</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">id</span> <span class="tok-punc">==</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// pehla MATCHING element return karta hai, mila to loop TURANT ruk jaata hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                         <span class="tok-com">// "John"</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">someUsers</span> <span class="tok-punc">=</span> <span class="tok-punc">users</span><span class="tok-punc">.</span><span class="tok-fn">filter</span><span class="tok-punc">(</span><span class="tok-punc">item</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">id</span> <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// find se DIFFERENT — filter SAARE matching elements ka array deta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">someUsers</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                 <span class="tok-com">// 2 — poora scan hota hai, early-exit nahi</span></code></pre>
+      </div>
+
+      <h2 id="map-sort">map aur sort — comparator ka gotcha</h2>
+      <div class="code-block">
+        <div class="code-title">map — transform karke naya array<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">lengths</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Bilbo"</span><span class="tok-punc">,</span> <span class="tok-str">"Gandalf"</span><span class="tok-punc">,</span> <span class="tok-str">"Nazgul"</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span><span class="tok-punc">item</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// har element ko length se REPLACE karo</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">lengths</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// [5, 7, 6] — original array ka SAME length, ek naya array</span></code></pre>
+      </div>
+      <p>
+        <code>sort()</code> ka default behavior ek classic gotcha hai jo har senior interview mein
+        puchha jaata hai: <strong>bina comparator ke, sort() SAARE elements ko string mein convert
+        karke compare karta hai</strong> — chahe wo numbers hi kyun na hon.
+      </p>
+      <div class="code-block">
+        <div class="code-title">sort() — default string coercion trap<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span> <span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">15</span> <span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">sort</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                                    <span class="tok-com">// NO comparator diya — default STRING sort chalega</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// [1, 15, 2] — GALAT! kyunki "15" &lt; "2" as STRINGS (char '1' &lt; char '2')</span>
+
+<span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">sort</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">a</span><span class="tok-punc">,</span> <span class="tok-punc">b</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">a</span> <span class="tok-punc">-</span> <span class="tok-punc">b</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// comparator: negative = a pehle, positive = b pehle, 0 = same</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                               <span class="tok-com">// [1, 2, 15] — SAHI numeric sort ab hua</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">countries</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Österreich"</span><span class="tok-punc">,</span> <span class="tok-str">"Andorra"</span><span class="tok-punc">,</span> <span class="tok-str">"Vietnam"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">countries</span><span class="tok-punc">.</span><span class="tok-fn">sort</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">a</span><span class="tok-punc">,</span> <span class="tok-punc">b</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">a</span><span class="tok-punc">.</span><span class="tok-fn">localeCompare</span><span class="tok-punc">(</span><span class="tok-punc">b</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// special/accented characters ke liye locale-aware compare</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">countries</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                         <span class="tok-com">// correct alphabetic order</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ sort() array ko IN-PLACE mutate karta hai</div>
+        <p>
+          <code>arr.sort()</code> naya array return nahi karta — wahi <code>arr</code> reorder karke
+          usi reference ko return karta hai. Agar tumhe original order preserve karni hai (e.g. React
+          state ya Redux mein), pehle <code>[...arr].sort(...)</code> ya <code>arr.slice().sort(...)</code>
+          se copy banao, phir sort karo — warna original data structure silently mutate ho jaayega aur
+          reference-equality checks (jo React re-render decide karte hain) confuse ho sakte hain.
+        </p>
+      </div>
+
+      <h2 id="reduce">reduce — step-by-step mechanics</h2>
+      <p>
+        <code>reduce()</code> array ko ek single value mein "collapse" karta hai, ek accumulator ko
+        carry karte hue. Andar kya ho raha hai wo dekhna zaroori hai kyunki interview mein iski
+        exact mechanics puchhi jaati hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">reduce — accumulator step by step<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">result</span> <span class="tok-punc">=</span> <span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">reduce</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">sum</span><span class="tok-punc">,</span> <span class="tok-punc">current</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">sum</span> <span class="tok-punc">+</span> <span class="tok-punc">current</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// callback(accumulator, item), 0 = initial value</span>
+
+<span class="tok-com">// Run 1: sum(accumulator) = 0 (initial), current = arr[0] = 1  →  return 0+1 = 1</span>
+<span class="tok-com">// Run 2: sum = 1 (pichhle run ka result), current = arr[1] = 2 →  return 1+2 = 3</span>
+<span class="tok-com">// Run 3: sum = 3, current = arr[2] = 3                        →  return 3+3 = 6</span>
+<span class="tok-com">// Run 4: sum = 6, current = arr[3] = 4                        →  return 6+4 = 10</span>
+<span class="tok-com">// Run 5: sum = 10, current = arr[4] = 5                       →  return 10+5 = 15</span>
+<span class="tok-com">// reduce ab aur elements nahi bache, to FINAL accumulator return karta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">result</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// 15</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">noInitial</span> <span class="tok-punc">=</span> <span class="tok-punc">arr</span><span class="tok-punc">.</span><span class="tok-fn">reduce</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">sum</span><span class="tok-punc">,</span> <span class="tok-punc">current</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">sum</span> <span class="tok-punc">+</span> <span class="tok-punc">current</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// initial value NAHI diya</span>
+
+<span class="tok-com">// jab initial value MISSING ho: reduce pehla element (arr[0]) ko hi STARTING accumulator maan leta hai,</span>
+<span class="tok-com">// aur loop index 1 se shuru karta hai — behavior SAME hai, bas Run 1 skip ho jaata hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">noInitial</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                        <span class="tok-com">// 15 — same result, but EMPTY array pe ye TypeError throw karega</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ reduce() bina initial value ke — empty array pe crash</div>
+        <p>
+          Agar array empty hai aur initial value nahi di, <code>reduce</code> "Reduce of empty array
+          with no initial value" TypeError throw karta hai — kyunki accumulator start karne ke liye
+          koi element hi nahi mila. Production code mein <strong>hamesha initial value do</strong>
+          (jaise <code>reduce(fn, 0)</code> ya <code>reduce(fn, [])</code>), taaki edge case safe rahe.
+        </p>
+      </div>
+
+      <h2 id="mutating-table">Mutating vs non-mutating — cheat table</h2>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Methods</th><th>Behavior</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Mutates original</strong></td><td><code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>, <code>copyWithin</code></td><td>Same array reference change hoti hai, in-place</td></tr>
+          <tr><td><strong>Naya array/value return karta hai</strong></td><td><code>slice</code>, <code>concat</code>, <code>map</code>, <code>filter</code>, <code>flat</code>, <code>flatMap</code></td><td>Original untouched, fresh copy/derived data</td></tr>
+          <tr><td><strong>Single value return, mutate nahi karta</strong></td><td><code>find</code>, <code>findIndex</code>, <code>indexOf</code>, <code>includes</code>, <code>reduce</code>, <code>some</code>, <code>every</code></td><td>Read-only scan/search operations</td></tr>
+          <tr><td><strong>Side-effect only, return value ignore</strong></td><td><code>forEach</code></td><td>Return hamesha <code>undefined</code> hota hai</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="iterables">Iterable protocol — Symbol.iterator</h2>
+      <p>
+        <code>for...of</code> loop kisi jaadu se kaam nahi karta — wo har object pe ek well-defined
+        <strong>protocol</strong> follow karta hai. Jab tum <code>for (let x of obj)</code> likhte ho,
+        engine internally ye steps karta hai:
+      </p>
+      <ol>
+        <li>Object ki <code>obj[Symbol.iterator]</code> method ko <strong>ek baar</strong> call karta hai — ye ek "iterator object" return karti hai.</li>
+        <li>Us iterator object ke <code>.next()</code> method ko <strong>baar-baar</strong> call karta hai.</li>
+        <li>Har <code>.next()</code> call se <code>{ value, done }</code> shape ka object milta hai.</li>
+        <li>Jab <code>done: true</code> milta hai, loop turant ruk jaata hai — <code>value</code> is baar ignore hota hai.</li>
+      </ol>
+      <p>
+        Arrays, strings, Map, Set — sab built-in <code>Symbol.iterator</code> implement karte hain,
+        isiliye ye sab <code>for...of</code> mein directly chal jaate hain. Plain <code>{}</code>
+        object <strong>iterable nahi</strong> hai — usme ye method missing hoti hai.
+      </p>
+
+      <h2 id="custom-iterable">Custom iterable object banana</h2>
+      <p>
+        Ye protocol khud implement karke hum apna ek object bana sakte hain jo <code>for...of</code>
+        mein directly use ho sake — bina usko pehle array mein convert kiye:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Custom "range" iterable — separate iterator object<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">range</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">from</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span>                                <span class="tok-com">// range ki starting value — plain data property</span>
+  <span class="tok-attr">to</span><span class="tok-punc">:</span> <span class="tok-num">5</span>                                   <span class="tok-com">// range ki ending value (inclusive)</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">range</span><span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-punc">iterator</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// well-known symbol key pe method assign — for...of isi ko dhundta hai</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">{</span>                                <span class="tok-com">// ek NAYA, alag "iterator" object return kar rahe hain (range se independent state)</span>
+    <span class="tok-attr">current</span><span class="tok-punc">:</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">from</span><span class="tok-punc">,</span>              <span class="tok-com">// iterator apna khud ka "current position" track karta hai</span>
+    <span class="tok-attr">last</span><span class="tok-punc">:</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">to</span><span class="tok-punc">,</span>                   <span class="tok-com">// upper bound copy kar li closure mein</span>
+
+    <span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                            <span class="tok-com">// for...of is method ko repeatedly call karega</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">current</span> <span class="tok-punc">&lt;=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">last</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// abhi range khatam nahi hui</span>
+        <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">false</span><span class="tok-punc">,</span> <span class="tok-attr">value</span><span class="tok-punc">:</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">current</span><span class="tok-punc">++</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// current return karo, PHIR increment karo (post-increment)</span>
+      <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+        <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>       <span class="tok-com">// range khatam — for...of ko signal ki loop ruk jaaye</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">num</span> <span class="tok-kw">of</span> <span class="tok-punc">range</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                     <span class="tok-com">// engine: range[Symbol.iterator]() call karo, phir .next() loop mein</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">num</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// 1, 2, 3, 4, 5 — ek ek karke print</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// FAYDA: alag iterator object banane se range object khud STATELESS reh gaya —</span>
+<span class="tok-com">// isliye do parallel for...of loops SAME range pe INDEPENDENTLY chal sakte hain</span></code></pre>
+      </div>
+      <p>
+        Ek shortcut approach bhi hai jahan object khud hi apna iterator ban jaata hai
+        (<code>next</code> aur state dono usi object pe) — simpler lekin ek limitation ke saath:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Merged iterable — object khud apna iterator hai (limitation ke saath)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">range</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">from</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span>
+  <span class="tok-attr">to</span><span class="tok-punc">:</span> <span class="tok-num">5</span><span class="tok-punc">,</span>
+
+  <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-punc">iterator</span><span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                    <span class="tok-com">// computed method name syntax — Symbol.iterator ko method key banaya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">current</span> <span class="tok-punc">=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">from</span><span class="tok-punc">;</span>       <span class="tok-com">// state ko object pe HI reset kar rahe hain (naya object nahi banaya)</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">;</span>                       <span class="tok-com">// object khud ko iterator ki tarah return kar raha hai (usme next() hai)</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">current</span> <span class="tok-punc">&lt;=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">to</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">false</span><span class="tok-punc">,</span> <span class="tok-attr">value</span><span class="tok-punc">:</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">current</span><span class="tok-punc">++</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">num</span> <span class="tok-kw">of</span> <span class="tok-punc">range</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">num</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// 1, 2, 3, 4, 5</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// LIMITATION: yahaan sirf EK "current" state hai (object pe), isliye</span>
+<span class="tok-com">// DO nested for...of loops SAME range pe ek doosre ko interfere karenge</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Iterable vs array-like — do alag concepts</div>
+        <p>
+          <strong>Iterable</strong> = <code>Symbol.iterator</code> implement karta hai (behavior-based,
+          <code>for...of</code> mein chalta hai). <strong>Array-like</strong> = numeric indexes +
+          <code>length</code> property rakhta hai (shape-based, sirf <code>arr[i]</code> se access
+          karo). Ek object <em>dono</em> ho sakta hai, <em>ek</em> ho sakta hai, ya <em>koi nahi</em> —
+          jaise <code>{0: "a", 1: "b", length: 2}</code> array-like hai but iterable nahi (bina
+          Symbol.iterator ke, <code>for...of</code> throw karega). <code>Array.from(arrayLikeOrIterable)</code>
+          dono cases handle karta hai aur ek asli array banata hai — jispe phir <code>map</code>,
+          <code>filter</code>, etc use kar sako.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: for...of internally kya use karta hai</div>
+        <p>
+          Modern JS mein bahut si cheezein <code>Symbol.iterator</code> ke upar hi built hain —
+          spread operator (<code>[...iterable]</code>), destructuring
+          (<code>let [a, b] = iterable</code>), <code>Array.from</code>, aur generators (jo automatically
+          <code>Symbol.iterator</code> implement karte hain). Jab tum khud ek custom data structure
+          banate ho (jaise ek linked list, ya paginated data-fetcher), <code>Symbol.iterator</code>
+          implement karke usko is poore ecosystem ke saath free mein compatible bana sakte ho — bina har
+          jagah manual <code>.toArray()</code> conversion likhe. Generators (<code>function*</code>)
+          isko aur simple bana dete hain kyunki wo khud-ba-khud ek valid iterator return karte hain.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Array ek regular object hai jispe engine special optimizations (contiguous, packed memory) apply karta hai — <code>length</code> auto-tracking hai aur writable bhi.</li>
+        <li><code>push</code>/<code>pop</code> end pe operate karke O(1) hain; <code>shift</code>/<code>unshift</code> start pe operate karte hain to har baaki element re-index karna padta hai — O(n).</li>
+        <li><code>for...in</code> array pe avoid karo — ye all-properties enumerate karta hai aur slow hai; <code>for...of</code> ya index-based <code>for</code> use karo.</li>
+        <li><code>sort()</code> bina comparator ke default STRING comparison karta hai — numbers ke liye hamesha <code>(a, b) => a - b</code> do.</li>
+        <li>Mutating methods (splice, sort, reverse, push/pop/shift/unshift) original ko badalte hain; non-mutating (slice, concat, map, filter) naya array return karte hain.</li>
+        <li><code>reduce</code> ek accumulator ko step-by-step carry karta hai; initial value na do to first element accumulator ban jaata hai, aur empty array pe error throw karta hai.</li>
+        <li><code>for...of</code> Symbol.iterator protocol follow karta hai — <code>[Symbol.iterator]()</code> se ek iterator object milta hai jiska <code>.next()</code> repeatedly call hota hai jab tak <code>done: true</code> na mile.</li>
+        <li>Iterable (behavior: Symbol.iterator) aur array-like (shape: indexes + length) alag concepts hain — <code>Array.from()</code> dono ko real array mein convert kar sakta hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>push/pop O(1) kyun hain lekin shift/unshift O(n)?</strong><br>Hint: array ordering maintain karne ke liye start pe insert/remove hone par baaki saare elements ka index shift karna padta hai; end pe operate karne se doosre elements ke index untouched rehte hain.</li>
+        <li><strong>arr.length = 2 likhne se kya hota hai agar array mein 5 elements the?</strong><br>Hint: array truncate ho jaata hai, index 2 se aage ke elements permanently delete ho jaate hain — length writable property hai, sirf readonly counter nahi.</li>
+        <li><strong>sort() bina argument ke [10, 2, 1] ko kaise sort karega, aur kyun?</strong><br>Hint: [1, 10, 2] — default sort saare elements ko STRING mein convert karke lexicographic (char-by-char) compare karta hai.</li>
+        <li><strong>map() aur forEach() mein practical farak kya hai?</strong><br>Hint: map() naya array return karta hai (transform ke liye), forEach() hamesha undefined return karta hai (sirf side-effects ke liye) — forEach ka return chain nahi kar sakte.</li>
+        <li><strong>reduce() mein initial value optional hai — na dene par kya risk hai?</strong><br>Hint: first element hi starting accumulator ban jaata hai aur loop index 1 se shuru hota hai; agar array EMPTY hai to TypeError throw hoga kyunki koi starting value hi nahi mila.</li>
+        <li><strong>for...of kaise pata karta hai ki loop kab rukna hai?</strong><br>Hint: object ke Symbol.iterator method se mila iterator object ka .next() baar baar call hota hai; jis moment {done: true} return hota hai, loop stop ho jaata hai.</li>
+        <li><strong>Ek object array-like hai lekin iterable nahi — for...of chalane pe kya hoga?</strong><br>Hint: TypeError throw hoga "is not iterable" — kyunki for...of ko Symbol.iterator method chahiye, sirf numeric-index+length shape kaafi nahi hai.</li>
+        <li><strong>Kya splice() aur slice() same kaam karte hain? Farak batao.</strong><br>Hint: naam similar hone ke bawajood bilkul alag — splice() original array ko MUTATE karta hai (remove+insert), slice() original ko chhue bina ek NAYA sub-array copy return karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="06-numbers-strings.html">
+        <div class="label">← Previous</div>
+        <div class="title">Numbers &amp; Strings</div>
+      </a>
+      <a class="next" href="08-collections-destructuring.html">
+        <div class="label">Next →</div>
+        <div class="title">Collections &amp; Destructuring</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

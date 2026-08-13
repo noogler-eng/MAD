@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RegExp II — Quantifiers/Groups — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link active" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 33</div>
+      <div class="progress-pill">33 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">RegExp · Quantifiers · Backtracking · Groups</span>
+      <h1>RegExp II — Quantifiers/Groups</h1>
+      <p class="subtitle">
+        Chapter 32 mein humne regex ke atoms — character classes, anchors, escaping — cover kiye. Ab hum
+        un atoms ko <strong>repeat</strong> karna (quantifiers), <strong>group</strong> karna (capturing/
+        non-capturing groups), unhe <strong>naam dena</strong> (named groups), pattern ke andar hi ek
+        matched cheez ko <strong>dobara reference</strong> karna (backreferences), aur multiple options
+        mein se <strong>ek choose</strong> karna (alternation) seekhenge. Ye sab combine karke real-world
+        regex — email, dates, HTML tags, repeated words detect karna — likh paoge. Sabse important root
+        concept jo yahan hai: <strong>greedy matching + backtracking</strong> — regex engine internally
+        kaam kaise karta hai, wo samjhe bina tum apne hi patterns ke unexpected behavior se confuse
+        hote rahoge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#quantifiers">Quantifiers: + * ? {n} {n,} {n,m}</a></li>
+          <li><a href="#greedy">Greedy matching — root algorithm + backtracking walkthrough</a></li>
+          <li><a href="#lazy">Lazy quantifiers: +? *? ??</a></li>
+          <li><a href="#groups">Capturing groups — (...)  aur match()/exec()/matchAll()</a></li>
+          <li><a href="#named-groups">Named groups: (?&lt;name&gt;...)</a></li>
+          <li><a href="#non-capturing">Non-capturing groups: (?:...)</a></li>
+          <li><a href="#backreferences">Backreferences: \N aur \k&lt;name&gt;</a></li>
+          <li><a href="#alternation">Alternation: | aur precedence gotcha</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="quantifiers">Quantifiers — kitni baar repeat karna hai</h2>
+      <p>
+        Quantifier ek atom (character, group, character class) ke <strong>baad</strong> laga ke batata hai
+        ki wo atom kितni baar repeat ho sakta hai. Base syntax <code>{n,m}</code> hai — baaki sab (<code>+
+        * ?</code>) uske shorthand hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Quantifier syntax — full table<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// {n} — bilkul n baar. Exact count.</span>
+<span class="tok-punc">/</span><span class="tok-str">\d{5}</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"12345"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true — exactly 5 digits chahiye, na kam na zyada (well, substring match to hoga)</span>
+
+<span class="tok-com">// {n,m} — n se m baar (inclusive range)</span>
+<span class="tok-punc">/</span><span class="tok-str">\d{3,5}</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-str">"1234567"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// match "12345" — 5 digits le lega kyunki greedy hai (aage discuss karenge)</span>
+
+<span class="tok-com">// {n,} — n ya usse zyada (upper bound koi nahi)</span>
+<span class="tok-punc">/</span><span class="tok-str">\d{3,}</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"12"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// false — sirf 2 digits hain, minimum 3 chahiye the</span>
+
+<span class="tok-com">// + — {1,} ka shorthand — "one or more"</span>
+<span class="tok-punc">/</span><span class="tok-str">\d+</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-str">"abc123xyz"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// match "123" — kam se kam 1 digit zaroori hai</span>
+
+<span class="tok-com">// * — {0,} ka shorthand — "zero or more" (poori tarah absent bhi ho sakta hai)</span>
+<span class="tok-punc">/</span><span class="tok-str">\d0*</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-str">"5000 rupees"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// match "5000" — ek digit phir jitne bhi zeros (0 bhi ho sakte the)</span>
+
+<span class="tok-com">// ? — {0,1} ka shorthand — "zero or one", matlab optional</span>
+<span class="tok-punc">/</span><span class="tok-str">colou?r</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"color"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// true — "u" optional hai, US spelling match ho gayi</span>
+<span class="tok-punc">/</span><span class="tok-str">colou?r</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"colour"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true — UK spelling bhi match, kyunki "u" 0 ya 1 baar dono chalta hai</span></code></pre>
+      </div>
+
+      <p>
+        Real-world pattern examples — quantifiers combine hoke practical regex banate hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Real patterns using quantifiers<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Decimal number: ek ya zyada digits, phir literal dot, phir ek ya zyada digits</span>
+<span class="tok-kw">const</span> <span class="tok-fn">decimalRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">\d+\.\d+</span><span class="tok-punc">/</span><span class="tok-punc">;</span>       <span class="tok-com">// \. escaped hai kyunki plain "." koi bhi character match karta</span>
+<span class="tok-fn">decimalRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"3.14"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// true</span>
+
+<span class="tok-com">// HTML opening tag: "<", ek lowercase letter, phir letters/digits jitne bhi, phir ">"</span>
+<span class="tok-kw">const</span> <span class="tok-fn">tagRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">&lt;[a-z][a-z0-9]*&gt;</span><span class="tok-punc">/</span><span class="tok-punc">;</span>   <span class="tok-com">// [a-z0-9]* zero-or-more hai kyunki "<p>" jaisa single-letter tag bhi valid hai</span>
+<span class="tok-fn">tagRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"&lt;h1&gt;"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// true</span>
+
+<span class="tok-com">// Hex color code: "#" phir exactly 6 hex digits</span>
+<span class="tok-kw">const</span> <span class="tok-fn">hexColorRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">#[a-f0-9]{6}</span><span class="tok-punc">/</span><span class="tok-punc">i</span><span class="tok-punc">;</span>  <span class="tok-com">// {6} exact count — kam ya zyada digits allow nahi</span>
+<span class="tok-fn">hexColorRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"#FF5733"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// true — "i" flag se uppercase F-A bhi match ho gaya</span></code></pre>
+      </div>
+
+      <h2 id="greedy">Greedy matching — root-level algorithm + backtracking walkthrough</h2>
+      <p>
+        Ye is chapter ka sabse important root-level concept hai. Default mein <strong>har quantifier
+        greedy hota hai</strong> — matlab regex engine pehle <strong>zyada se zyada</strong> characters
+        consume karne ki koshish karta hai, aur sirf tab kam karta hai jab match fail ho raha ho. Isko
+        "greedy + backtrack" algorithm kehte hain, aur ye internally exactly aise kaam karta hai:
+      </p>
+      <ol>
+        <li>Engine string ke position 0 (ya jahan se match start hoti hai) pe pattern try karta hai.</li>
+        <li>Quantifier wale atom (jaise <code>.+</code>) ke liye, engine <strong>string ke bilkul end
+          tak</strong> jitna consume kar sakta hai kar leta hai — bina ye check kiye ki baaki pattern
+          match hoga ya nahi.</li>
+        <li>Ab engine pattern mein <strong>aage badhta hai</strong> — agle atom ko match karne ki koshish
+          karta hai us position se jahan greedy consumption ruki.</li>
+        <li>Agar agla atom match nahi hota, engine <strong>backtrack</strong> karta hai — greedy quantifier
+          ne jo last character consume kiya tha use "return" kar deta hai (ek character chhod deta hai),
+          aur phir se agla atom try karta hai.</li>
+        <li>Ye step 4 repeat hota hai — one character at a time backtrack — jab tak ya to match mil jaaye,
+          ya quantifier ka minimum count (jaise <code>+</code> ke liye 1) bhi violate ho jaaye, jisse
+          poora match fail ho jaata hai us starting position se.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title">Backtracking — step-by-step walkthrough<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">str</span> <span class="tok-punc">=</span> <span class="tok-str">'a "witch" and her "broom" is one'</span><span class="tok-punc">;</span> <span class="tok-com">// do quoted phrases hain isme</span>
+<span class="tok-kw">const</span> <span class="tok-fn">re</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">".+"</span><span class="tok-punc">/</span><span class="tok-punc">;</span>                          <span class="tok-com">// greedy: ek quote se shuru, .+ kuch bhi, phir ek quote</span>
+
+<span class="tok-com">// STEP 1: engine pehla `"` position 2 pe dhoondta hai — literal match, aage badho</span>
+<span class="tok-com">// STEP 2: `.+` ab GREEDY hai — bilkul END of string tak sab kuch consume kar leta hai</span>
+<span class="tok-com">//         (kyunki "." newline ke alawa kuch bhi match karta hai, aur "+" as much as possible)</span>
+<span class="tok-com">//         is point pe .+ ne "witch" and her "broom" is one  -- (poora baaki string) le liya</span>
+<span class="tok-com">// STEP 3: ab pattern mein agla atom hai closing `"` — engine end-of-string pe check karta hai</span>
+<span class="tok-com">//         wahan `"` nahi hai (string "one" pe end hoti hai) → FAIL, backtrack shuru</span>
+<span class="tok-com">// STEP 4: engine .+ se EK character wapas deta hai (last char 'e' chhod deta hai), phir check</span>
+<span class="tok-com">//         karta hai kya ab us naye position pe `"` hai — nahi, "n" hai → FAIL, aur backtrack</span>
+<span class="tok-com">// STEP 5: ye har position pe repeat hota hai, right-to-left, jab tak ek `"` naa mil jaaye</span>
+<span class="tok-com">//         → jo pehla `"` milta hai (right se scan karte hue) wo "broom" ke BAAD wala hai</span>
+<span class="tok-com">//         kyunki backtracking RIGHTMOST se hoti hai, LEFTMOST se nahi!</span>
+
+<span class="tok-fn">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">re</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// '"witch" and her "broom"' — DONO quotes ke beech ka sab kuch, ek match ke roop mein!</span>
+<span class="tok-com">// Yehi surprising result hai jo greedy quantifier deta hai — humne socha tha sirf "witch" milega</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Greedy-by-default = classic "regex for HTML tags" gotcha</div>
+        <p>
+          Ye exactly wahi reason hai jiske wajah se <code>/&lt;.+&gt;/</code> se HTML tags parse karna
+          disaster hai. String <code>&lt;h1&gt;title&lt;/h1&gt;</code> pe ye pattern poora
+          <code>&lt;h1&gt;title&lt;/h1&gt;</code> match kar lega — ek single tag nahi, balki opening se
+          leke closing tag tak ka sab kuch — kyunki <code>.+</code> greedy hai aur last <code>&gt;</code>
+          tak backtrack karega. Fix: ya to <code>[^&gt;]+</code> use karo (explicitly <code>&gt;</code>
+          ko exclude karke — best practice), ya lazy quantifier <code>.+?</code> use karo (neeche
+          discuss). Production rule of thumb: HTML/XML ko regex se parse mat karo, ek proper parser
+          (DOMParser, cheerio) use karo — regex sirf simple, well-defined string patterns ke liye hai.
+        </p>
+      </div>
+
+      <h2 id="lazy">Lazy quantifiers — +? *? ?? — minimum match, first success pe ruk jao</h2>
+      <p>
+        Kisi bhi greedy quantifier ke baad ek extra <code>?</code> laga do (<code>+?</code>, <code>*?</code>,
+        <code>??</code>, <code>{n,m}?</code>) to wo <strong>lazy</strong> ban jaata hai. Lazy mode mein
+        algorithm reverse hota hai: engine <strong>minimum</strong> characters consume karta hai (jaise
+        <code>+?</code> ke liye sirf 1), phir turant baaki pattern check karta hai. Agar match fail ho, tab
+        hi ek-ek character aage badhta hai (expand karta hai) — first successful match milte hi ruk jaata
+        hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Lazy vs greedy — same string, different result<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">str</span> <span class="tok-punc">=</span> <span class="tok-str">'a "witch" and her "broom" is one'</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// GREEDY — as much as possible, phir backtrack</span>
+<span class="tok-fn">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-str">".+"</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// [ '"witch" and her "broom"' ] — ek hi bada match</span>
+
+<span class="tok-com">// LAZY — minimum possible, first success pe stop</span>
+<span class="tok-fn">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-str">".+?"</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// [ '"witch"', '"broom"' ] — do alag matches, jo humein chahiye tha</span>
+<span class="tok-com">// "?" ke baad "+" ko lazy bana diya: `.` sirf 1 character leke turant closing " check karta hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Lazy hamesha "sahi" solution nahi hai</div>
+        <p>
+          Lazy quantifiers step-by-step incrementally match karte hain (1 char try, fail, 2 chars try,
+          fail, ...) — bade strings pe ye greedy se <strong>zyada backtracking steps</strong> le sakta hai
+          agar delimiter door hai. Zyadatar production code mein <code>[^"]+</code> (character class jo
+          explicitly quote ko exclude karta hai) <code>.+?</code> se better hai — kyunki
+          <code>[^"]+</code> ko backtrack karne ki zaroorat hi nahi padti, wo directly quote tak match
+          karta hai, ek hi pass mein. Lazy quantifier tab use karo jab exclusion character class likhna
+          impractical ho (jaise multiple stop-characters).
+        </p>
+      </div>
+
+      <h2 id="groups">Capturing groups — (...) aur match()/exec()/matchAll()</h2>
+      <p>
+        Parentheses <code>(...)</code> do kaam karte hain: (1) quantifier ko poore group pe apply karne
+        dete hain (jaise <code>(go)+</code> — "go" repeat), aur (2) us matched substring ko
+        <strong>capture</strong> kar lete hain — result array mein separate item ban jaata hai. Groups
+        left-se-right, opening bracket ke order mein <strong>numbered</strong> hote hain, index 1 se
+        (index 0 hamesha full match hota hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Capturing groups — numbering aur access<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">str</span> <span class="tok-punc">=</span> <span class="tok-str">"&lt;h1&gt;"</span><span class="tok-punc">;</span>
+<span class="tok-kw">const</span> <span class="tok-fn">re</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">&lt;(.+?)&gt;</span><span class="tok-punc">/</span><span class="tok-punc">;</span>    <span class="tok-com">// group 1 = tag name, lazy .+? kyunki greedy poori string tak jaata</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">result</span> <span class="tok-punc">=</span> <span class="tok-fn">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">re</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">result</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">;</span>  <span class="tok-com">// "<h1>" — index 0 hamesha FULL match hota hai, group na ho tab bhi</span>
+<span class="tok-fn">result</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">;</span>  <span class="tok-com">// "h1"   — pehle (aur yahan sirf ek) capturing group ka content</span>
+
+<span class="tok-com">// NESTED groups — numbering opening "(" ke sequence se hoti hai, left-to-right</span>
+<span class="tok-kw">const</span> <span class="tok-fn">nestedRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">&lt;(([a-z]+)\s*([^&gt;]*))&gt;</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-com">// group 1 = poora "tagname attrs", group 2 = sirf tagname, group 3 = sirf attrs</span>
+<span class="tok-str">"&lt;a href=x&gt;"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">nestedRe</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// [0]="<a href=x>" [1]="a href=x" [2]="a" [3]="href=x"</span>
+
+<span class="tok-com">// exec() — ek baar mein ek match deta hai, lastIndex track karta hai "g" flag ke saath</span>
+<span class="tok-kw">const</span> <span class="tok-fn">gre</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">\d+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-fn">m</span><span class="tok-punc">;</span>
+<span class="tok-kw">while</span> <span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-fn">m</span> <span class="tok-punc">=</span> <span class="tok-fn">gre</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-str">"a1 b22 c333"</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">!==</span> <span class="tok-kw">null</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">m</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">,</span> <span class="tok-fn">m</span><span class="tok-punc">.</span><span class="tok-fn">index</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// har call pe agla match — "1" 1, "22" 4, "333" 8</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// matchAll() — modern iterator-based tareeka, groups bhi preserve karta hai (match() with "g" nahi karta)</span>
+<span class="tok-kw">const</span> <span class="tok-fn">matches</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">...</span><span class="tok-str">"a1 b22"</span><span class="tok-punc">.</span><span class="tok-fn">matchAll</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-str">([a-z])(\d+)</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// spread iterator array mein</span>
+<span class="tok-fn">matches</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// "a" — group 1, first match ka</span>
+<span class="tok-fn">matches</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">index</span><span class="tok-punc">;</span> <span class="tok-com">// 3   — matchAll ka har result .index aur .input bhi deta hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: match() with "g" flag groups DROP kar deta hai</div>
+        <p>
+          Ye ek bahut common bug source hai. <code>str.match(/pattern/g)</code> — agar <code>g</code> flag
+          hai — sirf <strong>full match strings ka array</strong> deta hai, koi groups nahi. Agar tumhe
+          groups <strong>aur</strong> multiple matches dono chahiye, use <code>matchAll()</code> (ES2020+)
+          ya phir <code>exec()</code> ko manually loop mein call karo (jaisa upar dikhaya). Interview mein
+          ye bahut common trick question hai: "match() with g flag groups kyun nahi deta?" — answer: design
+          decision hai, kyunki with g flag ka use-case typically "sab occurrences dhoondo" hota hai, aur
+          multiple matches ke groups ko ek flat array mein represent karna ambiguous hota — isliye
+          alag API (matchAll) banaya gaya jo iterator of full-result-objects deta hai.
+        </p>
+      </div>
+
+      <h2 id="named-groups">Named groups — (?&lt;name&gt;...)</h2>
+      <p>
+        Numbered groups (<code>result[1]</code>, <code>result[2]</code>...) readability kill karte hain
+        jab pattern complex ho jaaye — kaunsa number kis cheez ka hai, yaad rakhna mushkil hota hai. Named
+        groups <code>(?&lt;name&gt;...)</code> syntax se semantic naam dete hain, aur match result ke
+        <code>.groups</code> object mein accessible hote hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Named groups — date parsing<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// (?<year>...) — "year" naam ka group, (?<month>...) aur (?<day>...) bhi</span>
+<span class="tok-kw">const</span> <span class="tok-fn">dateRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">(?&lt;year&gt;[0-9]{4})-(?&lt;month&gt;[0-9]{2})-(?&lt;day&gt;[0-9]{2})</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">match</span> <span class="tok-punc">=</span> <span class="tok-str">"2026-08-13"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">dateRe</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-kw">const</span> <span class="tok-fn">groups</span> <span class="tok-punc">=</span> <span class="tok-fn">match</span><span class="tok-punc">.</span><span class="tok-fn">groups</span><span class="tok-punc">;</span>       <span class="tok-com">// .groups — named groups object, agar koi named group nahi to undefined</span>
+
+<span class="tok-fn">groups</span><span class="tok-punc">.</span><span class="tok-fn">year</span><span class="tok-punc">;</span>   <span class="tok-com">// "2026" — plain property access, index nahi</span>
+<span class="tok-fn">groups</span><span class="tok-punc">.</span><span class="tok-fn">month</span><span class="tok-punc">;</span>  <span class="tok-com">// "08"</span>
+<span class="tok-fn">groups</span><span class="tok-punc">.</span><span class="tok-fn">day</span><span class="tok-punc">;</span>    <span class="tok-com">// "13"</span>
+
+<span class="tok-com">// replace() mein bhi named group use kar sakte ho: $<name></span>
+<span class="tok-str">"2026-08-13"</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-fn">dateRe</span><span class="tok-punc">,</span> <span class="tok-str">'$&lt;day&gt;/$&lt;month&gt;/$&lt;year&gt;'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "13/08/2026" — DD/MM/YYYY format</span></code></pre>
+      </div>
+
+      <h2 id="non-capturing">Non-capturing groups — (?:...)</h2>
+      <p>
+        Kabhi-kabhi tumhe sirf <strong>quantifier ko group pe apply karna hai</strong> — us group ka
+        content capture nahi karna. Har capturing group ek chhota internal overhead rakhta hai (engine ko
+        uska start/end position track karna padta hai), aur agar tum use kabhi access nahi karoge to wo
+        result array mein bas noise add karta hai. <code>(?:...)</code> syntax exactly grouping deta hai
+        without capturing.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Non-capturing group — grouping without indexing overhead<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// (?:go)+ — "go" ko ek unit ki tarah treat karo aur repeat allow karo, LEKIN capture mat karo</span>
+<span class="tok-kw">const</span> <span class="tok-fn">re</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">I love (?:HTML|CSS)</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-str">"I love HTML"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">re</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// "I love HTML" — full match theek se aata hai</span>
+<span class="tok-str">"I love HTML"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">re</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// undefined — koi group 1 hai hi nahi, (?:...) count nahi hota numbering mein</span>
+
+<span class="tok-com">// Compare with a capturing version, jahan array bloat hota hai jab humein use nahi karna:</span>
+<span class="tok-kw">const</span> <span class="tok-fn">reCapturing</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">I love (HTML|CSS)</span><span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// yahan group 1 bhi capture hoga, agar zaroorat na ho to waste hai</span></code></pre>
+      </div>
+
+      <h2 id="backreferences">Backreferences — \N aur \k&lt;name&gt; — pattern ke andar hi "wahi text dobara"</h2>
+      <p>
+        Backreference ek pehle-capture-kiye-gaye group ke content ko <strong>pattern ke andar hi</strong>
+        dobara reference karta hai — matlab "yahan bilkul wahi text hona chahiye jo group N mein match hua
+        tha", literal regex syntax nahi. Numbered group ke liye <code>\N</code>, named group ke liye
+        <code>\k&lt;name&gt;</code>. (Note: pattern ke andar backslash syntax hai; <code>replace()</code>
+        strings mein dollar syntax — <code>$1</code>, <code>$&lt;name&gt;</code> — hota hai, dono confuse
+        mat karo.)
+      </p>
+      <div class="code-block">
+        <div class="code-title">Backreference — matching quotes + repeated words<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Quoted string jahan opening aur closing quote MATCH karna chahiye (dono ' ya dono ")</span>
+<span class="tok-kw">const</span> <span class="tok-fn">quoteRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">(['"])(.*?)\1</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>
+<span class="tok-com">// group 1 = jo bhi quote char pehle mila (' ya "), \1 = wahi character dobara chahiye closing pe</span>
+
+<span class="tok-str">`He said: "She's the one!".`</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">quoteRe</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// ['"She's the one!"'] — poori double-quoted phrase, apostrophe (') ke beech mein hone ke bawajood</span>
+<span class="tok-com">// bina backreference ke, engine galti se pehla ' ko hi closing quote maan leta aur galat jagah rukta</span>
+
+<span class="tok-com">// Named version — same logic, zyada readable jab multiple backreferences ho</span>
+<span class="tok-kw">const</span> <span class="tok-fn">namedQuoteRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">(?&lt;quote&gt;['"])(.*?)\k&lt;quote&gt;</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Classic use-case: repeated consecutive word detect karna (typo jaise "the the")</span>
+<span class="tok-kw">const</span> <span class="tok-fn">repeatedWordRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">\b(\w+)\s+\1\b</span><span class="tok-punc">/</span><span class="tok-punc">i</span><span class="tok-punc">;</span>
+<span class="tok-com">// \b word boundary, (\w+) ek word capture karo, \s+ whitespace, \1 SAME word dobara, \b boundary</span>
+<span class="tok-fn">repeatedWordRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"this is the the bug"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — "the the" caught</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Non-capturing group ko backreference nahi kar sakte</div>
+        <p>
+          <code>(?:...)</code> group content capture hi nahi karta, isliye <code>\1</code> ya
+          <code>\k&lt;name&gt;</code> se use reference karne ka koi tareeka nahi hai — logically bhi
+          makes sense, kyunki backreference ko "kya match hua tha" yaad rakhna padta hai, aur
+          non-capturing group ye information store hi nahi karta. Agar tumhe kisi group ko backreference
+          karna hai, wo <strong>zaroor</strong> capturing (numbered ya named) hona chahiye.
+        </p>
+      </div>
+
+      <h2 id="alternation">Alternation — | — "OR", lekin LOWEST precedence</h2>
+      <p>
+        <code>|</code> pattern ke multiple alternatives try karta hai, left-to-right, jo pehla match kare
+        wahi use hota hai. Character class <code>[ae]</code> se fundamentally different hai — character
+        class sirf <strong>ek single character</strong> ke options deta hai, jabki alternation
+        <strong>poori sub-expressions</strong> ke options deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Alternation basics — character class vs alternation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Character class — sirf EK character ke options</span>
+<span class="tok-punc">/</span><span class="tok-str">gr[ae]y</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"gray"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — "a" ya "e" us ek slot mein</span>
+
+<span class="tok-com">// Alternation — poore SUB-PATTERNS ke options</span>
+<span class="tok-punc">/</span><span class="tok-str">gra|ey</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"grey"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — lekin "gra" YA "ey" ki poori string match ho rahi, gray/grey wala use-case nahi hai</span>
+
+<span class="tok-com">// Multi-language OR</span>
+<span class="tok-kw">const</span> <span class="tok-fn">langRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">html|php|css|java(script)?</span><span class="tok-punc">/</span><span class="tok-punc">gi</span><span class="tok-punc">;</span> <span class="tok-com">// case-insensitive, global — "(script)?" optional suffix</span>
+<span class="tok-str">"I know HTML and JavaScript"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">langRe</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["HTML", "Java" ... wait: "javascript" matches "java"+optional "script"]</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Precedence gotcha: | sabse LOW precedence hai poore pattern mein</div>
+        <p>
+          Ye alternation ka sabse bada gotcha hai. <code>|</code> ka scope <strong>poora pattern</strong>
+          hai (jab tak group na ho) — sirf immediate neighbours nahi. Matlab
+          <code>/I love HTML|CSS/</code> ka matlab <strong>"I love HTML" YA "CSS"</strong> hai, na ki "I
+          love HTML" ya "I love CSS". Fix explicit grouping se: <code>/I love (?:HTML|CSS)/</code>.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Precedence gotcha — real bug in a time regex<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Buggy: time format HH:MM match karna chahte hain, 00-23 ghante, 00-59 minute</span>
+<span class="tok-kw">const</span> <span class="tok-fn">buggyRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">[01]\d|2[0-3]:[0-5]\d</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-com">// | ka scope POORA pattern hai: ([01]\d) YA (2[0-3]:[0-5]\d)</span>
+<span class="tok-com">// matlab "00-19 ghanta, minute ke bina bhi match" YA "20-23 ghanta with minute" — asymmetric bug!</span>
+<span class="tok-fn">buggyRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"14"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true — bina minute ke bhi match ho gaya, jo humara intent nahi tha!</span>
+
+<span class="tok-com">// Fixed: group laga ke sirf hour-alternatives ko isolate karo, minute part common rakho</span>
+<span class="tok-kw">const</span> <span class="tok-fn">fixedRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">([01]\d|2[0-3]):[0-5]\d</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-com">// ab | sirf group ke ANDAR scoped hai: (hour-option-1 YA hour-option-2), phir hamesha :MM</span>
+<span class="tok-fn">fixedRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"14"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// false — correctly fail, minute part missing hai</span>
+<span class="tok-fn">fixedRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"14:30"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true</span></code></pre>
+      </div>
+
+      <p>
+        Doosra common pitfall — <strong>alternative ordering</strong>. Alternation left-to-right try karta
+        hai aur <strong>pehla match milte hi ruk jaata hai</strong>, poora string scan karke "best" match
+        nahi dhoondta. Agar chhota alternative pehle likha aur wo ek prefix hai bade wale ka, to bada
+        alternative kabhi try hi nahi hoga.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Ordering matters — shorter-first prefix bug<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// BUGGY order: "Java" pehle hai, jo "JavaScript" ka bhi prefix hai</span>
+<span class="tok-kw">const</span> <span class="tok-fn">buggyOrder</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">Java|JavaScript|C|C\+\+|PHP</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-str">"JavaScript"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-fn">buggyOrder</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// "Java" — "Java" alternative pehle match kar gaya, "Script" kabhi try hi nahi hua</span>
+
+<span class="tok-com">// FIX 1: longer alternative ko pehle rakho</span>
+<span class="tok-kw">const</span> <span class="tok-fn">fixedOrder</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">JavaScript|Java|C\+\+|C|PHP</span><span class="tok-punc">/</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// FIX 2: optional suffix se merge kar do — root cause hi khatam ho jaata hai</span>
+<span class="tok-kw">const</span> <span class="tok-fn">mergedRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-str">Java(Script)?|C(\+\+)?|PHP</span><span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// "(Script)?" optional group — greedy hai to "Script" mile to le lega</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: greedy + backtracking hi catastrophic backtracking ki root cause hai</div>
+        <p>
+          Jo backtracking algorithm humne upar step-by-step dekha, wahi mechanism — agar tum nested
+          quantifiers ambiguously likh do, jaise <code>(a+)+b</code> — exponential ho sakta hai. Har outer
+          <code>+</code> repetition ke andar inner <code>a+</code> ke multiple tareeke hote hain string ko
+          split karne ke, aur jab final <code>b</code> match nahi hota, engine har combination try karta
+          hai — jo string length ke saath exponentially grow karta hai (ReDoS — Regular Expression Denial
+          of Service). Ye chapter 34 mein detail mein cover hoga, lekin root cause samajhna zaroori hai
+          <strong>abhi</strong>: greedy quantifier ke andar doosra greedy quantifier nested ho jab dono
+          overlapping character sets match kar sakte hain, tab backtracking combinatorially explode hoti
+          hai. Production regex likhte waqt — especially user-input validate karne wale — hamesha socho:
+          "agar ye match fail ho, to kitni backtrack paths possible hain?"
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Quantifiers</strong>: <code>{n,m}</code> base syntax hai; <code>+</code> = <code>{1,}</code>, <code>*</code> = <code>{0,}</code>, <code>?</code> = <code>{0,1}</code>.</li>
+        <li><strong>Greedy</strong> (default) = zyada se zyada consume karo, phir <strong>backtrack</strong> ek-ek character right-se-left jab tak baaki pattern match na ho jaaye.</li>
+        <li><strong>Lazy</strong> (<code>+?</code>, <code>*?</code>, <code>??</code>) = minimum consume karo, first successful match pe ruk jao — but bade strings pe zyada steps le sakta hai; <code>[^x]+</code> character-exclusion aksar better alternative hai.</li>
+        <li><strong>Capturing groups</strong> <code>(...)</code> numbered hote hain opening-paren order mein; <code>match()</code> with <code>g</code> flag groups DROP kar deta hai — <code>matchAll()</code> ya <code>exec()</code> loop use karo groups ke liye.</li>
+        <li><strong>Named groups</strong> <code>(?&lt;name&gt;...)</code> readability ke liye — <code>match.groups.name</code> se access, <code>$&lt;name&gt;</code> replace() mein.</li>
+        <li><strong>Non-capturing groups</strong> <code>(?:...)</code> grouping deta hai bina numbering/capture overhead ke.</li>
+        <li><strong>Backreferences</strong> <code>\N</code> / <code>\k&lt;name&gt;</code> pattern ke andar "wahi text dobara" match karte hain — sirf capturing groups ko reference kar sakte ho, non-capturing ko nahi.</li>
+        <li><strong>Alternation</strong> <code>|</code> ka precedence pattern mein sabse LOW hai — poore pattern ko span karta hai jab tak explicit group na ho; longer/specific alternatives pehle likho.</li>
+        <li>Greedy + nested quantifiers ambiguous overlapping patterns mein exponential backtracking (ReDoS) create kar sakte hain — root cause hai jo chapter 34 mein detail mein aayegi.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Greedy quantifier internally kaise kaam karta hai — algorithm explain karo.</strong><br>Hint: maximum consume karo pehle, phir agar aage ka pattern fail ho to ek-ek character right-se-left backtrack karo jab tak match mil jaaye ya minimum count violate ho jaaye.</li>
+        <li><strong><code>/&lt;.+&gt;/</code> HTML tags parse karne ke liye kyun risky hai?</strong><br>Hint: greedy <code>.+</code> multiple tags ke beech ka sab kuch bhi consume kar lega (last <code>&gt;</code> tak), ek single tag ki jagah — fix hai <code>[^&gt;]+</code> ya proper HTML parser.</li>
+        <li><strong><code>match()</code> with <code>g</code> flag groups kyun return nahi karta, aur uska alternative kya hai?</strong><br>Hint: g flag "sab occurrences" ka use-case hai jahan multiple groups ko flat array mein represent karna ambiguous hota — <code>matchAll()</code> use karo jo iterator of full result objects deta hai.</li>
+        <li><strong>Non-capturing group <code>(?:...)</code> ka use-case kya hai, aur usse backreference kyun nahi kar sakte?</strong><br>Hint: quantifier scope ke liye grouping chahiye but capture nahi karna — indexing overhead avoid hota hai; backreference ko matched content yaad rakhna padta hai jo non-capturing group store hi nahi karta.</li>
+        <li><strong>Alternation <code>|</code> ka precedence pattern mein kya hai — real example do jahan ye bug create kar sakta hai.</strong><br>Hint: lowest precedence, poore pattern ko span karta hai; <code>[01]\d|2[0-3]:[0-5]\d</code> minute ko sirf second alternative se attach karta hai — fix grouping <code>([01]\d|2[0-3]):[0-5]\d</code>.</li>
+        <li><strong>Backreference <code>\1</code> se repeated word (jaise "the the") kaise detect karoge?</strong><br>Hint: <code>/\b(\w+)\s+\1\b/i</code> — group capture karo word, phir \1 se same word ki repetition check karo.</li>
+        <li><strong>Nested quantifiers jaise <code>(a+)+b</code> se ReDoS kaise hoti hai?</strong><br>Hint: overlapping character sets wale nested greedy quantifiers exponential number of backtracking paths generate karte hain jab final match fail hota hai — string length ke saath exponentially grow karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="32-regexp-1-syntax.html">
+        <div class="label">← Previous</div>
+        <div class="title">RegExp I — Syntax</div>
+      </a>
+      <a class="next" href="34-regexp-3-lookaround-methods.html">
+        <div class="label">Next →</div>
+        <div class="title">RegExp III — Lookaround/Methods</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Data &amp; Files — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link active" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 25</div>
+      <div class="progress-pill">25 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Binary Data · ArrayBuffer · TypedArrays · Blob · File</span>
+      <h1>Binary Data &amp; Files</h1>
+      <p class="subtitle">
+        Ab tak humne strings, numbers, objects — sab "high-level" JS types dekhe. Lekin browser ke andar,
+        network se aane wale bytes, ek image file, ya ek <code>&lt;input type="file"&gt;</code> se select
+        ki hui PDF — ye sab raw <strong>binary data</strong> hai, koi structure inherently attached nahi.
+        Is chapter mein hum root se dekhenge ki JS raw memory (<code>ArrayBuffer</code>) ko kaise "views"
+        ke through interpret karta hai, strings ko bytes mein kaise convert karta hai
+        (<code>TextEncoder</code>/<code>TextDecoder</code>), aur file-like binary objects
+        (<code>Blob</code>, <code>File</code>) ko kaise handle karta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#arraybuffer">ArrayBuffer — raw fixed-length memory</a></li>
+          <li><a href="#typed-arrays">TypedArrays — views into the buffer</a></li>
+          <li><a href="#same-buffer">Ek buffer, multiple views (real diagram)</a></li>
+          <li><a href="#typed-methods">TypedArray methods aur out-of-bounds behavior</a></li>
+          <li><a href="#dataview">DataView — mixed-type reading</a></li>
+          <li><a href="#text-encoding">TextEncoder / TextDecoder</a></li>
+          <li><a href="#blob">Blob — immutable binary object</a></li>
+          <li><a href="#blob-url">Blob se URL, download links</a></li>
+          <li><a href="#file">File — Blob + filesystem metadata</a></li>
+          <li><a href="#filereader">FileReader — async reading pattern</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="arraybuffer">ArrayBuffer — raw fixed-length memory</h2>
+      <p>
+        Root-level sabse important baat: <code>ArrayBuffer</code> khud <strong>kuch bhi "type" nahi
+        jaanta</strong>. Ye sirf ek fixed-length, contiguous raw memory area ka reference hai — bytes ka
+        ek chunk, sab zero se initialize hota hai. Isme koi <code>[]</code> indexing method nahi hai, koi
+        <code>.map()</code> nahi, kuch nahi — sirf ek <code>.byteLength</code> property. Memory allocate
+        ho gayi hai, lekin usko "kaise padhna hai" (1 byte ek number? 2 bytes ek number? 4 bytes?) ye
+        decide karne ke liye tumhe ek <strong>view</strong> chahiye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">ArrayBuffer banate hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">buffer</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">ArrayBuffer</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">);</span> <span class="tok-com">// 16 bytes ki raw memory allocate hui, sab zero se bhari</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">buffer</span><span class="tok-punc">.</span><span class="tok-punc">byteLength</span><span class="tok-punc">);</span> <span class="tok-com">// 16 — total bytes, yehi is buffer ki sirf "readable" property hai</span>
+
+<span class="tok-com">// buffer[0] = 1;  // ❌ isse kuch nahi hota — ArrayBuffer par direct indexing/assignment allowed hi nahi hai</span>
+<span class="tok-com">// buffer khud "dumb" hai — ye sirf bytes ka container hai, koi interpretation nahi karta</span></code></pre>
+      </div>
+      <p>
+        Isko ek khaali plot of land samjho — zameen allocate ho chuki hai, size fix hai (16 bytes), lekin
+        uspar "building" (interpretation) banane ke liye tumhe ek architect (view) chahiye.
+      </p>
+
+      <h2 id="typed-arrays">TypedArrays — views into the buffer</h2>
+      <p>
+        TypedArrays ArrayBuffer ke "lens" hain — wo khud memory allocate <em>nahi</em> karte (agar tum
+        seedha length se banao to internally ek buffer auto-create ho jaata hai), balki ek existing buffer
+        ko ek specific numeric format ke through expose karte hain. Har typed array batata hai:
+        (a) har element kitne bytes ka hai, (b) us byte-group ko kaise interpret karna hai (signed/unsigned
+        integer, float).
+      </p>
+      <table>
+        <thead><tr><th>Type</th><th>Bytes per element</th><th>Range</th></tr></thead>
+        <tbody>
+          <tr><td><code>Int8Array</code></td><td>1</td><td>-128 se 127</td></tr>
+          <tr><td><code>Uint8Array</code></td><td>1</td><td>0 se 255</td></tr>
+          <tr><td><code>Uint8ClampedArray</code></td><td>1</td><td>0 se 255, out-of-range values clamp hoti hain (truncate nahi)</td></tr>
+          <tr><td><code>Int16Array</code> / <code>Uint16Array</code></td><td>2</td><td>±32768 / 0-65535</td></tr>
+          <tr><td><code>Int32Array</code> / <code>Uint32Array</code></td><td>4</td><td>±2^31 / 0-2^32</td></tr>
+          <tr><td><code>Float32Array</code> / <code>Float64Array</code></td><td>4 / 8</td><td>floating point</td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="code-title">ArrayBuffer ko Uint32Array view se access karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">buffer</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">ArrayBuffer</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">);</span>          <span class="tok-com">// 16 raw bytes, koi format nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">view</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint32Array</span><span class="tok-punc">(</span><span class="tok-punc">buffer</span><span class="tok-punc">);</span>       <span class="tok-com">// same 16 bytes ko 4-byte chunks ke roop mein dekho</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">Uint32Array</span><span class="tok-punc">.</span><span class="tok-punc">BYTES_PER_ELEMENT</span><span class="tok-punc">);</span> <span class="tok-com">// 4 — har element 4 bytes leta hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">view</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">);</span>            <span class="tok-com">// 4 — kyunki 16 bytes / 4 bytes-per-element = 4 elements</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">view</span><span class="tok-punc">.</span><span class="tok-punc">byteLength</span><span class="tok-punc">);</span>        <span class="tok-com">// 16 — view ka total byte span (jitna underlying buffer hai)</span>
+
+<span class="tok-punc">view</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">123456</span><span class="tok-punc">;</span>              <span class="tok-com">// pehle 4 bytes mein 123456 ko 32-bit integer ke roop mein likha</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">num</span> <span class="tok-kw">of</span> <span class="tok-punc">view</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// TypedArrays iterable hain — for..of directly chalta hai</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">num</span><span class="tok-punc">);</span>              <span class="tok-com">// 123456, 0, 0, 0 — baaki 3 elements abhi bhi zero hain</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Note: <code>new Uint32Array(buffer)</code> koi copy nahi banata — ye <strong>same</strong> underlying
+        memory ko dekhta hai. Agar tum <code>view[0]</code> change karte ho, to actual bytes buffer mein
+        modify hote hain, koi naya allocation nahi hota.
+      </p>
+
+      <h2 id="same-buffer">Ek buffer, do views — ek saath (root diagram)</h2>
+      <p>
+        Ye wo concept hai jo interview mein baar-baar puchha jaata hai: <strong>ek hi ArrayBuffer ko
+        multiple views se ek saath dekha ja sakta hai</strong> — bilkul waise jaise ek hi file ko Notepad
+        (text) aur Hex Editor (bytes) dono ek saath khol ke dekh sakte ho, aur ek mein change karo to doosre
+        mein bhi reflect hota hai (kyunki underlying disk data same hai).
+      </p>
+      <p>
+        4-byte buffer socho. Ek <code>Uint8Array</code> view isko <strong>4 separate elements</strong> ke
+        roop mein dikhayega (har byte apna element), jabki ek <code>Uint16Array</code> view <strong>usi
+        4-byte buffer ko 2 elements</strong> ke roop mein dikhayega (har element = 2 bytes combine karke):
+      </p>
+      <pre style="background:var(--code-bg,#0d1117); border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-family:var(--mono, monospace); font-size:0.82rem; overflow-x:auto; color:var(--text-dim);">
+Raw bytes in buffer (4 bytes total):     [ B0 ][ B1 ][ B2 ][ B3 ]
+
+Uint8Array view  (1 byte/element, len=4): [B0]  [B1]  [B2]  [B3]
+                                           idx0  idx1  idx2  idx3
+
+Uint16Array view (2 bytes/element, len=2): [B0 B1]     [B2 B3]
+                                             idx0        idx1
+      </pre>
+      <div class="code-block">
+        <div class="code-title">Same buffer, do alag views — ek modify karo, doosre mein dikhta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">buffer</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">ArrayBuffer</span><span class="tok-punc">(</span><span class="tok-num">4</span><span class="tok-punc">);</span>        <span class="tok-com">// sirf 4 raw bytes ki memory</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">bytes</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">(</span><span class="tok-punc">buffer</span><span class="tok-punc">);</span>  <span class="tok-com">// view #1: har byte ek alag element (length 4)</span>
+<span class="tok-kw">let</span> <span class="tok-punc">words</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint16Array</span><span class="tok-punc">(</span><span class="tok-punc">buffer</span><span class="tok-punc">);</span> <span class="tok-com">// view #2: har 2 bytes ek element (length 2) — SAME memory</span>
+
+<span class="tok-punc">bytes</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">255</span><span class="tok-punc">;</span>                    <span class="tok-com">// byte 0 ko 255 (0xFF) set kiya, sirf Uint8Array API se</span>
+<span class="tok-punc">bytes</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>                      <span class="tok-com">// byte 1 ko 1 set kiya</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">words</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">);</span>                <span class="tok-com">// 511 (little-endian machine par) — byte0+byte1 ko 16-bit number ki tarah combine kiya</span>
+<span class="tok-com">// yahi proof hai ki bytes aur words EK HI memory ko access kar rahe the — koi copy nahi thi</span></code></pre>
+      </div>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: byte-length mismatch ek silent bug source hai</div>
+        <p>
+          Agar tum ek 5-byte <code>ArrayBuffer</code> par <code>Uint32Array</code> view banane ki koshish
+          karo (jo 4-byte chunks maangta hai), to browser <strong>RangeError</strong> throw karega — kyunki
+          5 bytes clean 4-byte groups mein divide nahi hote. Ye production mein tab aata hai jab tum
+          network se ek arbitrary-length payload receive karte ho aur bina length check kiye directly
+          <code>new Float64Array(receivedBuffer)</code> laga dete ho. Root cause: view ka constructor
+          internally <code>buffer.byteLength % BYTES_PER_ELEMENT === 0</code> validate karta hai — agar
+          fail hua to exception. Isliye WebSocket/fetch se aane wale binary payloads ko parse karte waqt
+          <code>DataView</code> zyada safe hota hai (neeche dekho), kyunki wo per-byte-offset padhta hai,
+          strict alignment force nahi karta.
+        </p>
+      </div>
+
+      <h2 id="typed-methods">TypedArray methods aur out-of-bounds behavior</h2>
+      <p>
+        TypedArrays regular Array jaise lagte hain (<code>map</code>, <code>slice</code>, <code>find</code>,
+        <code>reduce</code> sab available hain, aur ye iterable bhi hain), lekin <strong>fixed-length</strong>
+        hone ki wajah se <code>push</code>, <code>pop</code>, <code>splice</code>, <code>unshift</code> nahi
+        hote — memory size badal/ghata nahi sakte.
+      </p>
+      <div class="code-block">
+        <div class="code-title">set() aur subarray() — copy vs view</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr8</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">(</span><span class="tok-num">10</span><span class="tok-punc">);</span>         <span class="tok-com">// 10 bytes, sab zero se initialize</span>
+
+<span class="tok-punc">arr8</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">]</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">);</span>       <span class="tok-com">// index 0 se start karke [1,2,3] COPY kiye — arr8 = [1,2,3,0,0,0,0,0,0,0]</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">sub</span> <span class="tok-punc">=</span> <span class="tok-punc">arr8</span><span class="tok-punc">.</span><span class="tok-fn">subarray</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">);</span>       <span class="tok-com">// index 0..3 ka NAYA VIEW — koi copy nahi, same underlying buffer</span>
+<span class="tok-punc">sub</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">99</span><span class="tok-punc">;</span>                     <span class="tok-com">// sub ko modify kiya...</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">arr8</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">);</span>                <span class="tok-com">// 99 — original arr8 bhi change ho gaya, kyunki subarray ne copy nahi banayi thi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">tooBig</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">);</span>       <span class="tok-com">// sirf 1 byte ka array, 8-bit unsigned</span>
+<span class="tok-punc">tooBig</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">256</span><span class="tok-punc">;</span>                <span class="tok-com">// 256 ek 8-bit unsigned range (0-255) se bahar hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">tooBig</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">);</span>              <span class="tok-com">// 0 — silently truncate hua (sirf rightmost 8 bits rakhe, koi error nahi aaya!)</span></code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Overflow silently truncate hota hai, throw nahi karta</div>
+        <p>
+          Ye ek common gotcha hai — <code>Uint8Array</code> mein 256 daalne pe koi error nahi aata, bas
+          value chup-chaap wrap ho jaati hai (256 → 0, 257 → 1, aur so on — modulo 256 behavior). Sirf
+          <code>Uint8ClampedArray</code> exception hai: wo values ko range ke andar <strong>clamp</strong>
+          karta hai (256 → 255, -10 → 0) — isliye image pixel data (Canvas <code>ImageData</code>) ke liye
+          specifically use hota hai, jahan overflow se pixel corrupt hone ke bajaye saturate hona chahiye.
+        </p>
+      </div>
+
+      <h2 id="dataview">DataView — mixed-type reading</h2>
+      <p>
+        Real binary formats (jaise file headers, network protocols) mein alag-alag fields alag-alag sizes
+        ke hote hain — kabhi ek byte ek flag, agle 4 bytes ek integer, agle 8 bytes ek float. Ek single
+        TypedArray isko handle nahi kar sakta (wo fixed element-size maanta hai). Yahan
+        <code>DataView</code> kaam aata hai — ye ek "untyped" view hai jisme format har read/write call ke
+        time specify karte ho, construction time pe nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">DataView se mixed-type buffer padhna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">buffer</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-num">255</span><span class="tok-punc">,</span> <span class="tok-num">255</span><span class="tok-punc">,</span> <span class="tok-num">255</span><span class="tok-punc">,</span> <span class="tok-num">255</span><span class="tok-punc">]</span><span class="tok-punc">).</span><span class="tok-punc">buffer</span><span class="tok-punc">;</span>
+                                                    <span class="tok-com">// 4 bytes, sab 0xFF — .buffer se underlying ArrayBuffer nikala</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">dataView</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">DataView</span><span class="tok-punc">(</span><span class="tok-punc">buffer</span><span class="tok-punc">);</span>       <span class="tok-com">// untyped view — format har call mein alag se batayenge</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">byte1</span> <span class="tok-punc">=</span> <span class="tok-punc">dataView</span><span class="tok-punc">.</span><span class="tok-fn">getUint8</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">);</span>       <span class="tok-com">// offset 0 se 1 byte, unsigned integer ki tarah padha → 255</span>
+<span class="tok-kw">let</span> <span class="tok-punc">short1</span> <span class="tok-punc">=</span> <span class="tok-punc">dataView</span><span class="tok-punc">.</span><span class="tok-fn">getUint16</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">);</span>     <span class="tok-com">// offset 1 se 2 bytes, 16-bit integer ki tarah padha (bytes 1&amp;2 overlap karte hain byte1 se)</span>
+<span class="tok-kw">let</span> <span class="tok-punc">long1</span> <span class="tok-punc">=</span> <span class="tok-punc">dataView</span><span class="tok-punc">.</span><span class="tok-fn">getUint32</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">);</span>       <span class="tok-com">// offset 0 se 4 bytes, 32-bit integer ki tarah — SAME memory, alag interpretation</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">byte1</span><span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">));</span>       <span class="tok-com">// "ff"</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">short1</span><span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">));</span>      <span class="tok-com">// "ffff"</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">long1</span><span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">));</span>       <span class="tok-com">// "ffffffff"</span>
+
+<span class="tok-punc">dataView</span><span class="tok-punc">.</span><span class="tok-fn">setUint32</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">);</span>         <span class="tok-com">// offset 0 pe 4 bytes ko 0 se overwrite kar diya (writing bhi supported hai)</span></code></pre>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">📌 DataView vs TypedArray — kab kaunsa</div>
+        <p>
+          TypedArray tab use karo jab tumhara data <strong>uniform</strong> ho (sab elements ek hi type,
+          jaise ek grayscale image ke pixels — sab <code>Uint8</code>). <code>DataView</code> tab use karo
+          jab format <strong>heterogeneous</strong> ho (jaise ek binary file header: 1 byte version + 4
+          byte length + 8 byte timestamp) — DataView tumhe exact byte offsets pe control deta hai bina
+          alignment restrictions ke.
+        </p>
+      </div>
+
+      <h2 id="text-encoding">TextEncoder / TextDecoder — string ↔ binary</h2>
+      <p>
+        Strings JS engine ke andar UTF-16 mein store hoti hain, lekin network/file/storage layer pe hum
+        almost hamesha UTF-8 bytes chahte hain (compact, web-standard). <code>TextEncoder</code> aur
+        <code>TextDecoder</code> ye conversion karte hain — string se bytes, aur bytes se string.
+      </p>
+      <div class="code-block">
+        <div class="code-title">TextEncoder — string se Uint8Array bytes</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">encoder</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">TextEncoder</span><span class="tok-punc">();</span>        <span class="tok-com">// UTF-8 encoder — ye sirf UTF-8 support karta hai, koi doosra encoding nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">uint8Array</span> <span class="tok-punc">=</span> <span class="tok-punc">encoder</span><span class="tok-punc">.</span><span class="tok-fn">encode</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">);</span> <span class="tok-com">// string ko UTF-8 bytes mein encode karke Uint8Array return karta hai</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">uint8Array</span><span class="tok-punc">);</span>              <span class="tok-com">// 72,101,108,108,111 — har char ka UTF-8 byte code (ASCII range mein 1 char = 1 byte)</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">TextDecoder — bytes se string</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">uint8Array</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">([</span><span class="tok-num">72</span><span class="tok-punc">,</span> <span class="tok-num">101</span><span class="tok-punc">,</span> <span class="tok-num">108</span><span class="tok-punc">,</span> <span class="tok-num">108</span><span class="tok-punc">,</span> <span class="tok-num">111</span><span class="tok-punc">]);</span>
+                                          <span class="tok-com">// ye bytes "Hello" ke UTF-8 codes hain</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">decoder</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">TextDecoder</span><span class="tok-punc">();</span>      <span class="tok-com">// default encoding "utf-8" — label pass karke big5/windows-1251 bhi diya ja sakta hai</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">decoder</span><span class="tok-punc">.</span><span class="tok-fn">decode</span><span class="tok-punc">(</span><span class="tok-punc">uint8Array</span><span class="tok-punc">));</span> <span class="tok-com">// "Hello" — bytes ko wapas readable string mein decode kiya</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">partial</span> <span class="tok-punc">=</span> <span class="tok-punc">decoder</span><span class="tok-punc">.</span><span class="tok-fn">decode</span><span class="tok-punc">(</span><span class="tok-punc">uint8Array</span><span class="tok-punc">.</span><span class="tok-fn">subarray</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">));</span>
+                                          <span class="tok-com">// subarray() = koi copy nahi, so partial decode bhi memory-efficient hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">partial</span><span class="tok-punc">);</span>                  <span class="tok-com">// "He" — sirf pehle 2 bytes decode hue</span></code></pre>
+      </div>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: streaming decode — multi-byte character split hona</div>
+        <p>
+          Jab bade files ya network streams ko <strong>chunks</strong> mein decode karte ho (jaise
+          <code>ReadableStream</code> se ek chunk-at-a-time), ek problem aati hai: UTF-8 mein non-ASCII
+          characters 2-4 bytes lete hain, aur ek chunk boundary exactly beech mein aa sakti hai —
+          matlab ek character ke bytes do alag chunks mein split ho sakte hain. Agar tum har chunk ko
+          independently <code>decode()</code> karoge, to split hue character ke liye replacement character
+          (<code>&#65533;</code>) aa jaayega. Fix: <code>decoder.decode(chunk, &#123;stream: true&#125;)</code> — ye
+          incomplete trailing bytes ko internally buffer kar leta hai aur agli call mein prepend kar deta
+          hai, taaki koi character corrupt na ho. Last chunk pe <code>stream: true</code> mat do (ya
+          explicitly <code>decoder.decode()</code> bina argument call karo) taaki final buffered bytes
+          bhi flush ho jaayein.
+        </p>
+      </div>
+
+      <h2 id="blob">Blob — immutable binary object with a MIME type</h2>
+      <p>
+        <code>Blob</code> (Binary Large Object) ek high-level, file-like object hai jo raw binary data ko
+        ek <strong>MIME type</strong> ke saath wrap karta hai. Jahan <code>ArrayBuffer</code>/TypedArray
+        "raw memory manipulate karo" ka layer hai, wahan Blob "is data ko ek file/resource ki tarah treat
+        karo" ka layer hai — download links, uploads, aur network APIs ke liye designed.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Blob banate hain — string aur binary parts se</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">blob1</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Blob</span><span class="tok-punc">([</span><span class="tok-str">"&lt;html&gt;…&lt;/html&gt;"</span><span class="tok-punc">],</span> <span class="tok-punc">{</span><span class="tok-attr">type</span><span class="tok-punc">:</span> <span class="tok-str">'text/html'</span><span class="tok-punc">});</span>
+                                            <span class="tok-com">// blobParts array mein ek string diya, type "text/html" set kiya</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">hello</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">([</span><span class="tok-num">72</span><span class="tok-punc">,</span> <span class="tok-num">101</span><span class="tok-punc">,</span> <span class="tok-num">108</span><span class="tok-punc">,</span> <span class="tok-num">108</span><span class="tok-punc">,</span> <span class="tok-num">111</span><span class="tok-punc">]);</span> <span class="tok-com">// "Hello" ke UTF-8 bytes</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">blob2</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Blob</span><span class="tok-punc">([</span><span class="tok-punc">hello</span><span class="tok-punc">,</span> <span class="tok-str">' '</span><span class="tok-punc">,</span> <span class="tok-str">'world'</span><span class="tok-punc">],</span> <span class="tok-punc">{</span><span class="tok-attr">type</span><span class="tok-punc">:</span> <span class="tok-str">'text/plain'</span><span class="tok-punc">});</span>
+                                            <span class="tok-com">// blobParts mixed ho sakti hain: TypedArray + strings ek saath — sab concatenate ho jaate hain</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">blob2</span><span class="tok-punc">.</span><span class="tok-punc">size</span><span class="tok-punc">);</span>                     <span class="tok-com">// total bytes ("Hello" + " " + "world" ke UTF-8 bytes ka sum)</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">blob2</span><span class="tok-punc">.</span><span class="tok-punc">type</span><span class="tok-punc">);</span>                     <span class="tok-com">// "text/plain"</span></code></pre>
+      </div>
+      <p>
+        <strong>Blob immutable hai</strong> — ek baar bana lene ke baad uski content directly modify nahi
+        kar sakte. Agar tumhe ek naya "version" chahiye (jaise pehle N bytes hata do), to
+        <code>slice()</code> use karke ek <strong>naya</strong> Blob banate ho, existing wala untouched
+        rehta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Blob.slice() — immutability ke saath naya blob</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">blob</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Blob</span><span class="tok-punc">([</span><span class="tok-str">"Hello, world!"</span><span class="tok-punc">],</span> <span class="tok-punc">{</span><span class="tok-attr">type</span><span class="tok-punc">:</span> <span class="tok-str">'text/plain'</span><span class="tok-punc">});</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">piece</span> <span class="tok-punc">=</span> <span class="tok-punc">blob</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-str">'text/plain'</span><span class="tok-punc">);</span>  <span class="tok-com">// byteStart=0, byteEnd=5, naya optional contentType — original blob unchanged</span>
+
+<span class="tok-com">// slice() Array.slice() jaisa hi hai — negative indices bhi supported hain (end se count)</span>
+<span class="tok-com">// "blob" khud kabhi mutate nahi hota — sirf naye Blob instances banate hain</span></code></pre>
+      </div>
+
+      <h2 id="blob-url">Blob se URL — download links aur object URLs</h2>
+      <p>
+        <code>URL.createObjectURL(blob)</code> ek <strong>internal reference</strong> banata hai —
+        ek special <code>blob:</code> scheme wala URL jo browser memory mein us exact Blob object ko point
+        karta hai. Ye URL <code>&lt;a href&gt;</code>, <code>&lt;img src&gt;</code>, ya kisi bhi jagah use
+        ho sakta hai jahan normal URL chalta hai — bina data ko base64 encode kiye (jo bahut bada overhead
+        hota hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Blob se download link trigger karna</div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">blob</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Blob</span><span class="tok-punc">([</span><span class="tok-str">"Hello, world!"</span><span class="tok-punc">],</span> <span class="tok-punc">{</span><span class="tok-attr">type</span><span class="tok-punc">:</span> <span class="tok-str">'text/plain'</span><span class="tok-punc">});</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">link</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'a'</span><span class="tok-punc">);</span>    <span class="tok-com">// ek &lt;a&gt; element in-memory banaya (DOM mein add nahi kiya)</span>
+<span class="tok-punc">link</span><span class="tok-punc">.</span><span class="tok-punc">download</span> <span class="tok-punc">=</span> <span class="tok-str">'hello.txt'</span><span class="tok-punc">;</span>     <span class="tok-com">// download attribute: browser ko force karta hai ki navigate na kare, file save kare</span>
+<span class="tok-punc">link</span><span class="tok-punc">.</span><span class="tok-punc">href</span> <span class="tok-punc">=</span> <span class="tok-fn">URL</span><span class="tok-punc">.</span><span class="tok-fn">createObjectURL</span><span class="tok-punc">(</span><span class="tok-punc">blob</span><span class="tok-punc">);</span>
+                                       <span class="tok-com">// browser memory mein blob ko register karke ek "blob:https://..." URL diya</span>
+
+<span class="tok-punc">link</span><span class="tok-punc">.</span><span class="tok-fn">click</span><span class="tok-punc">();</span>                    <span class="tok-com">// programmatically click simulate karke download trigger kiya</span>
+
+<span class="tok-fn">URL</span><span class="tok-punc">.</span><span class="tok-fn">revokeObjectURL</span><span class="tok-punc">(</span><span class="tok-punc">link</span><span class="tok-punc">.</span><span class="tok-punc">href</span><span class="tok-punc">);</span> <span class="tok-com">// ZAROORI: internal reference clear kiya taaki blob garbage-collect ho sake</span></code></pre>
+      </div>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ revokeObjectURL bhoolna = memory leak</div>
+        <p>
+          <code>createObjectURL</code> jo mapping banata hai wo <strong>document ke lifetime tak</strong>
+          browser memory mein rehti hai — tab tak jab tak explicitly <code>revokeObjectURL()</code> na call
+          karo, chahe blob ka koi aur reference kahin bhi na ho. Ek SPA (single-page app) jo baar-baar
+          large files (images, videos) ke object URLs banata hai lekin revoke nahi karta, uska memory
+          footprint gradually grow karta rehta hai — page reload tak kabhi free nahi hota. Rule: jaise hi
+          download/preview ka kaam ho jaaye (ya <code>&lt;img&gt;</code> ka <code>onload</code> fire ho
+          jaaye), turant <code>revokeObjectURL</code> call karo.
+        </p>
+      </div>
+      <p>
+        Blob se wapas raw bytes bhi mil sakte hain — <code>await blob.arrayBuffer()</code> (async, Promise
+        return karta hai) se ArrayBuffer, ya <code>blob.stream()</code> se ek <code>ReadableStream</code>
+        jise chunk-by-chunk pump kiya ja sakta hai (bade files ke liye memory-efficient — pura file ek
+        saath memory mein load nahi karna padta).
+      </p>
+
+      <h2 id="file">File — Blob + filesystem metadata</h2>
+      <p>
+        <code>File</code> object <code>Blob</code> se <strong>inherit</strong> karta hai — matlab jo bhi
+        Blob kar sakta hai (size, type, slice), File bhi kar sakta hai, plus filesystem-related extra
+        properties: <code>name</code> (filename) aur <code>lastModified</code> (timestamp). Practically,
+        File objects tum khud rarely construct karte ho — ye usually browser deta hai jab user
+        <code>&lt;input type="file"&gt;</code> se file select kare ya drag-and-drop kare.
+      </p>
+      <div class="code-block">
+        <div class="code-title">File input se File object access karna</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"file"</span> <span class="tok-attr">onchange</span><span class="tok-punc">=</span><span class="tok-str">"showFile(this)"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showFile</span><span class="tok-punc">(</span><span class="tok-punc">input</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// input = &lt;input&gt; DOM element jo change event fire kar raha hai</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">file</span> <span class="tok-punc">=</span> <span class="tok-punc">input</span><span class="tok-punc">.</span><span class="tok-punc">files</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">];</span>       <span class="tok-com">// .files ek FileList hai (array-like) — [0] = pehli selected file</span>
+
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`File name: </span><span class="tok-punc">${</span><span class="tok-punc">file</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span>       <span class="tok-com">// File-specific property — Blob ke paas ye nahi hota</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Last modified: </span><span class="tok-punc">${</span><span class="tok-punc">file</span><span class="tok-punc">.</span><span class="tok-punc">lastModified</span><span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span> <span class="tok-com">// integer timestamp (ms) — OS filesystem se aaya metadata</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Size: </span><span class="tok-punc">${</span><span class="tok-punc">file</span><span class="tok-punc">.</span><span class="tok-punc">size</span><span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span>            <span class="tok-com">// inherited from Blob — bytes mein size</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Type: </span><span class="tok-punc">${</span><span class="tok-punc">file</span><span class="tok-punc">.</span><span class="tok-punc">type</span><span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span>            <span class="tok-com">// inherited from Blob — MIME type (browser ne extension se guess kiya)</span>
+<span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Manually construct karna ho (rare — usually testing ya generated files ke liye) to syntax:
+        <code>new File(fileParts, fileName, options)</code> — bilkul Blob constructor jaisa, bas extra
+        <code>fileName</code> parameter aur options mein optional <code>lastModified</code>.
+      </p>
+
+      <h2 id="filereader">FileReader — async reading pattern</h2>
+      <p>
+        <code>File</code>/<code>Blob</code> ke paas content padhne ka koi synchronous method nahi hai —
+        disk se data laana time leta hai, isliye <code>FileReader</code> ek <strong>event-based async
+        API</strong> deta hai. Root pattern: reading method call karo (jo turant return ho jaata hai),
+        phir events attach karo jo baad mein fire honge jab actual read complete/fail ho.
+      </p>
+      <table>
+        <thead><tr><th>Method</th><th>Result format</th></tr></thead>
+        <tbody>
+          <tr><td><code>readAsArrayBuffer(blob)</code></td><td>raw <code>ArrayBuffer</code> — binary processing ke liye (jaise image parsing)</td></tr>
+          <tr><td><code>readAsText(blob, [encoding])</code></td><td>string — default UTF-8, chahe to doosra encoding specify karo</td></tr>
+          <tr><td><code>readAsDataURL(blob)</code></td><td>base64-encoded <code>data:</code> URL — directly <code>&lt;img src&gt;</code> mein daalne layak</td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="code-title">FileReader — onload/onerror/onprogress pattern</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"file"</span> <span class="tok-attr">onchange</span><span class="tok-punc">=</span><span class="tok-str">"readFile(this)"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-kw">function</span> <span class="tok-fn">readFile</span><span class="tok-punc">(</span><span class="tok-punc">input</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">file</span> <span class="tok-punc">=</span> <span class="tok-punc">input</span><span class="tok-punc">.</span><span class="tok-punc">files</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">];</span>          <span class="tok-com">// user ne select ki hui File</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">file</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>              <span class="tok-com">// koi file select nahi hui to kuch mat karo (guard clause)</span>
+
+  <span class="tok-kw">let</span> <span class="tok-punc">reader</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FileReader</span><span class="tok-punc">();</span>     <span class="tok-com">// ek naya reader instance — reusable hai, but ek time pe ek hi read</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">onloadstart</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Reading started...'</span><span class="tok-punc">);</span> <span class="tok-com">// reading process shuru hua — turant fire hota hai</span>
+  <span class="tok-punc">};</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">onprogress</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">lengthComputable</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// kabhi-kabhi total size pata nahi hota (streaming source)</span>
+      <span class="tok-kw">let</span> <span class="tok-punc">percent</span> <span class="tok-punc">=</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">round</span><span class="tok-punc">((</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">loaded</span> <span class="tok-punc">/</span> <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">total</span><span class="tok-punc">)</span> <span class="tok-punc">*</span> <span class="tok-num">100</span><span class="tok-punc">);</span>
+                                              <span class="tok-com">// loaded/total ke ratio se percentage nikala</span>
+      <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Progress: </span><span class="tok-punc">${</span><span class="tok-punc">percent</span><span class="tok-punc">}</span><span class="tok-str">%`</span><span class="tok-punc">);</span>  <span class="tok-com">// large files (jaise video upload preview) ke liye useful</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">};</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>          <span class="tok-com">// reading successfully complete hui</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">result</span><span class="tok-punc">);</span>        <span class="tok-com">// .result mein final data — yahan text hoga kyunki readAsText use kiya</span>
+  <span class="tok-punc">};</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">onerror</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>         <span class="tok-com">// read fail hua (permission issue, file removed mid-read, etc.)</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Error: '</span> <span class="tok-punc">+</span> <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">error</span><span class="tok-punc">);</span> <span class="tok-com">// .error mein DOMException detail</span>
+  <span class="tok-punc">};</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-punc">onloadend</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>       <span class="tok-com">// success YA failure — dono cases mein hamesha fire hota hai (cleanup ke liye)</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Read finished (success or fail)'</span><span class="tok-punc">);</span>
+  <span class="tok-punc">};</span>
+
+  <span class="tok-punc">reader</span><span class="tok-punc">.</span><span class="tok-fn">readAsText</span><span class="tok-punc">(</span><span class="tok-punc">file</span><span class="tok-punc">);</span>          <span class="tok-com">// actual read trigger — async hai, ye line turant return ho jaati hai</span>
+  <span class="tok-com">// reader.abort();  // agar chahiye to kabhi bhi pending read cancel kar sakte ho — 'abort' event fire hoga</span>
+<span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: readAsDataURL vs createObjectURL for image preview</div>
+        <p>
+          Ek common task hai: user ne image select ki, usko <code>&lt;img&gt;</code> mein preview dikhana
+          hai. Do approaches — <code>reader.readAsDataURL(file)</code> jo base64 string return karta hai
+          (memory mein ~33% overhead, kyunki base64 binary se bada hota hai, aur poori file synchronously
+          JS heap mein encoded form mein aati hai), vs <code>URL.createObjectURL(file)</code> jo turant
+          (synchronous, no FileReader needed) ek lightweight reference URL de deta hai bina file content
+          ko actually memory mein load/encode kiye. Production mein <strong>createObjectURL almost hamesha
+          better hai</strong> for previews — FileReader ka use tab karo jab tumhe actual raw bytes/text
+          chahiye ho processing ke liye (jaise CSV parse karna, ya binary header read karna), sirf display
+          ke liye nahi.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>ArrayBuffer</strong> = raw fixed-length memory, khud koi method/interpretation nahi rakhta — sirf <code>.byteLength</code>.</li>
+        <li><strong>TypedArrays</strong> (Uint8Array, Uint16Array, etc.) aur <strong>DataView</strong> "views" hain — ek hi buffer ko multiple formats mein ek saath dekh sakte ho, bina data copy kiye.</li>
+        <li>TypedArrays fixed-length hain (no push/pop/splice); numeric overflow silently truncate hota hai (sirf Uint8ClampedArray clamp karta hai, throw nahi).</li>
+        <li><strong>DataView</strong> mixed-type/heterogeneous binary formats (headers, protocols) ke liye best hai — per-offset format control deta hai.</li>
+        <li><strong>TextEncoder</strong> string→UTF-8 bytes, <strong>TextDecoder</strong> bytes→string; streaming decode ke liye <code>&#123;stream: true&#125;</code> use karo taaki multi-byte chars chunk boundaries pe corrupt na ho.</li>
+        <li><strong>Blob</strong> ek immutable, MIME-typed binary object hai — <code>slice()</code> naya Blob banata hai, original untouched rehta hai; <code>createObjectURL</code>/<code>revokeObjectURL</code> pair yaad rakho (memory leak se bachne ke liye).</li>
+        <li><strong>File</strong> Blob se inherit karta hai + <code>name</code>/<code>lastModified</code> add karta hai — usually <code>input.files</code> se milta hai.</li>
+        <li><strong>FileReader</strong> async event-based API hai (<code>onload</code>/<code>onerror</code>/<code>onprogress</code>/<code>onloadend</code>) — readAsText/readAsArrayBuffer/readAsDataURL; sirf preview ke liye <code>createObjectURL</code> zyada efficient hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>ArrayBuffer aur TypedArray mein exact farak kya hai?</strong><br>Hint: ArrayBuffer sirf raw memory hai, koi method/type interpretation nahi; TypedArray us memory ko ek specific numeric format ke through "view" karta hai — data copy nahi hoti.</li>
+        <li><strong>Ek hi ArrayBuffer par Uint8Array aur Uint16Array view banao — inka length alag kyun hoga?</strong><br>Hint: length = byteLength / BYTES_PER_ELEMENT; Uint8 ke liye 1, Uint16 ke liye 2 — same bytes, alag grouping.</li>
+        <li><strong>DataView kab use karoge TypedArray ke bajaye?</strong><br>Hint: jab data heterogeneous ho (mixed field sizes/types within one buffer), jaise binary protocol headers — DataView per-offset explicit get/set deta hai, alignment force nahi karta.</li>
+        <li><strong>TextDecoder ke stream:true option ka kya purpose hai?</strong><br>Hint: chunked/streamed binary data decode karte waqt multi-byte UTF-8 characters chunk boundary pe split ho sakte hain — stream:true incomplete trailing bytes ko internally buffer karke agli chunk se combine karta hai.</li>
+        <li><strong>Blob "immutable" hai — iska matlab practically kya hai, aur slice() kaise kaam karta hai?</strong><br>Hint: Blob ka content kabhi in-place change nahi hota; slice() ek naya Blob instance return karta hai jo original data ke ek portion ko reference karta hai, koi mutation original pe nahi.</li>
+        <li><strong>createObjectURL ke baad revokeObjectURL kyun call karna zaroori hai?</strong><br>Hint: createObjectURL internal browser memory mapping banata hai jo document lifetime tak rehti hai chahe blob reference kahin na ho — na revoke karne se memory leak hota hai, especially SPAs mein repeated large-file previews ke saath.</li>
+        <li><strong>Image preview ke liye readAsDataURL better hai ya createObjectURL(file)? Kyun?</strong><br>Hint: createObjectURL synchronous, no encoding overhead, lightweight reference; readAsDataURL base64-encode karta hai jisse ~33% memory overhead aata hai aur async FileReader round-trip lagta hai — production mein createObjectURL preferred hai sirf preview ke liye.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="24-frames-windows.html">
+        <div class="label">← Previous</div>
+        <div class="title">Frames &amp; Windows</div>
+      </a>
+      <a class="next" href="26-fetch-network-1.html">
+        <div class="label">Next →</div>
+        <div class="title">Fetch &amp; Network I</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prefetching, Prerendering, and Service Worker Precaching — Web Performance Handbook</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link active" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Chapter 11</div>
+      <div class="progress-pill">11 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Speculative Loading · Service Workers · Cache API</span>
+      <h1>Prefetching, Prerendering, and Service Worker Precaching</h1>
+      <p class="subtitle">
+        Ab tak humne dekha ki resources ko <em>deferred</em> ya <em>lazy</em> kaise load karein taaki initial
+        page fast dikhe. Lekin uska side-effect hai — jab user actually us deferred resource ko chahiye
+        (agla page click kare, ya scroll kare), tab thoda delay aata hai. Ye chapter us gap ko close karta
+        hai: browser ko <strong>time se pehle guess karwana</strong> ki user aage kya karega, aur us guess
+        ke basis pe resources ya poore pages ko background mein taiyaar rakhna — taaki jab user actually
+        navigate kare, to experience <em>instant</em> lage.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#core-tension">Core tension: defer vs speculate</a></li>
+          <li><a href="#prefetch">Resource Prefetching (<code>&lt;link rel="prefetch"&gt;</code>)</a></li>
+          <li><a href="#speculation-rules">Speculation Rules API</a></li>
+          <li><a href="#prerender">Prerendering — poora page render karna</a></li>
+          <li><a href="#sw-precache">Service Worker Precaching</a></li>
+          <li><a href="#timing">Teeno mein WHEN ka farak</a></li>
+          <li><a href="#risk-reward">Risk vs Reward — kab kya use karein</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="core-tension">Core tension: defer vs speculate</h2>
+      <p>
+        Pichle chapters mein hum resources ko <code>defer</code>, <code>lazy</code>, ya code-split karke
+        "abhi mat load karo" bol rahe the — kyunki critical rendering path ko block nahi karna tha.
+        Lekin har deferral ka ek cost hai: jis resource ko defer kiya, wo <em>kabhi na kabhi</em> chahiye
+        hoga, aur tab uska load time user ko dikhega (jaise route change pe naya JS bundle fetch hona,
+        ya next page ka HTML fetch hona).
+      </p>
+      <p>
+        Speculative loading is tension ko solve karta hai: browser ko <strong>idle time</strong> mein, ya
+        jab user "intent" dikhaye (hover, viewport mein link aana), tab background mein wo cheezein
+        pehle se fetch/render/cache kar do — bina current page ke critical path ko touch kiye. Teen tools
+        hain jo alag-alag depth pe ye karte hain: <strong>prefetch</strong> (sirf resource fetch),
+        <strong>prerender</strong> (poora page fetch + render + JS execute), aur
+        <strong>Service Worker precache</strong> (install-time pe app shell cache karna, offline-first).
+      </p>
+
+      <h2 id="prefetch">Resource Prefetching — <code>&lt;link rel="prefetch"&gt;</code></h2>
+      <p>
+        Sabse lightweight technique. Ye browser ko batata hai: "ye resource near-future mein chahiye ho
+        sakta hai, lekin abhi urgent nahi — jab bandwidth free ho (lowest priority queue mein), tab fetch
+        kar lena aur HTTP cache mein rakh dena."
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">HTML — next-page resources ko prefetch karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;!-- date-picker.js ko lowest priority pe idle time mein fetch karo --&gt;</span>
+  <span class="tok-punc">&lt;!-- as="script" batata hai resource type, taaki browser sahi Accept header aur --&gt;</span>
+  <span class="tok-punc">&lt;!-- content-security-policy bucket use kare --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"prefetch"</span> <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"script"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/date-picker.js"</span><span class="tok-punc">&gt;</span>
+
+  <span class="tok-punc">&lt;!-- isi tarah CSS bhi prefetch ho sakta hai --&gt;</span>
+  <span class="tok-punc">&lt;!-- as="style" se browser ko pata chalta hai ye stylesheet hai, image ya font nahi --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"prefetch"</span> <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"style"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/date-picker.css"</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Root-level mechanics: <code>rel="prefetch"</code> resource ko network layer mein
+        <strong>lowest priority</strong> pe daalta hai — browser ka resource scheduler pehle critical
+        CSS/JS/fonts ko priority dega, aur jab network thread free ho tabhi prefetch request jaayegi.
+        Browser is hint ko <em>ignore bhi kar sakta hai</em> — agar user ka data saver mode on hai, ya
+        connection slow hai (2G/3G), ya device already resource-constrained hai, to browser silently
+        prefetch skip kar dega. Ye ek "hint" hai, "command" nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">HTML — poore document (next page) ko prefetch karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- as="document" ka matlab hai poora HTML page prefetch ho raha hai, --&gt;</span>
+<span class="tok-punc">&lt;!-- sirf ek asset nahi. Ye HTTP cache mein store hoga. --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"prefetch"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/product/123"</span> <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"document"</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        <strong>Important caveat</strong> (root-level gotcha): cross-origin documents ko prefetch mat karo —
+        us case mein browser do baar request bhejta hai (ek prefetch ke liye, ek actual navigation ke
+        liye) kyunki cross-origin prefetched response ko browser directly navigation ke liye reuse nahi
+        kar pata (double-fetch cache-key mismatch ki wajah se). Same-origin <em>personalized</em> pages
+        (jaise "/cart" ya "/account") bhi prefetch mat karo — ye typically uncached responses hote hain
+        (Cache-Control: no-store type), to prefetch ka fayda hi nahi milega, sirf bandwidth waste hoga.
+      </p>
+
+      <h2 id="speculation-rules">Speculation Rules API</h2>
+      <p>
+        <code>&lt;link rel="prefetch"&gt;</code> declarative hai lekin limited — ek link, ek resource.
+        Chromium browsers (Chrome, Edge) mein ek zyada powerful, JSON-based API hai:
+        <strong>Speculation Rules API</strong>. Isse tum multiple URLs ko ek saath declare kar sakte ho,
+        aur ye prefetch <em>aur</em> prerender dono ke liye kaam aata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">HTML — Speculation Rules se multiple pages prefetch karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- type="speculationrules" batata hai browser ko ki is script tag ke andar --&gt;</span>
+<span class="tok-punc">&lt;!-- JavaScript nahi, balki ek JSON config hai jo speculative loading rules define karta hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"speculationrules"</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">{</span>
+  <span class="tok-attr">"prefetch"</span><span class="tok-punc">:</span> <span class="tok-punc">[{</span>
+    <span class="tok-com">// source: "list" ka matlab hai neeche diye gaye URLs ki explicit array use karo</span>
+    <span class="tok-com">// (dusra option "document" hai, jo current page ke &lt;a&gt; links ko auto-scan karta hai)</span>
+    <span class="tok-attr">"source"</span><span class="tok-punc">:</span> <span class="tok-str">"list"</span><span class="tok-punc">,</span>
+
+    <span class="tok-com">// ye dono URLs ko browser lowest-priority background fetch karega</span>
+    <span class="tok-com">// aur result ko IN-MEMORY cache mein rakhega (HTTP cache se bhi fast retrieval)</span>
+    <span class="tok-attr">"urls"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"/page-a"</span><span class="tok-punc">,</span> <span class="tok-str">"/page-b"</span><span class="tok-punc">]</span>
+  <span class="tok-punc">}]</span>
+<span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Speculation Rules se prefetch kiya gaya content <code>&lt;link rel="prefetch"&gt;</code> se ek
+        level upgrade hai: ye response ko <strong>in-memory cache</strong> mein rakhta hai, jo disk-based
+        HTTP cache se bhi fast retrieve hota hai — kyunki disk I/O bilkul avoid ho jaata hai.
+      </p>
+
+      <h2 id="prerender">Prerendering — poora page render karna</h2>
+      <p>
+        Prefetch sirf <em>bytes</em> la ke rakhta hai — HTML/CSS/JS ka raw response cache mein hota hai,
+        lekin browser use parse/render/execute nahi karta jab tak navigation actually na ho.
+        <strong>Prerender</strong> isse ek step aage le jaata hai: browser background mein poora naya page
+        <em>fetch, parse, render, aur JavaScript execute</em> karta hai — bilkul waise jaise agar user ne
+        already navigate kar diya ho, bas ye tab abhi invisible hai. Jab user actual click kare, browser
+        bas is already-rendered page ko instantly swap kar deta hai — feel karta hai jaise navigation
+        zero-cost thi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">HTML — Speculation Rules se pages prerender karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"speculationrules"</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">{</span>
+  <span class="tok-attr">"prerender"</span><span class="tok-punc">:</span> <span class="tok-punc">[{</span>
+    <span class="tok-com">// same "list" source pattern — explicit URLs jo confident hain ki user visit karega</span>
+    <span class="tok-attr">"source"</span><span class="tok-punc">:</span> <span class="tok-str">"list"</span><span class="tok-punc">,</span>
+
+    <span class="tok-com">// in dono pages ko browser background mein POORA render karega —</span>
+    <span class="tok-com">// HTML parse, CSSOM build, JS execute, sab kuch — jaise ek hidden tab mein</span>
+    <span class="tok-attr">"urls"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"/page-a"</span><span class="tok-punc">,</span> <span class="tok-str">"/page-b"</span><span class="tok-punc">]</span>
+  <span class="tok-punc">}]</span>
+<span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Prerender ka trade-off — bandwidth aur battery ka waste</div>
+        <p>
+          Prerendering sabse powerful hai lekin sabse <strong>mehenga</strong> bhi — kyunki poora JS
+          execute ho raha hai, network requests fire ho rahe hain, analytics beacons tak fire ho sakte
+          hain (side-effects!) — sab kuch ek page ke liye jise user shaayad kabhi click hi na kare. Agar
+          guess galat nikla, to wo saara CPU, memory, aur especially <strong>mobile data</strong> bekar
+          gaya. India jaise market mein jahan bahut users limited/prepaid data plans pe hain, ye directly
+          unke paison ka nuksaan hai. Isliye:
+        </p>
+        <ul>
+          <li>Prerender <strong>sirf tab karo jab confidence high ho</strong> — jaise search result ka
+            top link, ya pagination ka "next page" jisko log almost hamesha click karte hain.</li>
+          <li><code>navigator.connection.saveData</code> check karo — agar user ne browser mein
+            "Data Saver" mode on kiya hai, to prefetch/prerender dono <strong>skip</strong> kar do.</li>
+          <li><code>navigator.connection.effectiveType</code> check karo — <code>"2g"</code> ya
+            <code>"slow-2g"</code> pe speculative loading band rakho.</li>
+        </ul>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">JavaScript — saveData respect karte hue conditionally speculation rules inject karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// navigator.connection Network Information API hai — ye batata hai</span>
+<span class="tok-com">// user ki current connection quality aur unki data-saving preference</span>
+<span class="tok-kw">const</span> conn = navigator.connection<span class="tok-punc">;</span>
+
+<span class="tok-com">// agar connection info available nahi (Safari jaisa browser support nahi karta),</span>
+<span class="tok-com">// ya user ne explicitly Data Saver mode ON kiya hai (saveData === true),</span>
+<span class="tok-com">// ya connection slow hai (2g/slow-2g) — to hum speculative loading skip karte hain</span>
+<span class="tok-kw">const</span> shouldSpeculate =
+  conn &&                                   <span class="tok-com">// API available honi chahiye</span>
+  !conn.saveData &&                         <span class="tok-com">// user ne data-saver on nahi kiya ho</span>
+  !<span class="tok-punc">[</span><span class="tok-str">"slow-2g"</span><span class="tok-punc">,</span> <span class="tok-str">"2g"</span><span class="tok-punc">]</span>.<span class="tok-fn">includes</span>(conn.effectiveType)<span class="tok-punc">;</span> <span class="tok-com">// connection kaafi fast ho</span>
+
+<span class="tok-com">// sirf tab hi speculation rules ko page mein inject karo jab conditions favourable hon</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>shouldSpeculate<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// ek naya &lt;script&gt; element banaya JS se, kyunki hum runtime pe decide kar rahe hain</span>
+  <span class="tok-kw">const</span> script = <span class="tok-fn">document.createElement</span>(<span class="tok-str">"script"</span>)<span class="tok-punc">;</span>
+
+  <span class="tok-com">// type attribute set karna zaroori hai taaki browser ise speculation rules JSON maane</span>
+  script.type = <span class="tok-str">"speculationrules"</span><span class="tok-punc">;</span>
+
+  <span class="tok-com">// JSON.stringify se rules object ko text content ke roop mein daala</span>
+  script.textContent = <span class="tok-fn">JSON.stringify</span>(<span class="tok-punc">{</span>
+    prefetch: <span class="tok-punc">[{</span> source: <span class="tok-str">"list"</span><span class="tok-punc">,</span> urls: <span class="tok-punc">[</span><span class="tok-str">"/page-a"</span><span class="tok-punc">,</span> <span class="tok-str">"/page-b"</span><span class="tok-punc">]</span> <span class="tok-punc">}]</span>
+  <span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+
+  <span class="tok-com">// document.body mein append karte hi browser rules ko parse aur apply kar dega</span>
+  document.body.<span class="tok-fn">append</span>(script)<span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Legacy note: Chrome ka purana <code>&lt;link rel="prerender"&gt;</code> (non-Speculation-Rules
+        version) ab actually poora render nahi karta — Chrome ne ise "NoState Prefetch" mein downgrade
+        kar diya hai (sirf resources fetch hote hain, render nahi) — kyunki full prerender ke abuse aur
+        resource-waste issues bahut zyada the. Speculation Rules API is problem ko explicit opt-in aur
+        eviction rules (memory pressure pe auto-cancel) ke saath fix karta hai.
+      </p>
+
+      <h2 id="sw-precache">Service Worker Precaching</h2>
+      <p>
+        Prefetch aur prerender dono "is session ke liye, is navigation ke liye" speculative hain — tab
+        cache clear ya browser band, sab gaya. <strong>Service Worker precaching</strong> alag league
+        mein hai: ye ek <em>persistent, JavaScript-controlled</em> cache hai (Cache API ke through) jo
+        service worker ke <strong>install event</strong> pe explicitly bharta hai, aur repeat visits pe
+        —chahe offline ho ya online— instantly serve karta hai.
+      </p>
+      <p>
+        Root-level mechanism: Service Worker ek separate thread hai jo browser aur network ke beech
+        <em>proxy</em> ki tarah baithta hai. Jab pehli baar site visit hoti hai, SW <code>install</code>
+        event fire karta hai — us waqt hum "app shell" (HTML skeleton, critical CSS, core JS, logo) ko
+        <code>caches.open()</code> se ek named Cache object mein daal dete hain. Uske baad, har fetch
+        request SW ke <code>fetch</code> event se guzarta hai, jahan hum decide karte hain: cache se do,
+        ya network pe jao. Cache-only strategy mein hum sirf cache se serve karte hain (network sirf
+        install ke waqt use hota hai) — matlab repeat visits <strong>zero network round-trip</strong> ke
+        saath load hote hain, offline bhi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">sw.js — Service Worker install handler jo app shell precache karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// cache ka naam version ke saath rakho — jab bhi app shell update karo,</span>
+<span class="tok-com">// version number badal do (v1 -> v2), taaki purana cache invalidate ho sake</span>
+<span class="tok-kw">const</span> CACHE_NAME = <span class="tok-str">"app-shell-v1"</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// ye array "app shell" define karta hai — wo minimum files jo site ko</span>
+<span class="tok-com">// kaam karne ke liye chahiye, chahe network available ho ya na ho</span>
+<span class="tok-kw">const</span> APP_SHELL_URLS = <span class="tok-punc">[</span>
+  <span class="tok-str">"/"</span><span class="tok-punc">,</span>                     <span class="tok-com">// root document — offline pe bhi kuch dikhna chahiye</span>
+  <span class="tok-str">"/index.html"</span><span class="tok-punc">,</span>           <span class="tok-com">// main HTML skeleton</span>
+  <span class="tok-str">"/styles/main.css"</span><span class="tok-punc">,</span>      <span class="tok-com">// critical CSS jo layout ke liye chahiye</span>
+  <span class="tok-str">"/scripts/app.js"</span><span class="tok-punc">,</span>       <span class="tok-com">// core JS bundle jo app ko bootstrap karta hai</span>
+  <span class="tok-str">"/assets/logo.svg"</span><span class="tok-punc">,</span>      <span class="tok-com">// branding asset jo har page pe dikhta hai</span>
+  <span class="tok-str">"/offline.html"</span>          <span class="tok-com">// fallback page jo tab dikhega jab kuch aur na mile</span>
+<span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// "install" event tab fire hota hai jab browser is service worker file ko</span>
+<span class="tok-com">// PEHLI BAAR register karta hai, ya jab file content change hone se</span>
+<span class="tok-com">// naya SW version detect hota hai</span>
+self.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"install"</span><span class="tok-punc">,</span> (event) =&gt; <span class="tok-punc">{</span>
+  <span class="tok-com">// event.waitUntil() browser ko batata hai: "jab tak ye promise resolve na ho,</span>
+  <span class="tok-com">// install ko 'complete' mat maano" — isse hum guarantee karte hain ki</span>
+  <span class="tok-com">// caching poori hone se pehle SW activate na ho</span>
+  event.<span class="tok-fn">waitUntil</span>(
+    <span class="tok-com">// caches.open() ek named Cache object return karta hai (Promise ke through)</span>
+    <span class="tok-com">// — agar wo naam already exist nahi karta, naya bana deta hai</span>
+    caches.<span class="tok-fn">open</span>(CACHE_NAME).<span class="tok-fn">then</span>((cache) =&gt; <span class="tok-punc">{</span>
+      <span class="tok-com">// cache.addAll() har URL ko fetch karta hai AUR response ko cache mein</span>
+      <span class="tok-com">// store karta hai — sab ek saath, atomically (koi ek bhi fail hui to</span>
+      <span class="tok-com">// poora addAll() reject ho jaata hai, taaki partial/broken cache na bane)</span>
+      <span class="tok-kw">return</span> cache.<span class="tok-fn">addAll</span>(APP_SHELL_URLS)<span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>)
+  )<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+
+<span class="tok-com">// "activate" event tab fire hota hai jab naya SW purane SW ki jagah control</span>
+<span class="tok-com">// leta hai — yahan hum purane cache versions ko cleanup karte hain</span>
+self.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"activate"</span><span class="tok-punc">,</span> (event) =&gt; <span class="tok-punc">{</span>
+  event.<span class="tok-fn">waitUntil</span>(
+    <span class="tok-com">// saare existing cache names ki list nikalo</span>
+    caches.<span class="tok-fn">keys</span>().<span class="tok-fn">then</span>((cacheNames) =&gt; <span class="tok-punc">{</span>
+      <span class="tok-kw">return</span> Promise.<span class="tok-fn">all</span>(
+        cacheNames
+          <span class="tok-com">// sirf wo caches filter karo jo current CACHE_NAME se match nahi karte</span>
+          <span class="tok-com">// (matlab ye purane versions hain — v0, ya koi stale cache)</span>
+          .<span class="tok-fn">filter</span>((name) =&gt; name !== CACHE_NAME)
+          <span class="tok-com">// har purane cache ko delete kar do, storage free karne ke liye</span>
+          .<span class="tok-fn">map</span>((name) =&gt; caches.<span class="tok-fn">delete</span>(name))
+      )<span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>)
+  )<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+
+<span class="tok-com">// "fetch" event HAR network request ke liye fire hota hai jo is SW ke</span>
+<span class="tok-com">// scope ke andar aata hai — yahan hum cache-first strategy implement karte hain</span>
+self.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"fetch"</span><span class="tok-punc">,</span> (event) =&gt; <span class="tok-punc">{</span>
+  <span class="tok-com">// event.respondWith() se hum browser ke default network fetch ko</span>
+  <span class="tok-com">// override karke apna response de sakte hain</span>
+  event.<span class="tok-fn">respondWith</span>(
+    <span class="tok-com">// pehle cache mein dhoondo ki is exact request ka match hai kya</span>
+    caches.<span class="tok-fn">match</span>(event.request).<span class="tok-fn">then</span>((cachedResponse) =&gt; <span class="tok-punc">{</span>
+      <span class="tok-com">// agar cache mein mil gaya, wahi return karo — network ko touch mat karo</span>
+      <span class="tok-com">// (isliye ye "cache-only for precached URLs" pattern kehlata hai)</span>
+      <span class="tok-com">// agar nahi mila, tab hi network pe jao (runtime fallback)</span>
+      <span class="tok-kw">return</span> cachedResponse || <span class="tok-fn">fetch</span>(event.request)<span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>)
+  )<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>)<span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">app.js (main page) — Service Worker ko register karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// pehle check karo ki current browser Service Worker API support karta hai —</span>
+<span class="tok-com">// (purane browsers ya kuch restricted webviews mein ye undefined hoga)</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-str">"serviceWorker"</span> <span class="tok-kw">in</span> navigator<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// window ka "load" event use karo, taaki SW registration critical</span>
+  <span class="tok-com">// rendering path ko block na kare — page pehle fully load ho jaaye,</span>
+  <span class="tok-com">// uske baad hi hum SW registration ka background kaam shuru karein</span>
+  window.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"load"</span><span class="tok-punc">,</span> () =&gt; <span class="tok-punc">{</span>
+    <span class="tok-com">// register() ko sw.js file ka path do — browser is file ko</span>
+    <span class="tok-com">// fetch karega aur ek naya Service Worker thread spin up karega</span>
+    navigator.serviceWorker
+      .<span class="tok-fn">register</span>(<span class="tok-str">"/sw.js"</span>)
+      .<span class="tok-fn">then</span>((registration) =&gt; <span class="tok-punc">{</span>
+        <span class="tok-com">// registration object se hume scope aur state milta hai — debugging ke liye useful</span>
+        console.<span class="tok-fn">log</span>(<span class="tok-str">"Service Worker registered, scope:"</span><span class="tok-punc">,</span> registration.scope)<span class="tok-punc">;</span>
+      <span class="tok-punc">}</span>)
+      .<span class="tok-fn">catch</span>((error) =&gt; <span class="tok-punc">{</span>
+        <span class="tok-com">// registration fail ho sakta hai — jaise HTTPS na ho (SW sirf secure</span>
+        <span class="tok-com">// context mein chalta hai, localhost exception ke saath), ya file 404 de</span>
+        console.<span class="tok-fn">error</span>(<span class="tok-str">"Service Worker registration failed:"</span><span class="tok-punc">,</span> error)<span class="tok-punc">;</span>
+      <span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Production mein ye sab hath se likhna maintenance-heavy hai — har baar file hash change hone pe
+        <code>APP_SHELL_URLS</code> array manually update karna padega. Isliye real-world projects
+        <strong>Workbox</strong> (Google ki library) use karte hain, jo build-time pe automatically ek
+        precache manifest generate karta hai (file ka content-hash "revision" ban jaata hai), aur
+        <code>workbox.precaching.precacheAndRoute([...])</code> se saara install/fetch boilerplate
+        handle ho jaata hai — cache invalidation bhi automatic, kyunki hash change hote hi naya URL ban
+        jaata hai.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Technique</th><th>Kya karta hai</th><th>Cache location</th><th>Persistence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>rel="prefetch"</code></td><td>Sirf resource fetch (bytes)</td><td>HTTP cache</td><td>Session/tab tak</td></tr>
+          <tr><td>Speculation Rules — prefetch</td><td>Resource fetch (bytes)</td><td>In-memory cache</td><td>Tab tak, memory pressure pe evict</td></tr>
+          <tr><td>Speculation Rules — prerender</td><td>Fetch + parse + render + JS execute</td><td>In-memory (hidden render)</td><td>Tab tak, eviction rules apply</td></tr>
+          <tr><td>Service Worker precache</td><td>Fetch at install, explicit cache</td><td>Cache API (persistent disk storage)</td><td>Explicit — jab tak SW code delete na kare</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="timing">Teeno mein WHEN ka farak — root-level timing model</h2>
+      <p>
+        Ye teeno tools ek hi lagte hain ("cheez ko pehle se laao") lekin unka <strong>trigger point</strong>
+        bilkul alag hai — aur yahi unka sabse important architectural difference hai:
+      </p>
+      <ul>
+        <li>
+          <strong>Prefetch (<code>rel="prefetch"</code> / Speculation Rules prefetch):</strong> current
+          page ka load poora hone ke baad, browser ke <strong>idle time</strong> mein trigger hota hai
+          (low-priority background queue). Koi explicit user signal ki zaroorat nahi — bas declare karo,
+          browser apni marzi se, jab bandwidth free ho, fetch kar lega.
+        </li>
+        <li>
+          <strong>Prerender:</strong> zyada tar ek <strong>intent signal</strong> ke saath trigger hota
+          hai — jaise link pe hover, touchstart (mobile pe "pointer down" jaisa hi intent), ya viewport
+          mein aana. Frameworks (Next.js) isko "on hover/viewport" heuristic se automate karte hain.
+          Manually declare kiye gaye Speculation Rules bhi ho sakte hain jo page-load pe hi register ho
+          jaate hain, lekin actual heavy rendering work tabhi shuru hota hai jab browser confidence high
+          maane (aur ye eager ya moderate eagerness config se control hota hai).
+        </li>
+        <li>
+          <strong>Service Worker precache:</strong> ek bilkul different lifecycle event pe trigger hota
+          hai — <strong>SW install time</strong> par, jo pehli visit pe (ya SW code update hone pe) hota
+          hai. Ye "user ke agle click" ka wait nahi karta — ye "site ke saath pehli mulakat" pe hi
+          critical assets ko permanently cache mein daal deta hai, taaki <em>sabhi future visits</em>
+          (aaj, kal, offline, kabhi bhi) instant ho.
+        </li>
+      </ul>
+
+      <h2 id="risk-reward">Risk vs Reward — kab kya use karein</h2>
+      <p>
+        Jitna aage tum in teeno mein badhte ho (prefetch → prerender → SW precache), utna zyada
+        <strong>reward</strong> milta hai (faster future navigation) lekin utna hi zyada
+        <strong>risk/cost</strong> bhi (bandwidth, CPU, storage, complexity):
+      </p>
+      <ul>
+        <li><strong>Prefetch</strong> = low risk, low-medium reward. Galat guess ka cost sirf kuch KB
+          bandwidth hai — koi rendering/JS execution waste nahi hua.</li>
+        <li><strong>Prerender</strong> = high risk, high reward. Galat guess ka cost poora page render
+          + JS execution + possibly side-effect network calls hai — sabse expensive galti.</li>
+        <li><strong>SW precache</strong> = one-time cost, permanent reward. Install-time pe ek baar cost
+          bharta hai, lekin uske baad har visit free hai — is investment ka ROI sabse zyada hai <em>agar
+          user repeat visitor hai</em>. First-time-only visitors ke liye ye net negative hai (extra
+          install-time network calls jo kabhi reuse nahi hongi).</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Over-prefetching/prerendering ka real cost — India-specific</div>
+        <p>
+          Ye teeno techniques "speculative" hain — matlab inka fundamental nature hi galat guess ka
+          risk carry karta hai. Agar tum har link ko prefetch/prerender kar doge "just in case," to:
+        </p>
+        <ul>
+          <li>User ka <strong>mobile data</strong> waste hota hai un pages ke liye jo wo kabhi visit
+            hi nahi karega — prepaid/limited-data users (jo India mein bahut bade user-base hain) ke
+            liye ye directly unke paison ka nuksaan hai.</li>
+          <li><strong>Battery aur CPU</strong> waste hote hain, especially prerender mein jahan poora
+            JS execute hota hai background mein.</li>
+          <li>Server/CDN pe <strong>unnecessary load</strong> aata hai — real user traffic ke saath
+            compete karta hai speculative traffic.</li>
+        </ul>
+        <p>
+          Isliye <strong>hamesha</strong> <code>navigator.connection.saveData</code> aur
+          <code>navigator.connection.effectiveType</code> check karo before speculative loading trigger
+          karne se pehle (jaisa upar code example mein dikhaya). Ye ek non-negotiable production
+          practice honi chahiye, sirf ek "nice to have" nahi — kyunki iska direct impact user ke
+          real-world paison aur data plan pe padta hai.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — frameworks in primitives ko kaise abstract karte hain</div>
+        <p>
+          Modern frameworks in raw browser APIs ke upar convenient abstractions banate hain, taaki
+          developers ko manually Speculation Rules JSON likhna na pade:
+        </p>
+        <ul>
+          <li><strong>Next.js <code>&lt;Link&gt;</code>:</strong> jab component viewport mein aata hai
+            (Intersection Observer se detect), Next.js automatically us route ke JS chunk ko prefetch
+            kar deta hai — production build mein by default. Ye conceptually humare
+            "Speculation Rules prefetch on list" jaisa hi hai, bas framework internally handle karta hai
+            aur route-level code-splitting (Chapter 9) ke saath tightly integrated hai.</li>
+          <li><strong>Astro View Transitions:</strong> Astro ka <code>&lt;ClientRouter /&gt;</code> hover
+            pe (ya viewport-enter pe, config se) target page ko prefetch karta hai, aur navigation ko
+            View Transitions API ke saath animate karta hai — feel karta hai jaise SPA navigation, lekin
+            underlying mechanism wahi resource-hint/speculation primitives hain jo humne is chapter mein
+            dekhe.</li>
+          <li>Dono cases mein framework ka kaam hai <strong>heuristic decide karna</strong> (kab, kise
+            prefetch karna hai) — underlying browser mechanism wahi rehta hai jo tumne raw HTML/JS mein
+            likha hota. Framework internals padhte waqt yahi lens use karo: "ye kaunsa primitive
+            (prefetch/prerender/SW cache) ko wrap kar raha hai?"</li>
+        </ul>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Prefetch</strong> sirf resource ke raw bytes ko low-priority background fetch karta
+          hai aur HTTP (ya in-memory, Speculation Rules ke case mein) cache mein rakhta hai — koi
+          render/execute nahi hota.</li>
+        <li><strong>Prerender</strong> poora page fetch + render + JavaScript execute karta hai hidden
+          background mein — near-instant navigation deta hai, lekin galat guess ka cost sabse zyada hai.</li>
+        <li><strong>Service Worker precaching</strong> install-time pe app shell ko Cache API mein
+          explicitly daalta hai — persistent, offline-capable, aur cache-only strategy se network
+          round-trip completely eliminate karta hai repeat visits pe.</li>
+        <li>Teeno ka trigger point alag hai: prefetch = idle time, prerender = intent signal (hover/
+          viewport), SW precache = install lifecycle event.</li>
+        <li>Har speculative technique bandwidth/CPU/battery ka risk carry karti hai — hamesha
+          <code>navigator.connection.saveData</code> aur <code>effectiveType</code> respect karo, especially
+          mobile-heavy, data-cost-sensitive markets jaise India ke liye.</li>
+        <li>Frameworks (Next.js, Astro) in raw primitives ko automate karte hain — samajhna zaroori hai
+          ki underlying mechanism wahi <code>&lt;link rel="prefetch"&gt;</code> / Speculation Rules /
+          Service Worker hi hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Prefetch aur prerender mein fundamental difference kya hai?</strong><br>
+          Hint: prefetch sirf bytes laata hai (fetch only), prerender poora page render + JS execute
+          karta hai background mein — cost aur risk dono prerender mein zyada hote hain.</li>
+        <li><strong>Cross-origin document ko prefetch karna problematic kyun hai?</strong><br>
+          Hint: browser cache-key mismatch ki wajah se prefetched response ko navigation ke liye reuse
+          nahi kar paata, isliye do baar request jaati hai — ulta bandwidth waste.</li>
+        <li><strong>Service Worker ka Cache API aur browser ka HTTP cache — dono same hain kya?</strong><br>
+          Hint: nahi. HTTP cache <code>Cache-Control</code> headers se server-controlled hota hai; Cache
+          API JavaScript se explicitly control hota hai (SW ke andar) — dono independent storage layers
+          hain.</li>
+        <li><strong>Speculative loading implement karte waqt kaunsa API check karna chahiye taaki
+          data-conscious users ka data waste na ho?</strong><br>
+          Hint: <code>navigator.connection.saveData</code> aur <code>navigator.connection.effectiveType</code> —
+          Network Information API.</li>
+        <li><strong>Chrome ka legacy <code>&lt;link rel="prerender"&gt;</code> ab actually kya karta
+          hai?</strong><br>
+          Hint: full render nahi karta — Chrome ne ise "NoState Prefetch" mein downgrade kar diya hai
+          (resources fetch hote hain, render nahi) kyunki full prerender ka abuse/waste zyada tha.</li>
+        <li><strong>SW precaching production mein hath se maintain karna mushkil kyun hai, aur Workbox
+          kya solve karta hai?</strong><br>
+          Hint: file hashes change hone pe manual URL-array update karna padta, cache invalidation
+          bug-prone hota; Workbox build-time pe revision manifest auto-generate karke ye automate karta
+          hai.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="10-lazy-loading.html">
+          <div class="label">← Previous</div>
+          <div class="title">Lazy Load Images/iframes</div>
+        </a>
+        <a class="next" href="12-web-workers-overview.html">
+          <div class="label">Next →</div>
+          <div class="title">Web Workers — Overview</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

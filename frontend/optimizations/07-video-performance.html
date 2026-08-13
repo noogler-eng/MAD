@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Performance — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link active" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Video Performance</div>
+      <div class="progress-pill">Chapter 7 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Video · Autoplay · Lazy Loading</span>
+      <h1>Video Performance</h1>
+      <p class="subtitle">
+        GIF ko video se replace karna, autoplay ke sahi attributes, <code>preload</code> ka trade-off,
+        poster images se layout stability, aur below-the-fold videos ko Intersection Observer se
+        lazy-load karna — sab root-level detail ke saath.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why-video-not-gif">GIF kyun bura hai, video kyun better</a></li>
+          <li><a href="#gif-to-video">GIF → Video replacement pattern</a></li>
+          <li><a href="#autoplay-attrs">Autoplay attributes ka andar ka mechanism</a></li>
+          <li><a href="#preload">preload attribute — none / metadata / auto</a></li>
+          <li><a href="#poster">poster image — layout shift avoid karna</a></li>
+          <li><a href="#lazy-video">Below-the-fold video lazy loading</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why-video-not-gif">GIF kyun bura hai, video kyun better</h2>
+      <p>
+        Animated GIF format 1987 ka hai — usme koi real inter-frame video compression nahi hai
+        (sirf palette-based LZW compression, jo har frame ko almost independently store karta hai).
+        Result: same visual content ke liye GIF, H.264/VP9 encoded <code>&lt;video&gt;</code> se
+        <strong>5x–20x zyada bytes</strong> le sakta hai. Ek 3-second looping hero banner jo GIF mein
+        2-5 MB hota hai, wahi content H.264 MP4 mein 200-400 KB mein fit ho jaata hai — quality better
+        rehte hue bhi.
+      </p>
+      <p>
+        Root cause: video codecs (H.264, VP9, AV1) <strong>motion compensation</strong> use karte hain —
+        matlab har frame ko poora store nahi karte, balki previous frame se "kya change hua" wo
+        delta store karte hain (P-frames aur B-frames). GIF mein ye concept hi nahi hai — ye ek
+        image format hai jo animation ke liye hack kiya gaya, video codec nahi hai. Isliye
+        "animated GIF" ko browser mein hamesha muted, autoplaying, looping <code>&lt;video&gt;</code>
+        se replace karna chahiye — visually identical result, fraction ka bandwidth.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Container vs Codec — confusion clear karte hain</div>
+        <p>
+          <code>.mp4</code>/<code>.webm</code> ye <strong>containers</strong> hain — jaise ek box jisme
+          compressed audio + video streams, subtitles, metadata sab pack hote hain. Andar ka actual
+          compression <strong>codec</strong> karta hai (H.264, VP9, AV1 video codecs; AAC, Opus audio
+          codecs). Ek WebM container VP9 video + Opus audio hold kar sakta hai; ek MP4 container H.264
+          video + AAC audio. GIF replacement ke liye audio track hi nahi chahiye hoti, isliye encode
+          karte waqt audio explicitly strip kar dete hain (bandwidth aur bachta hai).
+        </p>
+      </div>
+
+      <h2 id="gif-to-video">GIF → Video replacement pattern</h2>
+      <p>
+        FFmpeg se GIF-jaisa animated MP4/WebM banane ka basic command — audio strip karke aur
+        CRF (Constant Rate Factor, quality-vs-size dial) set karke:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">terminal — ffmpeg se GIF-replacement video banana<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># -i input.mov: source file, jise encode karna hai</span>
+<span class="tok-com"># -an: "audio none" — audio stream poori tarah drop kar do (GIF replacement mein audio kabhi nahi chahiye)</span>
+<span class="tok-com"># -crf 32: quality dial — H.264 ke liye range ~18(best quality/bada file) to 32(chhota file/kam quality)</span>
+<span class="tok-com">#          background/GIF-replacement videos ke liye 28-32 usually kaafi hai, kyunki inhe closely nahi dekha jaata</span>
+<span class="tok-com"># output.mp4: H.264 codec (browser-universal fallback) mein encoded output</span>
+<span class="tok-fn">ffmpeg</span> <span class="tok-attr">-i</span> <span class="tok-str">input.mov</span> <span class="tok-attr">-an</span> <span class="tok-attr">-crf</span> <span class="tok-num">32</span> <span class="tok-str">output.mp4</span>
+
+<span class="tok-com"># same source se WebM (VP9 codec) bhi banao — chhota file size deta hai jahan support ho</span>
+<span class="tok-com"># -c:v libvpx-vp9: VP9 video codec explicitly select karo</span>
+<span class="tok-fn">ffmpeg</span> <span class="tok-attr">-i</span> <span class="tok-str">input.mov</span> <span class="tok-attr">-an</span> <span class="tok-attr">-c:v</span> <span class="tok-str">libvpx-vp9</span> <span class="tok-attr">-crf</span> <span class="tok-num">32</span> <span class="tok-attr">-b:v</span> <span class="tok-num">0</span> <span class="tok-str">output.webm</span></code></pre>
+      </div>
+
+      <p>
+        Ab HTML mein GIF ki jagah <code>&lt;video&gt;</code> element daalte hain, jisme multiple
+        <code>&lt;source&gt;</code> tags hain taaki browser apna best-supported format khud choose
+        kar sake (order matters — browser top se neeche jaakar pehla supported source use karta hai):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">index.html — animated GIF ko video se replace karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- BEFORE: animated GIF — 3.2 MB, no compression benefit of real codecs --&gt;</span>
+<span class="tok-com">&lt;!-- &lt;img src="hero-loop.gif" alt="Product ka animated demo"&gt; --&gt;</span>
+
+<span class="tok-com">&lt;!-- AFTER: muted, autoplaying, looping video — same visual, ~250 KB --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">video</span>
+  <span class="tok-attr">autoplay</span>
+  <span class="tok-attr">muted</span>
+  <span class="tok-attr">loop</span>
+  <span class="tok-attr">playsinline</span>
+  <span class="tok-attr">poster</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop-poster.jpg"</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"800"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"450"</span>
+  <span class="tok-attr">aria-label</span><span class="tok-punc">=</span><span class="tok-str">"Product ka animated demo"</span>
+<span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- browser pehle WebM/AV1 try karega — sabse chhota file agar supported hua to --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop.webm"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"video/webm"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- fallback: universally supported H.264 MP4 --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop.mp4"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"video/mp4"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- agar dono source fail ho jaayein (bahut purana browser), ye text screen reader/fallback ke liye --&gt;</span>
+  Your browser video tag support nahi karta.
+<span class="tok-punc">&lt;/</span><span class="tok-tag">video</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo — <code>&lt;video&gt;</code> ke andar <code>alt</code> attribute nahi hota
+        (wo sirf <code>&lt;img&gt;</code> ke liye hai); accessibility ke liye <code>aria-label</code>
+        ya visible caption use karo, kyunki screen readers video content describe nahi kar sakte.
+      </p>
+
+      <h2 id="autoplay-attrs">Autoplay attributes ka andar ka mechanism</h2>
+      <p>
+        Modern browsers (Chrome, Safari, Firefox) ka ek strict <strong>autoplay policy</strong> hai:
+        video sirf tabhi autoplay hoga jab wo <strong>silent</strong> ho. Ye user-experience protection
+        hai — kisi ko bhi random tab pe jaate hi loud audio se surprise nahi karna chahte. Isliye 4
+        attributes ek saath likhne padte hain, aur har ek ka apna role hai:
+      </p>
+
+      <table>
+        <tr><th>Attribute</th><th>Kya karta hai</th><th>Kyun zaroori hai</th></tr>
+        <tr>
+          <td><code>autoplay</code></td>
+          <td>Page load hote hi (ya viewport mein aate hi, agar JS control kare) video play start karne ka request</td>
+          <td>Bina iske video manually play karna padega</td>
+        </tr>
+        <tr>
+          <td><code>muted</code></td>
+          <td>Video ka audio track mute kar deta hai</td>
+          <td><strong>Chrome/Safari ka autoplay policy require karta hai</strong> — bina muted, browser autoplay ko silently block kar deta hai, koi error bhi nahi throw hota</td>
+        </tr>
+        <tr>
+          <td><code>loop</code></td>
+          <td>Video end hote hi restart ho jaata hai</td>
+          <td>GIF ka core behavior replicate karta hai — endless looping animation</td>
+        </tr>
+        <tr>
+          <td><code>playsinline</code></td>
+          <td>iOS Safari ko batata hai ki video ko fullscreen mein force mat karo</td>
+          <td>Bina iske iOS pe autoplay video automatically fullscreen mein khul jaata hai — bahut bura UX inline background video ke liye</td>
+        </tr>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common mistake — silently failing autoplay</div>
+        <p>
+          Agar tum <code>&lt;video autoplay loop playsinline&gt;</code> likhte ho <strong>bina
+          <code>muted</code> ke</strong>, to Chrome aur Safari dono video ko play hi nahi karenge —
+          aur console mein koi error bhi nahi dikhega (ya sirf ek harmless-looking warning:
+          <code>"play() request was interrupted"</code>). Video simply frozen dikhega apni poster
+          image (ya first frame) pe. Ye bug production mein bahut common hai kyunki local testing
+          mein developer ne kabhi audio-on video test hi nahi kiya, aur QA bhi ise miss kar deti hai
+          kyunki visually poster frame theek dikhta hai — sirf "move nahi kar raha" wahi symptom hota
+          hai. Fix hamesha simple hai: <code>muted</code> attribute add karo (aur ideally JS se bhi
+          <code>video.muted = true</code> set karo, kyunki kuch edge cases mein attribute alone
+          kaafi nahi hota — especially jab video element JS se dynamically create ho raha ho).
+        </p>
+      </div>
+
+      <p>
+        Andar se kya ho raha hai: browser ka media engine autoplay request ko ek permission check
+        se guard karta hai. Ye check dekhta hai ki video "audible" hai ya nahi (muted attribute, ya
+        volume 0, ya no audio track). Agar audible hai, autoplay request silently reject ho jaata hai
+        aur <code>video.play()</code> jo Promise return karta hai wo reject ho jaata hai (agar JS se
+        call kiya ho) — declarative <code>autoplay</code> attribute ke case mein to koi feedback bhi
+        nahi milta, video bas play nahi hoga.
+      </p>
+
+      <h2 id="preload">preload attribute — none / metadata / auto</h2>
+      <p>
+        <code>preload</code> attribute browser ko ek <strong>hint</strong> deta hai (guarantee nahi)
+        ki page load ke turant baad video data kitna aggressively fetch karna chahiye. Browser is hint
+        ko ignore bhi kar sakta hai — especially data-saver mode ya mobile network pe.
+      </p>
+
+      <table>
+        <tr><th>Value</th><th>Behavior</th><th>Kab use karein</th></tr>
+        <tr>
+          <td><code>preload="none"</code></td>
+          <td>Kuch bhi download nahi hota jab tak user play na kare (ya JS trigger na kare)</td>
+          <td>Below-the-fold videos, ya videos jo user shayad kabhi na dekhe — bandwidth bachaana priority hai</td>
+        </tr>
+        <tr>
+          <td><code>preload="metadata"</code></td>
+          <td>Sirf duration, dimensions, aur pehla frame jaisa lightweight metadata fetch hota hai (usually kuch KB, ek small byte-range request se)</td>
+          <td>Default-ish safe choice — controls (duration bar) turant sahi dikhte hain, bina poora video download kiye</td>
+        </tr>
+        <tr>
+          <td><code>preload="auto"</code></td>
+          <td>Browser ko poora (ya jitna practical ho) video pehle se buffer karne ka hint milta hai</td>
+          <td>Autoplaying above-the-fold hero video jahan turant smooth playback chahiye</td>
+        </tr>
+      </table>
+
+      <p>
+        Root-level nuance: <code>preload="none"</code> ka matlab literally "zero bytes" nahi hai —
+        browser fir bhi ek chhota HEAD-jaisa request bhej sakta hai server capabilities check karne
+        ke liye. Aur mobile data-saver mode active hone pe, browser <code>preload="auto"</code> ko bhi
+        downgrade karke effectively <code>metadata</code> jaisa treat kar sakta hai — isliye ise
+        "developer intent" samjho, "guaranteed behavior" nahi.
+      </p>
+
+      <h2 id="poster">poster image — layout shift avoid karna</h2>
+      <p>
+        <code>poster</code> attribute ek static image URL leta hai jo video load hone se pehle (aur
+        <code>preload="none"</code> ke case mein, play hone tak) display hoti hai. Bina poster ke,
+        browser ka default behavior kuch bhi ho sakta hai — usually ek blank black/grey box, jab tak
+        pehla frame decode na ho jaaye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">index.html — poster ke saath explicit width/height<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">video</span>
+  <span class="tok-attr">poster</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop-poster.jpg"</span>  <span class="tok-com">&lt;!-- video load hone se pehle ye image dikhti hai --&gt;</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"800"</span>                     <span class="tok-com">&lt;!-- explicit width — layout engine ko space reserve karne dega --&gt;</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"450"</span>                    <span class="tok-com">&lt;!-- explicit height — CLS (Cumulative Layout Shift) prevent karta hai --&gt;</span>
+  <span class="tok-attr">muted</span> <span class="tok-attr">loop</span> <span class="tok-attr">playsinline</span> <span class="tok-attr">autoplay</span>
+<span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop.webm"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"video/webm"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-loop.mp4"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"video/mp4"</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">video</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Do cheezein yahaan kaam kar rahi hain: (1) <code>width</code>/<code>height</code> attributes
+        browser ko intrinsic aspect ratio batate hain, taaki video area ke liye layout mein pehle se
+        hi correct space reserve ho jaaye — bina inke, jab video metadata load hoke actual dimensions
+        pata chalte hain, surrounding content shift ho sakta hai (CLS regression). (2) <code>poster</code>
+        us reserved space ko turant ek meaningful image se fill kar deta hai, jo blank/janky
+        white-to-content flash avoid karta hai.
+      </p>
+      <p>
+        Ek modern nuance: agar video <code>poster</code> nahi diya gaya, to jaise hi video ka pehla
+        frame paint hota hai, wo <strong>Largest Contentful Paint (LCP)</strong> candidate ban sakta
+        hai — matlab video ka rendering time directly tumhare LCP metric ko affect karega. Poster
+        image dekar tum ek chhota, fast-loading image ko LCP element bana sakte ho, jo video ke poore
+        download se kaafi pehle paint ho jaata hai — LCP score better hota hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior note — adaptive bitrate streaming yahaan applicable nahi</div>
+        <p>
+          HLS (HTTP Live Streaming) aur MPEG-DASH jaisi <strong>adaptive bitrate streaming</strong>
+          technologies long-form video (movies, live streams, courses) ke liye solve karte hain —
+          video ko chhote chunks/segments mein todke, multiple quality renditions banake, aur
+          player ko real-time network conditions ke hisaab se quality switch karne dete hain (buffering
+          minimize karne ke liye). Ye chapter jis scope pe focus karta hai — short, muted, looping
+          background/decorative videos (GIF replacements, hero banners) — unke liye HLS/DASH ka
+          overhead (manifest files, segmenter, streaming server, player library jaise hls.js) totally
+          unnecessary hai. Ek plain <code>&lt;video&gt;</code> tag with progressive MP4/WebM download
+          kaafi hai. Agar tumhe kabhi ek video-course platform ya live-streaming feature banana pade,
+          tabhi HLS/DASH explore karna — is chapter ka scope wahaan tak nahi jaata.
+        </p>
+      </div>
+
+      <h2 id="lazy-video">Below-the-fold video lazy loading</h2>
+      <p>
+        <code>&lt;img&gt;</code> ke paas native <code>loading="lazy"</code> attribute hai, lekin
+        <code>&lt;video&gt;</code> ke paas (as of is chapter likhne ke time) koi native lazy-loading
+        attribute nahi hai jo poster + source dono ko control kare cross-browser consistently — isliye
+        below-the-fold videos ke liye manually <strong>Intersection Observer</strong> use karke lazy
+        loading implement karte hain: hum video ka actual <code>src</code> tab tak set hi nahi karte
+        jab tak wo viewport ke paas na aa jaaye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">index.html — video markup jisme real source data-* attributes mein hidden hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- data-src / data-src-webm mein asli video URLs rakhte hain, src mein nahi --&gt;</span>
+<span class="tok-com">&lt;!-- isse browser page-load ke turant video download start nahi karega --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">video</span>
+  <span class="tok-attr">class</span><span class="tok-punc">=</span><span class="tok-str">"lazy-video"</span>
+  <span class="tok-attr">poster</span><span class="tok-punc">=</span><span class="tok-str">"section-demo-poster.jpg"</span>
+  <span class="tok-attr">muted</span>
+  <span class="tok-attr">loop</span>
+  <span class="tok-attr">playsinline</span>
+  <span class="tok-attr">preload</span><span class="tok-punc">=</span><span class="tok-str">"none"</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"800"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"450"</span>
+  <span class="tok-attr">data-src-webm</span><span class="tok-punc">=</span><span class="tok-str">"section-demo.webm"</span>
+  <span class="tok-attr">data-src-mp4</span><span class="tok-punc">=</span><span class="tok-str">"section-demo.mp4"</span>
+<span class="tok-punc">&gt;</span>
+  Your browser video tag support nahi karta.
+<span class="tok-punc">&lt;/</span><span class="tok-tag">video</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">lazy-video.js — Intersection Observer se video ko viewport ke paas hi load karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// saare ".lazy-video" class wale &lt;video&gt; elements dhoondo aur ek NodeList mein collect karo</span>
+<span class="tok-kw">const</span> lazyVideos = <span class="tok-fn">document.querySelectorAll</span>(<span class="tok-str">"video.lazy-video"</span>)<span class="tok-punc">;</span>
+
+<span class="tok-com">// ek IntersectionObserver instance banao — ye observe kiye gaye elements ki viewport-visibility track karta hai</span>
+<span class="tok-kw">const</span> videoObserver = <span class="tok-kw">new</span> <span class="tok-fn">IntersectionObserver</span>(
+  <span class="tok-com">// callback: har baar jab kisi observed element ki visibility change ho, ye function chalta hai</span>
+  <span class="tok-com">// entries: array of IntersectionObserverEntry, har ek observed element ke current state ke baare mein</span>
+  <span class="tok-punc">(</span>entries, observer<span class="tok-punc">)</span> => <span class="tok-punc">{</span>
+    <span class="tok-com">// har entry (yaani har video element ka intersection-status) pe loop chalao</span>
+    <span class="tok-fn">entries.forEach</span>(<span class="tok-punc">(</span>entry<span class="tok-punc">)</span> => <span class="tok-punc">{</span>
+      <span class="tok-com">// entry.isIntersecting true hai jab element rootMargin/threshold ke hisaab se "viewport ke paas" hai</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span>entry.isIntersecting<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+        <span class="tok-com">// entry.target = wo actual <video> DOM element jiska visibility change hua</span>
+        <span class="tok-kw">const</span> video = entry.target<span class="tok-punc">;</span>
+
+        <span class="tok-com">// agar video ke andar <source> tags already inject ho chuke hain, to dobara mat karo (guard)</span>
+        <span class="tok-kw">if</span> <span class="tok-punc">(</span>video.dataset.loaded === <span class="tok-str">"true"</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>
+
+        <span class="tok-com">// ek naya <source> element banao WebM ke liye</span>
+        <span class="tok-kw">const</span> webmSource = <span class="tok-fn">document.createElement</span>(<span class="tok-str">"source"</span>)<span class="tok-punc">;</span>
+        <span class="tok-com">// uska src attribute data-src-webm se uthaya gaya real URL set karo</span>
+        webmSource.src = video.dataset.srcWebm<span class="tok-punc">;</span>
+        <span class="tok-com">// type attribute set karo taaki browser ko pata chale ye WebM format hai</span>
+        webmSource.type = <span class="tok-str">"video/webm"</span><span class="tok-punc">;</span>
+
+        <span class="tok-com">// ek naya <source> element banao MP4 fallback ke liye</span>
+        <span class="tok-kw">const</span> mp4Source = <span class="tok-fn">document.createElement</span>(<span class="tok-str">"source"</span>)<span class="tok-punc">;</span>
+        <span class="tok-com">// uska src attribute data-src-mp4 se uthaya gaya real URL set karo</span>
+        mp4Source.src = video.dataset.srcMp4<span class="tok-punc">;</span>
+        <span class="tok-com">// type attribute set karo taaki browser ko pata chale ye MP4 format hai</span>
+        mp4Source.type = <span class="tok-str">"video/mp4"</span><span class="tok-punc">;</span>
+
+        <span class="tok-com">// dono <source> elements ko <video> ke andar append karo (order matters: webm pehle)</span>
+        <span class="tok-fn">video.appendChild</span>(webmSource)<span class="tok-punc">;</span>
+        <span class="tok-fn">video.appendChild</span>(mp4Source)<span class="tok-punc">;</span>
+
+        <span class="tok-com">// ab video ko explicitly load() call karke naye sources ke saath re-initialize karo</span>
+        <span class="tok-com">// (source elements add karne ke baad load() call karna zaroori hai warna video unhe pick nahi karega)</span>
+        <span class="tok-fn">video.load</span>()<span class="tok-punc">;</span>
+
+        <span class="tok-com">// autoplay/loop/muted/playsinline attributes already HTML mein hain,</span>
+        <span class="tok-com">// isliye load() ke baad browser khud play start kar dega (autoplay policy satisfied hai kyunki muted hai)</span>
+
+        <span class="tok-com">// ek dataset flag set karo taaki dobara isi video pe ye logic re-run na ho</span>
+        video.dataset.loaded = <span class="tok-str">"true"</span><span class="tok-punc">;</span>
+
+        <span class="tok-com">// is video ka observation band kar do — kaam ho gaya, ab observer ko is element pe nazar rakhne ki zaroorat nahi</span>
+        <span class="tok-fn">observer.unobserve</span>(video)<span class="tok-punc">;</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">}</span>)<span class="tok-punc">;</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-punc">{</span>
+    <span class="tok-com">// rootMargin: viewport ke boundary ko virtually itna badha do — matlab video viewport mein</span>
+    <span class="tok-com">// actually enter hone se 200px PEHLE hi "intersecting" maan liya jaayega</span>
+    <span class="tok-com">// isse video thoda pehle load hona start ho jaata hai, taaki user tak scroll karke pahunchte-pahunchte</span>
+    <span class="tok-com">// video ready ho chuka ho (perceived smoothness better hoti hai)</span>
+    rootMargin<span class="tok-punc">:</span> <span class="tok-str">"200px 0px"</span><span class="tok-punc">,</span>
+    <span class="tok-com">// threshold: 0 means jaise hi even 1 pixel bhi visible/intersecting ho, callback trigger ho jaaye</span>
+    threshold<span class="tok-punc">:</span> <span class="tok-num">0</span><span class="tok-punc">,</span>
+  <span class="tok-punc">}</span>
+)<span class="tok-punc">;</span>
+
+<span class="tok-com">// ab har lazy video element ko observer ke saath register (observe) karo</span>
+<span class="tok-fn">lazyVideos.forEach</span>(<span class="tok-punc">(</span>video<span class="tok-punc">)</span> => <span class="tok-punc">{</span>
+  <span class="tok-com">// observer isse tab tak watch karega jab tak ye viewport ke paas na aaye (ya unobserve na ho jaaye)</span>
+  <span class="tok-fn">videoObserver.observe</span>(video)<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>)<span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Is pattern ka core idea: <code>&lt;source&gt;</code> tags <strong>DOM mein hi nahi hote</strong>
+        jab tak Intersection Observer trigger na kare — browser ke paas fetch karne ke liye kuch hota
+        hi nahi hai jab tak video scroll-visibility ke paas na aaye. Ye <code>loading="lazy"</code>
+        (jo <code>&lt;img&gt;</code>/<code>&lt;iframe&gt;</code> pe kaam karta hai) ka manual,
+        video-specific equivalent hai. <code>preload="none"</code> ko is pattern ke saath combine
+        karna important hai — warna browser video element dekhte hi kuch metadata fetch karne ki
+        koshish kar sakta hai, poster ke alawa bhi.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Animated GIFs ko hamesha <code>&lt;video autoplay muted loop playsinline&gt;</code> se replace karo — same visual, 5-20x kam bytes, kyunki video codecs motion compensation use karte hain, GIF nahi karta.</li>
+        <li><code>muted</code> attribute autoplay ke liye <strong>mandatory</strong> hai modern Chrome/Safari mein — bina audio-off, autoplay silently fail hota hai bina koi error diye.</li>
+        <li><code>playsinline</code> iOS pe video ko forced-fullscreen jaane se rokta hai — background/inline videos ke liye zaroori.</li>
+        <li><code>preload</code> ek hint hai (guarantee nahi): <code>none</code> = kuch download nahi, <code>metadata</code> = sirf duration/dimensions, <code>auto</code> = poora buffer karne ki koshish.</li>
+        <li><code>poster</code> attribute layout shift (CLS) rokta hai aur ek fast-loading LCP candidate provide karta hai, video ke poore download se pehle hi.</li>
+        <li><code>&lt;video&gt;</code> ke paas native <code>loading="lazy"</code> nahi hai — below-the-fold videos ke liye manually Intersection Observer se <code>&lt;source&gt;</code> tags ko lazily inject karo.</li>
+        <li>Long-form/live video ke liye HLS/DASH adaptive streaming use karo — short background/decorative video ke liye ye overkill hai, plain progressive <code>&lt;video&gt;</code> kaafi hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: Autoplay video kaam kyun nahi kar raha, koi console error bhi nahi hai?</strong><br>Hint: 99% cases mein <code>muted</code> attribute missing hai — Chrome/Safari autoplay policy silently block karta hai audible autoplay ko.</li>
+        <li><strong>Q: <code>preload="none"</code> aur <code>preload="metadata"</code> mein practical difference kya hai?</strong><br>Hint: <code>metadata</code> mein browser ek small byte-range request bhejta hai duration/dimensions ke liye; <code>none</code> mein ideally kuch bhi nahi (though browser ignore bhi kar sakta hai hint).</li>
+        <li><strong>Q: Video ka poster image LCP ko kaise affect karta hai?</strong><br>Hint: bina poster ke, video ka decoded first frame khud LCP candidate ban sakta hai — jo video ke network download pe depend karta hai; poster ek chhota fast image dekar LCP ko decouple karta hai.</li>
+        <li><strong>Q: <code>&lt;video&gt;</code> ko lazy-load karne ke liye native <code>loading="lazy"</code> kyun nahi use kar sakte?</strong><br>Hint: spec mein video ke liye ye attribute standardize/consistently supported nahi hai jaise img/iframe ke liye hai — isliye Intersection Observer manual pattern chahiye.</li>
+        <li><strong>Q: GIF vs video mein file size ka itna bada difference kyun hota hai?</strong><br>Hint: video codecs (H.264/VP9/AV1) motion compensation/inter-frame prediction use karte hain (P/B-frames); GIF ek image format hai jisme real video compression concept hi nahi hai.</li>
+        <li><strong>Q: HLS/DASH kab use karna chahiye, aur is chapter ke GIF-replacement videos ke liye kyun nahi?</strong><br>Hint: adaptive streaming long-form/live content ke liye network-adaptive quality switching solve karta hai; short muted looping videos ke liye ye unnecessary complexity/infra hai.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a href="06-image-performance.html" class="prev">
+          <div class="label">← Previous</div>
+          <div class="title">Image Performance</div>
+        </a>
+        <a href="08-web-fonts.html" class="next">
+          <div class="label">Next →</div>
+          <div class="title">Optimize Web Fonts</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

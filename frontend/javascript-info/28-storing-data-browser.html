@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storing Data in Browser — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link active" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 28</div>
+      <div class="progress-pill">28 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Cookies · localStorage/sessionStorage · IndexedDB</span>
+      <h1>Storing Data in Browser</h1>
+      <p class="subtitle">
+        Browser mein data store karne ke teen fundamentally different tareeke hain — aur teeno alag
+        <em>trade-off</em> lekar aate hain: <code>document.cookie</code> (HTTP protocol ka hissa, har
+        request ke saath server tak jaata hai), <code>localStorage</code>/<code>sessionStorage</code>
+        (client-side hi rehta hai, synchronous API, chhota storage), aur <code>IndexedDB</code> (async,
+        transactional, large structured data ke liye). Ye chapter root-level samjhata hai ki har API
+        <em>internally</em> kaise kaam karta hai, aur production mein kaunsa API kab use karna hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#cookies-intro">Cookies — HTTP protocol ka hissa</a></li>
+          <li><a href="#cookie-rw">document.cookie se read/write</a></li>
+          <li><a href="#cookie-attrs">Cookie attributes — path/domain/expires/max-age</a></li>
+          <li><a href="#cookie-security">secure aur samesite — security attributes</a></li>
+          <li><a href="#httponly">httpOnly — JS se invisible cookies</a></li>
+          <li><a href="#localstorage">localStorage / sessionStorage API</a></li>
+          <li><a href="#sync-blocking">Synchronous blocking nature — perf gotcha</a></li>
+          <li><a href="#storage-event">storage event — cross-tab sync</a></li>
+          <li><a href="#indexeddb">IndexedDB — async structured storage</a></li>
+          <li><a href="#idb-example">Full IndexedDB example</a></li>
+          <li><a href="#comparison">Comparison table</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="cookies-intro">Cookies — ye storage API nahi, HTTP protocol ka hissa hai</h2>
+      <p>
+        Sabse pehli aur sabse important cheez samajhne wali: cookies koi "browser storage feature" nahi
+        hain jo baad mein add kiya gaya — ye <strong>HTTP protocol level</strong> pe define hain (RFC
+        6265). Server response mein <code>Set-Cookie</code> header bhejta hai, browser use store kar
+        leta hai, aur uske baad <strong>us domain ke matching har request</strong> mein browser
+        automatically <code>Cookie</code> request header attach kar deta hai — chahe wo request
+        <code>&lt;img&gt;</code> tag ho, CSS file ho, ya fetch call ho.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root-level perf cost: cookies har request ke saath jaate hain</div>
+        <p>
+          Ye <code>localStorage</code> se sabse bada structural difference hai. <code>localStorage</code>
+          ka data <strong>sirf client-side</strong> rehta hai — server ko kabhi automatically nahi
+          bhejta. Lekin cookie ka data har matching request ke <code>Cookie</code> header mein serialize
+          hoke jaata hai. Agar tumne 4KB ka cookie set kar diya, aur us domain se 50 static assets
+          (images, fonts, JS chunks) load ho rahe hain, to wahi 4KB har ek request ke header mein
+          <strong>baar-baar upload</strong> ho raha hai — real bandwidth cost, especially slow uplink
+          (mobile networks) pe. Isliye production rule: cookies mein sirf wahi rakho jo server ko chahiye
+          (session ID, auth token) — baaki client-side UI state <code>localStorage</code> mein rakho.
+        </p>
+      </div>
+
+      <h2 id="cookie-rw">document.cookie se read aur write</h2>
+      <p>
+        <code>document.cookie</code> ek normal data property nahi hai — ye ek <strong>accessor
+        property</strong> (getter/setter) hai. Iska matlab jab tum ise read karte ho, browser internally
+        saare cookies ko ek <code>"name1=value1; name2=value2"</code> format ki string mein serialize
+        karke deta hai. Aur jab tum ise <em>write</em> karte ho, browser sirf <strong>us ek cookie</strong>
+        ko update karta hai jiska naam string mein diya — baaki saare cookies untouched rehte hain (ye
+        counter-intuitive lagta hai kyunki normal property assignment poori value replace kar deta hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">document.cookie — read aur write<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ek naya cookie set karna — sirf iss "user" naam wale cookie ko touch karega</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span> <span class="tok-punc">=</span> <span class="tok-str">"user=Sharad"</span><span class="tok-punc">;</span> <span class="tok-com">// baaki existing cookies safe rehte hain, ye write "merge" jaisa behave karta hai</span>
+
+<span class="tok-com">// Cookie name aur value mein special characters (space, ;, =) allowed nahi hote raw form mein</span>
+<span class="tok-com">// isliye encodeURIComponent se encode karna best practice hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-fn">encodeURIComponent</span><span class="tok-punc">(</span><span class="tok-str">"my name"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "my%20name" — space ko percent-encode kiya</span>
+<span class="tok-kw">let</span> <span class="tok-punc">value</span> <span class="tok-punc">=</span> <span class="tok-fn">encodeURIComponent</span><span class="tok-punc">(</span><span class="tok-str">"Sharad Poddar"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// space wala value bhi encode karo</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span> <span class="tok-punc">=</span> <span class="tok-punc">`</span><span class="tok-str">${name}=${value}</span><span class="tok-punc">`</span><span class="tok-punc">;</span> <span class="tok-com">// template literal se "my%20name=Sharad%20Poddar" bana</span>
+
+<span class="tok-com">// Reading — poori cookie string ek saath milti hai, khud parse karna padta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "user=Sharad; my%20name=Sharad%20Poddar" jaisi ek semicolon-separated string</span>
+
+<span class="tok-com">// Ek helper function jo specific cookie nikalta hai naam se</span>
+<span class="tok-kw">function</span> <span class="tok-fn">getCookie</span><span class="tok-punc">(</span><span class="tok-punc">name</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// name param: jis cookie ka value chahiye</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">matches</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span> <span class="tok-com">// regex se cookie string ke andar match dhoondo</span>
+    <span class="tok-kw">new</span> <span class="tok-fn">RegExp</span><span class="tok-punc">(</span> <span class="tok-com">// dynamic regex banate hain kyunki name variable hai</span>
+      <span class="tok-str">"(?:^|; )"</span> <span class="tok-punc">+</span> <span class="tok-punc">name</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">([</span><span class="tok-punc">\.</span><span class="tok-punc">$?*|{}\(\)\[\]\\\/\+^</span><span class="tok-punc">])</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">,</span> <span class="tok-str">'\\$1'</span><span class="tok-punc">)</span> <span class="tok-punc">+</span> <span class="tok-str">"=([^;]*)"</span> <span class="tok-com">// name ke regex-special chars escape karke pattern banaya</span>
+    <span class="tok-punc">)</span>
+  <span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">matches</span> <span class="tok-punc">?</span> <span class="tok-fn">decodeURIComponent</span><span class="tok-punc">(</span><span class="tok-punc">matches</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">)</span> <span class="tok-punc">:</span> <span class="tok-kw">undefined</span><span class="tok-punc">;</span> <span class="tok-com">// match mila to decode karke return, warna undefined</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Cookie delete karna — koi delete() method nahi hai, past date set karke expire karte hain</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span> <span class="tok-punc">=</span> <span class="tok-str">"user=; expires=Thu, 01 Jan 1970 00:00:00 GMT"</span><span class="tok-punc">;</span> <span class="tok-com">// past date = browser turant is cookie ko delete kar deta hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Hard limits jo yaad rakhne hain</div>
+        <p>
+          Ek baar mein sirf <strong>ek</strong> cookie set ho sakta hai (multiple ke liye multiple writes
+          chahiye), har cookie ka size <strong>encoding ke baad max ~4KB</strong> hai, aur browser per
+          domain sirf <strong>~20+ cookies</strong> allow karta hai (exact limit browser-dependent). Ye
+          limits hi ek strong signal hain ki cookies bulk client data store karne ke liye designed nahi
+          hain — wo identifier/token carry karne ke liye hain.
+        </p>
+      </div>
+
+      <h2 id="cookie-attrs">Cookie attributes — scope aur lifetime control</h2>
+      <p>
+        Cookie set karte waqt <code>document.cookie</code> string mein attributes append kiye ja sakte
+        hain — ye attributes cookie ki <strong>visibility scope</strong> aur <strong>lifetime</strong>
+        control karte hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Cookie attributes ka full set<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span> <span class="tok-punc">=</span> <span class="tok-punc">`</span><span class="tok-str">session_id=abc123; </span>
+  <span class="tok-str">path=/; </span>                          <span class="tok-com">// path=/: is cookie ko poore site ke har URL path pe visible banao (default: current path)</span>
+  <span class="tok-str">domain=site.com; </span>                 <span class="tok-com">// domain: sub-domains (forum.site.com) ke saath bhi share karo — default sirf exact domain</span>
+  <span class="tok-str">expires=Fri, 12 Sep 2026 00:00:00 GMT; </span> <span class="tok-com">// expires: absolute GMT date — is date tak persist karega, browser close hone pe bhi</span>
+  <span class="tok-str">max-age=3600; </span>                     <span class="tok-com">// max-age: relative seconds (yahan 1 ghanta) — expires se zyada convenient, clock-skew-safe</span>
+  <span class="tok-str">secure; </span>                           <span class="tok-com">// secure: cookie SIRF HTTPS request ke saath jayega, plain HTTP pe kabhi nahi</span>
+  <span class="tok-str">samesite=lax</span><span class="tok-punc">`</span><span class="tok-punc">;</span>                    <span class="tok-com">// samesite: cross-site request ke saath ye cookie jaaye ya nahi, iska control (neeche detail)</span>
+
+<span class="tok-com">// Attribute na diya expires/max-age to ye ek "session cookie" ban jaata hai —</span>
+<span class="tok-com">// browser (poori window, sirf tab nahi) band hote hi delete ho jaata hai</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">cookie</span> <span class="tok-punc">=</span> <span class="tok-str">"temp_flag=1"</span><span class="tok-punc">;</span> <span class="tok-com">// no expires/max-age given, so ye session-only cookie hai</span></code></pre>
+      </div>
+
+      <p>
+        Root cause samajhna zaroori hai: <code>path</code> aur <code>domain</code> dono milkar decide
+        karte hain ki ek incoming request ke saath ye cookie <code>Cookie</code> header mein attach hoga
+        ya nahi — matching algorithm request URL ke path/host ko cookie ke stored path/domain se compare
+        karta hai. <code>expires</code>/<code>max-age</code> sirf storage duration control karte hain,
+        matching logic ko affect nahi karte.
+      </p>
+
+      <h2 id="cookie-security">secure aur samesite — security-critical attributes</h2>
+      <p>
+        <code>secure</code> simple hai — plain HTTP connection pe cookie transmit hi nahi hota, isse
+        network sniffing attacks (man-in-the-middle) se protect hota hai. <code>samesite</code> zyada
+        interesting hai kyunki ye <strong>CSRF (Cross-Site Request Forgery)</strong> attacks ko root
+        level pe mitigate karta hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: SameSite CSRF ko kaise rokta hai</div>
+        <p>
+          CSRF attack mein, ek malicious site (<code>evil.com</code>) tumhare browser se
+          <code>bank.com</code> ko ek request bhejwata hai (jaise ek auto-submitting form ya
+          <code>&lt;img src="bank.com/transfer?...">)</code>. Bina <code>samesite</code> ke, browser
+          us request ke saath <code>bank.com</code> ka session cookie automatically attach kar deta —
+          kyunki browser ko sirf domain-match dekhna hai, request kahan se initiate hui ye matter nahi
+          karta. <code>samesite=strict</code> is cookie ko <strong>kisi bhi cross-site request</strong>
+          ke saath bhejne se rokta hai — chahe navigation ho ya sub-resource load. <code>samesite=lax</code>
+          (modern browsers ka default agar attribute diya hi na ho) thoda relaxed hai: top-level
+          navigation (user link click karke aata hai) ke saath GET request mein cookie jaata hai, lekin
+          background POST/fetch/image jaisi cross-site requests mein nahi jaata. Yani <code>lax</code>
+          normal "user ne link click kiya aur login state carry hui" use-case ko preserve karta hai,
+          jabki hidden CSRF POST requests ko block karta hai.
+        </p>
+      </div>
+
+      <h2 id="httponly">httpOnly — cookies jo JavaScript se invisible hain</h2>
+      <p>
+        <code>httpOnly</code> attribute sirf <strong>server</strong> set kar sakta hai (<code>Set-Cookie</code>
+        HTTP header ke through) — JavaScript se <code>document.cookie</code> ke through ye attribute
+        add nahi kiya ja sakta, aur yehi iska poora point hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: session tokens httpOnly cookie mein rakho, localStorage mein nahi</div>
+        <p>
+          Ye ek extremely common production mistake hai: auth/session token ko <code>localStorage</code>
+          mein store karna kyunki "access karna easy hai". Root problem: agar tumhari site pe kahin bhi
+          ek XSS vulnerability hai (third-party script, user-generated content, dependency
+          vulnerability), to attacker ka injected JavaScript <code>localStorage.getItem("token")</code>
+          call karke token directly <strong>chura</strong> sakta hai aur apne server ko exfiltrate kar
+          sakta hai — poora account compromise. Lekin agar token <code>httpOnly</code> cookie mein hai,
+          to <code>document.cookie</code> is cookie ko dikhata hi nahi — <code>getItem</code> jaisa koi
+          equivalent access XSS script ke paas nahi hota. Cookie sirf HTTP request/response cycle mein
+          hi transparently browser ke through travel karta hai, JS runtime se completely isolated.
+          Isliye: session/auth tokens → <code>httpOnly</code> + <code>secure</code> + <code>samesite</code>
+          cookie mein. Non-sensitive UI state (theme, draft form data, feature flags) → localStorage
+          bilkul theek hai, wahan XSS token-theft ka risk nahi hai.
+        </p>
+      </div>
+
+      <h2 id="localstorage">localStorage / sessionStorage — client-side key-value store</h2>
+      <p>
+        Ye dono <code>Storage</code> interface implement karte hain — ek simple synchronous key-value
+        API jo sirf <strong>strings</strong> store karta hai (numbers/objects automatically string mein
+        convert ho jaate hain, jaise object → <code>"[object Object]"</code>, isliye complex data ke
+        liye <code>JSON.stringify</code>/<code>JSON.parse</code> chahiye hota hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">localStorage — full API<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// setItem: key-value pair store/update karta hai</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">setItem</span><span class="tok-punc">(</span><span class="tok-str">"theme"</span><span class="tok-punc">,</span> <span class="tok-str">"dark"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// key "theme", value "dark" — dono strings hone chahiye</span>
+
+<span class="tok-com">// getItem: key se value nikalta hai, na mile to null (undefined nahi!)</span>
+<span class="tok-kw">let</span> <span class="tok-punc">theme</span> <span class="tok-punc">=</span> <span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">getItem</span><span class="tok-punc">(</span><span class="tok-str">"theme"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "dark" return hoga</span>
+
+<span class="tok-com">// removeItem: ek specific key delete karta hai</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">removeItem</span><span class="tok-punc">(</span><span class="tok-str">"theme"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "theme" key hata do</span>
+
+<span class="tok-com">// clear: poora storage empty kar deta hai (is origin ka)</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">clear</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// sab kuch wipe — careful, irreversible hai</span>
+
+<span class="tok-com">// Complex data ke liye JSON serialize karna padta hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">,</span> <span class="tok-punc">role</span><span class="tok-punc">:</span> <span class="tok-str">"dev"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// ek plain object</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">setItem</span><span class="tok-punc">(</span><span class="tok-str">"user"</span><span class="tok-punc">,</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// object ko JSON string bana ke store kiya</span>
+<span class="tok-kw">let</span> <span class="tok-punc">restored</span> <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span><span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">getItem</span><span class="tok-punc">(</span><span class="tok-str">"user"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// string wapas parse karke object bana liya</span>
+
+<span class="tok-com">// Object-like access bhi kaam karta hai, LEKIN avoid karo</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-punc">test</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// ye "kaam" karta hai lekin storage event trigger nahi karta, aur "length" jaisi keys clash ho sakti hain</span>
+
+<span class="tok-com">// length aur key(): saare stored keys ke through iterate karne ke liye</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;</span> <span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// length = total stored keys count</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">key</span> <span class="tok-punc">=</span> <span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">key</span><span class="tok-punc">(</span><span class="tok-punc">i</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// index se key name nikalo</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">"=</span><span class="tok-punc">"</span><span class="tok-punc">,</span> <span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">getItem</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// key aur uska value print karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        <code>sessionStorage</code> ka API identical hai, lekin scope alag hai: <code>localStorage</code>
+        origin (protocol + domain + port) ke andar <strong>saare tabs/windows</strong> mein shared hai
+        aur browser restart ke baad bhi persist karta hai; <code>sessionStorage</code> sirf <strong>us
+        ek tab</strong> tak scoped hai (naya tab khola to fresh/empty milega, chahe same URL ho) aur tab
+        close hote hi delete ho jaata hai. Dono ki storage limit typically <strong>5-10MB</strong> hai
+        (browser-dependent), jo cookies ke 4KB se kaafi zyada hai.
+      </p>
+
+      <h2 id="sync-blocking">Synchronous blocking nature — real perf gotcha</h2>
+      <p>
+        <code>localStorage</code> ka API <strong>synchronous</strong> hai — <code>getItem</code>/<code>setItem</code>
+        call turant, blocking fashion mein return karti hai, koi Promise ya callback nahi.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root cause: main thread block hota hai</div>
+        <p>
+          Kyunki <code>localStorage</code> synchronous hai, ye JavaScript ke <strong>main thread</strong>
+          pe hi disk I/O perform karta hai (browser internally is data ko disk pe persist karta hai).
+          Chhote reads/writes (kuch KB) mein farak nahi padta, lekin agar tum bade JSON blobs (sabse
+          bade allowed limit ke close, jaise 1-2MB ka serialized state) baar-baar
+          <code>setItem</code>/<code>getItem</code> kar rahe ho — jaise ek large form draft ya cached
+          API response — to har call ke duration tak <strong>poora page frozen</strong> rehta hai: koi
+          animation, koi click handler, kuch bhi respond nahi karega. Ye especially bura hai jab
+          localStorage access kisi hot path mein ho (jaise har keystroke pe draft save karna). Mitigation:
+          debounce/throttle karo writes ko, ya bade/frequent data ke liye <code>IndexedDB</code> use karo
+          jo async hai aur main thread block nahi karta.
+        </p>
+      </div>
+
+      <h2 id="storage-event">storage event — tabs ke beech state sync karna</h2>
+      <p>
+        Jab <code>localStorage</code> (method-based, object-property-based nahi) change hota hai, browser
+        <strong>same origin ke doosre saare open windows/tabs</strong> mein (jis window ne change kiya
+        usko chhod ke) ek <code>storage</code> event fire karta hai — ye cross-tab communication ka
+        built-in, zero-dependency mechanism hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">storage event — cross-tab sync example<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Tab A mein: user logout karta hai, localStorage se auth token clear kiya</span>
+<span class="tok-punc">localStorage</span><span class="tok-punc">.</span><span class="tok-fn">removeItem</span><span class="tok-punc">(</span><span class="tok-str">"authToken"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// Tab A mein hua ye change</span>
+
+<span class="tok-com">// Tab B (same origin, doosra open tab) mein ye listener already registered tha:</span>
+<span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"storage"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// "storage" event listen karo window pe (localStorage change hone par)</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">key</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// "authToken" — jo key change hui uska naam</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">oldValue</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// purana value (jo delete se pehle tha)</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">newValue</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// null hoga kyunki removeItem hua tha (clear() pe key bhi null hota hai)</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">url</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// Tab A ka URL — jahan se ye change hua</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">key</span> <span class="tok-punc">===</span> <span class="tok-str">"authToken"</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-punc">!</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">newValue</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// agar authToken hi delete hua ho</span>
+    <span class="tok-fn">location</span><span class="tok-punc">.</span><span class="tok-fn">reload</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// is tab ko bhi logged-out state mein le aao — page reload karke</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Ye pattern real production mein bahut use hota hai: "user ne ek tab mein logout kiya to saare
+        open tabs mein bhi logout ho jaaye", ya "ek tab mein cart update hua to doosre tab ka cart badge
+        bhi turant update ho". Note: event <strong>sirf doosre tabs</strong> mein fire hota hai, jis tab
+        ne change kiya usme nahi (waha tumhe pata hi hai ki tumne kya kiya) — aur ye <em>sirf</em>
+        method-based (<code>setItem</code>/<code>removeItem</code>/<code>clear</code>) changes pe fire
+        hota hai, object-property-style assignment (<code>localStorage.x = 1</code>) pe nahi.
+      </p>
+
+      <h2 id="indexeddb">IndexedDB — async, transactional, large structured storage</h2>
+      <p>
+        Jab data localStorage ke 5-10MB limit se bada ho, ya structure complex ho (nested objects,
+        binary blobs, dates), ya tumhe query karna ho (range, index se search), to
+        <code>IndexedDB</code> sahi tool hai. Ye ek full <strong>client-side database</strong> hai —
+        object stores (tables jaisa), keys, indexes, aur ACID transactions ke saath, aur poora API
+        <strong>asynchronous (event-based)</strong> hai — main thread block nahi karta.
+      </p>
+
+      <h2 id="idb-example">Full IndexedDB example — open, create store, add, get</h2>
+      <div class="code-block">
+        <div class="code-title">IndexedDB — database open karke record add/get karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Step 1: database open/create karo — naam "notesDB", version 1</span>
+<span class="tok-kw">let</span> <span class="tok-punc">openRequest</span> <span class="tok-punc">=</span> <span class="tok-fn">indexedDB</span><span class="tok-punc">.</span><span class="tok-fn">open</span><span class="tok-punc">(</span><span class="tok-str">"notesDB"</span><span class="tok-punc">,</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// open() sync return nahi karta, ek "request" object deta hai jispe events lagte hain</span>
+
+<span class="tok-com">// Step 2: upgradeneeded — pehli baar DB banaya ja raha ho, ya version number badha ho, to fire hota hai</span>
+<span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">onupgradeneeded</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// yehi sirf jagah hai jahan schema (object stores) banaya ja sakta hai</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">db</span> <span class="tok-punc">=</span> <span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">result</span><span class="tok-punc">;</span> <span class="tok-com">// db connection object yahin se milta hai upgrade ke andar</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-fn">objectStoreNames</span><span class="tok-punc">.</span><span class="tok-fn">contains</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// agar "notes" store abhi tak nahi bana, to hi banao (idempotent)</span>
+    <span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-fn">createObjectStore</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-punc">keyPath</span><span class="tok-punc">:</span> <span class="tok-str">"id"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// keyPath: "id" — har record ke "id" property ko primary key bana diya</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Step 3: error — connection fail hone par</span>
+<span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">onerror</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// e.g. user ne permission deny ki, ya storage quota exceed</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">"DB open error:"</span><span class="tok-punc">,</span> <span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">error</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// error object openRequest.error pe milta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Step 4: success — DB ready hai, ab operations kar sakte hain</span>
+<span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">onsuccess</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// upgradeneeded ke baad, ya agar version already latest thi to seedha yahan aata hai</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">db</span> <span class="tok-punc">=</span> <span class="tok-punc">openRequest</span><span class="tok-punc">.</span><span class="tok-punc">result</span><span class="tok-punc">;</span> <span class="tok-com">// ye db object ab saari future queries ke liye use hoga</span>
+
+  <span class="tok-com">// Kisi doosre tab ne DB version upgrade kiya to purane connections ko close hona chahiye</span>
+  <span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-punc">onversionchange</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// dusre tab mein naya version open ho raha hai</span>
+    <span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-fn">close</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// is stale connection ko band karo taaki doosra tab upgrade kar sake</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"DB outdated, please reload"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// user ko batao page refresh kare</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+  <span class="tok-com">// --- WRITE: ek record add karna ---</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">writeTx</span> <span class="tok-punc">=</span> <span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-fn">transaction</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">,</span> <span class="tok-str">"readwrite"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "notes" store pe readwrite transaction shuru kiya</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">notesStore</span> <span class="tok-punc">=</span> <span class="tok-punc">writeTx</span><span class="tok-punc">.</span><span class="tok-fn">objectStore</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// us store ka reference nikala transaction ke andar se</span>
+
+  <span class="tok-kw">let</span> <span class="tok-punc">addRequest</span> <span class="tok-punc">=</span> <span class="tok-punc">notesStore</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-punc">id</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-punc">title</span><span class="tok-punc">:</span> <span class="tok-str">"Root cause debugging"</span><span class="tok-punc">,</span> <span class="tok-punc">tag</span><span class="tok-punc">:</span> <span class="tok-str">"devops"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// add() = insert only, "id":1 already exist hua to ConstraintError</span>
+
+  <span class="tok-punc">addRequest</span><span class="tok-punc">.</span><span class="tok-punc">onsuccess</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// individual request ka success — record insert ho gaya</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Note added"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// yahan tak transaction commit nahi hua, sirf ye request pura hua</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+  <span class="tok-punc">writeTx</span><span class="tok-punc">.</span><span class="tok-punc">oncomplete</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// poora transaction commit ho chuka (durable, disk pe likha gaya)</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Write transaction committed"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// yahan se data guaranteed persisted hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+  <span class="tok-punc">writeTx</span><span class="tok-punc">.</span><span class="tok-punc">onerror</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// transaction-level error — koi request fail hui to poori tx abort hoti hai (atomic)</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">"Write failed:"</span><span class="tok-punc">,</span> <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">target</span><span class="tok-punc">.</span><span class="tok-punc">error</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// error event.target.error se detail milti hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+  <span class="tok-com">// --- READ: same key se record wapas nikalna ---</span>
+  <span class="tok-com">// NOTE: naya transaction — pehle wale ke complete hone ka wait nahi kiya, IndexedDB isse handle kar leta hai</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">readTx</span> <span class="tok-punc">=</span> <span class="tok-punc">db</span><span class="tok-punc">.</span><span class="tok-fn">transaction</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">,</span> <span class="tok-str">"readonly"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// readonly = multiple concurrent readonly tx allowed (readwrite exclusive hota)</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">getRequest</span> <span class="tok-punc">=</span> <span class="tok-punc">readTx</span><span class="tok-punc">.</span><span class="tok-fn">objectStore</span><span class="tok-punc">(</span><span class="tok-str">"notes"</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// key=1 wala record maango</span>
+
+  <span class="tok-punc">getRequest</span><span class="tok-punc">.</span><span class="tok-punc">onsuccess</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// get() ka result async milta hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">getRequest</span><span class="tok-punc">.</span><span class="tok-punc">result</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// { id: 1, title: "Root cause debugging", tag: "devops" } — ya undefined agar na mila</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo <code>onupgradeneeded</code>, <code>onsuccess</code>, aur <code>onerror</code> —
+        IndexedDB ka har operation ek <strong>request object</strong> return karta hai jispe events lagte
+        hain, Promise-based nahi hai natively (chahe modern wrapper libraries jaise <code>idb</code>
+        ise promisify kar dete hain). Version number (<code>open("notesDB", 1)</code> mein <code>1</code>)
+        schema versioning ke liye hai — jab bhi tumhe schema change karna ho (naya object store, naya
+        index), version number badhao, tab hi <code>onupgradeneeded</code> phir se fire hoga.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Inactive transaction" gotcha</div>
+        <p>
+          IndexedDB transactions <strong>auto-commit</strong> ho jaate hain jab saari queued requests
+          complete ho jaayein aur microtask queue drain ho jaaye — matlab transaction sirf tab tak
+          "active" rehta hai jab tak tum synchronously (ya microtask ke andar) naye requests queue karte
+          raho. Agar beech mein <code>await fetch(...)</code> ya <code>setTimeout</code> jaisa koi
+          <strong>macrotask</strong> aa gaya, to us gap mein transaction already close ho chuka hoga —
+          aur uske baad koi request try karoge to "transaction is inactive" error milega. Fix: pehle
+          saara async/network work complete karo, uske baad IndexedDB transaction shuru karo — transaction
+          ke andar sirf DB operations rakho, koi external async call nahi.
+        </p>
+      </div>
+
+      <h2 id="comparison">Comparison table</h2>
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>Cookies</th><th>localStorage/sessionStorage</th><th>IndexedDB</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Size limit</td>
+            <td>~4KB per cookie</td>
+            <td>~5-10MB</td>
+            <td>Bahut zyada (browser quota / disk-dependent, GBs tak)</td>
+          </tr>
+          <tr>
+            <td>Server ko bheja jaata hai?</td>
+            <td>Haan, har matching request ke saath</td>
+            <td>Nahi, client-side only</td>
+            <td>Nahi, client-side only</td>
+          </tr>
+          <tr>
+            <td>API type</td>
+            <td>String-based, manual parsing</td>
+            <td>Synchronous key-value (strings only)</td>
+            <td>Asynchronous, structured objects, transactions</td>
+          </tr>
+          <tr>
+            <td>Querying</td>
+            <td>Nahi</td>
+            <td>Nahi (sirf key se access)</td>
+            <td>Haan — indexes, key ranges, cursors</td>
+          </tr>
+          <tr>
+            <td>Best use-case</td>
+            <td>Session/auth tokens (httpOnly), CSRF-sensitive identifiers</td>
+            <td>Small UI state, theme, feature flags, non-sensitive drafts</td>
+            <td>Large/structured/offline data — cached API responses, files, complex app state</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Cookies HTTP protocol ka hissa hain — har matching request ke saath automatically server ko jaate hain, isliye size/perf cost hai localStorage ke muqable.</li>
+        <li><code>document.cookie</code> ek accessor property hai — write per-cookie merge karta hai, poori string replace nahi karta.</li>
+        <li><code>samesite</code> attribute (strict/lax) cross-site requests ke saath cookie bhejne ko control karke CSRF attacks mitigate karta hai.</li>
+        <li><code>httpOnly</code> cookies ko JavaScript se completely invisible bana deta hai — session tokens ke liye ye XSS token-theft se best protection hai; <code>localStorage</code> mein tokens rakhna anti-pattern hai.</li>
+        <li><code>localStorage</code>/<code>sessionStorage</code> synchronous hain — bade/frequent reads-writes main thread ko block kar sakte hain, ye ek real perf gotcha hai.</li>
+        <li><code>storage</code> event doosre same-origin tabs ko localStorage changes ke baare mein notify karta hai (method-based changes pe hi) — cross-tab sync ka zero-dependency tareeka.</li>
+        <li><code>IndexedDB</code> async, transactional, large structured data ke liye designed hai — object stores, keyPath, indexes, versionchange lifecycle ke saath.</li>
+        <li>IndexedDB transactions macrotasks (fetch/setTimeout) ke beech aane pe auto-commit ho jaate hain — async work transaction shuru hone se pehle complete karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Cookie aur localStorage mein sabse fundamental difference kya hai jo perf ko affect karta hai?</strong><br>Hint: cookies HTTP request ke saath server ko automatically jaate hain (har matching request pe), localStorage sirf client-side rehta hai — bandwidth cost ka farak.</li>
+        <li><strong>samesite=lax aur samesite=strict mein practical farak kya hai, aur CSRF ko kaise rokta hai?</strong><br>Hint: strict kabhi bhi cross-site request pe cookie nahi bhejta; lax top-level GET navigation pe bhejta hai but background cross-site POST/fetch pe nahi — CSRF forged requests usually background/hidden hoti hain isliye lax bhi unhe rok deta hai.</li>
+        <li><strong>httpOnly cookie session tokens ke liye kyun better hain localStorage se?</strong><br>Hint: httpOnly cookie JS se document.cookie ke through read hi nahi ho sakta, isliye ek XSS vulnerability bhi token ko directly exfiltrate nahi kar sakti; localStorage har JS code (including injected malicious script) ko fully accessible hai.</li>
+        <li><strong>localStorage synchronous hone ka kya downside hai, aur kab ye real problem banta hai?</strong><br>Hint: main thread block hota hai disk I/O ke duration tak; bade ya frequent (hot-path) reads/writes pe UI freeze ho sakta hai — mitigation debounce ya IndexedDB.</li>
+        <li><strong>storage event kis window mein fire NAHI hota, aur kis type ke changes pe trigger hota hai?</strong><br>Hint: jis window/tab ne khud change kiya usme fire nahi hota, sirf doosre same-origin tabs mein; sirf method-based (setItem/removeItem/clear) changes pe fire hota hai, object-property assignment pe nahi.</li>
+        <li><strong>IndexedDB mein onupgradeneeded kab fire hota hai, aur schema changes sirf yahin kyun karne hote hain?</strong><br>Hint: jab DB pehli baar banta hai ya version number pehle se stored version se zyada diya jaata hai; ye ek special "versionchange" transaction hai jisme exclusive access guarantee hota hai, isliye object stores/indexes safely modify ho sakte hain.</li>
+        <li><strong>"transaction is inactive" error IndexedDB mein kyun aata hai?</strong><br>Hint: transaction auto-commit ho jaata hai jab saari queued requests + microtasks complete ho jaayein; agar beech mein macrotask (fetch/setTimeout) aa jaaye to transaction pehle hi close ho chuka hota hai us gap mein.</li>
+        <li><strong>add() aur put() mein IndexedDB ka farak kya hai?</strong><br>Hint: add() sirf naya record insert karta hai, agar key already exist karti hai to ConstraintError deta hai; put() insert-or-replace karta hai, existing key ho to overwrite kar deta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="27-network-2-xhr-ws-sse.html">
+        <div class="label">← Previous</div>
+        <div class="title">Network II — XHR/WS/SSE</div>
+      </a>
+      <a class="next" href="29-animation.html">
+        <div class="label">Next →</div>
+        <div class="title">Animation</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

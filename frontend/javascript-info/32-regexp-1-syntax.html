@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RegExp I — Syntax — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link active" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 32</div>
+      <div class="progress-pill">32 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">RegExp · Pattern Matching · Engine Internals</span>
+      <h1>RegExp I — Syntax</h1>
+      <p class="subtitle">
+        Regex sirf ek "pattern matching syntax" nahi hai — ye ek chhota compiled finite-state-ish engine
+        hai jo pattern ko internally instructions mein compile karta hai aur input string pe character-by-character
+        run karta hai. Is chapter mein hum syntax ki surface se shuru karke, root mein jaake dekhenge ki
+        flags actual engine behavior kaise badalte hain — matching algorithm ke level tak.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#literal-vs-constructor">Literal /pattern/flags vs new RegExp()</a></li>
+          <li><a href="#flags">Flags: g, i, m, s, u, y — engine ke andar kya badalta hai</a></li>
+          <li><a href="#char-classes">Character classes: \d \w \s aur negations</a></li>
+          <li><a href="#unicode">Unicode flag u aur \p{...} property escapes</a></li>
+          <li><a href="#anchors">Anchors ^ aur $</a></li>
+          <li><a href="#multiline">Multiline mode ka effect ^ $ pe</a></li>
+          <li><a href="#boundary">Word boundary \b — exact definition</a></li>
+          <li><a href="#escaping">Escaping special characters</a></li>
+          <li><a href="#sets">Character sets aur ranges [...] / [^...]</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="literal-vs-constructor">Literal <code>/pattern/flags</code> vs <code>new RegExp()</code></h2>
+      <p>
+        JavaScript mein regex banane ke do tareeke hain. Dono ka final result same object type hota hai
+        — <code>RegExp</code> instance — lekin unki <strong>parse-time behavior</strong> alag hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">regex-syntax.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Literal syntax — engine ye pattern ko compile-time pe hi parse kar leta hai</span>
+<span class="tok-com">// jab JS file load hoti hai, tab hi regex object ban jaata hai (function body ke andar bhi)</span>
+<span class="tok-kw">const</span> <span class="tok-punc">re1</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>hello<span class="tok-punc">/</span><span class="tok-punc">i</span><span class="tok-punc">;</span>              <span class="tok-com">// re1: pattern "hello", flag i = case-insensitive</span>
+
+<span class="tok-com">// Constructor syntax — pattern runtime pe ek STRING ke roop mein pass hota hai</span>
+<span class="tok-com">// isliye ye dynamic patterns ke liye zaroori hai (variable interpolation ke saath)</span>
+<span class="tok-kw">const</span> <span class="tok-punc">userInput</span> <span class="tok-punc">=</span> <span class="tok-str">"hello"</span><span class="tok-punc">;</span>              <span class="tok-com">// userInput: runtime pe pata chalne wali value (jaise search box se aayi)</span>
+<span class="tok-kw">const</span> <span class="tok-punc">re2</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">RegExp</span><span class="tok-punc">(</span><span class="tok-punc">`</span><span class="tok-punc">${</span>userInput<span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">,</span> <span class="tok-str">"i"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                       <span class="tok-com">// re2: same pattern, lekin build hua ek template string se — YE literal syntax se possible NAHI</span>
+                                       <span class="tok-com">// kyunki /${userInput}/i mein ${} sirf literal text treat hota, interpolate nahi hota</span>
+
+<span class="tok-punc">re1</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"Hello World"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// true — case-insensitive match hua "Hello" se</span>
+<span class="tok-punc">re2</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"Hello World"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// true — dono ka behavior identical hai, sirf construction ka tareeka alag</span></code></pre>
+      </div>
+      <p>
+        Root cause jo isse important banata hai: literal syntax mein pattern <strong>parse-time literal</strong>
+        hai — JS engine source code parse karte waqt hi regex-specific tokens ko validate/compile kar leta hai
+        (ek chhota optimization bhi hai kyunki repeated calls pe re-parse nahi hota agar regex ek hi jagah declare
+        hai). Constructor syntax mein pattern ek plain string hai jo runtime pe regex compiler ko pass hoti hai —
+        isliye har baar <code>new RegExp(...)</code> call hone par fresh compilation hoti hai, aur string escaping
+        ka ek extra layer bhi involve hota hai (neeche "Escaping" section mein detail).
+      </p>
+
+      <h2 id="flags">Flags: <code>g i m s u y</code> — engine ke andar kya badalta hai</h2>
+      <p>
+        Flags sirf "options" nahi hain — har flag matching algorithm ke ek specific stage ko modify karta
+        hai. Neeche har flag ka <strong>root-level</strong> effect:
+      </p>
+      <ul>
+        <li><strong><code>g</code> (global)</strong> — Engine ek match milne ke baad <code>lastIndex</code> position ko update karta hai aur wahin se agla match dhoondhta rehta hai, poori string scan hone tak. Bina <code>g</code> ke, engine pehla match milte hi ruk jaata hai. Ye <code>lastIndex</code> property regex object pe hi store hoti hai — isliye same global regex instance ko reuse karna stateful hai (gotcha: agar tum ek hi <code>/pattern/g</code> object ko baar-baar <code>.test()</code> pe call karo, har call agli position se start hoti hai, na ki shuru se).</li>
+        <li><strong><code>i</code> (case-insensitive)</strong> — Character comparison stage mein, engine har character ko match karne se pehle case-fold karta hai (uppercase/lowercase dono ko same "canonical" form mein normalize karke compare karta hai) — actual string modify nahi hoti, sirf comparison logic case ko ignore karta hai.</li>
+        <li><strong><code>m</code> (multiline)</strong> — <code>^</code> aur <code>$</code> anchors ke "boundary definition" ko badalta hai: default mein sirf poori string ka start/end boundary count hota hai, <code>m</code> ke saath har <code>\n</code> ke aas-paas bhi ek naya boundary create hota hai (detail neeche).</li>
+        <li><strong><code>s</code> (dotall)</strong> — <code>.</code> (dot) character class ki definition badalta hai: normally dot "kuch bhi except <code>\n</code>" match karta hai; <code>s</code> flag ke saath dot literally kuch bhi match karta hai, newline included.</li>
+        <li><strong><code>u</code> (unicode)</strong> — Engine ke internal "character iteration unit" ko UTF-16 code-unit se badal ke Unicode code-point kar deta hai — matlab 4-byte characters (surrogate pairs) ko ek single character treat karta hai, do nahi. Ye <code>\p{...}</code> property escapes ko bhi enable karta hai.</li>
+        <li><strong><code>y</code> (sticky)</strong> — <code>g</code> jaisa hi lastIndex-based hai, lekin strict hai: match <strong>exactly</strong> <code>lastIndex</code> position se start hona chahiye, agar wahan match na mile to engine aage scan nahi karta (jabki <code>g</code> string mein aage search karta rehta hai jab tak match na mile).</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">flags-demo.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// g flag — lastIndex stateful behavior dikhane ke liye</span>
+<span class="tok-kw">const</span> <span class="tok-punc">re</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>\d<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>                    <span class="tok-com">// re: ek ya zyada digits dhoondo, globally</span>
+<span class="tok-kw">const</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"a1 b22 c333"</span><span class="tok-punc">;</span>       <span class="tok-com">// str: test string jisme 3 number groups hain</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">re</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "1" — pehla match, aur re.lastIndex ab 2 pe set ho gaya</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">re</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "22" — engine ne 2nd exec() index 2 se shuru kiya, shuru se nahi</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">re</span><span class="tok-punc">.</span><span class="tok-fn">lastIndex</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 7 — object khud apni "state" carry kar raha hai, ye common bug source hai</span>
+
+<span class="tok-com">// s flag — dot ka default behavior override</span>
+<span class="tok-kw">const</span> <span class="tok-punc">withoutS</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>a<span class="tok-punc">.</span>b<span class="tok-punc">/</span><span class="tok-punc">;</span>          <span class="tok-com">// dot bina s flag ke — \n ko match NAHI karega</span>
+<span class="tok-kw">const</span> <span class="tok-punc">withS</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>a<span class="tok-punc">.</span>b<span class="tok-punc">/</span><span class="tok-punc">s</span><span class="tok-punc">;</span>              <span class="tok-com">// dot s flag ke saath — ab \n bhi match karega</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">withoutS</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"a\nb"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — newline ke beech dot break ho gaya</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">withS</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"a\nb"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// true — s flag ne dot ki definition expand kar di</span>
+
+<span class="tok-com">// y flag — strict position-locked match</span>
+<span class="tok-kw">const</span> <span class="tok-punc">sticky</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>foo<span class="tok-punc">/</span><span class="tok-punc">y</span><span class="tok-punc">;</span>              <span class="tok-com">// sticky: sirf exactly lastIndex se match karega</span>
+<span class="tok-punc">sticky</span><span class="tok-punc">.</span><span class="tok-fn">lastIndex</span> <span class="tok-punc">=</span> <span class="tok-num">3</span><span class="tok-punc">;</span>            <span class="tok-com">// manually search-start position set kiya</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">sticky</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"xxxfoo"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — index 3 pe exactly "foo" mila</span>
+<span class="tok-punc">sticky</span><span class="tok-punc">.</span><span class="tok-fn">lastIndex</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span>            <span class="tok-com">// position 2 pe reset kiya (jahan "foo" nahi hai)</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">sticky</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"xxxfoo"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — g hota to aage scan karke mil jaata, y ne mana kar diya</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 g flag ka statefulness ek common bug hai</div>
+        <p>
+          Kyunki <code>lastIndex</code> regex <strong>object</strong> pe store hoti hai (string pe nahi), agar
+          tum ek module-level shared <code>/pattern/g</code> regex ko multiple unrelated strings pe reuse karte
+          ho, to results unpredictable ho sakte hain — kyunki har call previous call ki <code>lastIndex</code> se
+          continue karti hai. Fix: <code>.test()</code>/<code>.exec()</code> loop khatam hone pe manually
+          <code>re.lastIndex = 0</code> reset karo, ya har baar naya regex literal banao.
+        </p>
+      </div>
+
+      <h2 id="char-classes">Character classes: <code>\d \w \s</code> aur negations</h2>
+      <p>
+        Ye "shorthand character classes" hain — har ek internally ek bade <strong>character set</strong> ka
+        shorthand hai (neeche <code>[...]</code> syntax dekhoge, ye shorthands usi ka compressed form hain):
+      </p>
+      <ul>
+        <li><code>\d</code> — koi bhi digit. Equivalent to <code>[0-9]</code>.</li>
+        <li><code>\D</code> — koi bhi non-digit. Equivalent to <code>[^0-9]</code>.</li>
+        <li><code>\s</code> — koi bhi whitespace: space, tab <code>\t</code>, newline <code>\n</code>, aur rare cases <code>\v</code>, <code>\f</code>, <code>\r</code>. Equivalent to ek internal set jisme ye sab characters hain.</li>
+        <li><code>\S</code> — koi bhi non-whitespace character.</li>
+        <li><code>\w</code> — "word character": Latin letter (<code>a-z</code>, <code>A-Z</code>), digit (<code>0-9</code>), ya underscore (<code>_</code>). Equivalent to <code>[a-zA-Z0-9_]</code>.</li>
+        <li><code>\W</code> — koi bhi cheez jo <code>\w</code> mein nahi hai.</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">char-classes.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// \D use karke phone number se sab non-digit characters strip karna</span>
+<span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"+7(903)-123-45-67"</span><span class="tok-punc">;</span> <span class="tok-com">// str: raw phone number formatting ke saath</span>
+<span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\D<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">,</span> <span class="tok-str">""</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// \D global match — har non-digit ko empty string se replace, matlab hata do</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "79031234567" — sirf digits bache</span>
+
+<span class="tok-com">// \w vs \W: identifier-jaisa token nikalna</span>
+<span class="tok-kw">const</span> <span class="tok-punc">text</span> <span class="tok-punc">=</span> <span class="tok-str">"user_1 @ email.com"</span><span class="tok-punc">;</span> <span class="tok-com">// text: mixed content string</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\w<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["user_1", "email", "com"] — @ aur . word char nahi hain, so break points ban gaye</span>
+
+<span class="tok-com">// IMPORTANT: \w mein sirf Latin letters hain — Devanagari/Cyrillic jaisi scripts include NAHI hoti</span>
+<span class="tok-kw">const</span> <span class="tok-punc">hindi</span> <span class="tok-punc">=</span> <span class="tok-str">"नमस्ते world"</span><span class="tok-punc">;</span>  <span class="tok-com">// hindi: Devanagari text ke saath English word</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">hindi</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\w<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["world"] — Devanagari characters \w se poori tarah miss ho gaye</span></code></pre>
+      </div>
+
+      <h2 id="unicode">Unicode flag <code>u</code> aur <code>\p{...}</code> property escapes</h2>
+      <p>
+        Ye is chapter ka sabse "root-level" gotcha hai. JavaScript strings internally UTF-16 encoded hain —
+        matlab har character ek ya do "code units" (16-bit blocks) leta hai. Basic Multilingual Plane ke
+        characters (English letters, common symbols) ek code unit lete hain. Lekin emoji jaise 😄, ya kuch
+        rare mathematical symbols jaise 𝒳, 4 bytes ke hote hain — do 16-bit code units mein encode hote hain,
+        jinhe <strong>surrogate pair</strong> kehte hain.
+      </p>
+      <p>
+        Bina <code>u</code> flag ke, regex engine (aur <code>.length</code> jaisi string operations) har
+        16-bit code unit ko ek "character" maan leti hain — matlab ek emoji ko galti se <strong>do characters</strong>
+        gin lete hain. <code>u</code> flag engine ke internal iteration unit ko code-unit se code-point pe
+        shift kar deta hai, taaki surrogate pair ko ek hi logical character treat kare.
+      </p>
+      <div class="code-block">
+        <div class="code-title">unicode-flag.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Root problem: emoji ka .length 2 aata hai, 1 nahi</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'😄'</span><span class="tok-punc">.</span><span class="tok-fn">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// 2 — kyunki ye ek surrogate pair hai (do UTF-16 code units)</span>
+
+<span class="tok-com">// dot (.) character class bina u flag ke: sirf ek code unit match karta hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">'😄'</span><span class="tok-punc">;</span>            <span class="tok-com">// str: single emoji character (do code units internally)</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>.<span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 1 — BUG: sirf half surrogate pair match hui (broken character)</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>.<span class="tok-punc">/</span><span class="tok-punc">u</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 2 — CORRECT: u flag ne poori surrogate pair ko ek unit treat kiya</span>
+
+<span class="tok-com">// \p{...} property escapes — u flag ke bina ye syntax hi INVALID hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">mixedLetters</span> <span class="tok-punc">=</span> <span class="tok-str">"A ब ㄱ"</span><span class="tok-punc">;</span>  <span class="tok-com">// mixedLetters: Latin, Devanagari, aur Korean letters mixed</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">mixedLetters</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\p<span class="tok-punc">{</span><span class="tok-str">L</span><span class="tok-punc">}</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">u</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["A","ब","ㄱ"] — \p{L} = koi bhi Unicode "Letter" category, script-agnostic</span>
+                                       <span class="tok-com">// yaad rahe: \w yahan Devanagari/Korean skip kar deta, \p{L} nahi karta</span>
+
+<span class="tok-com">// Hex digit detection Unicode property se</span>
+<span class="tok-kw">const</span> <span class="tok-punc">hexRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>x\p<span class="tok-punc">{</span><span class="tok-str">Hex_Digit</span><span class="tok-punc">}</span>\p<span class="tok-punc">{</span><span class="tok-str">Hex_Digit</span><span class="tok-punc">}</span><span class="tok-punc">/</span><span class="tok-punc">u</span><span class="tok-punc">;</span> <span class="tok-com">// pattern: literal 'x' + 2 hex-digit-property characters</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"number: xAF"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">hexRe</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "xAF" — matched successfully</span>
+
+<span class="tok-com">// Currency symbol detection — real-world use: multi-currency price parsing</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Prices: $2, €1, ¥9"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\p<span class="tok-punc">{</span><span class="tok-str">Sc</span><span class="tok-punc">}</span>\d<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">u</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["$2","€1","¥9"] — \p{Sc} = Unicode "Currency Symbol" category</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: <code>u</code> flag production mein kab kaatega</div>
+        <p>
+          User-generated content (bio, chat messages, usernames) jahan emoji common hai, wahan koi bhi
+          regex-based character-counting, truncation, ya validation logic <strong>silently corrupt</strong> ho
+          sakti hai bina <code>u</code> flag ke — jaise ek emoji ko "2 characters" gin ke half-surrogate pe
+          string truncate kar dena, jisse ek broken/invalid Unicode character render hota hai (typically
+          "�" jaisa glyph). Rule of thumb: agar tum arbitrary user text pe regex chala rahe ho jisme
+          non-ASCII content ho sakta hai, <code>u</code> flag default se lagao — cost near-zero hai, benefit
+          correctness hai.
+        </p>
+      </div>
+
+      <h2 id="anchors">Anchors <code>^</code> aur <code>$</code></h2>
+      <p>
+        <code>^</code> aur <code>$</code> "zero-width assertions" hain — ye actual characters match nahi
+        karte, sirf ek <strong>position test</strong> karte hain (jaise "kya hum string ke start pe hain?").
+        Isliye ye matched result mein koi character add nahi karte, sirf ek condition validate karte hain.
+      </p>
+      <ul>
+        <li><code>^</code> — default mein sirf string ke <strong>bilkul shuru</strong> pe match karta hai (index 0).</li>
+        <li><code>$</code> — default mein sirf string ke <strong>bilkul end</strong> pe match karta hai.</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">anchors.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">str1</span> <span class="tok-punc">=</span> <span class="tok-str">"Mary had a little lamb"</span><span class="tok-punc">;</span> <span class="tok-com">// str1: test string for start check</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">/</span>^Mary<span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">str1</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — string "Mary" se hi shuru ho rahi hai</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">str2</span> <span class="tok-punc">=</span> <span class="tok-str">"its fleece was white as snow"</span><span class="tok-punc">;</span> <span class="tok-com">// str2: test string for end check</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">/</span>snow$<span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">str2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — string "snow" pe hi end ho rahi hai</span>
+
+<span class="tok-com">// Combine karke poori string ka strict format validate karna — bahut common pattern</span>
+<span class="tok-kw">const</span> <span class="tok-punc">timeRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>^\d\d:\d\d$<span class="tok-punc">/</span><span class="tok-punc">;</span>       <span class="tok-com">// timeRe: exactly "digit digit : digit digit", pura string</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">timeRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"12:34"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true — exact format match</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">timeRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"12:345"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// false — $ ke wajah se extra "5" ke saath match fail ho gaya</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">timeRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"x12:34"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — ^ ke wajah se leading "x" ke saath match fail ho gaya</span></code></pre>
+      </div>
+
+      <h2 id="multiline">Multiline mode ka effect <code>^</code> <code>$</code> pe</h2>
+      <p>
+        <code>m</code> flag anchors ki "boundary definition" ko expand karta hai. Default mein <code>^</code>
+        aur <code>$</code> sirf poori string ke absolute start/end pe match karte hain. <code>m</code> flag
+        ke saath, engine har <code>\n</code> ke around bhi ek naya boundary treat karta hai — matlab
+        <strong>string boundaries ki jagah line boundaries</strong> use hoti hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">multiline.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">text</span> <span class="tok-punc">=</span> <span class="tok-str">`1st place: Winnie
+2nd place: Piglet
+3rd place: Eeyore`</span><span class="tok-punc">;</span>                     <span class="tok-com">// text: multi-line template literal, 3 lines, har line ek digit se shuru</span>
+
+<span class="tok-com">// Bina m flag ke: ^ sirf poori string ke shuru mein match karta hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>^\d<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// ["1"] — sirf pehli line ka digit mila</span>
+
+<span class="tok-com">// m flag ke saath: ^ har line ke start pe bhi match karta hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>^\d<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">m</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// ["1","2","3"] — teeno lines ke leading digits mile</span>
+
+<span class="tok-com">// $ ka behavior bhi symmetric hai — har line-end pe test hota hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>e$<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">m</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// letter "e" jo kisi line ke end pe ho — sirf "Eeyore" match karta (line 3)</span>
+
+<span class="tok-com">// Important farak: \n aur $ dono line-end dhoondh sakte hain, lekin \n MATCHED text mein shaamil ho jaata hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\w\n<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 2 — sirf un lines pe match jinke baad ACTUAL \n character hai (last line ke baad nahi)</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">text</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\w$<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">m</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3 — $ zero-width hai, character consume nahi karta, teeno lines ke end match hue including last</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ <code>$</code> zero-width hai — ye result mein character add NAHI karta</div>
+        <p>
+          Ye common confusion hai: <code>\n</code> ek literal character hai jo matched string mein shamil ho
+          jaata hai (aur agar last line ke baad koi <code>\n</code> nahi hai to wo line miss ho jaati hai);
+          <code>$</code> sirf ek position-test hai jo poori string ke last line ko bhi cover karta hai bina
+          uske baad literally koi newline hone ki zaroorat ke. Isliye line-ending detection ke liye generally
+          <code>$</code> (with <code>m</code> flag) zyada robust choice hai <code>\n</code> literal se.
+        </p>
+      </div>
+
+      <h2 id="boundary">Word boundary <code>\b</code> — exact definition</h2>
+      <p>
+        <code>\b</code> bhi <code>^</code>/<code>$</code> jaisa ek zero-width position test hai, lekin common
+        misconception ye hai ki log isse "space" samajh lete hain. Ye galat hai. Exact definition:
+        <strong>ek position jahan ek taraf <code>\w</code> (word character) ho aur doosri taraf "not <code>\w</code>"
+        ho</strong> — ya string ka start/end ho jab wahan word character ho. Space isme incidentally involve
+        hota hai kyunki space <code>\w</code> nahi hai, lekin boundary sirf spaces tak limited nahi —
+        punctuation, string-start, string-end, sab qualify karte hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">word-boundary.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// \b ek standalone word "Java" dhoondta hai, "JavaScript" ke andar wale "Java" ko nahi</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Hello, Java!"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\bJava\b<span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// ["Java"] — dono taraf "not \w" hai (comma-space aur '!')</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Hello, JavaScript!"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\bJava\b<span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// null — "Java" ke baad "S" ek \w character hai, so wahan boundary nahi hai</span>
+
+<span class="tok-com">// \b sirf letters tak limited nahi — digits pe bhi kaam karta hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">nums</span> <span class="tok-punc">=</span> <span class="tok-str">"1 23 456 78"</span><span class="tok-punc">;</span>    <span class="tok-com">// nums: mixed-length number groups</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">nums</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\b\d\d\b<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["23","78"] — exactly-2-digit standalone groups; "456" 3-digit hai so andar ke 2 digits boundary-fail</span>
+
+<span class="tok-com">// CRITICAL LIMITATION: \w mein sirf Latin letters/digits/underscore hain, isliye \b non-Latin scripts pe fail hota hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">hindi</span> <span class="tok-punc">=</span> <span class="tok-str">"नमस्ते दुनिया"</span><span class="tok-punc">;</span>     <span class="tok-com">// hindi: do Devanagari words, space se separated</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">hindi</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\b\w<span class="tok-punc">+</span>\b<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// null (ya empty) — Devanagari characters \w mein count hi nahi hote, boundary bilkul detect nahi hota</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: multilingual text mein <code>\b</code> use mat karo</div>
+        <p>
+          Production codebase mein agar tum non-English user content (names, addresses, Hindi/regional
+          language content) pe <code>\b</code>-based word-matching use kar rahe ho, ye silently fail hoga —
+          kyunki <code>\w</code> ki definition Latin-only hai. Iske liye better approach hai
+          <code>Intl.Segmenter</code> (word segmentation ke liye proper Unicode-aware API) ya <code>\p{L}</code>
+          based custom boundary logic use karna, jo hum RegExp III chapter (lookaround) mein explore karenge.
+        </p>
+      </div>
+
+      <h2 id="escaping">Escaping special characters</h2>
+      <p>
+        In characters ka regex syntax mein special meaning hai, isliye inhe literally match karne ke liye
+        backslash se escape karna padta hai: <code>[ ] { } ( ) \ ^ $ . | ? * +</code>
+      </p>
+      <div class="code-block">
+        <div class="code-title">escaping.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Literal dot escape karna — bina escape ke "." koi bhi character match kar leta</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Chapter 5.1"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\d\.\d<span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "5.1" — \. ne literal dot ko match kiya, kisi bhi character ko nahi</span>
+
+<span class="tok-com">// / character ko escape karna zaroori hai literal syntax mein (pattern delimiter clash)</span>
+<span class="tok-kw">const</span> <span class="tok-punc">pathRe</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>\<span class="tok-punc">/</span>api\<span class="tok-punc">/</span>v1<span class="tok-punc">/</span><span class="tok-punc">;</span>       <span class="tok-com">// pathRe: literal "/api/v1" match karta hai — har / ko \/ escape karna pada</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">pathRe</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"/api/v1/users"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true</span>
+
+<span class="tok-com">// new RegExp() ke saath double-escaping gotcha — string literal pehla backslash layer consume kar leta hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">wrong</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">RegExp</span><span class="tok-punc">(</span><span class="tok-str">"\d\.\d"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// GALAT: string "\d\.\d" processing ke baad ban jaata hai "d.d" (backslash consume ho gaya)</span>
+<span class="tok-kw">const</span> <span class="tok-punc">right</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">RegExp</span><span class="tok-punc">(</span><span class="tok-str">"\\d\\.\\d"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// SAHI: double backslash — string ban ke "\d\.\d" hi banega, sahi regex pattern</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">right</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"5.1"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">wrong</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"5.1"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// false — pattern actually "d.d" ban gaya tha, "5.1" mein literal "d" nahi hai</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root cause: string escaping aur regex escaping do alag layers hain</div>
+        <p>
+          <code>new RegExp("string")</code> ka argument pehle ek <strong>JS string literal</strong> ke roop mein
+          parse hota hai (jahan <code>\d</code> jaisi sequence ko JS engine "unknown escape" treat kar ke
+          usually literal <code>d</code> bana deta hai), aur uske baad wo resulting string regex compiler ko
+          pass hoti hai. Isliye har backslash jo tum regex ke liye chahte ho, use string layer se surviving
+          rakhne ke liye <strong>double</strong> karna padta hai. Literal <code>/pattern/</code> syntax mein ye
+          extra layer hai hi nahi — backslash directly regex compiler tak jaata hai.
+        </p>
+      </div>
+
+      <h2 id="sets">Character sets aur ranges <code>[...]</code> / <code>[^...]</code></h2>
+      <p>
+        Square brackets ek "set" define karte hain — engine us position pe <strong>exactly ek</strong> character
+        match karega jo set ke andar diye options mein se koi ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">char-sets.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Basic set — [tm]op matches "top" ya "mop", "t" ya "m" mein se koi ek</span>
+<span class="tok-kw">const</span> <span class="tok-punc">words</span> <span class="tok-punc">=</span> <span class="tok-str">"Mop top hop"</span><span class="tok-punc">;</span>   <span class="tok-com">// words: teen similar words</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">words</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">[</span>tm<span class="tok-punc">]</span>op<span class="tok-punc">/</span><span class="tok-punc">gi</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["Mop","top"] — "hop" match nahi hua, "h" set mein nahi tha</span>
+
+<span class="tok-com">// Range syntax — hyphen se interval specify hota hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">hexColor</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span>^#<span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">-</span><span class="tok-num">9</span>A<span class="tok-punc">-</span>F<span class="tok-punc">]</span><span class="tok-punc">{</span><span class="tok-num">6</span><span class="tok-punc">}</span>$<span class="tok-punc">/</span><span class="tok-punc">i</span><span class="tok-punc">;</span> <span class="tok-com">// pattern: # ke baad exactly 6 hex characters (digit ya A-F)</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">hexColor</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"#d97757"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — 0-9 range aur A-F range combine ho gaye ek set mein</span>
+
+<span class="tok-com">// Negated set — [^...] "in aksharo ke ALAWA kuch bhi" match karta hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">noVowels</span> <span class="tok-punc">=</span> <span class="tok-str">"sky"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">[</span>^aeiou<span class="tok-punc">]</span><span class="tok-punc">/</span><span class="tok-punc">gi</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// [^aeiou]: koi bhi character jo vowel NAHI hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">noVowels</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// ["s","k","y"] — "sky" mein koi vowel hai hi nahi, so sab characters match hue</span>
+
+<span class="tok-com">// [^0-9] practically \D ka expanded/explicit equivalent hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"a1b2"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">[</span>^<span class="tok-num">0</span><span class="tok-punc">-</span><span class="tok-num">9</span><span class="tok-punc">]</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["a","b"] — same result jo \D deta</span>
+
+<span class="tok-com">// Special characters ke sets ke ANDAR ka behavior — j.a.d.a permissive hai</span>
+<span class="tok-kw">const</span> <span class="tok-punc">special</span> <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-punc">[</span>.<span class="tok-punc">+</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">]</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>          <span class="tok-com">// set ke andar . + ( ) apni special meaning KHO dete hain — literal ban jaate hain</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"a.b+c(d)"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">special</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// [".","+","(",")"] — bina escape kiye hi literally match hue</span>
+
+<span class="tok-com">// EXCEPTION: ] hamesha escape chahiye set ke andar, warna set close ho jaayega galat jagah</span>
+<span class="tok-com">// EXCEPTION: - sirf escape chahiye agar range banane ki niyat nahi hai (edges pe nahi to safe hai)</span>
+<span class="tok-com">// EXCEPTION: ^ sirf agar set ke bilkul start mein hai to escape chahiye (warna negation ban jaayega)</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Surrogate pairs sets ke andar bhi <code>u</code> flag maangte hain</div>
+        <p>
+          Agar tum kisi character set mein ek surrogate-pair character (jaise 𝒳 ya emoji) include karte ho
+          bina <code>u</code> flag ke, engine use do alag code units treat karega — jisse set ka behavior
+          unpredictable ho sakta hai (galat characters match ho sakte hain, ya set corrupt ho sakta hai).
+          Yehi Unicode consistency rule hai jo poore is chapter mein repeat ho raha hai: jahan bhi non-ASCII
+          content involve ho, <code>u</code> flag lagao.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Literal <code>/pattern/flags</code> compile-time parse hota hai; <code>new RegExp()</code> runtime string se banta hai — dynamic patterns ke liye zaroori, lekin backslash double-escaping chahiye.</li>
+        <li><code>g</code> flag regex object pe <code>lastIndex</code> state maintain karta hai — shared/reused global regex ek common statefulness bug source hai.</li>
+        <li><code>s</code> flag sirf dot (<code>.</code>) ki definition expand karta hai (newline included); <code>m</code> flag sirf <code>^</code>/<code>$</code> ki boundary definition change karta hai.</li>
+        <li><code>u</code> flag engine ke internal character-iteration unit ko UTF-16 code-unit se Unicode code-point pe shift karta hai — emoji/rare symbols ko sahi se ek character count karne ke liye zaroori.</li>
+        <li><code>\d \w \s</code> shorthand classes hain, expanded character sets ke — aur <code>\w</code> sirf Latin letters/digits/underscore tak limited hai, non-Latin scripts miss ho jaate hain.</li>
+        <li><code>\b</code> "space" nahi, balki "<code>\w</code> se non-<code>\w</code> transition (ya string boundary)" detect karta hai — non-Latin text pe silently fail hota hai.</li>
+        <li>Character sets <code>[...]</code> ke andar zyadatar special characters literal ban jaate hain — sirf <code>]</code>, edge-position <code>-</code>, aur leading <code>^</code> ko escape/position-care chahiye.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Literal regex syntax aur <code>new RegExp()</code> constructor mein kab kaunsa use karoge, aur inki internal difference kya hai?</strong><br>Hint: literal compile-time parse hoti hai (dynamic interpolation possible nahi), constructor runtime string se banta hai (dynamic patterns ke liye zaroori, lekin har backslash double karna padta hai string-escaping ki wajah se).</li>
+        <li><strong>Ek shared <code>/pattern/g</code> regex object ko multiple independent strings pe reuse karne mein kya bug ho sakta hai?</strong><br>Hint: <code>lastIndex</code> regex object pe stored hoti hai, string pe nahi — agli call previous call ki position se continue hoti hai jab tak manually reset na karo.</li>
+        <li><strong><code>u</code> flag ke bina emoji jaisa 4-byte character regex mein kaise problem create karta hai?</strong><br>Hint: emoji UTF-16 mein surrogate pair (2 code units) hai; bina <code>u</code> ke engine har code unit ko alag character treat karta hai, so <code>.</code> jaisa pattern sirf half-character match karega, aur <code>.length</code> bhi 2 aayega, 1 nahi.</li>
+        <li><strong>Multiline mode (<code>m</code> flag) exactly kya badalta hai anchors mein — aur ye <code>\n</code> literal character se kaise different hai line-detection ke liye?</strong><br>Hint: <code>m</code> flag <code>^</code>/<code>$</code> ko har <code>\n</code> ke around bhi match karne deta hai (line boundaries); <code>\n</code> ek literal consuming character hai jo matched result mein aata hai aur last line (jiske baad newline nahi) ko miss kar sakta hai, jabki <code>$</code> zero-width hone ki wajah se usse bhi cover karta hai.</li>
+        <li><strong><code>\b</code> ka exact definition kya hai, aur log ise "space" kyun maan lete hain incorrectly?</strong><br>Hint: <code>\b</code> ek position hai jahan ek taraf <code>\w</code> ho aur doosri taraf non-<code>\w</code> ho (ya string start/end); space isme incidentally involve hota hai kyunki wo non-<code>\w</code> hai, lekin punctuation aur string boundaries bhi equally qualify karte hain.</li>
+        <li><strong>Character set <code>[...]</code> ke andar kaunse characters ko escape karna zaroori hai, aur kaunse automatically literal ban jaate hain?</strong><br>Hint: <code>]</code> hamesha escape chahiye, <code>-</code> sirf agar range intent nahi hai aur edges pe nahi, <code>^</code> sirf leading position pe (warna negation ban jaata) — lekin <code>. + ( )</code> jaise operators set ke andar automatically literal ho jaate hain, escape ki zaroorat nahi.</li>
+        <li><strong>Kyun <code>\w</code>-based word boundary detection multilingual (non-Latin) content pe fail hota hai, aur iska better alternative kya hai?</strong><br>Hint: <code>\w</code> spec ke hisaab se sirf Latin letters/digits/underscore include karta hai; better approach hai <code>\p{L}</code>-based custom logic ya <code>Intl.Segmenter</code> jo proper Unicode-aware word segmentation deta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="31-web-components-2.html">
+        <div class="label">← Previous</div>
+        <div class="title">Web Components II</div>
+      </a>
+      <a class="next" href="33-regexp-2-quantifiers-groups.html">
+        <div class="label">Next →</div>
+        <div class="title">RegExp II — Quantifiers/Groups</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

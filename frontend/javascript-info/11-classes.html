@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link active" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 11</div>
+      <div class="progress-pill">11 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Classes · Inheritance · OOP</span>
+      <h1>Classes</h1>
+      <p class="subtitle">
+        Chapter 10 mein humne dekha tha ki prototypal inheritance kaise kaam karta hai — <code>F.prototype</code>,
+        <code>[[Prototype]]</code> chain, sab manual tha. <code>class</code> keyword us sab pe ek clean syntax
+        layer hai — lekin "syntax sugar" ka matlab "sirf cosmetic" nahi hai. Engine ke andar class ek function hi
+        banata hai, par kuch extra internal flags ke saath jo behavior ko subtly but meaningfully change karte
+        hain. Is chapter mein hum wahi root-level mechanics khodenge: class kaise desugar hoti hai, <code>extends</code>
+        + <code>super()</code> ka call-ordering rule kyun hai, <code>#private</code> fields ka real language-level
+        enforcement, built-in classes extend karne ke gotchas, aur <code>instanceof</code> ke andar ka algorithm.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#basic-syntax">Class basic syntax</a></li>
+          <li><a href="#desugar">Class asal mein hai kya — desugaring proof</a></li>
+          <li><a href="#inheritance">Inheritance: extends aur super</a></li>
+          <li><a href="#static">Static properties &amp; methods</a></li>
+          <li><a href="#private-protected">Private (#field) aur protected (_field)</a></li>
+          <li><a href="#extend-natives">Built-in classes extend karna — Array, Symbol.species</a></li>
+          <li><a href="#instanceof">instanceof ka internal algorithm</a></li>
+          <li><a href="#mixins">Mixins — single inheritance ka workaround</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="basic-syntax">Class basic syntax</h2>
+      <p>
+        Basic class declaration ek <code>constructor</code> aur kuch methods rakhti hai. <code>new</code> ke saath
+        instantiate karne pe <code>constructor()</code> automatically chal jaata hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Basic class<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">User</span> <span class="tok-punc">{</span>                          <span class="tok-com">// class keyword se class declare karte hain, User naam hai</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// constructor: new User(...) call hone pe ye method chalta hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span>          <span class="tok-com">// naya banaye gaye object pe name property set karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                        <span class="tok-com">// sayHi: ek "method" — ye shorthand method syntax hai</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// this yahaan calling instance ko point karega</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">User</span><span class="tok-punc">(</span><span class="tok-str">"Sharad"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// new: object banao, constructor chalao, this bind karo</span>
+user<span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                      <span class="tok-com">// -> "Sharad" alert hoga</span></code></pre>
+      </div>
+      <p>
+        Class body ke andar aur bhi cheezein likh sakte ho — getters/setters, computed method names, aur class
+        fields (instance properties directly class body mein):
+      </p>
+      <div class="code-block">
+        <div class="code-title">Getters/setters + computed names + class fields<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">User</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">name</span> <span class="tok-punc">=</span> <span class="tok-str">"Anonymous"</span><span class="tok-punc">;</span>          <span class="tok-com">// class field: har naye instance pe DIRECTLY set hoga (prototype pe nahi)</span>
+
+  <span class="tok-kw">get</span> <span class="tok-fn">upperName</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// get: getter — property jaisa access hoga, method jaisa nahi</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">.</span><span class="tok-fn">toUpperCase</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// this.name ko uppercase karke return karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">set</span> <span class="tok-fn">upperName</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// set: setter — user.upperName = "x" karne pe ye chalega</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> value<span class="tok-punc">;</span>       <span class="tok-com">// incoming value ko this.name mein store karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-punc">[</span><span class="tok-str">"say"</span> <span class="tok-punc">+</span> <span class="tok-str">"Hi"</span><span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// computed method name: [expr]() -> runtime pe "sayHi" ban gaya</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// simple greet</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Class field important hai kyunki wo <strong>per-instance</strong> hota hai, prototype pe nahi — ye chapter
+        9 wale "losing <code>this</code>" problem ko arrow-function class fields se solve karne ke liye use hota
+        hai (kyunki arrow function apne definition scope ka <code>this</code> capture karta hai, aur field har
+        naye instance ke constructor execution ke time create hoti hai).
+      </p>
+
+      <h2 id="desugar">Class asal mein hai kya — desugaring proof</h2>
+      <p>
+        Yahaan se root-level part start hota hai. <code>class</code> keyword ek naya runtime primitive nahi hai —
+        ye ek function banata hai (constructor banta hai us function ka body), aur baaki sab methods us function ke
+        <code>.prototype</code> pe non-enumerable properties ke roop mein daal deta hai. Neeche proof hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">class ka manual equivalent — dono functionally same hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ==== Version A: class syntax ====</span>
+<span class="tok-kw">class</span> <span class="tok-fn">User</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">// constructor body</span>
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span>          <span class="tok-com">// method</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// ==== Version B: hand-written equivalent, jo engine internally karta hai ====</span>
+<span class="tok-kw">function</span> <span class="tok-fn">UserFn</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// plain function -> constructor ka role nibhayegi</span>
+  <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span>            <span class="tok-com">// same body jo class constructor mein tha</span>
+<span class="tok-punc">}</span>
+
+UserFn<span class="tok-punc">.</span>prototype<span class="tok-punc">.</span>sayHi <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// method ko prototype pe manually assign kiya</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Object.getOwnPropertyDescriptor se prove karo Version A ka sayHi</span>
+<span class="tok-com">// bhi UserFn.prototype.sayHi jaisa hi ek prototype property hai:</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> User<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// -> "function"  (class khud ek function hai!)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>User <span class="tok-punc">===</span> User<span class="tok-punc">.</span>prototype<span class="tok-punc">.</span>constructor<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true, jaisa normal function constructor</span></code></pre>
+      </div>
+      <p>
+        Lekin identical nahi — spec-level pe kuch <strong>internal flags</strong> alag hote hain jo class ko
+        function se distinguish karte hain:
+      </p>
+      <ul>
+        <li>
+          <strong><code>[[IsClassConstructor]]: true</code></strong> — class internally is flag ke saath marked
+          hoti hai. Isi wajah se <code>User()</code> (bina <code>new</code> ke) call karna
+          <code>TypeError: Class constructor User cannot be invoked without 'new'</code> deta hai — plain function
+          ke saath aisa nahi hota, wo bina <code>new</code> ke bhi chal jaati (bas <code>this</code> galat
+          bind hoga).
+        </li>
+        <li>
+          <strong>Non-enumerable methods</strong> — class body ke andar define hue saare methods automatically
+          <code>enumerable: false</code> ke saath prototype pe set hote hain. Isliye <code>for...in</code> loop
+          ek object pe chalane se class methods leak nahi hote — sirf apni khud ki (own, enumerable) properties
+          dikhti hain. Manual <code>UserFn.prototype.sayHi = function(){}</code> se banai property by default
+          <code>enumerable: true</code> hoti — ye class syntax ka ek deliberate cleanliness fix hai.
+        </li>
+        <li>
+          <strong>Automatic strict mode</strong> — class body ke andar sab kuch implicitly strict mode mein chalta
+          hai, chahe file ke top pe <code>"use strict"</code> ho ya nahi.
+        </li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: "syntax sugar" ka matlab galat mat samjho</div>
+        <p>
+          Bahut jagah class ko "just syntax sugar over prototypes" bola jaata hai, aur runtime object-shape ke
+          hisaab se ye largely sach hai — <code>User.prototype</code> abhi bhi wahi mechanism hai jo chapter 10
+          mein cover kiya tha. Lekin behaviorally class ek strictly-typed superset hai: <code>[[IsClassConstructor]]</code>
+          flag, non-enumerable methods, aur (derived classes ke case mein) constructor call-ordering rules — ye
+          teeno cheezein plain function-based "class pattern" mein manually replicate karni padti hain. Production
+          code review karte waqt agar koi bole "class to bas function hi hai", to yaad rakho: runtime shape same
+          hai, lekin **enforcement semantics** alag hain — aur wahi enforcement hi bugs ko compile/runtime pe
+          catch karta hai jo function-pattern mein silently through ho jaate.
+        </p>
+      </div>
+
+      <h2 id="inheritance">Inheritance: extends aur super</h2>
+      <p>
+        <code>class Child extends Parent</code> do prototype links set karta hai — ek instance-level
+        (<code>Child.prototype.__proto__ = Parent.prototype</code>) aur ek class-level, jo hum static section mein
+        dekhenge:
+      </p>
+      <div class="code-block">
+        <div class="code-title">extends — prototype chain proof<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>speed <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>       <span class="tok-com">// har animal ki initial speed 0</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span>     <span class="tok-com">// naam store karo</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-fn">run</span><span class="tok-punc">(</span>speed<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>speed <span class="tok-punc">=</span> speed<span class="tok-punc">;</span>    <span class="tok-com">// speed update karo</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`${this.name} runs at ${speed}.`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// template literal se log</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">Rabbit</span> <span class="tok-kw">extends</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span>     <span class="tok-com">// extends: Rabbit.prototype ko Animal.prototype se link karo</span>
+  <span class="tok-fn">hide</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`${this.name} hides!`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// Rabbit ka apna extra method</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-fn">run</span><span class="tok-punc">(</span>speed<span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// override: Animal.run ko re-define kiya</span>
+    <span class="tok-kw">super</span><span class="tok-punc">.</span><span class="tok-fn">run</span><span class="tok-punc">(</span>speed<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// super.run: parent ka run() call karo, replace nahi extend kiya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">hide</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// run karne ke baad turant chhup jao — extra behavior</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> rabbit <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span><span class="tok-str">"White Rabbit"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+rabbit<span class="tok-punc">.</span><span class="tok-fn">run</span><span class="tok-punc">(</span><span class="tok-num">5</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                   <span class="tok-com">// -> "White Rabbit runs at 5." phir "White Rabbit hides!"</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>Rabbit<span class="tok-punc">.</span>prototype<span class="tok-punc">.</span>__proto__ <span class="tok-punc">===</span> Animal<span class="tok-punc">.</span>prototype<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true, root proof</span></code></pre>
+      </div>
+      <p>
+        Method lookup <code>rabbit.run()</code> call karne pe: (1) <code>rabbit</code> khud check hota hai (nahi
+        mila), (2) <code>Rabbit.prototype</code> check hota hai (mila — override wala <code>run</code>). Andar
+        <code>super.run()</code> ka matlab hai "ek level upar ja ke, <code>Animal.prototype</code> pe, wahaan ka
+        <code>run</code> dhoondo, but <code>this</code> ko current <code>rabbit</code> hi rehne do."
+      </p>
+
+      <h3>super() ka call-ordering constraint — root cause</h3>
+      <p>
+        Jab tum constructor override karte ho ek derived class mein, ek hard rule hai: <strong><code>super()</code>
+        ko <code>this</code> access karne se pehle call karna hi hoga</strong>. Ye arbitrary restriction nahi
+        hai — ye is baat se aata hai ki base aur derived classes ke constructors ka internal <code>[[ConstructorKind]]</code>
+        flag alag value rakhta hai:
+      </p>
+      <ul>
+        <li>
+          Normal (base) class constructor: <code>[[ConstructorKind]]: "base"</code>. Jab <code>new</code> ke saath
+          call hota hai, engine pehle ek khaali object banata hai, use <code>this</code> bind karta hai, phir
+          constructor body chalta hai.
+        </li>
+        <li>
+          Derived class constructor (<code>extends</code> wali): <code>[[ConstructorKind]]: "derived"</code>. Yahaan
+          engine <strong>object khud nahi banata</strong> — wo expect karta hai ki parent constructor
+          (<code>super()</code> ke through) object banaye aur initialize kare. Jab tak <code>super()</code> call
+          nahi hota, <code>this</code> ek uninitialized state mein reh jaata hai — literally "not yet created".
+        </li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">super() se pehle this access — TypeError proof<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span> <span class="tok-punc">}</span>  <span class="tok-com">// base ctor -> object khud banata hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">Rabbit</span> <span class="tok-kw">extends</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>name<span class="tok-punc">,</span> earLength<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// this.earLength = earLength;   // <- agar ye line yahaan uncomment karo,</span>
+    <span class="tok-com">// ReferenceError aayega: "Must call super constructor before accessing 'this'"</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// super(): parent constructor ko call karo, YE object banayega/init karega</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>earLength <span class="tok-punc">=</span> earLength<span class="tok-punc">;</span> <span class="tok-com">// ab this exist karta hai — safe to touch</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> r <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span><span class="tok-str">"White"</span><span class="tok-punc">,</span> <span class="tok-num">10</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// name super() se set hua, earLength Rabbit ke apne ctor se</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>r<span class="tok-punc">.</span>name <span class="tok-punc">+</span> <span class="tok-str">" "</span> <span class="tok-punc">+</span> r<span class="tok-punc">.</span>earLength<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> "White 10"</span></code></pre>
+      </div>
+      <p>
+        Ek subtle related rule: agar derived class explicitly <code>constructor</code> hi nahi likhti, to engine
+        automatically ek generate kar deta hai jo bas sab args ko <code>super(...args)</code> ke through pass kar
+        deta hai — <code>constructor(...args) { super(...args); }</code>. Isliye agar tumhare paas custom logic
+        nahi hai, constructor omit karna bilkul safe hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Derived constructor mein return value ka rule</div>
+        <p>
+          Base class constructor agar bina value ke <code>return</code> karta hai (ya bilkul nahi karta), to
+          <code>this</code> hi return hota hai — normal. Lekin derived constructor mein agar tum kisi
+          <strong>object</strong> ko explicitly <code>return</code> karo, to wahi object use ho jaata hai
+          (<code>this</code> discard). Aur agar <strong>primitive</strong> return karo, to wo ignore ho jaata hai
+          aur <code>this</code> hi return hota hai — jaisa normal functions mein bhi hota hai. Ye edge case rarely
+          use hota hai, lekin factory-style derived constructors likhte waqt ye behavior surprise de sakta hai.
+        </p>
+      </div>
+
+      <h3>[[HomeObject]] — super internally kaam kaise karta hai</h3>
+      <p>
+        <code>super.method()</code> resolve karne ke liye engine <code>this.__proto__</code> use <strong>nahi</strong>
+        karta — kyunki agar karta, to multi-level inheritance ya method-copying ke case mein infinite loop ban
+        sakta tha. Iske bajaye har method jo class body ya object literal mein <em>method shorthand</em> syntax se
+        define hota hai, ek internal <code>[[HomeObject]]</code> property store karta hai — jo us object/prototype
+        ko point karta hai jahaan method originally define hua tha. <code>super.foo()</code> internally
+        <code>[[HomeObject]].__proto__.foo</code> ke roop mein resolve hota hai, current <code>this</code> ke saath
+        call hoke.
+      </p>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root gotcha: super wale methods copy nahi kiye ja sakte</div>
+        <p>
+          <code>[[HomeObject]]</code> ek method ke liye fixed hota hai — jahaan wo <em>define</em> hua, wahin se
+          bound rehta hai, chahe method ko baad mein kisi doosre object pe copy kar do. Matlab agar tum ek
+          <code>super</code>-using method ko <code>Object.assign</code> se kisi aur object pe copy karo, uska
+          <code>super</code> reference abhi bhi purane <code>[[HomeObject]]</code> ki taraf point karega — galat
+          parent resolve hoga. Ye mixins likhte waqt (neeche dekho) ek practical trap hai: super use karne wale
+          methods mixin mein mat rakho.
+        </p>
+      </div>
+
+      <h2 id="static">Static properties &amp; methods</h2>
+      <p>
+        <code>static</code> keyword se define hui properties/methods class ke instances pe nahi, class function
+        pe khud attach hoti hain — "functionality jo class ke 'as a whole' belong karti hai", jaise comparison ya
+        factory functions.
+      </p>
+      <div class="code-block">
+        <div class="code-title">static members + static inheritance<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Article</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>title<span class="tok-punc">,</span> date<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>title <span class="tok-punc">=</span> title<span class="tok-punc">;</span>   <span class="tok-com">// instance property</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>date <span class="tok-punc">=</span> date<span class="tok-punc">;</span>     <span class="tok-com">// instance property</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">static</span> <span class="tok-fn">compare</span><span class="tok-punc">(</span>articleA<span class="tok-punc">,</span> articleB<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// static: Article pe hi rehta hai, instance pe nahi</span>
+    <span class="tok-kw">return</span> articleA<span class="tok-punc">.</span>date <span class="tok-punc">-</span> articleB<span class="tok-punc">.</span>date<span class="tok-punc">;</span> <span class="tok-com">// sort comparator return karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">static</span> <span class="tok-fn">createTodays</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>        <span class="tok-com">// static factory method</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-kw">this</span><span class="tok-punc">(</span><span class="tok-str">"Today's digest"</span><span class="tok-punc">,</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// static ke andar this = class khud (Article)</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">static</span> publisher <span class="tok-punc">=</span> <span class="tok-str">"MAD Press"</span><span class="tok-punc">;</span>   <span class="tok-com">// static field — class pe ek property, sab instances shared nahi karte, Article pe hi hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>Article<span class="tok-punc">.</span>publisher<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// -> "MAD Press", instance se access nahi hoga (article.publisher undefined)</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">SpecialArticle</span> <span class="tok-kw">extends</span> <span class="tok-fn">Article</span> <span class="tok-punc">{</span><span class="tok-punc">}</span> <span class="tok-com">// koi extra code nahi, sirf inherit</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>SpecialArticle<span class="tok-punc">.</span>publisher<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> "MAD Press" -- static bhi inherit hua!</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>SpecialArticle<span class="tok-punc">.</span>__proto__ <span class="tok-punc">===</span> Article<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true: CLASS-level prototype link, statics ke liye</span></code></pre>
+      </div>
+      <p>
+        Yaani <code>extends</code> ek <strong>dual link</strong> banata hai: <code>Rabbit.prototype.__proto__ ===
+        Animal.prototype</code> (instance methods ke liye) <em>aur</em> <code>Rabbit.__proto__ === Animal</code>
+        (statics ke liye, class-function-to-class-function). Isi wajah se static members bhi inherit hote hain.
+      </p>
+
+      <h2 id="private-protected">Private (#field) aur protected (_field)</h2>
+      <p>
+        Do encapsulation levels hain, aur inka farak samajhna interview-critical hai.
+      </p>
+      <h3>Protected — sirf convention, koi enforcement nahi</h3>
+      <p>
+        Underscore prefix (<code>_balance</code>) ek team convention hai — "isse bahar se mat chuo" — lekin
+        engine level pe koi restriction nahi hai. Ye subclasses ko access dene ke liye deliberately open rakha
+        jaata hai.
+      </p>
+      <h3>Private — <code>#field</code>, language-enforced</h3>
+      <div class="code-block">
+        <div class="code-title">#private fields — real enforcement<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">CoffeeMachine</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">#</span>waterLimit <span class="tok-punc">=</span> <span class="tok-num">200</span><span class="tok-punc">;</span>          <span class="tok-com">// # prefix: TRUE private field, sirf is class ke andar accessible</span>
+
+  <span class="tok-punc">#</span><span class="tok-fn">fixWaterAmount</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// # prefix method bhi private ho sakta hai</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>value <span class="tok-punc">&lt;</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-com">// negative amount ko clamp karo</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>value <span class="tok-punc">></span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">#</span>waterLimit<span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">#</span>waterLimit<span class="tok-punc">;</span> <span class="tok-com">// limit se zyada mat jaane do</span>
+    <span class="tok-kw">return</span> value<span class="tok-punc">;</span>              <span class="tok-com">// valid value wapas</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">setWaterAmount</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// public method — private ke saath interact karne ka legal raasta</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>water <span class="tok-punc">=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">#</span><span class="tok-fn">fixWaterAmount</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// private method call karke result public field pe daalo</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> machine <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">CoffeeMachine</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+machine<span class="tok-punc">.</span><span class="tok-fn">setWaterAmount</span><span class="tok-punc">(</span><span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// legal path -> internally clamp ho jaayega</span>
+
+<span class="tok-com">// machine.#waterLimit;        // <- SyntaxError: Private field '#waterLimit' must be declared in an enclosing class</span>
+<span class="tok-com">// machine["#waterLimit"];     // <- ye bhi kaam NAHI karega — sirf undefined milega!</span>
+<span class="tok-com">// yehi asli farak hai _protected se: bracket-notation escape hatch bhi block hai</span></code></pre>
+      </div>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Private ki असली taakat: this["#name"] block hai</div>
+        <p>
+          Normal properties ke saath, agar kisi trick se property naam obfuscate bhi kar do (jaise Symbol),
+          <code>Object.getOwnPropertySymbols</code> se reflect karke access mil sakta hai. Private fields ke
+          saath aisa <strong>koi</strong> reflection-based escape hatch nahi hai — <code>#name</code> ek dedicated
+          lexical binding hai jo sirf class body ke andar hi parse-time pe resolve hoti hai. <code>this["#name"]</code>
+          syntactically ek alag cheez hai (ek string-keyed property lookup), aur wo simply <code>undefined</code>
+          dega, kyunki <code>#name</code> object ki enumerable/string-keyed properties mein hai hi nahi. Yehi wo
+          root reason hai jiski wajah se <code>#</code> ko "true private" bola jaata hai aur <code>_</code> ko
+          "convention-only private."
+        </p>
+      </div>
+      <p>
+        Ek limitation yaad rakho: subclasses parent ke private fields <strong>directly access nahi kar sakte</strong>
+        — private fields sirf usi class tak scoped hain jahaan declare hue, inheritance chain tak bhi nahi
+        propagate hote jaise protected karta hai. Subclass ko public getter/setter ke through hi interact karna
+        padega.
+      </p>
+
+      <h2 id="extend-natives">Built-in classes extend karna — Array aur Symbol.species</h2>
+      <p>
+        <code>Array</code>, <code>Map</code>, <code>Error</code> jaise built-ins ko <code>extends</code> karna
+        technically valid hai — instance methods inherit ho jaate hain. Lekin ek subtle gotcha hai jab built-in
+        methods <strong>naye instances internally create</strong> karte hain, jaise <code>.filter()</code> ya
+        <code>.map()</code>:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Array extend karna — .filter() ka default behavior<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">PowerArray</span> <span class="tok-kw">extends</span> <span class="tok-fn">Array</span> <span class="tok-punc">{</span>      <span class="tok-com">// Array ko extend kiya — sab Array methods PowerArray ko milte hain</span>
+  <span class="tok-fn">isEmpty</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>length <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-com">// custom helper method</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">PowerArray</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-num">10</span><span class="tok-punc">,</span> <span class="tok-num">50</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> filteredArr <span class="tok-punc">=</span> arr<span class="tok-punc">.</span><span class="tok-fn">filter</span><span class="tok-punc">(</span>item <span class="tok-punc">=></span> item <span class="tok-punc">></span> <span class="tok-num">10</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// .filter() naya array-jaisa instance return karta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>filteredArr<span class="tok-punc">.</span>isEmpty<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> function (yaani DEFAULT mein filteredArr bhi PowerArray hi hai!)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>filteredArr <span class="tok-kw">instanceof</span> PowerArray<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true</span></code></pre>
+      </div>
+      <p>
+        Root mechanism: <code>.filter()</code>, <code>.map()</code>, <code>.slice()</code> jaise methods result
+        return karte waqt <code>this.constructor</code> use karte hain naya instance banane ke liye — aur agar
+        <code>this.constructor</code> mein ek static <code>Symbol.species</code> defined ho, to wo use hota hai
+        instead:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Symbol.species se opt-out karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">PowerArray</span> <span class="tok-kw">extends</span> <span class="tok-fn">Array</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">isEmpty</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>length <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">static</span> <span class="tok-kw">get</span> <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span>species<span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// static getter Symbol.species pe — internal "kis constructor se banao" hook</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">Array</span><span class="tok-punc">;</span>            <span class="tok-com">// plain Array batao, PowerArray nahi</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">PowerArray</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-num">10</span><span class="tok-punc">,</span> <span class="tok-num">50</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> filteredArr <span class="tok-punc">=</span> arr<span class="tok-punc">.</span><span class="tok-fn">filter</span><span class="tok-punc">(</span>item <span class="tok-punc">=></span> item <span class="tok-punc">></span> <span class="tok-num">10</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>filteredArr<span class="tok-punc">.</span>isEmpty<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> undefined -- ab filteredArr sirf plain Array hai, isEmpty inherit nahi hua</span></code></pre>
+      </div>
+      <p>
+        Jab tum <code>Symbol.species</code> define <strong>nahi</strong> karte (default case), <code>.map()</code>
+        aur <code>.filter()</code> tumhari subclass ke instances hi return karte hain — jo kabhi-kabhi wanted hota
+        hai (chained custom methods), lekin kabhi-kabhi unwanted, jaise agar tumhare subclass constructor ne kuch
+        extra invariant assume kiya ho jo ek "auto-generated" filtered array satisfy nahi karta. Isliye Symbol.species
+        ek explicit opt-out mechanism hai — production mein agar tum Array extend kar rahe ho, isse consciously
+        decide karo.
+      </p>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Built-in classes statics inherit nahi karti — Error extend karte waqt bhi dhyaan</div>
+        <p>
+          Ek aur exception: normal user classes <code>extends</code> se statics bhi inherit karti hain (jaisa upar
+          <code>static</code> section mein dekha), lekin built-in classes ye rule nahi follow karti. Jaise
+          <code>Array</code>, <code>Object</code> se statics inherit nahi karta — <code>Array.keys</code> ek
+          alag cheez hai <code>Object.keys</code> se, aunki apni cross-hierarchy static inheritance nahi hai. Isi
+          tarah agar tum <code>class MyError extends Error {}</code> likhte ho, environment ke hisaab se
+          <code>error.stack</code> aur <code>message</code> ka behavior thoda different feel ho sakta hai —
+          transpilers (Babel jaisi tools) ES5 target pe compile karte waqt <code>instanceof</code> checks todh
+          sakti hain agar properly configured na ho. Chapter 12 (Error Handling) mein hum custom Error classes
+          detail mein cover karenge.
+        </p>
+      </div>
+
+      <h2 id="instanceof">instanceof ka internal algorithm</h2>
+      <p>
+        <code>obj instanceof Class</code> ek simple-lagne wala operator hai, lekin andar ek proper algorithm chalta
+        hai — jo customize bhi ho sakta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">instanceof default behavior — prototype chain walk<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span><span class="tok-punc">}</span>
+<span class="tok-kw">class</span> <span class="tok-fn">Rabbit</span> <span class="tok-kw">extends</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span><span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> rabbit <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>rabbit <span class="tok-kw">instanceof</span> Animal<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true</span>
+
+<span class="tok-com">// internally engine ye karta hai:</span>
+<span class="tok-com">// step 1: rabbit.__proto__ === Animal.prototype?  -> nahi, ye Rabbit.prototype hai</span>
+<span class="tok-com">// step 2: rabbit.__proto__.__proto__ === Animal.prototype?  -> HAAN, match mil gaya</span>
+<span class="tok-com">// -> true return</span></code></pre>
+      </div>
+      <p>
+        Agar <code>Symbol.hasInstance</code> class pe static method ke roop mein defined ho, engine
+        <strong>usi ko priority deta hai</strong> — default prototype-walk algorithm bypass ho jaata hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Symbol.hasInstance se instanceof override<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Animal</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">static</span> <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span>hasInstance<span class="tok-punc">]</span><span class="tok-punc">(</span>obj<span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// Symbol.hasInstance: instanceof ke behavior ka custom hook</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>obj<span class="tok-punc">.</span>canEat<span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span> <span class="tok-com">// prototype chain bhool jao — sirf ye check karo</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">{</span> canEat<span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span> <span class="tok-kw">instanceof</span> Animal<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -> true, koi prototype link nahi hai fir bhi!</span></code></pre>
+      </div>
+      <p>
+        Alternative type-checking mechanism <code>Object.prototype.toString.call(value)</code> hai, jo
+        <code>Symbol.toStringTag</code> respect karke <code>"[object ClassName]"</code> jaisa string return karta
+        hai — array/number/null/undefined jaise primitives ke liye bhi reliable hai jahaan <code>instanceof</code>
+        kaam nahi karta.
+      </p>
+
+      <h2 id="mixins">Mixins — single inheritance ka workaround</h2>
+      <p>
+        JS mein ek class sirf <strong>ek hi</strong> parent extend kar sakti hai — single <code>[[Prototype]]</code>
+        chain hai. Jab ek class ko multiple, unrelated sources se behavior chahiye (e.g. "event-emittable" +
+        "serializable" + "loggable"), mixins ka use hota hai — plain objects jinke methods copy kar diye jaate
+        hain target ke prototype pe:
+      </p>
+      <div class="code-block">
+        <div class="code-title">eventMixin — Object.assign se copy</div>
+        <pre><code><span class="tok-kw">let</span> eventMixin <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">on</span><span class="tok-punc">(</span>eventName<span class="tok-punc">,</span> handler<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// on: kisi event ke liye handler subscribe karo</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">)</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers <span class="tok-punc">=</span> <span class="tok-punc">{</span><span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// lazy-init storage object (protected convention)</span>
+    <span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">[</span>eventName<span class="tok-punc">]</span> <span class="tok-punc">||</span><span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span>handler<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// array me handler push karo (nullish default)</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-fn">off</span><span class="tok-punc">(</span>eventName<span class="tok-punc">,</span> handler<span class="tok-punc">)</span> <span class="tok-punc">{</span>      <span class="tok-com">// off: subscription hatao</span>
+    <span class="tok-kw">let</span> handlers <span class="tok-punc">=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">?.</span><span class="tok-punc">[</span>eventName<span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// optional chaining -- agar handlers hi nahi hain to skip</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>handlers<span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>       <span class="tok-com">// kuch bhi subscribe hi nahi tha</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">[</span>eventName<span class="tok-punc">]</span> <span class="tok-punc">=</span> handlers<span class="tok-punc">.</span><span class="tok-fn">filter</span><span class="tok-punc">(</span>h <span class="tok-punc">=></span> h <span class="tok-punc">!==</span> handler<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// filter karke us handler ko hatao</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-fn">trigger</span><span class="tok-punc">(</span>eventName<span class="tok-punc">,</span> <span class="tok-punc">...</span>args<span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// trigger: event fire karo, rest args extra data ke liye</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">?.</span><span class="tok-punc">[</span>eventName<span class="tok-punc">]</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span> <span class="tok-com">// koi listener nahi to no-op</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>_eventHandlers<span class="tok-punc">[</span>eventName<span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span>handler <span class="tok-punc">=></span> <span class="tok-fn">handler</span><span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> args<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// har handler ko this + args ke saath call karo</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">Menu</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">choose</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">trigger</span><span class="tok-punc">(</span><span class="tok-str">"select"</span><span class="tok-punc">,</span> value<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// mixin se aaya trigger method use kiya</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">assign</span><span class="tok-punc">(</span>Menu<span class="tok-punc">.</span>prototype<span class="tok-punc">,</span> eventMixin<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// mixin ke saare methods Menu.prototype pe copy kar diye</span>
+
+<span class="tok-kw">let</span> menu <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Menu</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+menu<span class="tok-punc">.</span><span class="tok-fn">on</span><span class="tok-punc">(</span><span class="tok-str">"select"</span><span class="tok-punc">,</span> value <span class="tok-punc">=></span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Selected: ${value}`</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// subscribe</span>
+menu<span class="tok-punc">.</span><span class="tok-fn">choose</span><span class="tok-punc">(</span><span class="tok-str">"123"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// -> "Selected: 123" alert hoga</span></code></pre>
+      </div>
+      <p>
+        Note: <code>Object.assign(Menu.prototype, eventMixin)</code> — extend nahi kiya, sirf <strong>copy</strong>
+        kiya prototype pe. Isliye <code>Menu</code> abhi bhi apni khud ki koi aur class extend kar sakti hai, aur
+        multiple mixins ek saath apply ho sakte hain — ye vahi limitation solve karta hai jo single-inheritance
+        chain ke saath nahi ho sakta tha.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: mixin vs inheritance — kab kya choose karo</div>
+        <p>
+          Inheritance ("is-a" relationship) use karo jab subclass logically parent ka specialized version ho —
+          <code>Rabbit extends Animal</code>. Mixin ("has-a-capability") use karo jab behavior orthogonal ho aur
+          multiple unrelated classes mein reusable ho — jaise event-emitting ya serialization. Real-world
+          frameworks (React ke purane mixins pattern, Vue ke composables/HOC patterns) is exact tension pe evolve
+          hue hain — deep inheritance chains debug karna mushkil ho jaata hai ("fragile base class problem"), jabki
+          mixins flat aur composable rehte hain. Agar tumhe apni class hierarchy mein 3+ levels ka inheritance
+          dikhe, wahaan ruk ke socho ki kya wo actually ek mixin/composition problem hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>class</code> runtime pe ek function hi banati hai — methods non-enumerable prototype properties ban jaate hain, aur constructor ko <code>[[IsClassConstructor]]: true</code> flag milta hai jo bina <code>new</code> ke call hone se roakta hai.</li>
+        <li>Derived class constructors ka <code>[[ConstructorKind]]: "derived"</code> hota hai — <code>this</code> tab tak "uninitialized" rehta hai jab tak <code>super()</code> call na ho, isliye <code>super()</code> se pehle <code>this</code> touch karna ReferenceError deta hai.</li>
+        <li><code>super.method()</code> internally <code>[[HomeObject]]</code> use karta hai, <code>this.__proto__</code> nahi — isliye super-using methods safely copy nahi kiye ja sakte.</li>
+        <li>Statics <code>extends</code> se inherit hote hain user classes ke beech (class-to-class prototype link ke through) — lekin built-in classes (Array, Object, etc.) ye statics-inheritance rule follow nahi karti.</li>
+        <li><code>_protected</code> sirf convention hai, koi enforcement nahi; <code>#private</code> language-level enforced hai — <code>this["#name"]</code> bracket notation bhi kaam nahi karta.</li>
+        <li>Array jaisi built-ins extend karte waqt <code>.map()</code>/<code>.filter()</code> default mein subclass instance return karte hain — <code>Symbol.species</code> static getter se ye behavior explicitly override kiya ja sakta hai.</li>
+        <li><code>instanceof</code> default mein prototype chain walk karta hai; <code>Symbol.hasInstance</code> defined ho to wahi priority pe use hota hai.</li>
+        <li>Mixins <code>Object.assign(Target.prototype, mixin)</code> se implement hote hain — single-inheritance ki limitation ke around ek composition-based workaround.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>class ek "syntax sugar" hai — ye statement kahaan sach hai aur kahaan galat?</strong><br>Hint: runtime object-shape (function + prototype) same hai, lekin <code>[[IsClassConstructor]]</code>, non-enumerable methods, aur constructor call-ordering (derived classes) jaise enforcement semantics function-pattern se strictly zyada hain.</li>
+        <li><strong>Derived class constructor mein super() se pehle this access karne pe error kyun aata hai?</strong><br>Hint: derived constructor ka <code>[[ConstructorKind]]: "derived"</code> hai — object khud nahi banata, parent (super) se banwata/init karwata hai; jab tak super() nahi chala, this exist hi nahi karta.</li>
+        <li><strong>super.method() resolve kaise hota hai internally — this.__proto__ se ya kuch aur se?</strong><br>Hint: [[HomeObject]] internal property, method jahaan define hua wahi fixed reference — copy karne pe bhi wahi rehta hai, jisse super-using methods safely copy nahi ho sakte.</li>
+        <li><strong>Array ko extend karne par .filter() se aaya result subclass ka instance kyun hota hai, aur ise kaise control karte ho?</strong><br>Hint: built-in methods this.constructor use karte hain naya instance banane ke liye, jab tak Symbol.species override na ho — usse explicitly Array (ya koi aur constructor) specify kar sakte ho.</li>
+        <li><strong>#private field aur _protected convention mein exact difference batao, ek concrete escape-hatch example ke saath.</strong><br>Hint: this["#name"] bracket notation private field ke liye kaam nahi karta (undefined milta hai), jabki this["_name"] protected ke liye normally kaam karta hai — # ek separate lexical binding hai, string-keyed property nahi.</li>
+        <li><strong>instanceof custom kaise kar sakte ho, aur ye default prototype-walk se kaise differ karta hai?</strong><br>Hint: static [Symbol.hasInstance](obj) method define karo class pe — ye default __proto__ chain walk ko completely bypass kar deta hai, custom logic (e.g. duck-typing check) allow karta hai.</li>
+        <li><strong>Static members extends se inherit hote hain — kaise, aur built-in classes iska exception kyun hain?</strong><br>Hint: Child.__proto__ === Parent (class-function-to-class-function link) — user classes mein ye set hota hai, lekin built-ins (Array, Object, etc.) ye link maintain nahi karti apas mein.</li>
+        <li><strong>Mixin approach single inheritance ki limitation ko kaise solve karta hai, aur super-using methods ko mixin mein rakhna kyun risky hai?</strong><br>Hint: Object.assign se prototype pe copy karke multiple sources se behavior mila sakte ho bina ek hi parent chain mein locked hue; lekin [[HomeObject]] fixed hone ki wajah se super() wale methods copy hone ke baad galat parent resolve kar sakte hain.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="10-property-config-prototypes.html">
+        <div class="label">← Previous</div>
+        <div class="title">Property Config &amp; Prototypes</div>
+      </a>
+      <a class="next" href="12-error-handling.html">
+        <div class="label">Next →</div>
+        <div class="title">Error Handling</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

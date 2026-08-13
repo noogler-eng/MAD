@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fetch &amp; Network I — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link active" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 26</div>
+      <div class="progress-pill">26 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Network · Fetch API · CORS · URL</span>
+      <h1>Fetch &amp; Network I</h1>
+      <p class="subtitle">
+        <code>fetch()</code> aaj-kal har network request ka default tareeka hai — lekin uske andar ek
+        <strong>two-stage promise resolution</strong> chhupa hai jo bahut logon ko surprise karta hai:
+        promise headers aane par hi resolve ho jaata hai, body abhi bhi stream ho rahi hoti hai. Is
+        chapter mein hum fetch ke poore surface area ko root-level samjhenge — request/response
+        lifecycle, FormData se file upload, download progress track karna (bina kisi native progress
+        event ke), AbortController se cancellation, aur CORS ka poora preflight mechanism.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#fetch-basics">fetch() basics aur two-stage promise</a></li>
+          <li><a href="#response-methods">Response body methods</a></li>
+          <li><a href="#sending-data">POST request aur JSON body</a></li>
+          <li><a href="#formdata">FormData — multipart form submission</a></li>
+          <li><a href="#progress">Download progress — ReadableStream</a></li>
+          <li><a href="#abort">AbortController — request cancellation</a></li>
+          <li><a href="#cors">CORS — simple vs preflighted requests</a></li>
+          <li><a href="#url-object">URL object aur URLSearchParams</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="fetch-basics">fetch() basics aur two-stage promise — root gotcha</h2>
+      <p>
+        <code>fetch(url, options)</code> ek promise return karta hai. Yahan sabse important root-level
+        fact ye hai: <strong>ye promise tab resolve hota hai jab server ke response HEADERS aa jaate hain
+        — poora response body download hone ka wait nahi karta.</strong> Body abhi bhi network se stream
+        ho rahi ho sakti hai (bade JSON payload, large files). Isliye body ko access karne ke liye ek
+        <em>second async step</em> chahiye hota hai — <code>response.json()</code>,
+        <code>response.text()</code>, waghera — jo khud bhi ek promise return karte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">fetch — two-stage resolution<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">loadCommits</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>                        <span class="tok-com">// async function taaki await use kar sakein</span>
+  <span class="tok-com">// Stage 1: promise resolve hote hi hamare paas Response object hai —</span>
+  <span class="tok-com">// isme status, headers already available hain, LEKIN body abhi nahi aaya</span>
+  <span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'https://api.github.com/repos/javascript-tutorial/en.javascript.info/commits'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-com">// yahan tak sirf headers guaranteed hain — status check yahin karna sahi hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>response<span class="tok-punc">.</span>status<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// e.g. 200 — HTTP status code</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>response<span class="tok-punc">.</span>headers<span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-str">'Content-Type'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// header Map-like interface se read</span>
+
+  <span class="tok-com">// Stage 2: body ka full download + parse — ye ek ALAG await hai,</span>
+  <span class="tok-com">// isliye is line tak execution ruk jaayega jab tak poora body na aa jaaye</span>
+  <span class="tok-kw">let</span> commits <span class="tok-punc">=</span> <span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">()</span><span class="tok-punc">;</span>          <span class="tok-com">// json() body-stream ko poora consume karke parse karta hai</span>
+
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>commits<span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span>author<span class="tok-punc">.</span>login<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab data available hai, first commit ka author print</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ fetch() 404/500 pe REJECT nahi karta</div>
+        <p>
+          Ye sabse common production gotcha hai: <code>fetch()</code> ka promise <strong>sirf network
+          failure</strong> pe reject hota hai — DNS fail ho jaaye, server unreachable ho, CORS block ho
+          jaaye. Agar server valid HTTP response deta hai (chahe status <code>404</code> ho ya
+          <code>500</code>), to promise <strong>successfully resolve</strong> hota hai — kyunki technically
+          ek response mila hai, network level pe kuch galat nahi hua. Isliye status check karna tumhari
+          responsibility hai — <code>response.ok</code> (true jab status 200-299 ho) ya
+          <code>response.status</code> khud dekho. Agar ye check bhool gaye, to <code>try/catch</code> se
+          404 wagera silently pass ho jaayenge aur tum <code>response.json()</code> ko ek error page ka
+          HTML parse karwa doge — jo alag hi confusing error dega.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">response.ok check — mandatory pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/api/user/999'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// maan lo user 999 exist nahi karta</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>response<span class="tok-punc">.</span>ok<span class="tok-punc">)</span> <span class="tok-punc">{</span>                          <span class="tok-com">// ok = true sirf 200-299 range ke liye</span>
+  <span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">()</span><span class="tok-punc">;</span>       <span class="tok-com">// safe hai, hume pata hai valid JSON aayega</span>
+<span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// server ne 404 diya — ye promise reject NAHI hua, isliye else branch mein aaye</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">`HTTP-Error: `</span> <span class="tok-punc">+</span> response<span class="tok-punc">.</span>status<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// yahan status code se apna error handling karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <h2 id="response-methods">Response body methods — json/text/blob/formData</h2>
+      <p>
+        Response body ko padhne ke liye multiple promise-based methods hain — sab ek hi underlying
+        <code>ReadableStream</code> ko consume karte hain, isliye <strong>sirf ek hi method ek response
+        pe call ho sakta hai</strong>. Dusri baar call karoge to error milega ("body stream already
+        read").
+      </p>
+      <div class="code-block">
+        <div class="code-title">Response body methods overview<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/data'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// in paanchon mein se sirf EK use karo — har ek body stream ko fully consume karta hai</span>
+<span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">text</span><span class="tok-punc">()</span><span class="tok-punc">;</span>        <span class="tok-com">// plain text/HTML string ke liye</span>
+<span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">()</span><span class="tok-punc">;</span>        <span class="tok-com">// JSON.parse() internally chalake JS object return</span>
+<span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">blob</span><span class="tok-punc">()</span><span class="tok-punc">;</span>        <span class="tok-com">// binary Blob — images, files, ArrayBuffer wrap kiya hua</span>
+<span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">formData</span><span class="tok-punc">()</span><span class="tok-punc">;</span>    <span class="tok-com">// multipart/form-data response ko FormData object mein parse</span>
+<span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">arrayBuffer</span><span class="tok-punc">()</span><span class="tok-punc">;</span> <span class="tok-com">// lowest-level raw binary — jab custom byte parsing karni ho</span>
+
+<span class="tok-com">// response.body khud ek ReadableStream hai — isse manually chunk-by-chunk padh sakte ho</span>
+<span class="tok-com">// (progress tracking section mein isko detail mein dekhenge)</span></code></pre>
+      </div>
+
+      <h2 id="sending-data">POST request aur JSON body bhejna</h2>
+      <div class="code-block">
+        <div class="code-title">POST with JSON body<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">'John'</span><span class="tok-punc">,</span> <span class="tok-attr">surname</span><span class="tok-punc">:</span> <span class="tok-str">'Smith'</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>   <span class="tok-com">// plain JS object jo backend ko bhejna hai</span>
+
+<span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/article/fetch/post/user'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">method</span><span class="tok-punc">:</span> <span class="tok-str">'POST'</span><span class="tok-punc">,</span>                            <span class="tok-com">// default GET hota hai, isliye method explicitly dena</span>
+  <span class="tok-attr">headers</span><span class="tok-punc">:</span> <span class="tok-punc">{</span>
+    <span class="tok-str">'Content-Type'</span><span class="tok-punc">:</span> <span class="tok-str">'application/json;charset=utf-8'</span> <span class="tok-com">// server ko batao body JSON hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-attr">body</span><span class="tok-punc">:</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span>user<span class="tok-punc">)</span>                <span class="tok-com">// body ALWAYS string/Blob/FormData/BufferSource hona chahiye — object nahi</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> result <span class="tok-punc">=</span> <span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">()</span><span class="tok-punc">;</span>              <span class="tok-com">// server ka JSON response parse karo</span></code></pre>
+      </div>
+
+      <h2 id="formdata">FormData — multipart form submission aur file upload</h2>
+      <p>
+        <code>FormData</code> HTML form data ko represent karta hai, aur network layer isse hamesha
+        <code>Content-Type: multipart/form-data</code> encoding mein bhejta hai — ye encoding hi
+        <strong>files bhejne ko support</strong> karti hai (JSON string mein binary file nahi ja sakti,
+        isliye multipart chahiye).
+      </p>
+      <div class="code-block">
+        <div class="code-title">FormData constructor + methods<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// existing &lt;form&gt; element se auto-capture karke bana sakte ho</span>
+<span class="tok-kw">let</span> formData <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FormData</span><span class="tok-punc">(</span>formElem<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// formElem ke saare input fields automatically add ho jaate hain</span>
+
+<span class="tok-com">// ya khali banake manually fields add karo</span>
+<span class="tok-kw">let</span> fd <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FormData</span><span class="tok-punc">()</span><span class="tok-punc">;</span>              <span class="tok-com">// empty FormData instance</span>
+
+fd<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-str">'firstName'</span><span class="tok-punc">,</span> <span class="tok-str">'John'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// naya field add karo — same name doubara append ho to DONO reh jaate hain</span>
+fd<span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-str">'firstName'</span><span class="tok-punc">,</span> <span class="tok-str">'Jane'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// set() same name ke saare fields hata ke ek naya daal deta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>fd<span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-str">'firstName'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// 'Jane' — ek value read karo</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>fd<span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span><span class="tok-str">'firstName'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — field exist karta hai ya nahi</span>
+fd<span class="tok-punc">.</span><span class="tok-fn">delete</span><span class="tok-punc">(</span><span class="tok-str">'firstName'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>             <span class="tok-com">// field completely hata do</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">File upload via FormData<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> formData <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FormData</span><span class="tok-punc">()</span><span class="tok-punc">;</span>                        <span class="tok-com">// naya empty FormData</span>
+
+formData<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-str">"firstName"</span><span class="tok-punc">,</span> <span class="tok-str">"John"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// simple text field</span>
+formData<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-str">"image"</span><span class="tok-punc">,</span> imageBlob<span class="tok-punc">,</span> <span class="tok-str">"image.png"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3rd arg = filename, imageBlob ek Blob/File object hai</span>
+
+<span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/upload'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">method</span><span class="tok-punc">:</span> <span class="tok-str">'POST'</span><span class="tok-punc">,</span>
+  <span class="tok-attr">body</span><span class="tok-punc">:</span> formData                              <span class="tok-com">// Content-Type header MANUALLY mat set karo</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// browser khud Content-Type: multipart/form-data; boundary=... set karta hai —</span>
+<span class="tok-com">// boundary ek random string hai jo fields ko separate karti hai, hume nahi pata hota isliye</span>
+<span class="tok-com">// header manually set karna GALAT hai, ye browser ka kaam hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: Content-Type manually mat lagao</div>
+        <p>
+          <code>FormData</code> body ke saath <code>Content-Type</code> header khud set karna sabse common
+          mistake hai. Multipart encoding ek unique <code>boundary</code> string use karti hai fields ko
+          separate karne ke liye (e.g. <code>boundary=----WebKitFormBoundary7MA4YWx...</code>) jo browser
+          runtime pe generate karta hai. Agar tum khud <code>Content-Type: multipart/form-data</code> set
+          karoge bina boundary ke, server body ko parse hi nahi kar payega. Isliye jab bhi
+          <code>body: formData</code> ho, <code>headers</code> mein <code>Content-Type</code> chhod do —
+          browser ko khud set karne do.
+        </p>
+      </div>
+
+      <h2 id="progress">Download progress track karna — response.body ka ReadableStream</h2>
+      <p>
+        XHR (XMLHttpRequest) mein ek native <code>progress</code> event hota hai, lekin fetch ke paas ye
+        <strong>nahi hai</strong> — root reason: fetch design se low-level stream-based API hai, aur
+        progress tracking ka concern deliberately body-consumption layer pe chhod diya gaya hai. Trick ye
+        hai ki <code>response.json()</code> jaisa convenience method use karne ki jagah,
+        <code>response.body</code> (jo khud ek <code>ReadableStream</code> hai) ko manually
+        <code>getReader()</code> se chunk-by-chunk padho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Download progress loop<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'https://example.com/large-file.json'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// headers aa gaye, body abhi stream ho rahi hai</span>
+
+<span class="tok-kw">const</span> reader <span class="tok-punc">=</span> response<span class="tok-punc">.</span>body<span class="tok-punc">.</span><span class="tok-fn">getReader</span><span class="tok-punc">()</span><span class="tok-punc">;</span>          <span class="tok-com">// stream ko manually iterate karne wala reader object</span>
+
+<span class="tok-com">// Content-Length header se total expected size nikal lo (agar server ne bheja hai)</span>
+<span class="tok-kw">const</span> contentLength <span class="tok-punc">=</span> <span class="tok-punc">+</span>response<span class="tok-punc">.</span>headers<span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-str">'Content-Length'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// '+' string ko number mein convert karta hai</span>
+
+<span class="tok-kw">let</span> receivedLength <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>          <span class="tok-com">// ab tak kitne bytes aa chuke hain, running counter</span>
+<span class="tok-kw">let</span> chunks <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">]</span><span class="tok-punc">;</span>              <span class="tok-com">// har chunk (Uint8Array) yahan collect karenge, baad mein merge karne ke liye</span>
+
+<span class="tok-kw">while</span> <span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// infinite loop — break tab hoga jab stream khatam ho</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">{</span>done<span class="tok-punc">,</span> value<span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> reader<span class="tok-punc">.</span><span class="tok-fn">read</span><span class="tok-punc">()</span><span class="tok-punc">;</span> <span class="tok-com">// agla chunk aane tak await karo</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>done<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// done=true matlab stream fully consumed ho chuki hai</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>                 <span class="tok-com">// loop se bahar niklo</span>
+  <span class="tok-punc">}</span>
+
+  chunks<span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// value ek Uint8Array chunk hai, array mein store karo</span>
+  receivedLength <span class="tok-punc">+=</span> value<span class="tok-punc">.</span>length<span class="tok-punc">;</span> <span class="tok-com">// running total badhao is chunk ki length se</span>
+
+  <span class="tok-com">// yahan progress % calculate kar sakte ho aur UI update kar sakte ho</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Received `</span> <span class="tok-punc">+</span> receivedLength <span class="tok-punc">+</span> <span class="tok-str">` of `</span> <span class="tok-punc">+</span> contentLength<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// saare chunks ko ek single Uint8Array mein concat karo</span>
+<span class="tok-kw">let</span> chunksAll <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Uint8Array</span><span class="tok-punc">(</span>receivedLength<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// final buffer, poori length pehle se allocate</span>
+<span class="tok-kw">let</span> position <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> chunk <span class="tok-kw">of</span> chunks<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// har collected chunk ko crmt position pe copy karo</span>
+  chunksAll<span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span>chunk<span class="tok-punc">,</span> position<span class="tok-punc">)</span><span class="tok-punc">;</span>
+  position <span class="tok-punc">+=</span> chunk<span class="tok-punc">.</span>length<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> result <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">TextDecoder</span><span class="tok-punc">(</span><span class="tok-str">"utf-8"</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">decode</span><span class="tok-punc">(</span>chunksAll<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// bytes ko UTF-8 string mein decode karo</span>
+<span class="tok-kw">let</span> data <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span>result<span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// aur agar JSON hai to parse bhi kar lo</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Upload progress fetch se possible nahi hai</div>
+        <p>
+          Ye ulta gotcha hai: fetch se <strong>download</strong> progress (upar wala pattern) track kar
+          sakte ho, lekin <strong>upload</strong> progress (bade file ko server ko bhejte waqt) fetch ke
+          paas track karne ka koi built-in tareeka nahi hai. Agar tumhe file upload progress bar chahiye
+          (jaise koi upload widget), tumhe purana <code>XMLHttpRequest</code> use karna padega, jiska
+          <code>xhr.upload.onprogress</code> event hota hai. Ye chapter 27 mein cover hoga.
+        </p>
+      </div>
+
+      <h2 id="abort">AbortController — request cancellation</h2>
+      <p>
+        <code>AbortController</code> ek generic cancellation primitive hai (sirf fetch tak limited nahi
+        — kisi bhi custom async task ke saath use ho sakta hai). Isme ek <code>signal</code> property
+        hoti hai jo ek event emitter hai, aur ek <code>abort()</code> method jo signal pe "abort" event
+        fire karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">AbortController basic mechanism<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> controller <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">AbortController</span><span class="tok-punc">()</span><span class="tok-punc">;</span>   <span class="tok-com">// naya controller instance</span>
+<span class="tok-kw">let</span> signal <span class="tok-punc">=</span> controller<span class="tok-punc">.</span>signal<span class="tok-punc">;</span>          <span class="tok-com">// iska signal fetch ko diya jaayega</span>
+
+signal<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'abort'</span><span class="tok-punc">,</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"aborted!"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// listener manually bhi laga sakte ho</span>
+
+controller<span class="tok-punc">.</span><span class="tok-fn">abort</span><span class="tok-punc">()</span><span class="tok-punc">;</span>                        <span class="tok-com">// ye event trigger karta hai — "aborted!" print hoga</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>signal<span class="tok-punc">.</span>aborted<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// true — signal permanently aborted state mein chala gaya</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">fetch ke saath AbortController + try/catch<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> controller <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">AbortController</span><span class="tok-punc">()</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// signal option mein pass karo — fetch internally isse "abort" listen karega</span>
+<span class="tok-kw">let</span> fetchPromise <span class="tok-punc">=</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/long-request'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-attr">signal</span><span class="tok-punc">:</span> controller<span class="tok-punc">.</span>signal <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> controller<span class="tok-punc">.</span><span class="tok-fn">abort</span><span class="tok-punc">()</span><span class="tok-punc">,</span> <span class="tok-num">5000</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 5 second ke baad automatically cancel — timeout pattern</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> fetchPromise<span class="tok-punc">;</span>       <span class="tok-com">// yahan await karte waqt agar abort() call ho jaaye</span>
+  <span class="tok-kw">let</span> data <span class="tok-punc">=</span> <span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">()</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>err<span class="tok-punc">.</span>name <span class="tok-punc">==</span> <span class="tok-str">'AbortError'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// fetch promise AbortError naam ke saath reject hota hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Request cancelled"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// isse network error se differentiate karna zaroori</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> err<span class="tok-punc">;</span>                    <span class="tok-com">// koi aur real error hai to rethrow karo</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Ek controller se multiple fetches cancel karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> urls <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">'/api/a'</span><span class="tok-punc">,</span> <span class="tok-str">'/api/b'</span><span class="tok-punc">,</span> <span class="tok-str">'/api/c'</span><span class="tok-punc">]</span><span class="tok-punc">;</span>   <span class="tok-com">// teen parallel requests chalani hain</span>
+<span class="tok-kw">let</span> controller <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">AbortController</span><span class="tok-punc">()</span><span class="tok-punc">;</span>       <span class="tok-com">// ek hi controller sabke liye</span>
+
+<span class="tok-com">// same signal teeno fetch calls mein pass — abort() sabko ek saath cancel karega</span>
+<span class="tok-kw">let</span> fetchJobs <span class="tok-punc">=</span> urls<span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span>url <span class="tok-punc">=&gt;</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span>url<span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-attr">signal</span><span class="tok-punc">:</span> controller<span class="tok-punc">.</span>signal <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> results <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">all</span><span class="tok-punc">(</span>fetchJobs<span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// saare parallel resolve hone ka wait</span>
+<span class="tok-com">// agar kisi bhi point pe controller.abort() call hoga, TEENO fetches turant reject ho jaayenge</span></code></pre>
+      </div>
+
+      <h2 id="cors">CORS — simple vs preflighted requests</h2>
+      <p>
+        Jab tumhara fetch ek <strong>different origin</strong> (alag protocol/domain/port) ko target karta
+        hai, browser CORS (Cross-Origin Resource Sharing) rules enforce karta hai. Spec do categories
+        define karta hai — <strong>simple (safe) requests</strong> aur <strong>everything else</strong>
+        jo preflight trigger karte hain.
+      </p>
+      <p>
+        Ek request "safe" tabhi hai jab dono conditions satisfy hon: (1) method sirf <code>GET</code>,
+        <code>POST</code>, ya <code>HEAD</code> ho, aur (2) custom headers sirf in tak limited hon —
+        <code>Accept</code>, <code>Accept-Language</code>, <code>Content-Language</code>, aur
+        <code>Content-Type</code> (lekin sirf value <code>application/x-www-form-urlencoded</code>,
+        <code>multipart/form-data</code>, ya <code>text/plain</code> ke saath). Koi bhi custom header
+        (jaise <code>Authorization</code>) ya JSON <code>Content-Type</code> add karte hi request unsafe
+        ban jaati hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: preflight kyun exist karta hai</div>
+        <p>
+          Root reason ye hai ki browser CORS aane se pehle bhi cross-origin "simple" requests
+          (<code>&lt;form&gt;</code> submit, <code>&lt;img&gt;</code> src) allowed the — legacy web ka part
+          the. CORS ne unhe backward-compatible rakha, lekin har naya unsafe pattern (custom headers, JSON
+          body via fetch/XHR, PATCH/DELETE methods) ek naya attack surface hai jo purane servers ko
+          "surprise" na kare, isliye browser pehle ek silent <code>OPTIONS</code> preflight bhejta hai —
+          "agar main ye actual request bheju, tum allow karoge?" — aur sirf server ke "haan" (sahi
+          <code>Access-Control-Allow-*</code> headers) ke baad hi asli request bheji jaati hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Unsafe request → automatic preflight<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ye request UNSAFE hai — PATCH method + custom Content-Type + custom header</span>
+<span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'https://api.example.com/user/1'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">method</span><span class="tok-punc">:</span> <span class="tok-str">'PATCH'</span><span class="tok-punc">,</span>                       <span class="tok-com">// PATCH safe methods list mein nahi hai</span>
+  <span class="tok-attr">headers</span><span class="tok-punc">:</span> <span class="tok-punc">{</span>
+    <span class="tok-str">'Content-Type'</span><span class="tok-punc">:</span> <span class="tok-str">'application/json'</span><span class="tok-punc">,</span> <span class="tok-com">// JSON safe value list mein nahi hai</span>
+    <span class="tok-str">'X-Auth-Token'</span><span class="tok-punc">:</span> <span class="tok-str">'secret123'</span>       <span class="tok-com">// custom header hamesha unsafe</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-attr">body</span><span class="tok-punc">:</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">'Jane'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// browser is fetch() se PEHLE khud-ba-khud ye bhejta hai (tumhare code mein kahin nahi likha):</span>
+<span class="tok-com">// OPTIONS /user/1 HTTP/1.1</span>
+<span class="tok-com">// Access-Control-Request-Method: PATCH</span>
+<span class="tok-com">// Access-Control-Request-Headers: content-type,x-auth-token</span>
+<span class="tok-com">// Origin: https://myapp.com</span>
+<span class="tok-com">//</span>
+<span class="tok-com">// server ko is OPTIONS request ka jawab dena hoga (status 200) in headers ke saath:</span>
+<span class="tok-com">// Access-Control-Allow-Methods: PATCH, GET, POST</span>
+<span class="tok-com">// Access-Control-Allow-Headers: Content-Type, X-Auth-Token</span>
+<span class="tok-com">// Access-Control-Max-Age: 86400   (optional — preflight result cache karo, 24hr)</span>
+<span class="tok-com">// tabhi jaake browser ASLI PATCH request bhejega</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Credentials (cookies) ke saath cross-origin request<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'https://api.example.com/profile'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">credentials</span><span class="tok-punc">:</span> <span class="tok-str">'include'</span>  <span class="tok-com">// default 'same-origin' hai — 'include' cross-origin pe bhi cookies bhejta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// server ko RESPOND karna hoga in do headers ke saath, warna browser response block kar dega:</span>
+<span class="tok-com">// Access-Control-Allow-Origin: https://myapp.com   (wildcard * YAHAN ALLOWED NAHI hai)</span>
+<span class="tok-com">// Access-Control-Allow-Credentials: true</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Credentials ke saath wildcard origin ban hai</div>
+        <p>
+          Jab <code>credentials: 'include'</code> use karte ho, spec explicitly
+          <code>Access-Control-Allow-Origin: *</code> ko <strong>prohibit</strong> karta hai — server ko
+          exact requesting origin specify karna hi hoga (e.g.
+          <code>Access-Control-Allow-Origin: https://myapp.com</code>). Root reason security hai: agar
+          wildcard + credentials dono allowed hote, to koi bhi random website tumhare authenticated cookies
+          ke saath tumhare API se data chura sakti thi. Ye combination browser level pe hard-blocked hai.
+        </p>
+      </div>
+
+      <h2 id="url-object">URL object aur URLSearchParams</h2>
+      <p>
+        Manual string concatenation se URL banane ke bajaye (jo encoding bugs ka source hota hai), built-in
+        <code>URL</code> class use karo — ye parsing aur encoding dono khud handle karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">URL object — parsing<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> url <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">URL</span><span class="tok-punc">(</span><span class="tok-str">'https://javascript.info:8080/path/page?q=test#hash'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>protocol<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "https:" — scheme, colon ke saath</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>hostname<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "javascript.info" — port ke bina</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>host<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "javascript.info:8080" — port ke saath</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>port<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "8080"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>pathname<span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "/path/page"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>search<span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "?q=test" — leading ? ke saath</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>hash<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "#hash" — leading # ke saath</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>origin<span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "https://javascript.info:8080" — scheme+host+port</span>
+
+<span class="tok-com">// relative URL banane ke liye base pass karo — second arg</span>
+<span class="tok-kw">let</span> relativeUrl <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">URL</span><span class="tok-punc">(</span><span class="tok-str">'/profile/admin'</span><span class="tok-punc">,</span> <span class="tok-str">'https://javascript.info'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>relativeUrl<span class="tok-punc">.</span>href<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "https://javascript.info/profile/admin" — dono combine ho gaye</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">URLSearchParams — query string build karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> url <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">URL</span><span class="tok-punc">(</span><span class="tok-str">'https://google.com/search'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// base URL, abhi koi query nahi</span>
+
+url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-str">'q'</span><span class="tok-punc">,</span> <span class="tok-str">'test me!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// key add/update — value automatically encode ho jaata hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>href<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "https://google.com/search?q=test+me%21" — space→+, !→%21</span>
+
+url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-str">'tag'</span><span class="tok-punc">,</span> <span class="tok-str">'js'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// append: existing keys ko preserve karke naya add — set() unhe replace karta</span>
+url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-str">'tag'</span><span class="tok-punc">,</span> <span class="tok-str">'web'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// same key 'tag' do baar — duplicate allowed via append</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">getAll</span><span class="tok-punc">(</span><span class="tok-str">'tag'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["js", "web"] — same-name saare values ek array mein</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span><span class="tok-str">'q'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// true</span>
+url<span class="tok-punc">.</span>searchParams<span class="tok-punc">.</span><span class="tok-fn">delete</span><span class="tok-punc">(</span><span class="tok-str">'tag'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// dono 'tag' entries hata do</span>
+
+<span class="tok-com">// Map jaisa hi iterable hai — decoded key/value pairs milte hain</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">[</span>name<span class="tok-punc">,</span> value<span class="tok-punc">]</span> <span class="tok-kw">of</span> url<span class="tok-punc">.</span>searchParams<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`${name}=${value}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "q=test me!" — yahan value ALREADY decoded milta hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// fetch/XHR ko URL object directly pass kar sakte ho — string mein convert khud ho jaata hai</span>
+<span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span>url<span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Manual string URLs banate waqt (jab <code>URL</code> object use nahi kar rahe), encoding khud
+        karni padti hai — <code>encodeURIComponent()</code> query params ke liye best hai kyunki ye
+        <code>&amp;</code>, <code>=</code>, <code>?</code> jaise reserved characters bhi encode karta hai
+        (jo <code>encodeURI()</code> nahi karta, kyunki wo poori URL ke liye designed hai jahan ye
+        characters structural hote hain).
+      </p>
+      <div class="code-block">
+        <div class="code-title">encodeURIComponent vs encodeURI<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> query <span class="tok-punc">=</span> <span class="tok-str">'Rock&amp;Roll'</span><span class="tok-punc">;</span>                          <span class="tok-com">// user input jisme reserved char '&' hai</span>
+
+<span class="tok-kw">let</span> safe <span class="tok-punc">=</span> <span class="tok-fn">encodeURIComponent</span><span class="tok-punc">(</span>query<span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// "Rock%26Roll" — & bhi encode hua, sahi hai</span>
+<span class="tok-kw">let</span> url1 <span class="tok-punc">=</span> <span class="tok-str">`https://google.com/search?q=${safe}`</span><span class="tok-punc">;</span> <span class="tok-com">// ?q=Rock%26Roll — ek hi param, sahi parse hoga</span>
+
+<span class="tok-kw">let</span> broken <span class="tok-punc">=</span> <span class="tok-fn">encodeURI</span><span class="tok-punc">(</span>query<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "Rock&Roll" — & encode NAHI hua (encodeURI ka scope alag hai)</span>
+<span class="tok-kw">let</span> url2 <span class="tok-punc">=</span> <span class="tok-str">`https://google.com/search?q=${broken}`</span><span class="tok-punc">;</span> <span class="tok-com">// ?q=Rock&Roll — server isse DO params (q, Roll) samjhega, BUG</span></code></pre>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>fetch()</code> ka promise <strong>headers</strong> aane pe resolve hota hai, body pe nahi — body ke liye <code>response.json()</code>/<code>text()</code> jaisa second await zaroori hai.</li>
+        <li><code>fetch()</code> sirf <strong>network failure</strong> pe reject hota hai — 4xx/5xx status pe nahi. Har response pe <code>response.ok</code> ya <code>response.status</code> manually check karo.</li>
+        <li><code>FormData</code> multipart/form-data encoding use karta hai jo file upload ko support karta hai — <code>Content-Type</code> header manually set mat karo, boundary browser generate karta hai.</li>
+        <li>Download progress <code>response.body.getReader()</code> se manual chunk-by-chunk loop se track hota hai — fetch mein native progress event nahi hai (XHR mein hota hai).</li>
+        <li>Upload progress fetch se track <strong>nahi</strong> ho sakta — us case mein XMLHttpRequest use karo.</li>
+        <li><code>AbortController.signal</code> ko fetch options mein pass karo cancellation ke liye; abort hone pe promise <code>AbortError</code> naam ke saath reject hota hai — ek hi controller multiple fetches cancel kar sakta hai.</li>
+        <li>CORS: safe (GET/POST/HEAD + safe headers) requests directly jaati hain; koi bhi custom header/method/JSON body unsafe ban jaati hai aur browser automatically ek <code>OPTIONS</code> preflight bhejta hai.</li>
+        <li><code>credentials: 'include'</code> use karne pe server ko exact origin specify karna hoga — <code>Access-Control-Allow-Origin: *</code> credentials ke saath allowed nahi hai.</li>
+        <li><code>URL</code> aur <code>URLSearchParams</code> use karo query strings build/parse karne ke liye — encoding automatically handle hoti hai, manual string concatenation se bugs bachte hain.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>fetch() ka promise kab resolve hota hai — poore response body ke aane pe ya sirf headers pe? Isse kya implication hai?</strong><br>Hint: sirf headers pe resolve hota hai; body access karne ke liye ek alag async method call (json/text/etc) chahiye, jo khud bhi ek promise hai.</li>
+        <li><strong>fetch() 404 ya 500 status pe reject karta hai ya resolve? Production code mein isse kya bug ban sakta hai?</strong><br>Hint: resolve karta hai (sirf network failure pe reject) — agar response.ok check na karo to error responses silently valid data ki tarah treat ho jaate hain.</li>
+        <li><strong>FormData body bhejte waqt Content-Type header khud set karna kyun galat hai?</strong><br>Hint: multipart encoding ko ek unique boundary string chahiye jo browser runtime pe generate karta hai; khud set karne se boundary missing/galat hoga aur server parse nahi kar payega.</li>
+        <li><strong>Fetch se download progress kaise track karte ho jab koi native progress event nahi hai?</strong><br>Hint: response.body.getReader() se manual loop, reader.read() se {done, value} milta hai, Content-Length header se total size, chunks accumulate karke % calculate.</li>
+        <li><strong>AbortController se ek hi request cancel hoti hai ya multiple? Kaise?</strong><br>Hint: ek hi controller.signal multiple fetch() calls mein pass kiya ja sakta hai — abort() call hote hi sab ek saath reject ho jaate hain AbortError ke saath.</li>
+        <li><strong>Konsi cheezein ek fetch request ko "unsafe" bana deti hain aur preflight OPTIONS request trigger karti hain?</strong><br>Hint: non-simple method (PUT/PATCH/DELETE), custom headers (jaise Authorization), ya Content-Type jo application/x-www-form-urlencoded/multipart/text-plain se alag ho (jaise application/json).</li>
+        <li><strong>credentials: 'include' use karte waqt Access-Control-Allow-Origin: * kyun kaam nahi karta?</strong><br>Hint: spec-level security restriction — credentialed cross-origin requests ke liye server ko exact origin specify karna zaroori hai, wildcard prohibited hai taaki koi bhi random site cookies ke saath data na chura sake.</li>
+        <li><strong>encodeURIComponent aur encodeURI mein farak kya hai, aur query param values ke liye kaunsa use karna chahiye?</strong><br>Hint: encodeURIComponent zyada characters encode karta hai (&, =, ?, / bhi) isliye individual param values ke liye sahi hai; encodeURI poori URL ke liye hai aur structural characters ko preserve karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="25-binary-data-files.html">
+        <div class="label">← Previous</div>
+        <div class="title">Binary Data &amp; Files</div>
+      </a>
+      <a class="next" href="27-network-2-xhr-ws-sse.html">
+        <div class="label">Next →</div>
+        <div class="title">Network II — XHR/WS/SSE</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

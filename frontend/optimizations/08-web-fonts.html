@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimize Web Fonts — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link active" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Optimize Web Fonts</div>
+      <div class="progress-pill">Chapter 8 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Fonts · font-display · Subsetting · Variable Fonts</span>
+      <h1>Optimize Web Fonts</h1>
+      <p class="subtitle">
+        Web fonts free mein achha typography deti hain, lekin galat use karo to ye render-blocking resource ban
+        jaati hain aur FOIT/layout-shift jaisi problems create karti hain. Is chapter mein hum dekhenge ki
+        browser font kaise load karta hai, <code>font-display</code> se us timeline ko kaise control karte hain,
+        aur subsetting + variable fonts + preload se file size aur load time dono kaise ghatate hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#discovery">Font discovery — browser ko pata kab chalta hai</a></li>
+          <li><a href="#foit-fout">FOIT vs FOUT</a></li>
+          <li><a href="#font-display">font-display property — sab values</a></li>
+          <li><a href="#formats">woff2 aur format fallback</a></li>
+          <li><a href="#hosting">Self-hosting vs Google Fonts</a></li>
+          <li><a href="#subsetting">Subsetting — unicode-range</a></li>
+          <li><a href="#variable">Variable fonts</a></li>
+          <li><a href="#preload">Preloading critical font</a></li>
+          <li><a href="#nextjs">Senior note — next/font</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="discovery">Font Discovery — Browser Ko Pata Kab Chalta Hai Ki Font Chahiye</h2>
+      <p>
+        Yaha ek subtle cheez samajhna zaroori hai: browser koi bhi web font tabhi download karta hai jab use
+        <strong>confirm ho jaaye ki wo font actually kisi visible text ke liye chahiye</strong>. Ye confirmation
+        Render Tree ban jaane ke baad milta hai — yaani CSSOM complete ho, DOM ke saath match ho, aur pata chale
+        ki kaunsa element kaunsa <code>font-family</code> use kar raha hai. Isiliye font requests hamesha
+        <strong>late</strong> shuru hote hain — CSS parse hone ke baad, tab jaake font fetch start hota hai.
+      </p>
+      <p>
+        Ye "late discovery" hi root cause hai FOIT/FOUT problem ka. Do tarike hain isko jaldi trigger karne ke:
+      </p>
+      <ul>
+        <li><strong>Resource hint preload</strong> — <code>&lt;link rel="preload" as="font"&gt;</code> se browser ko
+          bola jaata hai ki ye font zaroor chahiye hoga, abhi hi fetch shuru kar do (detail neeche).</li>
+        <li><strong>Inline <code>@font-face</code> in <code>&lt;head&gt;</code></strong> — agar
+          <code>@font-face</code> rule external stylesheet ke bajaye directly HTML ke <code>&lt;head&gt;</code> mein
+          inline ho, to browser ko external CSS file wait nahi karna padta us rule ko parse karne ke liye. Lekin
+          font download phir bhi tab tak nahi hoga jab tak baaki saare render-blocking resources (jaise external
+          CSS) resolve nahi ho jaate — kyunki render tree tabhi complete banta hai.</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root-level: kyun itni der lagti hai</div>
+        <p>
+          Timeline yaad rakho — HTML parse → DOM banta hai, CSS parse → CSSOM banta hai, DOM + CSSOM combine hoke
+          Render Tree banta hai, Render Tree se pata chalta hai kaunsa text kis font mein render hoga, <em>tab</em>
+          jaake font ka actual network request fire hota hai. Yani font request, critical rendering path ke
+          bhi baad ka event hai — image ya script se bhi late. Yahi wajah hai ki fonts preload karna itna
+          high-impact optimization hai.
+        </p>
+      </div>
+
+      <h2 id="foit-fout">FOIT vs FOUT — Do Failure Modes</h2>
+      <p>
+        Jab tak web font load ho raha hai, browser ko decide karna padta hai text ka kya karna hai. Do classic
+        patterns hain:
+      </p>
+      <ul>
+        <li><strong>FOIT (Flash of Invisible Text)</strong> — browser text ko completely <em>invisible</em> rakhta
+          hai jab tak font load nahi ho jaata. User ko lagta hai page "blank" hai ya content missing hai — ye
+          bahut bura UX hai, especially slow networks pe (LCP badly affect hota hai).</li>
+        <li><strong>FOUT (Flash of Unstyled Text)</strong> — browser turant fallback system font mein text dikha
+          deta hai, aur jab web font ready ho jaata hai to text "swap" ho jaata hai us font mein. Content turant
+          visible hota hai (accha for LCP/readability) lekin agar fallback font ke metrics (width, line-height)
+          web font se bahut different hain, to swap hone pe layout shift (CLS) ho sakta hai.</li>
+      </ul>
+      <p>
+        Dono hi trade-offs hain — invisible text vs jump/shift. <code>font-display</code> property se hum decide
+        karte hain ki konsa behavior chahiye, aur kitni der tak.
+      </p>
+
+      <h2 id="font-display">font-display — Timeline Control Karne Wali Property</h2>
+      <p>
+        <code>font-display</code> ek <code>@font-face</code> descriptor hai jo font-loading timeline ko teen
+        phases mein todta hai:
+      </p>
+      <ol>
+        <li><strong>Block period</strong> — is window mein agar font load nahi hua, to text <em>invisible</em>
+          rehta hai (FOIT). Font load hote hi turant use ho jaata hai.</li>
+        <li><strong>Swap period</strong> — is window mein agar font abhi bhi load nahi hua, browser fallback font
+          se text render kar deta hai. Jab web font aayega, swap ho jaayega (FOUT).</li>
+        <li><strong>Failure period</strong> — is point ke baad agar font load nahi hua, browser use "failed" maan
+          leta hai aur permanently fallback font hi use karta hai — even if font baad mein load ho jaaye.</li>
+      </ol>
+      <p>Har value in teeno periods ki duration alag set karti hai:</p>
+
+      <table>
+        <thead>
+          <tr><th>Value</th><th>Block period</th><th>Swap period</th><th>Behavior</th><th>Kab use karein</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>auto</code> (default)</td>
+            <td>Browser-dependent</td>
+            <td>Browser-dependent</td>
+            <td>Mostly <code>block</code> jaisa hi treat hota hai — unpredictable, browser pe depend karta hai.</td>
+            <td>Kabhi nahi explicitly — hamesha ek explicit value do.</td>
+          </tr>
+          <tr>
+            <td><code>block</code></td>
+            <td>~3s (Chromium/Firefox), unlimited (Safari)</td>
+            <td>Infinite</td>
+            <td>FOIT — text 3 second tak (ya zyada) invisible, phir web font se render.</td>
+            <td>Icon fonts jahan fallback glyph bilkul galat dikhega (par ideally SVG use karo, icon font hi mat use karo).</td>
+          </tr>
+          <tr>
+            <td><code>swap</code></td>
+            <td>~0ms (negligible)</td>
+            <td>Infinite</td>
+            <td>FOUT — turant fallback text dikhta hai, jab bhi web font aaye swap ho jaata hai, chahe kitni bhi der lage.</td>
+            <td>Body text / content-heavy pages jaha readability priority #1 hai.</td>
+          </tr>
+          <tr>
+            <td><code>fallback</code></td>
+            <td>~100ms (bahut chhota)</td>
+            <td>~3s</td>
+            <td>Bahut chhota block, phir fallback dikhta hai; agar web font 3s ke andar aa jaaye to swap, warna
+              permanently fallback hi rehta hai us session ke liye.</td>
+            <td>Fast, reliable networks — jab tumhe pata hai font almost hamesha jaldi load hoga.</td>
+          </tr>
+          <tr>
+            <td><code>optional</code></td>
+            <td>~100ms</td>
+            <td>0ms (no swap period)</td>
+            <td>Sabse "safe" — agar font 100ms ke andar cache/network se mil jaaye to use karo, warna is page-load
+              ke liye fallback hi use hoga (koi swap nahi, koi layout shift nahi). Browser decide karta hai
+              connection speed dekh ke ki font future visits ke liye download kare ya na kare.</td>
+            <td>Jab layout stability (CLS) sabse zyada important ho, aur font ka visual difference "nice to have" ho, must-have nahi.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — sahi choice kaise karein</div>
+        <p>
+          Zyada tar production apps ke liye <code>swap</code> safe default hai — content turant visible rehta hai.
+          Lekin agar tumhara fallback font aur web font ke metrics (x-height, average character width) bahut
+          alag hain, to swap ke time visible "jump" hoga jo CLS ko hurt karega. Us case mein
+          <code>size-adjust</code>, <code>ascent-override</code>, <code>descent-override</code> jaise
+          <code>@font-face</code> descriptors use karke fallback font ke metrics ko web font ke jitna close
+          bana sakte ho — isse swap ka jump minimal ho jaata hai. Next.js ka <code>next/font</code> ye
+          automatically karta hai (neeche detail mein).
+        </p>
+      </div>
+
+      <h2 id="formats">woff2 — Ek Hi Format Kaafi Hai</h2>
+      <p>
+        Modern browsers (jo aaj production traffic ka almost 100% cover karte hain) sab <strong>WOFF2</strong>
+        support karte hain. WOFF2, WOFF ke comparison mein <strong>up to 30% chhota</strong> hota hai — better
+        compression algorithm (Brotli-based) use karta hai. Matlab agar tum sirf modern browsers target kar rahe
+        ho (jo aajkal default hai), to <strong>sirf woff2 file serve karna kaafi hai</strong> — TTF, EOT, ya
+        original WOFF jaise legacy formats include karne ki zaroorat nahi, wo sirf extra bytes hain jo kabhi
+        use hi nahi honge.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">@font-face — swap + woff2 + subsetting</div>
+        <pre><code><span class="tok-com">/* Custom font ke liye @font-face rule define kar rahe hain */</span>
+<span class="tok-kw">@font-face</span> {
+  <span class="tok-com">/* font-family naam jo baad mein font-family: 'Inter' se reference hoga */</span>
+  <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter'</span>;
+
+  <span class="tok-com">/* sirf woff2 serve kar rahe hain — modern browsers ke liye kaafi hai,
+     format('woff2') hint browser ko batata hai file ka format kya hai bina download kiye */</span>
+  <span class="tok-attr">src</span>: <span class="tok-fn">url</span>(<span class="tok-str">'/fonts/inter-latin-400.woff2'</span>) <span class="tok-fn">format</span>(<span class="tok-str">'woff2'</span>);
+
+  <span class="tok-com">/* is weight variant ke liye sirf 400 (regular) match hoga */</span>
+  <span class="tok-attr">font-weight</span>: <span class="tok-num">400</span>;
+
+  <span class="tok-com">/* normal style — italic ke liye alag @font-face block chahiye hoga */</span>
+  <span class="tok-attr">font-style</span>: <span class="tok-kw">normal</span>;
+
+  <span class="tok-com">/* FOUT strategy: turant fallback text dikhao, web font aate hi swap kar do,
+     chahe kitni bhi der lage — content kabhi invisible nahi hota */</span>
+  <span class="tok-attr">font-display</span>: <span class="tok-kw">swap</span>;
+
+  <span class="tok-com">/* SUBSETTING: browser ko batate hain ki is font file mein sirf basic Latin
+     characters (U+0000 se U+00FF tak) hain — agar page pe koi Cyrillic ya Devanagari
+     character aata hai, browser is font ko use hi nahi karega us character ke liye.
+     Isse font file bhi chhoti banti hai (subset karke) aur browser ko clarity milti hai
+     ki ye file kis range ke liye responsible hai */</span>
+  <span class="tok-attr">unicode-range</span>: U+0000-00FF, U+0131, U+0152-0153;
+}</code></pre>
+      </div>
+
+      <h2 id="hosting">Self-Hosting vs Google Fonts</h2>
+      <p>
+        Fonts serve karne ke do broad approach hain — third-party service (jaise Google Fonts) se load karna,
+        ya apne server/CDN se serve karna (self-hosting). Dono ke trade-offs hain:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th>Google Fonts (third-party)</th><th>Self-hosting</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Extra connection</td>
+            <td>Alag origin (<code>fonts.gstatic.com</code>) — matlab ek extra DNS lookup + TCP + TLS
+              handshake, jab tak <code>preconnect</code> nahi use karte.</td>
+            <td>Same origin ya same CDN jo already connected hai — koi extra connection setup nahi.</td>
+          </tr>
+          <tr>
+            <td>Caching control</td>
+            <td>Google ke cache headers pe depend karte ho, apna control limited hai.</td>
+            <td>Apne cache headers, CDN, aur invalidation strategy fully control kar sakte ho.</td>
+          </tr>
+          <tr>
+            <td>Privacy</td>
+            <td>User ka IP address Google ke server ko jaata hai har page load pe — kai regions (EU/GDPR)
+              mein isse compliance issue ban sakta hai (famous German court ruling isi wajah se).</td>
+            <td>Koi third-party ko data nahi jaata — full privacy control apne haath mein.</td>
+          </tr>
+          <tr>
+            <td>Convenience</td>
+            <td>Ek <code>&lt;link&gt;</code> tag daalo, sab weights/subsets automatically milte hain, updates
+              bhi automatic.</td>
+            <td>Khud subsetting, hosting, versioning manage karni padti hai — zyada setup, zyada control.</td>
+          </tr>
+          <tr>
+            <td>Performance (typical)</td>
+            <td>Extra round-trip ki wajah se generally slower, especially agar preconnect miss ho.</td>
+            <td>Generally fast — no extra DNS/connection overhead, especially jab HTTP/2+ aur CDN edge caching
+              use ho.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Agar Google Fonts hi use karna hai (kisi constraint ki wajah se), to kam se kam connection overhead
+        minimize karo:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Google Fonts ke liye preconnect</div>
+        <pre><code><span class="tok-com">&lt;!-- fonts.googleapis.com pe CSS file hoti hai jisme @font-face rules hote hain --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"preconnect"</span> <span class="tok-attr">href</span>=<span class="tok-str">"https://fonts.googleapis.com"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-com">&lt;!-- fonts.gstatic.com pe actual woff2 font files hoti hain — ye alag origin hai
+     isliye isko bhi separately preconnect karna padta hai. crossorigin zaroori hai
+     kyunki font files CORS-protected resource maani jaati hain --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"preconnect"</span> <span class="tok-attr">href</span>=<span class="tok-str">"https://fonts.gstatic.com"</span> <span class="tok-attr">crossorigin</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Google Fonts subsetting bhi support karta hai query parameter se, jaise
+        <code>?subset=latin</code>, jo unwanted glyphs strip kar deta hai. Self-hosting mein ye kaam tools jaise
+        <strong>glyphhanger</strong> ya <strong>subfont</strong> se manually karna padta hai (build step mein).
+      </p>
+
+      <h2 id="subsetting">Subsetting — Sirf Wahi Characters Jo Chahiye</h2>
+      <p>
+        Ek full font file mein hundreds ya thousands of glyphs hote hain — Latin, Cyrillic, Greek, symbols, sab.
+        Zyada tar sites ko sirf ek chhota subset chahiye hota hai (jaise sirf basic Latin + kuch punctuation).
+        Subsetting ka matlab hai <strong>font file se sirf zaroori glyphs rakhna</strong> aur baaki hata dena —
+        isse file size drastically reduce hota hai (aksar 70-90% tak, especially agar original font mein CJK
+        ya multi-script support ho).
+      </p>
+      <p>
+        CSS mein <code>unicode-range</code> descriptor se browser ko batate hain ki ye particular
+        <code>@font-face</code> block kis character range ke liye hai. Browser <strong>sirf tab</strong> us font
+        file ko download karega jab page pe us range ka koi actual character present ho — matlab agar tumhare
+        pas Latin aur Devanagari dono ke alag subset files hain, aur page pe sirf Latin text hai, to Devanagari
+        wali file kabhi download hi nahi hogi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Multiple subsets — unicode-range se selective loading</div>
+        <pre><code><span class="tok-com">/* Latin subset — sirf basic English/European characters */</span>
+<span class="tok-kw">@font-face</span> {
+  <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter'</span>;
+  <span class="tok-attr">src</span>: <span class="tok-fn">url</span>(<span class="tok-str">'/fonts/inter-latin.woff2'</span>) <span class="tok-fn">format</span>(<span class="tok-str">'woff2'</span>);
+  <span class="tok-com">/* U+0000-00FF = basic Latin + Latin-1 supplement range */</span>
+  <span class="tok-attr">unicode-range</span>: U+0000-00FF;
+  <span class="tok-attr">font-display</span>: <span class="tok-kw">swap</span>;
+}
+
+<span class="tok-com">/* Devanagari subset — Hindi text ke liye, alag file, alag range */</span>
+<span class="tok-kw">@font-face</span> {
+  <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter'</span>;
+  <span class="tok-attr">src</span>: <span class="tok-fn">url</span>(<span class="tok-str">'/fonts/inter-devanagari.woff2'</span>) <span class="tok-fn">format</span>(<span class="tok-str">'woff2'</span>);
+  <span class="tok-com">/* U+0900-097F = Devanagari Unicode block */</span>
+  <span class="tok-attr">unicode-range</span>: U+0900-097F;
+  <span class="tok-attr">font-display</span>: <span class="tok-kw">swap</span>;
+}
+
+<span class="tok-com">/* Dono blocks same font-family name use karte hain — browser khud decide karega
+   kaunsa file download karni hai based on jo characters page pe actually mile */</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Practical tip</div>
+        <p>
+          Agar tumhara app bilingual hai (jaise MAD app Hinglish content dikhata hai), to Latin aur Devanagari
+          ko alag subset files mein todo. English-only user kabhi Devanagari font file download hi nahi karega
+          — automatic savings, koi extra JS logic ki zaroorat nahi, pura kaam browser khud handle karta hai
+          <code>unicode-range</code> ke through.
+        </p>
+      </div>
+
+      <h2 id="variable">Variable Fonts — Ek File, Multiple Weights</h2>
+      <p>
+        Traditionally, agar tumhe Regular (400), Medium (500), Semibold (600), aur Bold (700) chahiye, to
+        <strong>4 alag font files</strong> download karni padti thi — har weight ek separate file. Variable
+        fonts is problem ko solve karte hain: ek hi font file mein multiple weights (aur kabhi kabhi width, slant
+        bhi) ke "axes" encode hote hain, aur CSS <code>font-weight</code> se koi bhi value us range ke andar
+        pick kar sakte ho — 400 ho, 450 ho, 587 ho, sab ek hi file se render hoga.
+      </p>
+      <p>
+        Trade-off ye hai ki ek variable font file individual static file se thodi badi hoti hai — lekin agar
+        tumhe 3-4+ weights chahiye, to <strong>ek variable font file total mein un sab static files se chhoti
+        padti hai</strong> (kyunki glyph outlines share hote hain, sirf interpolation data alag hota hai).
+        Plus, sirf ek hi HTTP request lagta hai instead of 3-4.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">@font-face — variable font with weight range</div>
+        <pre><code><span class="tok-com">/* Variable font declare kar rahe hain — ek hi file, weight range specify karenge */</span>
+<span class="tok-kw">@font-face</span> {
+  <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter Variable'</span>;
+
+  <span class="tok-com">/* woff2-variations format hint modern browsers ko batata hai ki ye variable
+     font hai — 'wght' axis (weight) support karega */</span>
+  <span class="tok-attr">src</span>: <span class="tok-fn">url</span>(<span class="tok-str">'/fonts/inter-var.woff2'</span>) <span class="tok-fn">format</span>(<span class="tok-str">'woff2-variations'</span>);
+
+  <span class="tok-com">/* single number ke bajaye range diya — 100 (Thin) se 900 (Black) tak koi bhi
+     weight is ek file se render ho sakta hai, browser interpolate karta hai */</span>
+  <span class="tok-attr">font-weight</span>: <span class="tok-num">100</span> <span class="tok-num">900</span>;
+
+  <span class="tok-attr">font-style</span>: <span class="tok-kw">normal</span>;
+  <span class="tok-attr">font-display</span>: <span class="tok-kw">swap</span>;
+  <span class="tok-attr">unicode-range</span>: U+0000-00FF;
+}
+
+<span class="tok-com">/* Ab CSS mein kahin bhi koi bhi weight use karo, sab ek hi file se aayega */</span>
+<span class="tok-punc">.</span><span class="tok-fn">heading</span> { <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter Variable'</span>; <span class="tok-attr">font-weight</span>: <span class="tok-num">650</span>; } <span class="tok-com">/* koi extra request nahi */</span>
+<span class="tok-punc">.</span><span class="tok-fn">body-text</span> { <span class="tok-attr">font-family</span>: <span class="tok-str">'Inter Variable'</span>; <span class="tok-attr">font-weight</span>: <span class="tok-num">400</span>; } <span class="tok-com">/* same file, alag weight */</span></code></pre>
+      </div>
+
+      <h2 id="preload">Preloading Critical Font — Discovery Delay Ko Skip Karna</h2>
+      <p>
+        Jaisa upar discuss kiya, browser font ko tab tak fetch nahi karta jab tak render tree confirm nahi kar
+        deta ki wo font chahiye. Agar tumhara primary heading ya body font hero content ke liye critical hai,
+        to <code>&lt;link rel="preload"&gt;</code> se browser ko is delay ko bypass karne ka signal de sakte ho —
+        ye request bahut early (HTML parsing ke dauraan hi) fire ho jaata hai, discovery ka wait nahi karna
+        padta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">index.html — critical font preload karna</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- as="font" browser ko batata hai ye resource kis type ka hai, taaki
+       priority aur request headers sahi set ho (Accept header font ke liye) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+    <span class="tok-attr">rel</span>=<span class="tok-str">"preload"</span>
+    <span class="tok-attr">href</span>=<span class="tok-str">"/fonts/inter-var.woff2"</span>
+    <span class="tok-attr">as</span>=<span class="tok-str">"font"</span>
+    <span class="tok-attr">type</span>=<span class="tok-str">"font/woff2"</span>
+    <span class="tok-attr">crossorigin</span>
+  <span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Classic Gotcha — crossorigin same-origin fonts ke liye bhi chahiye</div>
+        <p>
+          Fonts spec ke according, font files hamesha <strong>anonymous-mode CORS request</strong> ke through
+          fetch hote hain — <em>chahe wo file same-origin ho ya third-party</em>. Agar
+          <code>&lt;link rel="preload" as="font"&gt;</code> pe <code>crossorigin</code> attribute missing hai,
+          browser preload request ko ek "credentialed" fetch samjhega jabki actual <code>@font-face</code>
+          request "anonymous" mode mein jaayega — ye do requests browser ke liye <strong>do alag resources</strong>
+          maane jaate hain (credentials mode mismatch), matlab preload cache <em>miss</em> ho jaayega aur font
+          <strong>silently dobara download hoga</strong>. Koi console error bhi nahi aata — bas preload ka fayda
+          zero ho jaata hai. Isliye <code>crossorigin</code> daalna <strong>hamesha mandatory</strong> hai font
+          preload ke liye, same-origin case mein bhi.
+        </p>
+      </div>
+
+      <h2 id="nextjs">Senior Dev Note — next/font Ye Sab Automatically Karta Hai</h2>
+      <div class="callout senior">
+        <div class="callout-title">🧠 next/font internals</div>
+        <p>
+          Agar tum Next.js use kar rahe ho, <code>next/font</code> (jaise
+          <code>next/font/google</code> ya <code>next/font/local</code>) upar diye sab optimizations
+          <strong>build-time pe automatically</strong> apply karta hai:
+        </p>
+        <ul>
+          <li><strong>Self-hosting</strong> — Google Fonts use karne pe bhi, build ke time font files download
+            karke apne <code>.next/static</code> output mein self-host kar deta hai. Runtime pe koi third-party
+            request nahi jaata — privacy issue (Google ko IP jaana) bhi solve, aur extra connection bhi
+            avoid ho jaati hai.</li>
+          <li><strong>Automatic subsetting</strong> — sirf specify kiye gaye <code>subsets</code> (jaise
+            <code>['latin']</code>) ke glyphs include karta hai.</li>
+          <li><strong>Auto preload injection</strong> — jo page/layout us font ko use kar raha hai, uske liye
+            khud <code>&lt;link rel="preload"&gt;</code> tag inject kar deta hai (crossorigin sahit) —
+            developer ko manually likhna hi nahi padta.</li>
+          <li><strong>Layout shift avoidance via size-adjust</strong> — fallback font ke metrics ko
+            (<code>size-adjust</code>, <code>ascent-override</code>, <code>descent-override</code>,
+            <code>line-gap-override</code> descriptors ke through) web font ke jitna match karta hai, taaki
+            <code>font-display: swap</code> ke time visible layout jump minimal ho — CLS score improve hota hai
+            without manual tuning.</li>
+        </ul>
+        <p>
+          Yani <code>next/font</code> is poore chapter ka "just use this" answer hai agar Next.js stack use kar
+          rahe ho — lekin interview mein <em>andar kya ho raha hai</em> ye samajhna hi asli signal hai ki tum
+          root-level developer ho, na ki sirf "next/font use karo" bol dena.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Browser font ko sirf render tree complete hone ke baad discover karta hai — isliye fonts naturally
+          "late" load hote hain, preload isi delay ko bypass karta hai.</li>
+        <li>FOIT (invisible text) aur FOUT (fallback → swap) do trade-offs hain; <code>font-display</code>
+          in ke beech control deta hai via block/swap/failure period timing.</li>
+        <li><code>font-display: swap</code> zyada tar production sites ke liye safe default hai; <code>optional</code>
+          jab CLS priority #1 ho.</li>
+        <li>Sirf <strong>woff2</strong> serve karo modern browsers ke liye — 30% chhota WOFF se, legacy formats
+          ki zaroorat nahi.</li>
+        <li>Self-hosting generally third-party (Google Fonts) se fast hota hai — extra DNS/connection overhead
+          nahi hota, aur privacy bhi better rehti hai.</li>
+        <li><code>unicode-range</code> subsetting se browser sirf wahi glyph file download karta hai jo page pe
+          actually use ho rahi hai.</li>
+        <li>Variable fonts multiple static weight files ko ek file mein consolidate karte hain — kam requests,
+          often kam total bytes.</li>
+        <li><code>crossorigin</code> attribute font preload ke liye <strong>hamesha zaroori hai</strong>, same-origin
+          fonts ke liye bhi — warna preload silently waste ho jaata hai.</li>
+        <li>Next.js ka <code>next/font</code> self-hosting + subsetting + preload + layout-shift fix sab
+          automatically handle karta hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: Browser web font ka request kab fire karta hai, aur ye late kyun hota hai?</strong><br>
+          Hint: Render tree complete hone ke baad hi — DOM + CSSOM combine hoke pata chalta hai kaunsa text
+          kis font mein render hoga, tabhi actual font fetch trigger hota hai.</li>
+        <li><strong>Q: font-display: swap vs optional — kab kaunsa use karoge?</strong><br>
+          Hint: swap = content turant visible priority (readability), lekin layout shift risk; optional = CLS
+          priority, font "nice to have" treat hota hai, no shift.</li>
+        <li><strong>Q: unicode-range descriptor kaise file size aur network requests dono optimize karta hai?</strong><br>
+          Hint: Browser sirf wahi subset file download karta hai jiske range mein page ke actual characters
+          match karte hain — baaki subsets fetch hi nahi hote.</li>
+        <li><strong>Q: Font preload pe crossorigin attribute kyun zaroori hai, even same-origin ke liye?</strong><br>
+          Hint: Fonts hamesha anonymous CORS mode mein fetch hote hain spec ke hisaab se; attribute missing hone
+          se preload aur actual fetch alag credential-mode requests ban jaate hain, cache match fail, font
+          dobara download hota hai silently.</li>
+        <li><strong>Q: Variable fonts kab better hote hain static weight files se, aur kab nahi?</strong><br>
+          Hint: Better jab 3+ weights chahiye ho (total bytes kam, requests kam); agar sirf ek hi weight chahiye
+          to ek single static file chhoti ho sakti hai variable font se.</li>
+        <li><strong>Q: next/font internally CLS kaise reduce karta hai without changing font-display value?</strong><br>
+          Hint: Fallback font ke metrics (size-adjust, ascent/descent-override) ko web font ke metrics se match
+          karke swap ke time visible jump minimize karta hai — font-display value change nahi karta, sirf
+          fallback ko "web font jaisa dikhne wala" bana deta hai.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="07-video-performance.html">
+          <div class="label">← Previous</div>
+          <div class="title">Video Performance</div>
+        </a>
+        <a class="next" href="09-code-splitting.html">
+          <div class="label">Next →</div>
+          <div class="title">Code-split JavaScript</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

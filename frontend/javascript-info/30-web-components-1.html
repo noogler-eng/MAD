@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Components I — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link active" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 30</div>
+      <div class="progress-pill">30 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Components · Custom Elements · Shadow DOM · Template</span>
+      <h1>Web Components I</h1>
+      <p class="subtitle">
+        React, Vue, Angular — sab apne apne component model laate hain, but browser khud bhi ek native
+        component system deta hai jo <strong>kisi framework pe depend nahi karta</strong>. Ye chapter us
+        foundation ko root-level pe todta hai — <code>&lt;time-formatted&gt;</code> jaisa custom tag kaise
+        banta hai, uska lifecycle kaise chalta hai, Shadow DOM andar ka DOM/CSS bahar se kaise chhupata
+        hai, aur <code>&lt;template&gt;</code> ka inert HTML kaise reusable banta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#overview">Web Components overview — 4 technologies</a></li>
+          <li><a href="#custom-elements">Custom Elements — autonomous vs customized-built-in</a></li>
+          <li><a href="#lifecycle">Lifecycle callbacks — connectedCallback se attributeChangedCallback tak</a></li>
+          <li><a href="#time-formatted">Real example: &lt;time-formatted&gt;</a></li>
+          <li><a href="#shadow-dom">Shadow DOM — real encapsulation</a></li>
+          <li><a href="#open-closed">open vs closed mode</a></li>
+          <li><a href="#template">&lt;template&gt; element — inert HTML</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="overview">Web Components overview — framework-independent reusable UI</h2>
+      <p>
+        Web Components koi single API nahi hai — ye <strong>4 alag-alag browser standards ka combo</strong>
+        hai jo saath milke ek reusable, encapsulated UI element banate hain, bina kisi build-step ya
+        runtime library (React/Vue) ke:
+      </p>
+      <ol>
+        <li><strong>Custom Elements</strong> — naya HTML tag define karne ka spec (jaise <code>&lt;time-formatted&gt;</code>), apne lifecycle callbacks ke saath.</li>
+        <li><strong>Shadow DOM</strong> — component ke andar ek private, encapsulated DOM+CSS tree, jo page ke baaki hisse se isolated rehta hai.</li>
+        <li><strong>Template element</strong> — inert HTML markup jo tab tak render nahi hota jab tak explicitly clone na kiya jaaye.</li>
+        <li><strong>ES Modules</strong> — component ki definition (class + registration) ko ek self-contained <code>.js</code> file mein package karna, jo <code>import</code> se kahin bhi reuse ho sake.</li>
+      </ol>
+      <p>
+        Root-level motivation: React ka <code>&lt;Button /&gt;</code> sirf React app ke andar kaam karta
+        hai — uske virtual DOM, reconciliation, aur JSX compile step ke bina wo component "chalta" nahi.
+        Web Components iska ulta approach lete hain — component ki definition <strong>browser ke native
+        DOM API</strong> mein compile hoti hai, so ek baar <code>customElements.define()</code> ho jaaye,
+        uske baad <code>&lt;my-button&gt;</code> tag <strong>kisi bhi jagah</strong> kaam karega — plain
+        HTML page mein, Vue app ke andar, Angular template mein, ya legacy jQuery codebase mein — kyunki
+        ye ab browser ke apne tag registry ka hissa ban chuka hai, kisi runtime library ka nahi.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 In 4 technologies ka relationship</div>
+        <p>
+          In char mein se koi bhi ek akela use ho sakta hai (e.g. sirf Shadow DOM kisi normal div pe),
+          lekin "Web Component" pattern tab banta hai jab sab combine hote hain: <strong>Custom Element</strong>
+          class define karti hai lifecycle + behavior, uske <code>connectedCallback</code> ke andar
+          <strong>Shadow DOM</strong> attach hota hai encapsulation ke liye, us shadow root ke andar
+          <strong>template</strong> se cloned markup insert hota hai, aur poora package ek
+          <strong>ES module</strong> ke through export/import hota hai. Is chapter mein hum pehle 3
+          (Custom Elements, Shadow DOM, Template) cover karenge — 4th (module packaging) already Chapter
+          14 mein cover ho chuka hai.
+        </p>
+      </div>
+
+      <h2 id="custom-elements">Custom Elements — do types</h2>
+      <p>
+        Custom Elements spec do tarah ke custom tags define karne deta hai:
+      </p>
+      <ul>
+        <li><strong>Autonomous custom elements</strong> — bilkul naya tag, <code>HTMLElement</code> se directly extend karta hai. Jaise <code>&lt;time-formatted&gt;</code> ya <code>&lt;easy-tabs&gt;</code> — koi existing HTML semantic nahi le raha.</li>
+        <li><strong>Customized built-in elements</strong> — ek existing built-in element (jaise <code>&lt;button&gt;</code>) ko extend karta hai, uska sara native behavior (accessibility, keyboard nav, form submission) retain karte hue. Registration mein <code>extends</code> option deni padti hai.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Autonomous custom element — minimal registration</div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">MyGreeting</span> <span class="tok-kw">extends</span> <span class="tok-fn">HTMLElement</span> <span class="tok-punc">{</span>  <span class="tok-com">// HTMLElement se extend — ye "autonomous" custom element banata hai</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>                     <span class="tok-com">// constructor — element create hote hi call hota hai (DOM mein attach hone se PEHLE)</span>
+    <span class="tok-kw">super</span><span class="tok-punc">()</span><span class="tok-punc">;</span>                          <span class="tok-com">// ZAROORI: HTMLElement ka constructor call karo, warna error aayega</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>            <span class="tok-com">// jab element document mein insert hota hai to ye call hota hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">"Hello!"</span><span class="tok-punc">;</span> <span class="tok-com">// yahan render karna safe hai — attributes ab tak parse ho chuke hain</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">"my-greeting"</span><span class="tok-punc">,</span> <span class="tok-fn">MyGreeting</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// customElements.define(tag-name, class) — tag registry mein register karta hai</span>
+<span class="tok-com">// naam mein hyphen (-) MANDATORY hai — spec ye guarantee deta hai ki future native tags kabhi collide nahi karenge</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Customized built-in element — extends + is</div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">HelloButton</span> <span class="tok-kw">extends</span> <span class="tok-fn">HTMLButtonElement</span> <span class="tok-punc">{</span> <span class="tok-com">// HTMLButtonElement se extend — native &lt;button&gt; ka behavior milta hai</span>
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"click"</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello!"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// custom behavior add kiya, native click/focus/tab-order bina touch kiye</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">"hello-button"</span><span class="tok-punc">,</span> <span class="tok-fn">HelloButton</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-attr">extends</span><span class="tok-punc">:</span> <span class="tok-str">"button"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// third argument {extends: "button"} — browser ko batata hai ye &lt;button&gt; ka customization hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Customized built-in — usage in HTML</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">button</span> <span class="tok-attr">is</span><span class="tok-punc">=</span><span class="tok-str">"hello-button"</span><span class="tok-punc">&gt;</span>Click me<span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- is="hello-button" — normal &lt;button&gt; tag rehta hai, sirf enhanced behavior ke saath --&gt;</span>
+<span class="tok-com">&lt;!-- naya tag &lt;hello-button&gt; NAHI likhte — original semantic tag preserve rehta hai --&gt;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: customized built-ins ka Safari problem</div>
+        <p>
+          Customized built-in elements (<code>is="..."</code> syntax) Safari/WebKit mein <strong>kabhi
+          implement nahi hue</strong> aur WebKit team ne officially "won't implement" bol diya hai —
+          spec-level disagreement hai ki ye pattern accessibility tree ko confuse karta hai. Isliye
+          production mein bijness-critical UI ke liye almost hamesha <strong>autonomous custom elements</strong>
+          use kiye jaate hain (jaise <code>&lt;time-formatted&gt;</code>), aur agar native button/input
+          jaisa behavior chahiye to usko manually re-implement kiya jaata hai shadow DOM ke andar
+          (ARIA roles + keyboard handlers khud likh ke) — customized built-ins pe depend nahi kiya jaata.
+        </p>
+      </div>
+
+      <h2 id="lifecycle">Lifecycle callbacks — root-level trace</h2>
+      <p>
+        Custom Element class mein ye "special methods" define karo to browser inhe apne-aap, sahi moment
+        pe call karta hai — bilkul React ke <code>componentDidMount</code>/<code>componentWillUnmount</code>
+        jaisa, lekin native browser API hai, koi library nahi:
+      </p>
+      <ul>
+        <li><code>constructor()</code> — element create hote hi. <strong>Too early</strong> — attributes ya child nodes yahan reliably available nahi hote, sirf basic init (jaise internal state variables) yahan karo.</li>
+        <li><code>connectedCallback()</code> — element document mein insert hote hi. Attributes ab available hain, so <strong>actual rendering yahan karo</strong>. Note: element DOM mein multiple baar move ho to ye har baar call ho sakta hai.</li>
+        <li><code>disconnectedCallback()</code> — element document se remove hote hi. Cleanup ke liye: timers clear karo, event listeners hatao (agar window/document pe laga rakhe the), subscriptions cancel karo.</li>
+        <li><code>attributeChangedCallback(name, oldValue, newValue)</code> — jab koi <em>observed</em> attribute change hoti hai. Sirf un attributes ke liye fire hota hai jo <code>observedAttributes</code> mein list ki gayi hon (performance ke liye — har attribute ko watch karna expensive hota).</li>
+        <li><code>adoptedCallback()</code> — jab element ek document se doosre document mein move hota hai (<code>document.adoptNode</code> se) — rarely use hota hai, sirf multi-document/iframe scenarios mein.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">observedAttributes — sirf listed attributes hi watch hote hain</div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">MyElement</span> <span class="tok-kw">extends</span> <span class="tok-fn">HTMLElement</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">static</span> <span class="tok-kw">get</span> <span class="tok-fn">observedAttributes</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// static getter — class define hote hi, instance banne se pehle hi read ho jaata hai</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">[</span><span class="tok-str">"datetime"</span><span class="tok-punc">,</span> <span class="tok-str">"locale"</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// sirf ye 2 attributes change hone pe attributeChangedCallback fire hoga</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">attributeChangedCallback</span><span class="tok-punc">(</span><span class="tok-fn">name</span><span class="tok-punc">,</span> <span class="tok-fn">oldValue</span><span class="tok-punc">,</span> <span class="tok-fn">newValue</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">name</span><span class="tok-punc">,</span> <span class="tok-fn">oldValue</span><span class="tok-punc">,</span> <span class="tok-str">"-&gt;"</span><span class="tok-punc">,</span> <span class="tok-fn">newValue</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// name: kaunsi attribute; oldValue/newValue: pehle/baad ki value</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Root cause: attributeChangedCallback constructor se PEHLE bhi fire ho sakta hai</div>
+        <p>
+          Agar HTML mein element already attributes ke saath likha hai (jaise
+          <code>&lt;time-formatted datetime="..."&gt;</code>), to browser initial parse ke time
+          <code>attributeChangedCallback</code> ko <strong>constructor ke turant baad, connectedCallback
+          se pehle</strong> bhi fire kar sakta hai un initial attribute values ke liye. Isliye
+          <code>attributeChangedCallback</code> ke andar kabhi bhi aisi state access mat karo jo sirf
+          <code>connectedCallback</code> mein set hoti hai — null-check ya guard clauses lagao.
+        </p>
+      </div>
+
+      <h2 id="time-formatted">Real example: &lt;time-formatted&gt; jo datetime badalne pe re-render hota hai</h2>
+      <p>
+        Ye ek complete autonomous custom element hai jo <code>datetime</code> attribute ko human-readable
+        localized format mein render karta hai, aur attribute change hone pe <strong>khud-ba-khud
+        re-render</strong> ho jaata hai — bina kisi manual re-render call ke:
+      </p>
+      <div class="code-block">
+        <div class="code-title">time-formatted.js — full lifecycle example</div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">TimeFormatted</span> <span class="tok-kw">extends</span> <span class="tok-fn">HTMLElement</span> <span class="tok-punc">{</span>  <span class="tok-com">// naya autonomous element, HTMLElement se extend</span>
+
+  <span class="tok-kw">static</span> <span class="tok-kw">get</span> <span class="tok-fn">observedAttributes</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">[</span><span class="tok-str">"datetime"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>            <span class="tok-com">// sirf datetime attribute ko watch karo, baaki sab ignore</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">rendered</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// guard: pehli baar hi render karo (attributeChangedCallback bhi render call karega)</span>
+      <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">render</span><span class="tok-punc">()</span><span class="tok-punc">;</span>          <span class="tok-com">// initial render — DOM mein insert hote hi ek baar</span>
+      <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">rendered</span> <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>  <span class="tok-com">// flag set — dobara render() se avoid duplicate work</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">attributeChangedCallback</span><span class="tok-punc">(</span><span class="tok-fn">name</span><span class="tok-punc">,</span> <span class="tok-fn">oldValue</span><span class="tok-punc">,</span> <span class="tok-fn">newValue</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">isConnected</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span> <span class="tok-com">// guard: agar element abhi DOM mein hi nahi hai to render skip karo (perf)</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">render</span><span class="tok-punc">()</span><span class="tok-punc">;</span>              <span class="tok-com">// attribute badla -&gt; re-render, ye hi "reactive" behavior hai</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">render</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">const</span> <span class="tok-fn">date</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">"datetime"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// current attribute value se Date object banaya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Intl</span><span class="tok-punc">.</span><span class="tok-fn">DateTimeFormat</span><span class="tok-punc">(</span><span class="tok-str">"default"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+      <span class="tok-attr">year</span><span class="tok-punc">:</span> <span class="tok-str">"numeric"</span><span class="tok-punc">,</span>            <span class="tok-com">// formatting options — Intl API browser-native localization deta hai</span>
+      <span class="tok-attr">month</span><span class="tok-punc">:</span> <span class="tok-str">"long"</span><span class="tok-punc">,</span>
+      <span class="tok-attr">day</span><span class="tok-punc">:</span> <span class="tok-str">"numeric"</span>
+    <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">format</span><span class="tok-punc">(</span><span class="tok-fn">date</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// .format(date) — locale ke hisaab se human-readable string banata hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">"time-formatted"</span><span class="tok-punc">,</span> <span class="tok-fn">TimeFormatted</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// registry mein register — ab tag kahin bhi use ho sakta hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Usage — attribute badlo, element khud re-render karega</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">time-formatted</span> <span class="tok-attr">datetime</span><span class="tok-punc">=</span><span class="tok-str">"2019-12-01"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">time-formatted</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- browser parse karte hi constructor -&gt; attributeChangedCallback -&gt; connectedCallback chalte hain --&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">el</span> <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">"time-formatted"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-fn">setInterval</span><span class="tok-punc">(</span><span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">el</span><span class="tok-punc">.</span><span class="tok-fn">setAttribute</span><span class="tok-punc">(</span><span class="tok-str">"datetime"</span><span class="tok-punc">,</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">()</span><span class="tok-punc">.</span><span class="tok-fn">toISOString</span><span class="tok-punc">()</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-com">// setAttribute call hote hi browser observedAttributes check karta hai,</span>
+    <span class="tok-com">// "datetime" list mein hai, so attributeChangedCallback fire hota hai -&gt; render() chalta hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// har second mein element apna text khud update kar lega, koi manual DOM query nahi lagi</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <h2 id="shadow-dom">Shadow DOM — real encapsulation</h2>
+      <p>
+        Ek plain <code>&lt;div&gt;</code> mein tum jo bhi HTML daalo, wo <strong>light DOM</strong> ka
+        hissa ban jaata hai — page ke global CSS usko style karte hain, aur page ka
+        <code>document.querySelector</code> usko access kar sakta hai. Shadow DOM iska structurally
+        different alternative deta hai: element ke andar ek <strong>separate, hidden DOM tree</strong>
+        attach hota hai jo apna khud ka style scope aur query scope rakhta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">attachShadow — encapsulated subtree banana</div>
+        <pre><code><span class="tok-fn">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">"show-hello"</span><span class="tok-punc">,</span> <span class="tok-kw">class</span> <span class="tok-kw">extends</span> <span class="tok-fn">HTMLElement</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">const</span> <span class="tok-fn">shadow</span> <span class="tok-punc">=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">"open"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-com">// attachShadow({mode}) — is element pe ek NAYA hidden DOM tree ka root banata hai, ek baar hi call ho sakta hai</span>
+
+    <span class="tok-fn">shadow</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">`</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span> <span class="tok-fn">p</span> <span class="tok-punc">{</span> <span class="tok-attr">color</span><span class="tok-punc">:</span> <span class="tok-fn">blue</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+      <span class="tok-com">&lt;!-- ye &lt;style&gt; SIRF is shadow tree ke andar ke &lt;p&gt; ko affect karega --&gt;</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>Hello, <span class="tok-punc">${</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">"name"</span><span class="tok-punc">)</span><span class="tok-punc">}</span><span class="tok-punc">&lt;/</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>
+    <span class="tok-str">`</span><span class="tok-punc">;</span>                        <span class="tok-com">// template literal — shadow ke andar ka markup + scoped style ek saath</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        Root-level mein kya ho raha hai: <code>attachShadow</code> call hote hi element ko do parallel
+        subtree mil jaate hain — ek <strong>light DOM</strong> (jo tum HTML mein directly likhte ho,
+        ya JS se <code>this.appendChild</code> karte ho) aur ek <strong>shadow tree</strong> (jo
+        <code>shadow.innerHTML</code>/<code>shadow.appendChild</code> se banta hai). Browser ka rendering
+        engine dono ko combine karke final visual output banata hai (jise "flattened tree" kehte hain),
+        lekin ye combination sirf <em>rendering</em> ke liye hai — DOM API level pe dono strictly separate
+        rehte hain.
+      </p>
+      <ul>
+        <li><strong>Styles andar se bahar leak nahi hote</strong> — shadow root ke andar ka <code>&lt;style&gt;</code> sirf usi shadow tree ke elements ko target karta hai, page ke baaki hisse ko touch nahi karta.</li>
+        <li><strong>Styles bahar se andar leak nahi hote</strong> — page ka global CSS (jaise <code>p { color: red; }</code> body mein kahin likha ho) shadow tree ke andar ke <code>&lt;p&gt;</code> ko affect nahi karta (kuch inheritable properties jaise <code>font-family</code>/<code>color</code> ka default inheritance exception hai, but selectors match nahi karte).</li>
+        <li><strong>querySelector cross nahi karta</strong> — <code>document.querySelector("p")</code> shadow tree ke andar ke <code>&lt;p&gt;</code> ko dhoondh hi nahi payega. Andar jaane ke liye explicitly <code>element.shadowRoot.querySelector(...)</code> karna padta hai.</li>
+        <li><strong>id namespace alag hai</strong> — shadow tree ke andar <code>id="header"</code> aur light DOM mein bhi <code>id="header"</code> ek saath exist kar sakte hain, koi collision nahi.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: ye encapsulation plain div se fundamentally alag hai</div>
+        <p>
+          Ek plain <code>&lt;div class="widget"&gt;</code> "encapsulation" sirf naming convention
+          (BEM, CSS Modules, styled-components ke scoped class names) se fake karta hai — build-time pe
+          class names ko unique bana diya jaata hai, but runtime pe wo sab ek hi flat DOM tree aur ek hi
+          global stylesheet cascade mein rehte hain. Shadow DOM ye guarantee <strong>browser engine level
+          pe enforce</strong> karta hai — CSS specificity war, accidental selector collision, third-party
+          widget ka CSS tumhare page ko todna — ye sab structurally impossible ho jaate hain, kisi naming
+          convention discipline pe depend kiye bina. Yahi wajah hai ki YouTube, GitHub (<code>&lt;relative-time&gt;</code>),
+          aur browser extensions apne injected UI ke liye Shadow DOM use karte hain — host page ka CSS
+          unhe todh nahi sakta, aur unka CSS host page ko todh nahi sakta.
+        </p>
+      </div>
+
+      <h2 id="open-closed">open vs closed mode — trade-off</h2>
+      <p>
+        <code>attachShadow({mode})</code> mein do options hain, aur ye sirf ek <strong>JS-level access
+        control</strong> hai — DOM/CSS encapsulation dono modes mein equally strong hoti hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">open vs closed — shadowRoot accessibility</div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">openRoot</span> <span class="tok-punc">=</span> <span class="tok-fn">elem1</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">"open"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">elem1</span><span class="tok-punc">.</span><span class="tok-attr">shadowRoot</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -&gt; #shadow-root (open) : koi bhi outside script isko access kar sakta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">openRoot</span> <span class="tok-punc">===</span> <span class="tok-fn">elem1</span><span class="tok-punc">.</span><span class="tok-attr">shadowRoot</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -&gt; true, same reference</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">closedRoot</span> <span class="tok-punc">=</span> <span class="tok-fn">elem2</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">"closed"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">elem2</span><span class="tok-punc">.</span><span class="tok-attr">shadowRoot</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// -&gt; null : bahar se koi bhi property se access nahi mil sakta</span>
+<span class="tok-com">// closedRoot variable ke through component ke apne code ke paas hi reference bacha rehta hai (closure ke andar)</span></code></pre>
+      </div>
+      <p>
+        Native browser elements jaise <code>&lt;input type="range"&gt;</code> ya <code>&lt;video&gt;</code>
+        (jinke apne internal controls hain — slider thumb, play/pause button) internally
+        <strong>closed</strong> shadow roots use karte hain, kyunki browser vendors nahi chahte ki koi
+        website page JS se unke native controls ki internal structure ko manipulate kare.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Practice mein closed mode ~99% avoid kyun kiya jaata hai</div>
+        <p>
+          Closed mode <strong>security boundary nahi hai</strong> — ye sirf convenience-level access
+          control hai. Koi bhi determined script <code>Element.prototype.attachShadow</code> ko
+          monkey-patch karke (component load hone se pehle) shadow root ka reference chura sakta hai. To
+          asli "protection" ye deta hai: DevTools mein casual inspection thoda harder ho jaata hai, aur
+          galti se koi outside code tumhare component ka internal DOM query/modify nahi kar paata. Lekin
+          iski keemat bahut zyada hai — <strong>testing libraries (Testing Library, Cypress), analytics
+          tools, aur accessibility auditors</strong> jo <code>shadowRoot</code> traverse karke content
+          verify karte hain, wo closed mode ke saath kaam nahi kar paate bina hacky workarounds ke. Isliye
+          almost har production web component library (Lit, Stencil, etc.) default <strong>open</strong>
+          mode use karti hai — encapsulation ka asli kaam DOM/CSS scoping already kar deta hai, JS-level
+          hiding ka marginal benefit uske debugging/testing cost ko justify nahi karta.
+        </p>
+      </div>
+
+      <h2 id="template">&lt;template&gt; element — inert HTML jo clone hoke jeeta hai</h2>
+      <p>
+        <code>&lt;template&gt;</code> ek built-in HTML tag hai jiska content browser <strong>parse to
+        karta hai</strong> (syntax validity check hoti hai), lekin <strong>render bilkul nahi karta</strong>
+        — ye "out of the document" treat hota hai jab tak explicitly JS se clone na kiya jaaye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">template — content DOM mein show nahi hota</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">template</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"tmpl"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span> <span class="tok-fn">p</span> <span class="tok-punc">{</span> <span class="tok-attr">font-weight</span><span class="tok-punc">:</span> <span class="tok-fn">bold</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- ye style page pe APPLY NAHI hoga jab tak clone na ho --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>Hello from template<span class="tok-punc">&lt;/</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>       <span class="tok-com">&lt;!-- ye &lt;p&gt; page pe kahin render nahi hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">img</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"heavy.png"</span><span class="tok-punc">&gt;</span>              <span class="tok-com">&lt;!-- image tab tak load NAHI hogi jab tak clone karke document mein na daali jaaye --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">template</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Root mechanism: <code>template.content</code> property ek <strong>DocumentFragment</strong>
+        return karti hai — ek lightweight, "parent-less" container jisme wo saara markup DOM node form
+        mein already parsed pada hai, but jo <em>kabhi bhi rendered document ka hissa nahi bana</em>.
+        DocumentFragment ki special property ye hai: jab tum use kisi real element mein
+        <code>appendChild</code> karte ho, to fragment khud insert nahi hota — sirf uske <strong>children
+        move</strong> ho jaate hain, fragment khaali reh jaata hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">cloneNode(true) — content copy karke insert karna</div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">tmpl</span> <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">"tmpl"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// template element ka reference nikala</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">clone1</span> <span class="tok-punc">=</span> <span class="tok-fn">tmpl</span><span class="tok-punc">.</span><span class="tok-attr">content</span><span class="tok-punc">.</span><span class="tok-fn">cloneNode</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// .content -&gt; DocumentFragment; .cloneNode(true) -&gt; DEEP clone (saare nested children samet)</span>
+<span class="tok-com">// deep clone isliye zaroori hai kyunki har use pe alag independent DOM nodes chahiye, same reference nahi</span>
+
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">clone1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// append() hote hi fragment ke andar ke &lt;style&gt; aur &lt;p&gt; ab REAL document ka hissa ban jaate hain</span>
+<span class="tok-com">// isi moment se style apply hoga, image load hogi — pehle ye sab "inert" tha</span>
+
+<span class="tok-kw">const</span> <span class="tok-fn">clone2</span> <span class="tok-punc">=</span> <span class="tok-fn">tmpl</span><span class="tok-punc">.</span><span class="tok-attr">content</span><span class="tok-punc">.</span><span class="tok-fn">cloneNode</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// same template se dusra independent clone</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">clone2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// ek hi template se multiple, independent instances banaye — reuse ka pura point yahi hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">importNode — cross-document clone (alternative)</div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">imported</span> <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">importNode</span><span class="tok-punc">(</span><span class="tok-fn">tmpl</span><span class="tok-punc">.</span><span class="tok-attr">content</span><span class="tok-punc">,</span> <span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// importNode(node, deep) — cloneNode jaisa hi kaam karta hai, lekin CROSS-DOCUMENT scenarios ke</span>
+<span class="tok-com">// liye design hua tha (e.g. iframe se node current document mein laana) — same-document mein cloneNode ke barabar hi hai</span>
+
+<span class="tok-fn">shadow</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">imported</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// shadow root ke andar template content insert kiya</span></code></pre>
+      </div>
+      <p>
+        Web Components ka most common real-world pattern: Custom Element ke <code>connectedCallback</code>
+        ke andar <code>attachShadow</code> karo, phir ek pehle-se-defined <code>&lt;template&gt;</code>
+        (jo ya to page mein pada ho, ya JS string se banaya ho) ka content clone karke shadow root mein
+        append karo — isse markup + scoped styles ek saath, efficiently (bina baar-baar innerHTML string
+        parse kiye) reusable ban jaate hain.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Web Components = 4 native browser standards (Custom Elements, Shadow DOM, Template, ES Modules) — koi framework runtime dependency nahi, jahan bhi register ho wahan chalta hai.</li>
+        <li><strong>Autonomous</strong> custom elements bilkul naya tag banate hain (<code>&lt;my-tag&gt;</code>); <strong>customized built-in</strong> existing tag extend karte hain (<code>is="..."</code>) — but Safari support na hone ki wajah se practice mein autonomous zyada common hai.</li>
+        <li>Lifecycle order: <code>constructor</code> → (initial attrs ke liye) <code>attributeChangedCallback</code> → <code>connectedCallback</code>; baad mein attribute change hote hi sirf <code>attributeChangedCallback</code>, remove hote hi <code>disconnectedCallback</code>.</li>
+        <li><code>observedAttributes</code> ek static getter hai jo batata hai kaunsi attributes hi watch honi hain — perf optimization, sab attributes watch nahi hoti.</li>
+        <li>Shadow DOM real encapsulation deta hai — CSS aur querySelector dono directions mein cross nahi karte, kisi naming convention discipline pe depend nahi karta.</li>
+        <li><strong>open</strong> mode mein <code>elem.shadowRoot</code> accessible hai; <strong>closed</strong> mode mein <code>null</code> milta hai — but ye security nahi, sirf convenience hai, isliye 99% cases mein open use hota hai (testing/debugging tools ke liye).</li>
+        <li><code>&lt;template&gt;</code> ka content ek DocumentFragment hai — inert (styles/scripts/images kuch bhi active nahi) jab tak <code>cloneNode(true)</code>/<code>importNode</code> se explicitly document mein insert na ho.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Web components framework-independent kyun hote hain — React component ke saath compare karke batao.</strong><br>Hint: component definition browser ke native <code>customElements</code> registry mein compile hoti hai, kisi virtual-DOM/runtime library pe depend nahi karti — jahan bhi tag likho wahan kaam karega.</li>
+        <li><strong>connectedCallback mein render karna best practice kyun hai, constructor mein kyun nahi?</strong><br>Hint: constructor bahut early call hota hai — attributes aur child nodes reliably available nahi hote; connectedCallback tak DOM insertion ho chuki hoti hai.</li>
+        <li><strong>observedAttributes kya karta hai, aur agar isse skip kar diya to attributeChangedCallback ka kya hoga?</strong><br>Hint: static getter jo watch-list return karta hai; list mein na hone wali attribute change hone pe callback bilkul fire hi nahi hoga, chahe attribute actually badal jaaye.</li>
+        <li><strong>Shadow DOM ki encapsulation ek plain div + scoped CSS class naming (jaise BEM) se fundamentally kaise alag hai?</strong><br>Hint: Shadow DOM engine-level guarantee hai (structurally impossible to leak), naming convention sirf discipline pe depend karta hai aur runtime pe koi real isolation nahi deta.</li>
+        <li><strong>open aur closed shadow mode mein real difference kya hai, aur closed mode production mein kam kyun use hota hai?</strong><br>Hint: sirf JS-level shadowRoot access control hai, DOM/CSS isolation dono mein same hai; closed mode testing/debugging tools ko break kar deta hai bina koi real security add kiye.</li>
+        <li><strong>template.content DocumentFragment kyun hai, aur append() karte time fragment khud kyun disappear ho jaata hai?</strong><br>Hint: DocumentFragment ek lightweight "parent-less" container hai — insert hote time uske children move hote hain, fragment khud kabhi document ka node nahi banta.</li>
+        <li><strong>cloneNode(true) vs cloneNode(false) — deep clone kyun zaroori hai template content ke liye?</strong><br>Hint: false sirf top-level node clone karta, nested children chhod deta — template ka pura markup nested elements ka hi collection hota hai, isliye deep clone (true) mandatory hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="29-animation.html">
+        <div class="label">← Previous</div>
+        <div class="title">Animation</div>
+      </a>
+      <a class="next" href="31-web-components-2.html">
+        <div class="label">Next →</div>
+        <div class="title">Web Components II</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RegExp III — Lookaround/Methods — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link active" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 34</div>
+      <div class="progress-pill">34 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">RegExp · Lookaround · Backtracking · Sticky · Methods</span>
+      <h1>RegExp III — Lookaround/Methods</h1>
+      <p class="subtitle">
+        Ye handbook ka <strong>aakhri (last) chapter</strong> hai. Yahaan hum dekhenge lookahead/lookbehind
+        — zero-width assertions jo pattern check karte hain bina match consume kiye — phir catastrophic
+        backtracking, jo ek real production security risk (ReDoS) ban sakta hai, phir sticky flag
+        <code>y</code> jo tokenizers ke liye zaroori hai, aur finally poora RegExp/String method surface —
+        <code>test</code>, <code>exec</code>, <code>match</code>, <code>matchAll</code>,
+        <code>replace</code>, <code>replaceAll</code>, <code>split</code> — kaunsa kab use karna hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#zero-width">Zero-width assertions ka concept</a></li>
+          <li><a href="#lookahead">Lookahead: (?=...) aur (?!...)</a></li>
+          <li><a href="#lookbehind">Lookbehind: (?&lt;=...) aur (?&lt;!...)</a></li>
+          <li><a href="#capturing-lookaround">Capturing groups lookaround ke andar</a></li>
+          <li><a href="#catastrophic">Catastrophic backtracking — root cause</a></li>
+          <li><a href="#redos">ReDoS: production security risk</a></li>
+          <li><a href="#sticky">Sticky flag "y" vs "g"</a></li>
+          <li><a href="#methods">RegExp/String method surface</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+          <li><a href="#complete">Course Complete</a></li>
+        </ul>
+      </div>
+
+      <h2 id="zero-width">Zero-width assertions — root concept</h2>
+      <p>
+        Ab tak jitne bhi regex constructs dekhe (quantifiers, groups, character classes), sab
+        <strong>consume</strong> karte hain — matlab wo characters ko match ke andar "kha" lete hain,
+        aur regex engine ka cursor un characters ke aage badh jaata hai. Lookahead aur lookbehind is
+        rule ko todte hain: ye sirf <strong>check</strong> karte hain ki aage ya peeche kya hai, lekin
+        cursor ko wahan se aage nahi badhate aur match ke result string mein bhi include nahi hote.
+        Isi wajah se inhe "zero-width" bola jaata hai — ye pattern mein 0 characters ka "width" occupy
+        karte hain, sirf ek boolean condition ki tarah kaam karte hain.
+      </p>
+      <p>
+        Ye distinction capturing groups se bilkul alag hai: <code>(abc)</code> ek capturing group hai jo
+        <code>abc</code> ko match <strong>aur</strong> consume dono karta hai, wo result string mein bhi
+        hota hai. Jabki <code>(?=abc)</code> sirf check karta hai ki "abc" aage hai ki nahi — match mein
+        include nahi hota, cursor bhi wahin ka wahin rehta hai.
+      </p>
+
+      <h2 id="lookahead">Lookahead — (?=...) aur (?!...)</h2>
+      <p>
+        <strong>Positive lookahead</strong> <code>X(?=Y)</code> — X ko tabhi match karta hai jab uske
+        turant baad Y ho, lekin Y match ke result mein <strong>shaamil nahi</strong> hota. Classic
+        example: price ka number nikalna sirf tab jab uske baad <code>$</code> ho, bina <code>$</code>
+        ko match mein include kiye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Positive lookahead — price before $ sign, without $<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Laptop costs 45000$, mouse costs 500 rupees"</span><span class="tok-punc">;</span> <span class="tok-com">// input string — dono numbers hain, lekin sirf ek ke baad $ hai</span>
+
+<span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\d<span class="tok-punc">+</span><span class="tok-punc">(</span>?<span class="tok-punc">=</span>\$<span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// \d+ = ek ya zyada digits (consume hoga); (?=\$) = lookahead — check karo aage $ hai</span>
+                          <span class="tok-com">// $ ko regex mein escape karna pada (\$) kyunki $ khud ek anchor metachar hai</span>
+
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span>regexp<span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "45000" — sirf number match hua, $ result mein NAHI aaya</span>
+                                    <span class="tok-com">// "500" match nahi hua kyunki uske baad $ nahi tha (baad mein "rupees" text hai)</span></code></pre>
+      </div>
+      <p>
+        <strong>Negative lookahead</strong> <code>X(?!Y)</code> — iska ulta: X ko tabhi match karta hai
+        jab uske baad Y <strong>NA</strong> ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Negative lookahead — number jiske baad $ NAHI hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Laptop costs 45000$, mouse costs 500 rupees"</span><span class="tok-punc">;</span> <span class="tok-com">// wahi input string</span>
+
+<span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\d<span class="tok-punc">+</span>\b<span class="tok-punc">(</span>?<span class="tok-punc">!</span>\$<span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span> <span class="tok-com">// \b = word boundary (digits ke turant baad khatam ho); (?!\$) = $ NAHI hona chahiye aage</span>
+
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span>regexp<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["500"] — sirf ye number match hua, kyunki 45000 ke baad $ tha</span></code></pre>
+      </div>
+
+      <h2 id="lookbehind">Lookbehind — (?&lt;=...) aur (?&lt;!...)</h2>
+      <p>
+        Lookbehind lookahead jaisa hi hai, bas direction opposite hai — ye check karta hai ki
+        <strong>pehle</strong> (behind) kya tha, na ki aage kya hai. <code>(?&lt;=Y)X</code> = positive
+        lookbehind, X ko tabhi match karo jab pehle Y ho. <code>(?&lt;!Y)X</code> = negative lookbehind.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Lookbehind — $ ke baad ka number nikalna, $ ko match mein shaamil kiye bina<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Total: $45000, discount: 500 rupees"</span><span class="tok-punc">;</span> <span class="tok-com">// input — pehla number $ ke BAAD, doosra nahi</span>
+
+<span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-punc">(</span>?<span class="tok-punc">&lt;=</span>\$<span class="tok-punc">)</span>\d<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// (?&lt;=\$) = lookbehind — check karo PEHLE $ tha; \d+ = fir digits match/consume karo</span>
+
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span>regexp<span class="tok-punc">)</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "45000" — $ khud match mein nahi aaya, sirf uske baad ka number aaya</span>
+
+<span class="tok-kw">let</span> negRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-punc">(</span>?<span class="tok-punc">&lt;!</span>\$<span class="tok-punc">)</span>\b\d<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span> <span class="tok-com">// (?&lt;!\$) = negative lookbehind — pehle $ NAHI hona chahiye</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span>negRegexp<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["500"] — sirf ye, kyunki 45000 ke pehle $ tha</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Lookbehind browser support</div>
+        <p>
+          Lookbehind <code>(?&lt;=...)</code> / <code>(?&lt;!...)</code> Safari ke purane versions aur
+          IE mein support nahi hai — sirf V8-based engines (Chrome, Node.js, Edge) mein full support
+          hai. Agar tumhara code Safari targets karta hai (production web app), to lookbehind se bachke
+          equivalent logic capture-group + post-processing se likho, ya feature-detect karo.
+        </p>
+      </div>
+
+      <h2 id="capturing-lookaround">Capturing groups lookaround ke andar</h2>
+      <p>
+        Lookaround khud consume nahi karta, lekin uske andar agar ek capturing group <code>(...)</code>
+        daal do, to us group ka content <strong>capture</strong> ho jaata hai — bas match ke overall
+        string mein include nahi hota. Ye useful hai jab tumhe "condition check karni hai aur uska ek
+        part bhi nikalna hai".
+      </p>
+      <div class="code-block">
+        <div class="code-title">Lookahead ke andar capturing group — currency symbol bhi nikalo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"45000$, 3000₹, 800 plain"</span><span class="tok-punc">;</span> <span class="tok-com">// alag alag currency symbols wali string</span>
+
+<span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\d<span class="tok-punc">+</span><span class="tok-punc">(</span>?<span class="tok-punc">=</span><span class="tok-punc">(</span>\$<span class="tok-punc">|</span>₹<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span> <span class="tok-com">// lookahead ke ANDAR ek capturing group (\$|₹) — dono symbols allowed</span>
+
+<span class="tok-kw">let</span> matches <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">...</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">matchAll</span><span class="tok-punc">(</span>regexp<span class="tok-punc">)</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// matchAll se poora match array + groups milte hain (aage detail mein)</span>
+
+<span class="tok-punc">matches</span><span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-punc">m</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span> <span class="tok-com">// har match object pe loop</span>
+  <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>m<span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">,</span> <span class="tok-punc">"+"</span><span class="tok-punc">,</span> <span class="tok-punc">m</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// m[0] = number (main match), m[1] = symbol (lookahead ka captured group)</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// Output: "45000" + "$"   "3000" + "₹"   (800 skip ho gaya — koi symbol match nahi hua)</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: lookaround = validation, capturing = extraction</div>
+        <p>
+          Root-level mental model: lookahead/lookbehind ka use karo jab tumhe <strong>context validate</strong>
+          karna ho bina us context ko result mein chahiye ("number tabhi valid hai jab uske baad currency
+          symbol ho, lekin symbol khud nahi chahiye"). Normal capturing groups ka use karo jab tumhe
+          <strong>value extract</strong> karni ho. In dono ko mix karke — jaise upar wale example mein —
+          tum ek hi regex se "conditional extraction" kar sakte ho, jo do-pass approach (pehle filter,
+          fir extract) se zyada efficient aur readable hai. Production mein ye pattern email validation,
+          password strength checks (positive lookahead se multiple conditions ek saath check karna, jaise
+          "kam se kam ek digit ho AND ek uppercase ho"), aur log-parsing mein bahut common hai.
+        </p>
+      </div>
+
+      <h2 id="catastrophic">Catastrophic backtracking — root cause</h2>
+      <p>
+        Regex engine (JS ka backtracking engine) jab kisi quantifier se match try karta hai aur aage
+        fail ho jaata hai, to wo <strong>backtrack</strong> karta hai — pehle try kiye hue characters
+        chhod ke ek chhota match try karta hai. Normally ye fast hota hai. Lekin agar pattern mein
+        <strong>nested quantifiers</strong> hain jinke beech ambiguity hai — matlab input ko multiple
+        tareeko se split karke same result mil sakta hai — to engine har possible split try karta hai,
+        aur combinations ki ginti <strong>exponentially</strong> badh jaati hai.
+      </p>
+      <p>
+        Classic example: pattern <code>(a+)+b</code> ko ek aisi string pe match karo jisme sirf
+        <code>a</code>'s hain aur end mein <code>b</code> nahi hai (jaise <code>"aaaaaaaaaaaaaaaaaaaaaaaaa!"</code>
+        — 25 'a's, phir '!'). Trace karte hain ki andar kya hota hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Catastrophic backtracking demo — DON'T run in production without timeout<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-punc">(</span>a<span class="tok-punc">+</span><span class="tok-punc">)</span><span class="tok-punc">+</span>b<span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// outer (...)+ ke andar inner a+ — DOUBLY nested quantifier, ambiguous split</span>
+
+<span class="tok-kw">let</span> str <span class="tok-punc">=</span> <span class="tok-str">"aaaaaaaaaaaaaaaaaaaaaaaaa!"</span><span class="tok-punc">;</span> <span class="tok-com">// 25 'a's phir '!' — 'b' kabhi milega hi nahi, so match guaranteed FAIL hoga</span>
+
+<span class="tok-com">// WARNING: neeche wali line browser tab ko FREEZE kar degi — sirf trace samajhne ke liye, mat run karo</span>
+<span class="tok-com">// console.log(regexp.test(str));</span> <span class="tok-com">// engine hang ho jaayega kyunki har combination try karega</span></code></pre>
+      </div>
+      <p>
+        <strong>Kyun exponential?</strong> Outer group <code>(a+)+</code> ka matlab hai "ek ya zyada
+        groups, har group ke andar ek ya zyada a's". 25 'a's ko outer groups mein baantne ke liye
+        <strong>2<sup>24</sup> se zyada tareeke</strong> hain — jaise sab 25 ek hi group mein, ya 24+1
+        split, ya 1+1+...+1 (25 groups), ya har combination beech mein. Har split try karne ke baad
+        engine 'b' dhoondhta hai, fail hota hai, phir agla split try karta hai. n characters ke liye
+        combinations ~2<sup>n</sup> hain — <code>n=20</code> pe ~1 million combinations, <code>n=30</code>
+        pe ~1 billion. CPU 100% pe chala jaata hai aur practically hang ho jaata hai — kabhi terminate
+        hi nahi hoga (well, technically hoga, lekin universe ke heat death se pehle nahi).
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 ReDoS — ye production security risk hai, sirf performance bug nahi</div>
+        <p>
+          Ye sirf ek "slow regex" ka issue nahi hai — ye ek <strong>real, named attack class</strong> hai
+          jise <strong>ReDoS (Regular Expression Denial of Service)</strong> kehte hain. Agar tumhara
+          server-side code kabhi bhi <strong>user-controlled input ko ek vulnerable regex pattern se
+          match karta hai</strong> (jaise email validation, username format check, log parsing pattern
+          jo request headers pe chalta hai), to ek attacker jaan-bujhkar aisi input bhej sakta hai
+          (jaise 30 'a's + koi non-matching character) jo tumhare Node.js process ko <strong>single-threaded
+          event loop pe hi block</strong> kar degi — Node mein regex matching synchronous hai, so wo
+          poora process (sab requests, sab users) tab tak freeze rehta hai jab tak wo ek match complete
+          nahi karta, jo practically kabhi nahi hoga. Ye ek single crafted HTTP request se poore server
+          ko down kar sakta hai — CVE database mein isi tarah ke real-world ReDoS vulnerabilities kai
+          popular npm packages mein report ho chuke hain (jaise moment.js, validator.js ke purane
+          versions).
+          <br><br>
+          <strong>Production mein bachne ke tareeke:</strong> (1) Kabhi bhi nested ambiguous quantifiers
+          mat likho jaise <code>(a+)+</code>, <code>(a*)*</code>, <code>(a|a)*</code> — inner aur outer
+          quantifier ke beech ambiguity ko explicitly resolve karo (jaise <code>a+</code> sirf, ya
+          mandatory separator daalo). (2) Third-party/user-supplied regex patterns ko kabhi directly
+          trust mat karo — agar accept karna hi ho, to <strong>timeout ke saath sandboxed worker</strong>
+          mein run karo (jaise <code>vm2</code> ya separate worker thread jisko kill kar sako). (3) Regex
+          linting tools use karo (jaise <code>eslint-plugin-security</code> ka
+          <code>detect-unsafe-regex</code> rule, ya <code>safe-regex</code> npm package) jo CI mein hi
+          catastrophic patterns detect kar lein commit hone se pehle. (4) Simple validations ke liye
+          regex ki jagah manual string methods (<code>startsWith</code>, <code>includes</code>) ya
+          established validated libraries use karo jo already ReDoS-audited hain.
+        </p>
+      </div>
+
+      <p>
+        <strong>Fix ka pehla tareeka — pattern rewrite karo</strong> taaki ambiguity khatam ho jaaye.
+        Jaise <code>^(\w+\s?)*$</code> (jisme space optional hai, so "word" aur "word+space" split
+        overlap karte hain) ko <code>^(\w+\s)*\w*$</code> mein badlo — ab space mandatory hai within
+        repetition, har character ko match karne ka sirf ek hi tareeka bachta hai, ambiguity gayab.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Fix option 1 — pattern rewrite, ambiguity hatao<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// BAD: \s? optional hai, so ek "word " ko "word" + " " do tareeko se treat kar sakte ho</span>
+<span class="tok-kw">let</span> bad <span class="tok-punc">=</span> <span class="tok-punc">/</span>^<span class="tok-punc">(</span>\w<span class="tok-punc">+</span>\s?<span class="tok-punc">)</span><span class="tok-punc">*</span>$<span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// nested quantifier + optional separator = ReDoS risk</span>
+
+<span class="tok-com">// GOOD: space ko is repeated group ke andar MANDATORY bana diya, aakhri word alag se optional</span>
+<span class="tok-kw">let</span> good <span class="tok-punc">=</span> <span class="tok-punc">/</span>^<span class="tok-punc">(</span>\w<span class="tok-punc">+</span>\s<span class="tok-punc">)</span><span class="tok-punc">*</span>\w<span class="tok-punc">*</span>$<span class="tok-punc">/</span><span class="tok-punc">;</span> <span class="tok-com">// ab har character ka position match karne ka EK hi tareeka hai — no ambiguity</span></code></pre>
+      </div>
+      <p>
+        <strong>Fix ka doosra tareeka — lookahead se backtracking hi rok do.</strong> Ye technique thodi
+        advanced hai — ek named capturing group ke saath lookahead combine karke engine ko force karte
+        hain ki wo poore word ko atomically match kare, partial splits try hi na kare.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Fix option 2 — lookahead se atomic-group jaisa behavior<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> regexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>^<span class="tok-punc">(</span><span class="tok-punc">(</span>?<span class="tok-punc">=</span><span class="tok-punc">(</span>?<span class="tok-punc">&lt;</span>word<span class="tok-punc">&gt;</span>\w<span class="tok-punc">+</span><span class="tok-punc">)</span><span class="tok-punc">)</span>\k<span class="tok-punc">&lt;</span>word<span class="tok-punc">&gt;</span>\s?<span class="tok-punc">)</span><span class="tok-punc">*</span>$<span class="tok-punc">/</span><span class="tok-punc">;</span>
+<span class="tok-com">// (?=(?&lt;word&gt;\w+)) = lookahead jo poora word ek named group "word" mein capture karta hai, bina consume kiye</span>
+<span class="tok-com">// \k&lt;word&gt; = backreference — jo lookahead ne dekha wahi poora word yahaan CONSUME karo, ek hi piece mein</span>
+<span class="tok-com">// \s? = optional trailing space</span>
+<span class="tok-com">// Result: engine ab word ko todke alag-alag tareeko se try nahi karta — lookahead ne already "poora word" commit kar diya</span></code></pre>
+      </div>
+
+      <h2 id="sticky">Sticky flag "y" vs global flag "g"</h2>
+      <p>
+        <code>g</code> flag wale regex, <code>lastIndex</code> se <strong>search shuru</strong> karte
+        hain — agar exact position pe match nahi milta, to engine aage scan karta rehta hai jab tak
+        match nahi milta ya string khatam nahi hoti. <code>y</code> (sticky) flag iske bilkul against
+        hai: match <strong>exactly</strong> <code>lastIndex</code> position pe hi hona chahiye — agar
+        nahi hai, to <code>null</code> return hota hai, engine aage scan bilkul nahi karta.
+      </p>
+      <div class="code-block">
+        <div class="code-title">g vs y — same position, different behavior<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"let varName"</span><span class="tok-punc">;</span> <span class="tok-com">// position 3 pe space hai ("let" ke baad), position 4 se "varName" shuru hota hai</span>
+
+<span class="tok-kw">let</span> gRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\w<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">;</span>              <span class="tok-com">// global flag</span>
+<span class="tok-punc">gRegexp</span><span class="tok-punc">.</span><span class="tok-punc">lastIndex</span> <span class="tok-punc">=</span> <span class="tok-num">3</span><span class="tok-punc">;</span>         <span class="tok-com">// search yahin se "shuru" karo, lekin aage scan bhi kar sakta hai</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">gRegexp</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "varName" mila — engine ne position 3 (space) skip karke position 4 tak scan kiya</span>
+
+<span class="tok-kw">let</span> yRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\w<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">y</span><span class="tok-punc">;</span>              <span class="tok-com">// sticky flag</span>
+<span class="tok-punc">yRegexp</span><span class="tok-punc">.</span><span class="tok-punc">lastIndex</span> <span class="tok-punc">=</span> <span class="tok-num">3</span><span class="tok-punc">;</span>         <span class="tok-com">// match EXACTLY position 3 pe hona chahiye</span>
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">yRegexp</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// null — position 3 pe space hai, \w+ wahan match nahi hota, aage scan nahi hua</span></code></pre>
+      </div>
+      <p>
+        <strong>Real use-case: tokenizer / lexical analyzer.</strong> Jab tum ek programming language
+        ya template syntax ko incrementally parse karte ho — token by token, sequentially, bina kisi
+        gap ke — to <code>y</code> flag exactly wahi guarantee deta hai jo chahiye: "agla token yahin
+        se, bilkul yahin se shuru hona chahiye, warna input invalid hai".
+      </p>
+      <div class="code-block">
+        <div class="code-title">Mini tokenizer using sticky flag<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"let x = 10"</span><span class="tok-punc">;</span> <span class="tok-com">// jise hume token-by-token parse karna hai</span>
+
+<span class="tok-kw">let</span> wordRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\w<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">y</span><span class="tok-punc">;</span>       <span class="tok-com">// sticky — identifier/number tokens ke liye</span>
+<span class="tok-kw">let</span> spaceRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>\s<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">y</span><span class="tok-punc">;</span>      <span class="tok-com">// sticky — whitespace tokens ke liye</span>
+<span class="tok-kw">let</span> eqRegexp <span class="tok-punc">=</span> <span class="tok-punc">/</span>=<span class="tok-punc">/</span><span class="tok-punc">y</span><span class="tok-punc">;</span>          <span class="tok-com">// sticky — "=" operator ke liye</span>
+
+<span class="tok-kw">let</span> pos <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                 <span class="tok-com">// current parse position — hum khud track karte hain</span>
+<span class="tok-kw">let</span> tokens <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">]</span><span class="tok-punc">;</span>            <span class="tok-com">// yahan tokens accumulate honge</span>
+
+<span class="tok-kw">while</span> <span class="tok-punc">(</span>pos <span class="tok-punc">&lt;</span> <span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// jab tak poori string consume nahi ho jaati</span>
+  <span class="tok-punc">spaceRegexp</span><span class="tok-punc">.</span><span class="tok-punc">lastIndex</span> <span class="tok-punc">=</span> pos<span class="tok-punc">;</span>              <span class="tok-com">// har regex ka lastIndex current pos pe sync karo</span>
+  <span class="tok-kw">let</span> spaceMatch <span class="tok-punc">=</span> <span class="tok-punc">spaceRegexp</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// try karo whitespace token</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>spaceMatch<span class="tok-punc">)</span> <span class="tok-punc">{</span> pos <span class="tok-punc">+=</span> <span class="tok-punc">spaceMatch</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">;</span> <span class="tok-kw">continue</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">// mila to pos aage badhao, whitespace token skip karo</span>
+
+  <span class="tok-punc">eqRegexp</span><span class="tok-punc">.</span><span class="tok-punc">lastIndex</span> <span class="tok-punc">=</span> pos<span class="tok-punc">;</span>
+  <span class="tok-kw">let</span> eqMatch <span class="tok-punc">=</span> <span class="tok-punc">eqRegexp</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// try karo "=" operator token</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>eqMatch<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">tokens</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span><span class="tok-punc">{</span> type<span class="tok-punc">:</span> <span class="tok-str">"eq"</span><span class="tok-punc">,</span> value<span class="tok-punc">:</span> <span class="tok-str">"="</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> pos<span class="tok-punc">++</span><span class="tok-punc">;</span> <span class="tok-kw">continue</span><span class="tok-punc">;</span> <span class="tok-punc">}</span>
+
+  <span class="tok-punc">wordRegexp</span><span class="tok-punc">.</span><span class="tok-punc">lastIndex</span> <span class="tok-punc">=</span> pos<span class="tok-punc">;</span>
+  <span class="tok-kw">let</span> wordMatch <span class="tok-punc">=</span> <span class="tok-punc">wordRegexp</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// try karo word/number token</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>wordMatch<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-punc">tokens</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span><span class="tok-punc">{</span> type<span class="tok-punc">:</span> <span class="tok-str">"word"</span><span class="tok-punc">,</span> value<span class="tok-punc">:</span> <span class="tok-punc">wordMatch</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// token push karo</span>
+    pos <span class="tok-punc">+=</span> <span class="tok-punc">wordMatch</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">;</span>              <span class="tok-com">// pos ko token ki length jitna aage badhao</span>
+    <span class="tok-kw">continue</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">`Unexpected token at pos </span><span class="tok-punc">${</span>pos<span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// koi bhi regex match nahi hua = invalid syntax, error throw karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">tokens</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// [{word,"let"}, {word,"x"}, {eq,"="}, {word,"10"}]</span></code></pre>
+      </div>
+      <p>
+        Agar yahaan <code>y</code> ki jagah <code>g</code> use karte, to koi bhi malformed/unexpected
+        character silently skip ho jaata — engine bas aage scan karke agla valid token dhoond leta,
+        error kabhi throw hi nahi hota, aur tumhara parser galat tokens produce karta rehta bina crash
+        hue. <code>y</code> flag "fail fast, fail loud" guarantee deta hai jo parsers ke liye correctness
+        ke liye zaroori hai.
+      </p>
+
+      <h2 id="methods">RegExp / String method surface</h2>
+      <p>
+        JS mein regex ke saath kaam karne ke liye 7 major methods hain — kuch <code>RegExp.prototype</code>
+        pe hain, kuch <code>String.prototype</code> pe. Har ek ka return type aur use-case alag hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">test / exec / match / matchAll / replace / replaceAll / split<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. regexp.test(str) — sirf boolean chahiye ki match hai ya nahi</span>
+<span class="tok-kw">let</span> hasDigit <span class="tok-punc">=</span> <span class="tok-punc">/</span>\d<span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-str">"abc123"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — fastest method for existence check</span>
+<span class="tok-com">// GOTCHA: agar regex mein "g" flag hai, to test() lastIndex update karta hai —</span>
+<span class="tok-com">// same global regexp ko baar-baar test() karoge to results alternate ho sakte hain</span>
+
+<span class="tok-com">// 2. regexp.exec(str) — ek match ka full detail (groups, index) chahiye, ya loop mein sab chahiye</span>
+<span class="tok-kw">let</span> m <span class="tok-punc">=</span> <span class="tok-punc">/</span><span class="tok-punc">(</span>\d<span class="tok-punc">+</span><span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">.</span><span class="tok-fn">exec</span><span class="tok-punc">(</span><span class="tok-str">"abc123"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// m[0]="123", m[1]="123" (group), m.index=3</span>
+<span class="tok-com">// "g" flag ke saath repeated calls lastIndex se aage badhte hain — manual loop tokenizing ke liye useful</span>
+
+<span class="tok-com">// 3. str.match(regexp) — WITHOUT g: pehla match, groups+index sahit (exec jaisa)</span>
+<span class="tok-kw">let</span> single <span class="tok-punc">=</span> <span class="tok-str">"abc123"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\d<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["123", index: 3, input: "abc123", groups: undefined]</span>
+
+<span class="tok-com">// 3b. str.match(regexp) — WITH g: sab matches, sirf strings ka array, groups/index GAYAB</span>
+<span class="tok-kw">let</span> all <span class="tok-punc">=</span> <span class="tok-str">"a1 b22 c333"</span><span class="tok-punc">.</span><span class="tok-fn">match</span><span class="tok-punc">(</span><span class="tok-punc">/</span>\d<span class="tok-punc">+</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["1", "22", "333"] — sirf full matches, koi group detail nahi</span>
+<span class="tok-com">// No match milne pe match() null return karta hai — [] NAHI</span>
+
+<span class="tok-com">// 4. str.matchAll(regexp) — g flag MANDATORY, sab matches + har ek ke groups bhi (best of match+exec)</span>
+<span class="tok-kw">let</span> iterator <span class="tok-punc">=</span> <span class="tok-str">"a1 b22 c333"</span><span class="tok-punc">.</span><span class="tok-fn">matchAll</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">(</span>\w<span class="tok-punc">)</span><span class="tok-punc">(</span>\d<span class="tok-punc">+</span><span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// iterable milta hai, array nahi — lazy evaluation</span>
+<span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">...</span>iterator<span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// spread se array bana lo agar length/random-access chahiye</span>
+<span class="tok-com">// arr[0] = ["a1","a","1", index:0, ...], arr[1] = ["b22","b","22", index:3, ...] — full detail, sab matches</span>
+
+<span class="tok-com">// 5. str.replace(pattern, replacement) — string pattern ho to SIRF PEHLA occurrence replace hota hai</span>
+<span class="tok-kw">let</span> r1 <span class="tok-punc">=</span> <span class="tok-str">"a-b-c"</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-str">"-"</span><span class="tok-punc">,</span> <span class="tok-str">"_"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "a_b-c" — sirf pehla "-" badla, doosra as-is reh gaya</span>
+<span class="tok-kw">let</span> r2 <span class="tok-punc">=</span> <span class="tok-str">"a-b-c"</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-punc">/</span>-<span class="tok-punc">/</span><span class="tok-punc">g</span><span class="tok-punc">,</span> <span class="tok-str">"_"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "a_b_c" — regex + g flag = sab occurrences</span>
+<span class="tok-kw">let</span> r3 <span class="tok-punc">=</span> <span class="tok-str">"John Smith"</span><span class="tok-punc">.</span><span class="tok-fn">replace</span><span class="tok-punc">(</span><span class="tok-punc">/</span><span class="tok-punc">(</span>\w<span class="tok-punc">+</span><span class="tok-punc">)</span> <span class="tok-punc">(</span>\w<span class="tok-punc">+</span><span class="tok-punc">)</span><span class="tok-punc">/</span><span class="tok-punc">,</span> <span class="tok-str">"$2 $1"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Smith John" — $1/$2 = captured groups reference</span>
+
+<span class="tok-com">// 6. str.replaceAll(pattern, replacement) — string pattern ho to bhi SAB occurrences replace</span>
+<span class="tok-kw">let</span> r4 <span class="tok-punc">=</span> <span class="tok-str">"a-b-c"</span><span class="tok-punc">.</span><span class="tok-fn">replaceAll</span><span class="tok-punc">(</span><span class="tok-str">"-"</span><span class="tok-punc">,</span> <span class="tok-str">"_"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "a_b_c" — string pattern ke saath bhi sab replace, replace() se yahi farak hai</span>
+<span class="tok-com">// GOTCHA: regexp pattern do to "g" flag COMPULSORY hai, warna TypeError throw hoga</span>
+
+<span class="tok-com">// 7. str.split(pattern, limit) — string ko regex/substring ke basis pe todke array banao</span>
+<span class="tok-kw">let</span> parts <span class="tok-punc">=</span> <span class="tok-str">"12,  34,56"</span><span class="tok-punc">.</span><span class="tok-fn">split</span><span class="tok-punc">(</span><span class="tok-punc">/</span>,\s<span class="tok-punc">*</span><span class="tok-punc">/</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["12","34","56"] — comma + optional spaces ko flexible delimiter treat kiya</span></code></pre>
+      </div>
+
+      <p>Comparison table — kab kaunsa method use karna hai, jaldi decide karne ke liye:</p>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Return type</th><th>g flag ka effect</th><th>Kab use karo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>test()</code></td>
+            <td>Boolean</td>
+            <td>lastIndex track hota hai — repeated calls pe gotcha</td>
+            <td>Sirf "match hai ki nahi" check karna hai, value nahi chahiye</td>
+          </tr>
+          <tr>
+            <td><code>exec()</code></td>
+            <td>Array (groups+index) ya null</td>
+            <td>lastIndex se next match — manual loop possible</td>
+            <td>Ek match ka full detail, ya legacy manual iteration loop</td>
+          </tr>
+          <tr>
+            <td><code>match()</code></td>
+            <td>Array ya null</td>
+            <td>Without g: full detail (exec jaisa). With g: sirf strings, no groups</td>
+            <td>Bina g: single match with groups. Sang g: bas saare matched strings chahiye</td>
+          </tr>
+          <tr>
+            <td><code>matchAll()</code></td>
+            <td>Iterable (spread se array)</td>
+            <td>Mandatory — bina g TypeError</td>
+            <td>Sab matches + har ek ke groups+index chahiye — modern replacement for exec loop</td>
+          </tr>
+          <tr>
+            <td><code>replace()</code></td>
+            <td>Naya string</td>
+            <td>String pattern: sirf pehla. Regex bina g: sirf pehla. Regex with g: sab</td>
+            <td>Pehla ya sab replace, groups reference ($1) ya callback function ke saath</td>
+          </tr>
+          <tr>
+            <td><code>replaceAll()</code></td>
+            <td>Naya string</td>
+            <td>Regex pattern ho to g mandatory (warna error)</td>
+            <td>Sab occurrences replace — string pattern ke saath bhi (replace() isme fail karta)</td>
+          </tr>
+          <tr>
+            <td><code>split()</code></td>
+            <td>Array of strings</td>
+            <td>N/A — split hamesha sab delimiters pe todta hai</td>
+            <td>String ko flexible/regex-based delimiter pe tokenize/break karna hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ test() aur exec() ka lastIndex gotcha</div>
+        <p>
+          Agar regex mein <code>g</code> flag hai, to <code>test()</code> aur <code>exec()</code> dono
+          internally regex object ke <code>lastIndex</code> property ko update karte hain — jo agli
+          call ko affect karta hai. Ye tab dangerous hota hai jab tum <strong>same regex object</strong>
+          ko multiple alag-alag strings pe reuse karte ho (e.g. ek validation function jo module-level
+          regex use karti hai): pehli call match kar degi, doosri call fail kar sakti hai kyunki
+          <code>lastIndex</code> pichhli call se non-zero reh gaya. Fix: har baar naya regex banao, ya
+          <code>g</code> flag hi hatao agar tumhe sirf single test chahiye, ya explicitly
+          <code>regexp.lastIndex = 0</code> reset karo har use se pehle.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Lookahead</strong> <code>(?=...)</code>/<code>(?!...)</code> aur <strong>lookbehind</strong> <code>(?&lt;=...)</code>/<code>(?&lt;!...)</code> zero-width assertions hain — check karte hain, consume ya capture (result string mein) nahi karte.</li>
+        <li>Lookaround ke andar agar capturing group ho, to uska content capture hota hai — sirf overall match mein include nahi hota.</li>
+        <li>Lookbehind Safari/IE mein historically unsupported tha — production cross-browser code mein caution zaroori.</li>
+        <li><strong>Catastrophic backtracking</strong> nested ambiguous quantifiers (jaise <code>(a+)+</code>) se hota hai — combinations exponentially (2^n) badhte hain.</li>
+        <li>Ye sirf performance issue nahi, ek real <strong>ReDoS security vulnerability</strong> hai — user-controlled input pe vulnerable regex chalana poore server ko block kar sakta hai (Node ka single-threaded event loop).</li>
+        <li>Fix: pattern rewrite karke ambiguity hatao, ya lookahead+backreference se atomic-group jaisa behavior force karo, ya user-supplied regex ko timeout/sandbox mein run karo.</li>
+        <li><strong>Sticky flag "y"</strong> match sirf exact <code>lastIndex</code> position pe force karta hai — <code>"g"</code> ki tarah aage scan nahi karta. Tokenizers/parsers ke liye zaroori.</li>
+        <li>7 methods: <code>test</code> (boolean), <code>exec</code> (single match, loop-capable with g), <code>match</code>/<code>matchAll</code> (multiple matches, groups), <code>replace</code>/<code>replaceAll</code> (substitution), <code>split</code> (tokenize by delimiter).</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Lookahead aur capturing group mein fundamental farak kya hai?</strong><br>Hint: dono match ke against condition check karte hain, lekin capturing group consume + result mein include hota hai, lookahead sirf check karta hai — zero-width, result se bahar.</li>
+        <li><strong>(a+)+b pattern ek non-matching string pe catastrophic backtracking kyun karta hai? Root cause samjhao.</strong><br>Hint: input ko outer groups mein baantne ke exponentially many (2^n) tareeke hain, engine har ek try karta hai fail hone se pehle 'b' na milne ki wajah se.</li>
+        <li><strong>ReDoS attack production mein kaise exploit hota hai, aur kaise prevent karoge?</strong><br>Hint: user input ek vulnerable regex se match hone pe Node ka single-threaded event loop block ho jaata hai; prevention = ambiguous quantifiers avoid karo, timeout/worker sandbox use karo, regex linting.</li>
+        <li><strong>Sticky flag "y" aur global flag "g" ka behavior kaise differ karta hai jab lastIndex set ho?</strong><br>Hint: g flag lastIndex se search karta hai (aage scan kar sakta hai), y flag sirf exact lastIndex position pe match force karta hai, warna null.</li>
+        <li><strong>str.match() ka return type "g" flag ke saath aur bina "g" flag ke kaise alag hota hai?</strong><br>Hint: bina g = single match array with groups+index (exec jaisa); with g = sirf matched strings ka array, groups/index gayab.</li>
+        <li><strong>matchAll() ko exec() ke manual loop se better kyun consider kiya jaata hai?</strong><br>Hint: matchAll ek clean iterable deta hai jisme har match ke groups+index milte hain, jabki exec loop manually lastIndex track karna padta hai aur infinite-loop bug ka risk hota hai agar regex "g" flag bhool jaaye.</li>
+        <li><strong>replace() aur replaceAll() mein string pattern ke case mein kya farak hai?</strong><br>Hint: replace() string pattern ke saath sirf pehla occurrence replace karta hai, replaceAll() sab — regex pattern ke saath replaceAll ko "g" flag mandatory chahiye warna TypeError.</li>
+      </ul>
+
+      <h2 id="complete">🎉 Course Complete</h2>
+      <div class="callout senior">
+        <div class="callout-title">🏁 Congratulations, Sharad!</div>
+        <p>
+          Ye poori JavaScript.info Handbook ka <strong>34th aur final chapter</strong> hai. Yahaan tak
+          tumne <strong>Part 1 — The JavaScript Language</strong> (fundamentals se leke closures,
+          prototypes, classes, async/await, generators, modules tak), <strong>Part 2 — Browser: Document,
+          Events, Interfaces</strong> (DOM tree, attributes, sizes/scrolling, events, forms, resource
+          loading tak), aur <strong>Part 3 — Additional Articles</strong> (frames/windows, binary data,
+          fetch/network — XHR/WebSocket/SSE, browser storage, animation, web components, aur ab regex ka
+          poora depth) — sab cover kar liya hai, har concept root-level internals ke saath, har code line
+          commented.
+        </p>
+        <p>
+          Ye 34 chapters mile ke ek complete senior-level JavaScript foundation banate hain — language
+          internals se lekar browser APIs tak, aur ab regex jaisa powerful text-processing tool bhi.
+          Agla step: inn concepts ko real projects mein apply karna, aur jab bhi kisi topic pe doubt ho,
+          wapas is handbook ke relevant chapter pe aakar root cause refresh karna. Well done completing
+          the full course!
+        </p>
+      </div>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="33-regexp-2-quantifiers-groups.html">
+        <div class="label">← Previous</div>
+        <div class="title">RegExp II — Quantifiers/Groups</div>
+      </a>
+      <a class="next" href="index.html">
+        <div class="label">Next →</div>
+        <div class="title">Home</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

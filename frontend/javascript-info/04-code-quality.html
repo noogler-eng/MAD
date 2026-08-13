@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Quality — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link active" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 4</div>
+      <div class="progress-pill">4 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Debugging · Style · Comments · Testing · Polyfills</span>
+      <h1>Code Quality</h1>
+      <p class="subtitle">
+        Ye chapter "likhne" se zyada "professional tareeke se likhne" ke baare mein hai — Chrome
+        DevTools mein root-cause tak debug karna, team-readable coding style, comments jo actually
+        kaam ke hain (aur wo jo sirf noise hain), "ninja code" jaise anti-patterns jo bachne chahiye,
+        Mocha/Chai/Sinon se BDD-style automated testing, aur Babel + core-js se puraane browsers ke
+        liye modern syntax/features ko compatible banana.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#debugging">Chrome DevTools — Sources panel debugging</a></li>
+          <li><a href="#coding-style">Coding style conventions</a></li>
+          <li><a href="#comments">Comments — good vs bad</a></li>
+          <li><a href="#ninja-code">Ninja code — anti-patterns</a></li>
+          <li><a href="#testing">Automated testing — Mocha/Chai/Sinon</a></li>
+          <li><a href="#polyfills">Polyfills &amp; transpilers</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="debugging">Chrome DevTools mein debugging — root-cause workflow</h2>
+      <p>
+        <code>console.log</code> chhidwana debugging nahi hai, wo sirf ek "guess and print" loop hai.
+        Real debugging Chrome ke <strong>Sources panel</strong> mein hoti hai, jiske teen hisse hote
+        hain: <strong>File Navigator</strong> (left — HTML/JS/CSS files), <strong>Code Editor</strong>
+        (center — source dikhata hai), aur <strong>JS Debugging pane</strong> (right — breakpoints,
+        watch, call stack, scope).
+      </p>
+      <p>
+        Jab tum line-number pe click karte ho, ek <strong>breakpoint</strong> set hota hai — execution
+        us line pe pahunchte hi pause ho jaati hai (before wo line run ho). Right-click karke
+        <strong>conditional breakpoint</strong> bhi laga sakte ho — sirf tab pause hoga jab tumhara
+        diya hua expression truthy ho, jaise <code>i === 5</code> — loop ke 5th iteration tak baar-baar
+        F8 dabane se bachne ka tareeka.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">debugger statement — code-level breakpoint<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">calculateDiscount</span><span class="tok-punc">(</span><span class="tok-punc">price</span><span class="tok-punc">,</span> <span class="tok-punc">userTier</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// function jo price pe discount lagati hai userTier ke hisaab se</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">discount</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                                        <span class="tok-com">// discount ka default value 0 — agar koi tier match na kare</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">userTier</span> <span class="tok-punc">===</span> <span class="tok-str">"gold"</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                        <span class="tok-com">// gold tier ke liye alag discount rate</span>
+    <span class="tok-punc">discount</span> <span class="tok-punc">=</span> <span class="tok-num">0.2</span><span class="tok-punc">;</span>                                      <span class="tok-com">// 20% discount gold users ko</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">userTier</span> <span class="tok-punc">===</span> <span class="tok-str">"silver"</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// silver tier ke liye kam discount</span>
+    <span class="tok-punc">discount</span> <span class="tok-punc">=</span> <span class="tok-num">0.1</span><span class="tok-punc">;</span>                                      <span class="tok-com">// 10% discount silver users ko</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">debugger</span><span class="tok-punc">;</span>                                              <span class="tok-com">// DevTools khula ho to execution YAHIN pause ho jaayegi</span>
+  <span class="tok-com">// yahaan pause karke Watch panel mein "discount" aur "price" ki values check kar sakte hain</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">price</span> <span class="tok-punc">-</span> <span class="tok-punc">(</span><span class="tok-punc">price</span> <span class="tok-punc">*</span> <span class="tok-punc">discount</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// final discounted price return karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">calculateDiscount</span><span class="tok-punc">(</span><span class="tok-num">1000</span><span class="tok-punc">,</span> <span class="tok-str">"gold"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                              <span class="tok-com">// isko call karte hi debugger line pe automatic pause hoga</span></code></pre>
+      </div>
+
+      <p>
+        Jab execution pause hoti hai (breakpoint ho ya <code>debugger</code> statement), teen panels
+        active ho jaate hain:
+      </p>
+      <ul>
+        <li><strong>Watch</strong> — koi bhi expression type karo (jaise <code>discount * 2</code>), wo har step pe recalculate hoke value dikhayega.</li>
+        <li><strong>Call Stack</strong> — kaunsi functions kis order mein call hue taaki tum yahaan pahunche, bottom-most caller se top-most current function tak.</li>
+        <li><strong>Scope</strong> — local variables (current function ke) aur global variables, current values ke saath; source code mein bhi highlighted dikhte hain.</li>
+      </ul>
+
+      <p>Step-through toolbar ke buttons (in exact order jab kaam aate hain):</p>
+      <table>
+        <thead><tr><th>Button</th><th>Shortcut</th><th>Kya karta hai</th></tr></thead>
+        <tbody>
+          <tr><td>Resume</td><td>F8</td><td>Agla breakpoint aane tak normal execution continue karo</td></tr>
+          <tr><td>Step</td><td>F9</td><td>Sirf next statement execute karo (ek line aage badho)</td></tr>
+          <tr><td>Step over</td><td>F10</td><td>Next statement run karo, lekin agar wo function call hai to uske andar mat jao</td></tr>
+          <tr><td>Step into</td><td>F11</td><td>Step jaisa hi, lekin async calls (promises) ke andar bhi ja sakta hai</td></tr>
+          <tr><td>Step out</td><td>Shift+F11</td><td>Current function ke baaki hisse ko skip karke turant return tak pahunch jao</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: Step Over vs Step Into</div>
+        <p>
+          Ye distinction production debugging mein bahut matter karta hai. Agar tumhe pata hai ki bug
+          tumhare current function ke logic mein hai, na ki kisi library function (jaise
+          <code>lodash.cloneDeep</code>) ke andar, to hamesha <strong>Step Over (F10)</strong> use
+          karo — warna tum third-party library ke internals mein bhatak jaoge, jahan bug nahi hai.
+          <strong>Step Into (F11)</strong> sirf tab use karo jab tumhe apne khud ke helper function ke
+          andar ka logic verify karna ho. Aur "Continue to here" (right-click on any line) ek underrated
+          feature hai — loop ke beech kisi specific iteration tak jaldi pahunchne ke liye, bina baar-baar
+          F8 dabaye.
+        </p>
+      </div>
+
+      <p>
+        <code>console.log()</code> apni jagah hai — execution pause kiye bina values print karta hai,
+        production mein bhi safe hai (agar remove kar do baad mein). Lekin real root-cause investigation
+        ke liye breakpoints + scope inspection zyada reliable hai, kyunki tumhe pata rehta hai <em>exact
+        moment</em> pe variable ki value kya thi, aur call stack se pata chalta hai <em>kaise</em> wahan
+        pahunche.
+      </p>
+
+      <h2 id="coding-style">Coding style — team-readable code</h2>
+      <p>
+        Style rules ka goal readability hai, "sahi" ya "galat" nahi — lekin ek team mein consistency
+        zaroori hai taaki koi bhi kisi ka bhi code padh sake bina mental context-switch ke.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">style rules — before vs after<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ BAD — inconsistent braces, no spacing, deep nesting, no early return</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showPrice</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">,</span><span class="tok-punc">item</span><span class="tok-punc">)</span>
+<span class="tok-punc">{</span>
+  <span class="tok-kw">if</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">)</span>
+  <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span><span class="tok-punc">(</span><span class="tok-punc">item</span><span class="tok-punc">)</span><span class="tok-punc">{</span>
+      <span class="tok-kw">if</span><span class="tok-punc">(</span><span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">price</span><span class="tok-punc">></span><span class="tok-num">0</span><span class="tok-punc">)</span>
+        <span class="tok-kw">return</span> <span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">price</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// ✅ GOOD — Egyptian braces (opening brace same line), early returns, flat structure</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showPrice</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">,</span> <span class="tok-punc">item</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// opening { usi line pe, ek space ke baad — "Egyptian style"</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">user</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>                          <span class="tok-com">// early return — special case pehle nikaal do, nesting mat badhao</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">item</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>                          <span class="tok-com">// dusra early return — ab humein pata hai item exist karta hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">price</span> <span class="tok-punc">&lt;=</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>            <span class="tok-com">// teesra early return — invalid price ka case</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">item</span><span class="tok-punc">.</span><span class="tok-punc">price</span><span class="tok-punc">;</span>                              <span class="tok-com">// ab yahan sirf "main" logic bacha hai, ek hi nesting level pe</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>Kuch aur core rules jo javascript.info recommend karta hai:</p>
+      <ul>
+        <li><strong>Line length</strong> — bahut lambi horizontal line padhna mushkil hota hai; team-agreed max (typically 80-120 chars) se zyada ho to break karo multiple lines mein.</li>
+        <li><strong>Indent</strong> — 2 ya 4 spaces consistently; tabs se zyada spaces common hain kyunki alignment predictable rehta hai across editors.</li>
+        <li><strong>Vertical spacing</strong> — logical blocks ke beech blank line do; 9 lines se zyada bina break ke ek function mein rakhna readability hurt karta hai.</li>
+        <li><strong>Semicolons</strong> — har statement ke baad lagao, chahe ASI (automatic semicolon insertion) unhe optional bana de — kuch edge-cases mein ASI galat jagah semicolon insert kar deta hai aur silent bugs create karta hai.</li>
+        <li><strong>Function placement</strong> — generally "code pehle, helper functions neeche" pattern better hai, kyunki reader pehle <em>purpose</em> samajhta hai, phir <em>implementation detail</em> — top-down reading flow.</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Linters — style ko automate karo</div>
+        <p>
+          Manually style follow karna scale nahi karta. <strong>ESLint</strong> jaisa linter code style
+          check karta hai <em>aur</em> bugs bhi pakadta hai (jaise typo se bana hua undefined variable
+          use karna). Setup: Node.js install karo, ESLint install karo, <code>.eslintrc</code> config
+          file banao (ya popular style guide extend karo — Airbnb, Google, StandardJS), editor plugin
+          lagao jo save-on-type errors dikhaye. Team mein CI pipeline mein bhi lint-check add karna
+          common practice hai.
+        </p>
+      </div>
+
+      <h2 id="comments">Comments — sirf "why", "what" nahi</h2>
+      <p>
+        Root principle: <strong>"agar code itna unclear hai ki usse samajhne ke liye comment chahiye,
+        to shayad code hi rewrite hona chahiye."</strong> Comments jo batate hain code <em>kya</em> kar
+        raha hai, generally ek symptom hain ki code khud self-explanatory nahi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">bad comment vs refactored self-documenting code<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ BAD — comment "what" explain kar raha hai, code khud confusing hai</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;=</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">sqrt</span><span class="tok-punc">(</span><span class="tok-punc">n</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// check divisors up to sqrt(n)</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">n</span> <span class="tok-punc">%</span> <span class="tok-punc">i</span> <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>              <span class="tok-com">// not prime if divisible</span>
+<span class="tok-punc">}</span>
+<span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// ✅ GOOD — function name khud batata hai "what", comment ki zaroorat nahi</span>
+<span class="tok-kw">function</span> <span class="tok-fn">isPrime</span><span class="tok-punc">(</span><span class="tok-punc">n</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                       <span class="tok-com">// naam se hi clear hai ye kya check karta hai</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;=</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">sqrt</span><span class="tok-punc">(</span><span class="tok-punc">n</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// sqrt(n) tak hi check karna kaafi hai (math property)</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">n</span> <span class="tok-punc">%</span> <span class="tok-punc">i</span> <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>              <span class="tok-com">// ek bhi divisor mila to prime nahi hai</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>                                          <span class="tok-com">// koi divisor nahi mila, matlab prime hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// ✅ GOOD comment — "why", explains a non-obvious design decision</span>
+<span class="tok-com">/**
+ * Retry queue ko FIFO order mein process karta hai, LIFO nahi —
+ * kyunki agar LIFO use kiya to ek baar-baar-failing request
+ * baaki sab requests ko starve kar sakta hai (production incident #482 dekho)
+ */</span>
+<span class="tok-kw">function</span> <span class="tok-fn">processRetryQueue</span><span class="tok-punc">(</span><span class="tok-punc">queue</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">/* ... */</span> <span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>Comments kab likhne chahiye — teen legitimate cases:</p>
+      <ul>
+        <li><strong>Architecture / bird's-eye-view</strong> — file/module ke top pe, components kaise interact karte hain uska high-level overview.</li>
+        <li><strong>JSDoc for functions</strong> — params, return type, usage — taaki caller ko implementation dekhne ki zaroorat na pade.</li>
+        <li><strong>Design decisions ("why")</strong> — jab ek non-obvious approach choose kiya gaya ho, taaki future dev usse "clean up" karke bug reintroduce na kare.</li>
+      </ul>
+
+      <h2 id="ninja-code">"Ninja code" — anti-patterns jo bachne chahiye</h2>
+      <p>
+        Ye article satirical hai — ye "tips" deta hai ki code ko maximum confusing kaise banaya jaaye
+        (taaki koi aur usse touch na kar sake). Har "ninja trick" ek real anti-pattern hai jo production
+        codebases mein aksar milta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">ninja code refactor — before / after<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ NINJA CODE — single-letter vars, nested ternary, no comments, cryptic abbreviation</span>
+<span class="tok-kw">function</span> <span class="tok-fn">c</span><span class="tok-punc">(</span><span class="tok-punc">a</span><span class="tok-punc">,</span> <span class="tok-punc">l</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-punc">a</span> <span class="tok-punc">?</span> <span class="tok-punc">a</span> <span class="tok-punc">&lt;</span> <span class="tok-num">0</span> <span class="tok-punc">?</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">max</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-punc">l</span> <span class="tok-punc">+</span> <span class="tok-punc">a</span><span class="tok-punc">)</span> <span class="tok-punc">:</span> <span class="tok-punc">a</span> <span class="tok-punc">:</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">a</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// ✅ REFACTORED — descriptive names, no unnecessary reassignment, flat logic, doc comment</span>
+<span class="tok-com">/**
+ * Array index ko normalize karta hai — negative index ko end-relative bana deta hai,
+ * jaise Python slicing mein hota hai. Example: normalizeIndex(-1, 5) => 4
+ * @param {number} rawIndex - user-provided index, negative ho sakta hai
+ * @param {number} arrayLength - array ki total length
+ * @returns {number} valid non-negative index (clamp kiya hua 0 tak)
+ */</span>
+<span class="tok-kw">function</span> <span class="tok-fn">normalizeIndex</span><span class="tok-punc">(</span><span class="tok-punc">rawIndex</span><span class="tok-punc">,</span> <span class="tok-punc">arrayLength</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// naam se hi function ka intent clear hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">rawIndex</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                    <span class="tok-com">// agar 0, undefined, ya falsy — default 0 return karo</span>
+    <span class="tok-kw">return</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">rawIndex</span> <span class="tok-punc">&lt;</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                <span class="tok-com">// negative index ko end-relative treat karo</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">max</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-punc">arrayLength</span> <span class="tok-punc">+</span> <span class="tok-punc">rawIndex</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// clamp karo 0 se neeche na jaaye</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">rawIndex</span><span class="tok-punc">;</span>                                     <span class="tok-com">// positive index — waise hi return karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>Sabse common ninja anti-patterns jo real codebases mein milte hain:</p>
+      <ul>
+        <li><strong>Single-letter / abbreviated names</strong> — <code>lst</code>, <code>ua</code>, <code>a</code>, <code>x</code> — codebase mein search karna namumkin ho jaata hai, aur intent gayab.</li>
+        <li><strong>Abstract generic names</strong> — <code>data</code>, <code>value</code>, <code>obj</code>, <code>item</code> — koi semantic info nahi dete.</li>
+        <li><strong>Confusingly similar names</strong> — <code>date</code> aur <code>data</code> ek saath — typo-prone, misreading-prone.</li>
+        <li><strong>Inconsistent synonyms</strong> — kabhi <code>display...</code>, kabhi <code>show...</code>, kabhi <code>render...</code> same kaam ke liye — pattern-matching todta hai.</li>
+        <li><strong>Mid-function variable reuse</strong> — loop ke andar same variable ko baar-baar naye purpose ke liye reassign karna, bina track kiye "abhi is variable mein kya hai".</li>
+        <li><strong>Misleading function names</strong> — <code>checkPermission()</code> jo dikhta hai pure check hai, par actually side-effect bhi karta hai (jaise DB write) — caller ka mental model todta hai.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Clever" code = expensive code</div>
+        <p>
+          Ninja code ka core lesson ye hai: code likhne mein jo "cleverness" lagti hai, wo padhne mein
+          <strong>usse zyada</strong> cost karti hai — aur code likha ek baar jaata hai, padha dus baar
+          (code review, debugging, future features). Optimize karo readability ke liye, brevity ke liye
+          nahi.
+        </p>
+      </div>
+
+      <h2 id="testing">Automated testing — Mocha, Chai, Sinon (BDD)</h2>
+      <p>
+        Manual testing scale nahi karta — ek bug fix karte waqt kisi doosre case ko silently todna bahut
+        aasan hai. Automated tests test-code ko implementation se alag rakhte hain, taaki function ko
+        systematically alag-alag inputs ke saath run karke expected output se compare kiya ja sake.
+      </p>
+      <p>
+        <strong>BDD (Behavior Driven Development)</strong> teen cheezein combine karta hai: tests,
+        documentation, aur usage examples — ek hi jagah. Teen building blocks:
+      </p>
+      <ul>
+        <li><code>describe(title, fn)</code> — related tests ko ek human-readable group mein rakhta hai.</li>
+        <li><code>it(title, fn)</code> — ek individual test case, jiska title describe karta hai kya expected hai.</li>
+        <li><code>assert.equal(actual, expected)</code> (Chai se) — compare karta hai, mismatch pe test fail karta hai.</li>
+      </ul>
+
+      <p>
+        Neeche ek full TDD (test-driven-development) cycle hai — <code>pow(x, n)</code> function ko
+        <strong>tests pehle likh ke</strong>, phir implementation ko step-by-step spec ke against build
+        karte hue:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Step 1: spec likho (implementation se pehle) — pow.test.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">describe</span><span class="tok-punc">(</span><span class="tok-str">"pow"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                       <span class="tok-com">// "pow" function se related sab tests ka group</span>
+
+  <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"raises to n-th power"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// pehla test case — basic behavior</span>
+    <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">equal</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">8</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                     <span class="tok-com">// pow(2, 3) === 8 hona chahiye (2*2*2)</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Step 2: minimal implementation jo pehla test pass kare — pow.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-punc">x</span><span class="tok-punc">,</span> <span class="tok-punc">n</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-num">8</span><span class="tok-punc">;</span>                                              <span class="tok-com">// ❌ hardcoded — sirf ek test case pass karta hai, ye galat hai but jaanbujh kar</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// intent: dikhana ki "test pass hona" aur "implementation sahi hona" alag cheezein hain —</span>
+<span class="tok-com">// isliye humein AUR test cases add karne padenge jo isse expose karein</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Step 3: aur test cases add karo — deficiency expose karo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">describe</span><span class="tok-punc">(</span><span class="tok-str">"pow"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+
+  <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"2 raised to 3 is 8"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">equal</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">8</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"3 raised to 4 is 81"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// naya case — hardcoded 8 wala implementation isse FAIL karega</span>
+    <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">equal</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">81</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// 3*3*3*3 = 81</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Step 4: real implementation likho jo sab tests pass kare — pow.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-punc">x</span><span class="tok-punc">,</span> <span class="tok-punc">n</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                    <span class="tok-com">// x ki n-th power nikalne wala real implementation</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">result</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>                                        <span class="tok-com">// accumulator — 1 se start (multiplicative identity)</span>
+
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;</span> <span class="tok-punc">n</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                       <span class="tok-com">// n baar loop chalao</span>
+    <span class="tok-punc">result</span> <span class="tok-punc">*=</span> <span class="tok-punc">x</span><span class="tok-punc">;</span>                                      <span class="tok-com">// har iteration mein x se multiply karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> <span class="tok-punc">result</span><span class="tok-punc">;</span>                                       <span class="tok-com">// final power value return karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Step 5: edge cases + nested describe + hooks<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">describe</span><span class="tok-punc">(</span><span class="tok-str">"pow"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+
+  <span class="tok-kw">before</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                   <span class="tok-com">// sab tests SHURU hone se pehle EK BAAR chalta hai</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"testing started — pow suite"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// e.g. global setup, test DB connection, etc</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">after</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                    <span class="tok-com">// sab tests KHATAM hone ke baad EK BAAR chalta hai</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"testing finished — pow suite"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// e.g. teardown, close connections</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">beforeEach</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                              <span class="tok-com">// HAR individual test se PEHLE chalta hai</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"before a test"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                 <span class="tok-com">// e.g. fresh mock data reset karna, taaki tests ek-doosre pe depend na karein</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">afterEach</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                               <span class="tok-com">// HAR individual test ke BAAD chalta hai</span>
+    <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"after a test"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                  <span class="tok-com">// e.g. cleanup</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">describe</span><span class="tok-punc">(</span><span class="tok-str">"raises x to positive integer power"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// nested describe — related sub-cases group karta hai</span>
+
+    <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"2^3 = 8"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">equal</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">8</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                 <span class="tok-com">// EK hi assertion per test — fail hone pe reason clear rehta hai</span>
+    <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+    <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"3^4 = 81"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">equal</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">81</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+  <span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"for negative n the result is NaN"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// edge case — negative exponent handle nahi hota basic loop mein</span>
+    <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">isNaN</span><span class="tok-punc">(</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-punc">-</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// assert.isNaN — specifically NaN check karta hai</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Sinon spy — call tracking ke liye<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">notifyUser</span><span class="tok-punc">(</span><span class="tok-punc">sendEmailFn</span><span class="tok-punc">,</span> <span class="tok-punc">user</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// production function jo email-sending dependency leti hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">isActive</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                              <span class="tok-com">// sirf active users ko notify karna hai</span>
+    <span class="tok-fn">sendEmailFn</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">email</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// dependency ko call karo — test mein isse spy se replace karenge</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">it</span><span class="tok-punc">(</span><span class="tok-str">"sends email only for active users"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">emailSpy</span> <span class="tok-punc">=</span> <span class="tok-punc">sinon</span><span class="tok-punc">.</span><span class="tok-fn">spy</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                     <span class="tok-com">// ek fake function jo calls track karta hai, real email nahi bhejta</span>
+
+  <span class="tok-fn">notifyUser</span><span class="tok-punc">(</span><span class="tok-punc">emailSpy</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-punc">isActive</span><span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span> <span class="tok-punc">email</span><span class="tok-punc">:</span> <span class="tok-str">"a@x.com"</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// active user ke saath call karo</span>
+
+  <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">isTrue</span><span class="tok-punc">(</span><span class="tok-punc">emailSpy</span><span class="tok-punc">.</span><span class="tok-punc">calledOnce</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// verify karo ki spy exactly ek baar call hua</span>
+  <span class="tok-punc">assert</span><span class="tok-punc">.</span><span class="tok-fn">isTrue</span><span class="tok-punc">(</span><span class="tok-punc">emailSpy</span><span class="tok-punc">.</span><span class="tok-fn">calledWith</span><span class="tok-punc">(</span><span class="tok-str">"a@x.com"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// verify karo ki sahi argument ke saath call hua</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: ek assertion per test kyun?</div>
+        <p>
+          Jab ek test mein multiple <code>assert</code> calls hoti hain, aur pehli hi fail ho jaati hai,
+          to Mocha test ko turant terminate kar deta hai — baaki assertions <strong>kabhi run hi nahi
+          hoti</strong>. Matlab agar teen cheezein galat hain, tumhe sirf pehli ka pata chalega, dusri-
+          teesri chhupi rahengi jab tak pehli fix na ho. Isliye ek test = ek behavior verify karna best
+          practice hai — failure output tumhe exactly batata hai kya toota, without guessing.
+        </p>
+      </div>
+
+      <h2 id="polyfills">Polyfills aur Transpilers — Babel + core-js</h2>
+      <p>
+        JavaScript specification continuously evolve hoti hai, lekin har browser/engine naye features ko
+        alag speed pe implement karta hai. Do tools is gap ko bridge karte hain:
+      </p>
+
+      <ul>
+        <li><strong>Transpiler</strong> — modern <em>syntax</em> ko purani syntax mein convert karta hai (source-to-source compiler). Babel sabse popular hai.</li>
+        <li><strong>Polyfill</strong> — missing <em>built-in functions/methods</em> ko implement karta hai (syntax nahi badalta, sirf feature add karta hai jo engine mein nahi hai). core-js sabse comprehensive library hai.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Babel transpilation — modern syntax se old syntax<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// SOURCE — modern syntax jo purane engines samajh nahi paate (nullish coalescing, ES2020)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">getHeight</span><span class="tok-punc">(</span><span class="tok-punc">config</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">config</span><span class="tok-punc">.</span><span class="tok-punc">height</span> <span class="tok-punc">??</span> <span class="tok-num">100</span><span class="tok-punc">;</span>                    <span class="tok-com">// ?? = nullish coalescing, sirf null/undefined pe fallback deta hai (0 pe nahi)</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// BABEL OUTPUT — same behavior, old-syntax-compatible</span>
+<span class="tok-kw">function</span> <span class="tok-fn">getHeight</span><span class="tok-punc">(</span><span class="tok-punc">config</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">var</span> <span class="tok-punc">_height</span><span class="tok-punc">;</span>                                     <span class="tok-com">// temp variable — Babel intermediate values ke liye generate karta hai</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span><span class="tok-punc">_height</span> <span class="tok-punc">=</span> <span class="tok-punc">config</span><span class="tok-punc">.</span><span class="tok-punc">height</span><span class="tok-punc">)</span> <span class="tok-punc">!==</span> <span class="tok-kw">null</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-punc">_height</span> <span class="tok-punc">!==</span> <span class="tok-kw">undefined</span>
+    <span class="tok-punc">?</span> <span class="tok-punc">_height</span>                                    <span class="tok-com">// agar null/undefined nahi hai to value use karo</span>
+    <span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">;</span>                                       <span class="tok-com">// warna fallback 100 use karo — bilkul same semantics, old syntax mein</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">core-js polyfill — missing method ko manually check + implement<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-punc">trunc</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                                <span class="tok-com">// check karo: kya is engine mein Math.trunc already exist karta hai?</span>
+                                                       <span class="tok-com">// (purane engines mein ye method missing tha)</span>
+  <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-punc">trunc</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">number</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// agar nahi hai, to hum khud implement karke Math object pe attach karte hain</span>
+    <span class="tok-com">// Math.trunc decimal part hata deta hai — round nahi karta, sirf truncate karta hai</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">number</span> <span class="tok-punc">&lt;</span> <span class="tok-num">0</span> <span class="tok-punc">?</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">ceil</span><span class="tok-punc">(</span><span class="tok-punc">number</span><span class="tok-punc">)</span> <span class="tok-punc">:</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">floor</span><span class="tok-punc">(</span><span class="tok-punc">number</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                                     <span class="tok-com">// negative ke liye ceil (0 ki taraf), positive ke liye floor (0 ki taraf)</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">trunc</span><span class="tok-punc">(</span><span class="tok-num">4.9</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                                        <span class="tok-com">// ab ye kaam karega — 4 return karega — chahe native ho ya polyfilled</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Real-world build setup — babel.config.json + core-js import<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">{</span>
+  <span class="tok-str">"presets"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span>
+    <span class="tok-punc">[</span>
+      <span class="tok-str">"@babel/preset-env"</span><span class="tok-punc">,</span>                       <span class="tok-com">// preset-env: target browsers ke hisaab se automatic syntax transform</span>
+      <span class="tok-punc">{</span>
+        <span class="tok-str">"targets"</span><span class="tok-punc">:</span> <span class="tok-str">"> 0.25%, not dead"</span><span class="tok-punc">,</span>       <span class="tok-com">// browserslist query — kaunse browsers support karne hain (usage-based)</span>
+        <span class="tok-str">"useBuiltIns"</span><span class="tok-punc">:</span> <span class="tok-str">"usage"</span><span class="tok-punc">,</span>              <span class="tok-com">// "usage": sirf wahi core-js polyfills include karo jo code mein actually use ho rahe hain</span>
+        <span class="tok-str">"corejs"</span><span class="tok-punc">:</span> <span class="tok-str">"3.30"</span>                       <span class="tok-com">// core-js ka kaunsa version target karna hai — polyfill library</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">]</span>
+  <span class="tok-punc">]</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// is config ke saath, webpack/vite build ke time Babel automatically dono kaam karta hai:</span>
+<span class="tok-com">// 1) syntax transpile (?? , optional chaining, arrow functions, etc)</span>
+<span class="tok-com">// 2) core-js se sirf zaroori polyfills inject (Array.flat, Promise.allSettled, etc)</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Transpiler vs Polyfill — confuse mat karo</div>
+        <p>
+          Transpiler <strong>syntax</strong> problem solve karta hai (jaise <code>??</code> operator jo
+          engine parse hi nahi kar sakta — SyntaxError aayega). Polyfill <strong>missing feature</strong>
+          problem solve karta hai (jaise <code>Array.prototype.flat</code> jo valid syntax hai, bas engine
+          mein method exist nahi karta — TypeError aayega). Dono ek saath chahiye hote hain kyunki modern
+          code dono cheezon ka mix use karta hai — isliye Babel + core-js ek combo mein use hote hain.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Chrome DevTools Sources panel mein breakpoints/<code>debugger</code> statement se execution pause karke Watch, Call Stack, aur Scope panels se root-cause investigate karo — <code>console.log</code> se zyada reliable hai.</li>
+        <li>Step Over (F10) apne code ke liye, Step Into (F11) tab jab library/helper ke andar dekhna ho — galat button use karna time waste karta hai.</li>
+        <li>Coding style (Egyptian braces, early returns, consistent indent) ka goal team-readability hai; ESLint jaisa linter isse automate aur enforce karta hai.</li>
+        <li>Comment "what" nahi, "why" likho — agar code samajhne ke liye comment chahiye, code ko refactor karo (function extract karo, better naam do).</li>
+        <li>Ninja code anti-patterns (single-letter vars, abstract names, mid-function reuse, misleading function names) readability ko directly hurt karte hain — inhe consciously avoid karo.</li>
+        <li>BDD testing (<code>describe</code>/<code>it</code>/<code>assert</code>) tests ko documentation ki tarah readable banata hai; ek test = ek assertion, taaki failure output clear rahe.</li>
+        <li>Hooks (<code>before</code>/<code>after</code>/<code>beforeEach</code>/<code>afterEach</code>) setup/teardown ko duplicate hone se bachate hain aur tests ko isolated rakhte hain.</li>
+        <li>Transpiler (Babel) syntax problem solve karta hai, polyfill (core-js) missing-feature problem — dono zaroori hain cross-browser compatibility ke liye.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Step Over aur Step Into mein kya farak hai, aur kab kaunsa use karoge?</strong><br>Hint: Step Over next line run karta hai bina nested function calls ke andar jaaye; Step Into unke andar bhi jaata hai. Apna code debug karte waqt Step Over, third-party helper ke internal logic verify karna ho to Step Into.</li>
+        <li><strong>"Agar code ko samajhne ke liye comment chahiye, to code hi galat hai" — is statement ko explain karo.</strong><br>Hint: comments jo "what" describe karte hain, unclear code ka symptom hain — better solution hai code ko refactor karna (extract function, better naming) taaki wo self-documenting ho jaaye.</li>
+        <li><strong>Ek test mein multiple assertions likhna kyun risky hai?</strong><br>Hint: pehli assertion fail hote hi test terminate ho jaata hai, baaki assertions kabhi run nahi hoti — matlab multiple bugs ek saath ek hi test-run mein nahi pakde jaate.</li>
+        <li><strong>beforeEach aur before mein kya farak hai?</strong><br>Hint: before ek baar sabse pehle chalta hai (poore describe block ke liye), beforeEach har individual test se pehle chalta hai — isolation ke liye beforeEach zyada common hai.</li>
+        <li><strong>Transpiler aur polyfill mein fundamental difference kya hai?</strong><br>Hint: transpiler syntax convert karta hai (source-to-source, SyntaxError avoid karta hai), polyfill missing built-in methods/objects implement karta hai (TypeError avoid karta hai).</li>
+        <li><strong>Sinon spy ka use-case kya hota hai testing mein?</strong><br>Hint: real dependency (jaise email-sending function) ko fake function se replace karta hai jo calls track karta hai — bina real side-effect (actual email bhejna) kiye verify kar sakte ho ki function sahi tareeke se, sahi arguments ke saath call hua.</li>
+        <li><strong>ninja code mein "misleading function name" ka kya matlab hai, example do.</strong><br>Hint: function jaisa naam ho — jaise checkPermission() — lekin actually side-effect bhi kare (state modify kare) ya unexpected type return kare; caller ka mental model todta hai aur bugs create karta hai.</li>
+        <li><strong>useBuiltIns: "usage" ka Babel config mein kya role hai?</strong><br>Hint: sirf wahi core-js polyfills bundle mein include karta hai jo code actually use kar raha hai — bundle size ko unnecessary polyfills se bloat hone se bachata hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="03-functions-basics.html">
+        <div class="label">← Previous</div>
+        <div class="title">Functions Basics</div>
+      </a>
+      <a class="next" href="05-objects-basics.html">
+        <div class="label">Next →</div>
+        <div class="title">Objects: The Basics</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

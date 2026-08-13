@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link active" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 29</div>
+      <div class="progress-pill">29 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Animation · Bezier · CSS · requestAnimationFrame</span>
+      <h1>Animation</h1>
+      <p class="subtitle">
+        Animation do jagah ho sakta hai — CSS ke andar (<code>transition</code>/<code>@keyframes</code>),
+        ya JS ke andar (<code>requestAnimationFrame</code>). Dono ka math same hai: ek <strong>timing
+        function</strong> jo time-fraction (0→1) ko progress (0→1) mein map karti hai. Bezier curves
+        us timing function ka mathematical foundation hain. Is chapter mein hum root-level dekhenge ki
+        browser ke andar transform/opacity animations GPU pe kyun chalte hain, jabki width/left jaise
+        properties har frame layout trigger karte hain — aur ek reusable JS <code>animate()</code>
+        helper banayenge jo <code>setInterval</code> ke bina, sahi tareeke se kaam karta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#bezier">Bezier curves — CSS easing ka foundation</a></li>
+          <li><a href="#cubic-bezier">cubic-bezier(x1,y1,x2,y2) — control points intuition</a></li>
+          <li><a href="#css-transition">CSS transition — property, duration, timing-function</a></li>
+          <li><a href="#transitionend">transitionend event</a></li>
+          <li><a href="#keyframes">@keyframes + animation-* properties</a></li>
+          <li><a href="#animationend">animationend event</a></li>
+          <li><a href="#compositor">Root cause: compositor thread vs layout thrash</a></li>
+          <li><a href="#raf">requestAnimationFrame — sahi tareeka</a></li>
+          <li><a href="#animate-helper">Generic animate() helper function</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="bezier">Bezier curves — CSS easing ka foundation</h2>
+      <p>
+        Bezier curve ek smooth mathematical curve hai jo <strong>control points</strong> se define hoti
+        hai. Curve ka "order" points ki count minus 1 hota hai — 2 points = linear (straight line), 3
+        points = quadratic, 4 points = cubic. CSS animation timing ke liye <strong>cubic</strong> bezier
+        use hota hai — 4 control points, jinme se pehla aur aakhri fixed hote hain.
+      </p>
+      <p>
+        Root formula (De Casteljau construction): har <code>t</code> (0 se 1 tak) ke liye, control
+        points ke beech ke segments pe proportional points nikalo, unhe connect karo, phir wahi process
+        recursively repeat karo jab tak ek hi point na bache — wahi point curve ka part hota hai. Cubic
+        bezier ka closed-form formula:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Cubic bezier formula (math, reference ke liye)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// P = (1-t)^3 * P1 + 3(1-t)^2 * t * P2 + 3(1-t) * t^2 * P3 + t^3 * P4</span>
+<span class="tok-com">// P1 = (0,0) start, P4 = (1,1) end — ye dono CSS mein FIXED hote hain</span>
+<span class="tok-com">// P2 aur P3 hi hain jo hum control karte hain — cubic-bezier(x1,y1,x2,y2) mein</span>
+<span class="tok-kw">function</span> <span class="tok-fn">cubicBezierY</span><span class="tok-punc">(</span><span class="tok-punc">t</span><span class="tok-punc">,</span> <span class="tok-punc">y1</span><span class="tok-punc">,</span> <span class="tok-punc">y2</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// simplified: sirf y (progress) axis ka approx</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">mt</span> <span class="tok-punc">=</span> <span class="tok-num">1</span> <span class="tok-punc">-</span> <span class="tok-punc">t</span><span class="tok-punc">;</span>                          <span class="tok-com">// mt = "1 minus t" — formula mein baar baar chahiye</span>
+  <span class="tok-kw">return</span> <span class="tok-num">3</span> <span class="tok-punc">*</span> <span class="tok-punc">mt</span> <span class="tok-punc">*</span> <span class="tok-punc">mt</span> <span class="tok-punc">*</span> <span class="tok-punc">t</span> <span class="tok-punc">*</span> <span class="tok-punc">y1</span>   <span class="tok-com">// P1.y=0 term drop ho gaya kyunki 0 hai</span>
+       <span class="tok-punc">+</span> <span class="tok-num">3</span> <span class="tok-punc">*</span> <span class="tok-punc">mt</span> <span class="tok-punc">*</span> <span class="tok-punc">t</span> <span class="tok-punc">*</span> <span class="tok-punc">t</span> <span class="tok-punc">*</span> <span class="tok-punc">y2</span>
+       <span class="tok-punc">+</span> <span class="tok-punc">t</span> <span class="tok-punc">*</span> <span class="tok-punc">t</span> <span class="tok-punc">*</span> <span class="tok-punc">t</span><span class="tok-punc">;</span>              <span class="tok-com">// P4.y=1 term simplify ho gaya (t^3 * 1)</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Curve hamesha apne control points ke <strong>convex hull</strong> ke andar rehta hai, aur
+        control points ko move karne se curve intuitively predictable tareeke se change hota hai — ye
+        property hi bezier curves ko designers/tools (Photoshop pen tool, SVG paths, CSS easing) mein
+        useful banati hai.
+      </p>
+
+      <h2 id="cubic-bezier">cubic-bezier(x1, y1, x2, y2) — control points intuition</h2>
+      <p>
+        CSS ke <code>transition-timing-function</code> aur <code>animation-timing-function</code>
+        <code>cubic-bezier(x1, y1, x2, y2)</code> accept karte hain. Yahan x-axis <strong>time</strong>
+        (0→1, animation ka fraction) hai aur y-axis <strong>progress</strong> (0→1, property ki value
+        kitni complete hui) hai. Fixed points: P1=(0,0) — start, P4=(1,1) — end. Tum sirf P2=(x1,y1) aur
+        P3=(x2,y2) control karte ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Built-in keywords ke underlying cubic-bezier values<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">linear</span><span class="tok-punc">;</span>                            <span class="tok-com">/* == cubic-bezier(0, 0, 1, 1) — constant speed */</span>
+<span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease</span><span class="tok-punc">;</span>                              <span class="tok-com">/* == cubic-bezier(.25, .1, .25, 1) — default, slow-fast-slow */</span>
+<span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease-in</span><span class="tok-punc">;</span>                           <span class="tok-com">/* == cubic-bezier(.42, 0, 1, 1) — slow start, fast finish */</span>
+<span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease-out</span><span class="tok-punc">;</span>                          <span class="tok-com">/* == cubic-bezier(0, 0, .58, 1) — fast start, slow finish */</span>
+<span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease-in-out</span><span class="tok-punc">;</span>                      <span class="tok-com">/* == cubic-bezier(.42, 0, .58, 1) — slow-fast-slow, symmetric */</span>
+<span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">cubic-bezier</span><span class="tok-punc">(</span><span class="tok-num">0.17</span><span class="tok-punc">,</span> <span class="tok-num">0.67</span><span class="tok-punc">,</span> <span class="tok-num">0.83</span><span class="tok-punc">,</span> <span class="tok-num">0.67</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">/* custom "bouncy" feel — y values 0-1 ke bahar bhi ja sakte hain (overshoot) */</span></code></pre>
+      </div>
+      <p>
+        Intuition: <strong>y1</strong> (P2 ka y) batata hai animation start mein kitna "fast progress"
+        ho raha hai — high y1 matlab jaldi progress. <strong>x1</strong> batata hai wo progress <em>kis
+        time</em> pe target hai. Agar <code>y1</code> ya <code>y2</code> ko 1 se zyada ya 0 se kam set
+        karo (jaise <code>cubic-bezier(.68, -0.55, .27, 1.55)</code>), to animation apne final value se
+        <strong>overshoot</strong> kar sakti hai (bounce-back / elastic feel) — kyunki y-axis clamp nahi
+        hai, sirf x-axis (time) 0-1 mein clamp rehta hai.
+      </p>
+
+      <h2 id="css-transition">CSS transition — sabse simple animation</h2>
+      <p>
+        <code>transition</code> ek property change ko instant se smooth banata hai — jab bhi koi CSS
+        property value change hoti hai (hover, class add/remove, JS se style set), browser us change ko
+        transition duration ke over interpolate kar deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">transition shorthand: property duration timing-function delay<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">.</span><span class="tok-fn">box</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">px</span><span class="tok-punc">;</span>                                        <span class="tok-com">/* initial state */</span>
+  <span class="tok-attr">transition-property</span><span class="tok-punc">:</span> <span class="tok-attr">transform</span><span class="tok-punc">,</span> <span class="tok-attr">opacity</span><span class="tok-punc">;</span>       <span class="tok-com">/* sirf ye 2 properties animate hongi, 'all' mat use karo perf ke liye */</span>
+  <span class="tok-attr">transition-duration</span><span class="tok-punc">:</span> <span class="tok-num">0.3</span><span class="tok-punc">s</span><span class="tok-punc">;</span>                             <span class="tok-com">/* 300ms mein complete */</span>
+  <span class="tok-attr">transition-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease-out</span><span class="tok-punc">;</span>              <span class="tok-com">/* speed curve — fast start slow end */</span>
+  <span class="tok-attr">transition-delay</span><span class="tok-punc">:</span> <span class="tok-num">0</span><span class="tok-punc">s</span><span class="tok-punc">;</span>                                <span class="tok-com">/* start hone se pehle wait — yahan 0 */</span>
+<span class="tok-punc">}</span>
+<span class="tok-punc">.</span><span class="tok-fn">box</span><span class="tok-punc">:</span><span class="tok-fn">hover</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">scale</span><span class="tok-punc">(</span><span class="tok-num">1.1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">/* target state — hover pe transition trigger hoga */</span>
+  <span class="tok-attr">opacity</span><span class="tok-punc">:</span> <span class="tok-num">0.8</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">/* Shorthand — sab ek line mein, multiple properties ko comma se separate karo */</span>
+<span class="tok-punc">.</span><span class="tok-fn">card</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">transition</span><span class="tok-punc">:</span> <span class="tok-attr">transform</span> <span class="tok-num">.2</span><span class="tok-punc">s</span> <span class="tok-fn">ease-out</span><span class="tok-punc">,</span> <span class="tok-attr">box-shadow</span> <span class="tok-num">.2</span><span class="tok-punc">s</span> <span class="tok-fn">linear</span> <span class="tok-num">.05</span><span class="tok-punc">s</span><span class="tok-punc">;</span> <span class="tok-com">/* transform 200ms ease-out, box-shadow 200ms linear 50ms delay ke baad */</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        <code>transition-timing-function</code> mein <code>steps(n, start|end)</code> bhi valid hai —
+        continuous curve ki jagah <code>n</code> discrete jumps mein animate karta hai (sprite-sheet
+        animations ke liye useful, jaise ek walking-character sprite ko frame-by-frame flip karna).
+      </p>
+
+      <h2 id="transitionend">transitionend event</h2>
+      <p>
+        Transition complete hone pe <code>transitionend</code> fire hota hai — <strong>har animated
+        property ke liye alag se</strong>, agar shorthand mein multiple properties animate ho rahi hon.
+      </p>
+      <div class="code-block">
+        <div class="code-title">transitionend + JS-triggered transition<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">box</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'.box'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// element reference le liya</span>
+
+<span class="tok-punc">box</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'transitionend'</span><span class="tok-punc">,</span> <span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span> <span class="tok-com">// listener attach kiya</span>
+  <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`${event.propertyName} khatam hua, ${event.elapsedTime}s mein`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-com">// propertyName: kaunsi property finish hui (jaise 'transform', 'opacity')</span>
+  <span class="tok-com">// elapsedTime: seconds mein duration, transition-delay EXCLUDE hoke</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// JS se class add karke transition trigger karna — declarative aur reusable</span>
+<span class="tok-punc">box</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'is-active'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// CSS rule .is-active mein target state hoti hai</span>
+
+<span class="tok-com">// Direct style set karke bhi trigger ho sakta hai — same effect</span>
+<span class="tok-punc">box</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">transform</span> <span class="tok-punc">=</span> <span class="tok-str">'translateX(200px)'</span><span class="tok-punc">;</span>            <span class="tok-com">// browser current -&gt; new value ko animate karega</span></code></pre>
+      </div>
+
+      <h2 id="keyframes">@keyframes + animation-* properties</h2>
+      <p>
+        <code>transition</code> sirf "state A → state B" ek baar animate karta hai. Jab tumhe
+        <strong>multi-step</strong>, <strong>repeating</strong>, ya <strong>independent</strong>
+        (bina kisi trigger ke, page load pe hi shuru) animation chahiye, to <code>@keyframes</code> +
+        <code>animation-*</code> use karo.
+      </p>
+      <div class="code-block">
+        <div class="code-title">@keyframes definition + animation-* properties<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">@</span><span class="tok-fn">keyframes</span> <span class="tok-fn">pulse</span> <span class="tok-punc">{</span>                        <span class="tok-com">/* 'pulse' naam se ek reusable animation define ki */</span>
+  <span class="tok-num">0</span><span class="tok-punc">%</span>   <span class="tok-punc">{</span> <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">scale</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-attr">opacity</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">/* start keyframe */</span>
+  <span class="tok-num">50</span><span class="tok-punc">%</span>  <span class="tok-punc">{</span> <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">scale</span><span class="tok-punc">(</span><span class="tok-num">1.15</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-attr">opacity</span><span class="tok-punc">:</span> <span class="tok-num">.7</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">/* midpoint — halfway state */</span>
+  <span class="tok-num">100</span><span class="tok-punc">%</span> <span class="tok-punc">{</span> <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">scale</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-attr">opacity</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">/* end keyframe, from ka alias 0%/to ka alias 100% */</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">.</span><span class="tok-fn">notif-dot</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">animation-name</span><span class="tok-punc">:</span> <span class="tok-fn">pulse</span><span class="tok-punc">;</span>                    <span class="tok-com">/* @keyframes pulse ko is element pe apply kiya */</span>
+  <span class="tok-attr">animation-duration</span><span class="tok-punc">:</span> <span class="tok-num">1.5</span><span class="tok-punc">s</span><span class="tok-punc">;</span>                <span class="tok-com">/* ek cycle 1.5 second ka */</span>
+  <span class="tok-attr">animation-timing-function</span><span class="tok-punc">:</span> <span class="tok-fn">ease-in-out</span><span class="tok-punc">;</span>  <span class="tok-com">/* speed curve — same bezier semantics */</span>
+  <span class="tok-attr">animation-delay</span><span class="tok-punc">:</span> <span class="tok-num">0</span><span class="tok-punc">s</span><span class="tok-punc">;</span>                    <span class="tok-com">/* start hone se pehle wait */</span>
+  <span class="tok-attr">animation-iteration-count</span><span class="tok-punc">:</span> <span class="tok-fn">infinite</span><span class="tok-punc">;</span>      <span class="tok-com">/* hamesha chalte raho — number bhi de sakte ho e.g. 3 */</span>
+  <span class="tok-attr">animation-direction</span><span class="tok-punc">:</span> <span class="tok-fn">alternate</span><span class="tok-punc">;</span>            <span class="tok-com">/* har iteration ke baad reverse — 0%→100%→0%→100%... */</span>
+  <span class="tok-attr">animation-fill-mode</span><span class="tok-punc">:</span> <span class="tok-fn">both</span><span class="tok-punc">;</span>                  <span class="tok-com">/* animation se pehle/baad bhi keyframe wali value hold rahe */</span>
+  <span class="tok-attr">animation-play-state</span><span class="tok-punc">:</span> <span class="tok-fn">running</span><span class="tok-punc">;</span>              <span class="tok-com">/* JS se 'paused' set kar ke pause/resume control kar sakte ho */</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">/* Shorthand — order: name duration timing-function delay iteration-count direction fill-mode */</span>
+<span class="tok-punc">.</span><span class="tok-fn">notif-dot</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">animation</span><span class="tok-punc">:</span> <span class="tok-fn">pulse</span> <span class="tok-num">1.5</span><span class="tok-punc">s</span> <span class="tok-fn">ease-in-out</span> <span class="tok-num">0</span><span class="tok-punc">s</span> <span class="tok-fn">infinite</span> <span class="tok-fn">alternate</span> <span class="tok-fn">both</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <h2 id="animationend">animationend event</h2>
+      <div class="code-block">
+        <div class="code-title">animationend — pause/resume via JS<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">dot</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'.notif-dot'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// element pakda</span>
+
+<span class="tok-punc">dot</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'animationend'</span><span class="tok-punc">,</span> <span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>    <span class="tok-com">// sirf non-infinite animations pe fire hoga</span>
+  <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">.</span><span class="tok-fn">animationName</span><span class="tok-punc">,</span> <span class="tok-punc">e</span><span class="tok-punc">.</span><span class="tok-fn">elapsedTime</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// kaunsa @keyframes naam, kitna time laga</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// pause/resume — animation-play-state ko JS se toggle karna</span>
+<span class="tok-punc">dot</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'click'</span><span class="tok-punc">,</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">running</span> <span class="tok-punc">=</span> <span class="tok-punc">getComputedStyle</span><span class="tok-punc">(</span><span class="tok-punc">dot</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">animationPlayState</span> <span class="tok-punc">===</span> <span class="tok-str">'running'</span><span class="tok-punc">;</span> <span class="tok-com">// current state check</span>
+  <span class="tok-punc">dot</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">animationPlayState</span> <span class="tok-punc">=</span> <span class="tok-punc">running</span> <span class="tok-punc">?</span> <span class="tok-str">'paused'</span> <span class="tok-punc">:</span> <span class="tok-str">'running'</span><span class="tok-punc">;</span> <span class="tok-com">// toggle</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <h2 id="compositor">Root cause: compositor thread vs layout thrash</h2>
+      <p>
+        Browser render pipeline 3 broad stages mein chalta hai: <strong>Layout</strong> (geometry —
+        element kahan hai, kitna bada hai), <strong>Paint</strong> (pixels — colors, shadows, text),
+        aur <strong>Composite</strong> (final layers ko screen pe assemble karna, GPU ka kaam). Jab tum
+        <code>width</code>, <code>left</code>, <code>top</code>, <code>margin</code> jaisi properties
+        animate karte ho, browser ko <strong>har single frame</strong> pe Layout se dobara chalna padta
+        hai (kyunki geometry badli), phir Paint, phir Composite — teeno stages, 60 baar per second.
+      </p>
+      <p>
+        Lekin <code>transform</code> (translate/scale/rotate) aur <code>opacity</code> animate karne pe,
+        browser Layout aur Paint <strong>dono skip</strong> kar sakta hai — element ka pehle se painted
+        pixel-layer GPU pe already exist karta hai, aur transform/opacity sirf us layer ko move/blend
+        karne ka instruction hai. Ye kaam <strong>compositor thread</strong> pe hota hai — jo main JS
+        thread se independent hai — isliye main thread busy hone par bhi (heavy JS chal rahi ho) ye
+        animation smooth chalti rehti hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: sirf transform/opacity 60fps ke liye reliable hain</div>
+        <p>
+          Production mein agar tumhe consistently 60fps animation chahiye (khaaskar mobile pe), to sirf
+          <code>transform</code> aur <code>opacity</code> animate karo — inhe "compositor-only
+          properties" kehte hain. Position ke liye <code>left/top</code> ki jagah
+          <code>transform: translate(x, y)</code> use karo, size ke liye <code>width/height</code> ki
+          jagah <code>transform: scale()</code>. Agar kisi wajah se layout property animate karna hi
+          padhe, to <code>will-change: transform</code> jaisi hints se browser ko pehle se element ka
+          alag compositor layer banane ka signal de sakte ho — lekin overuse se memory bloat hota hai
+          (har <code>will-change</code> layer GPU memory leta hai), so sirf actively-animating elements
+          pe hi lagao, aur animation khatam hone pe hata do.
+        </p>
+      </div>
+
+      <h2 id="raf">requestAnimationFrame — sahi tareeka</h2>
+      <p>
+        JS-driven animation (jo CSS se possible nahi — complex paths, physics, multiple interdependent
+        properties) ke liye purana approach <code>setInterval(fn, 16)</code> tha (16ms ≈ 60fps). Ye
+        <strong>galat</strong> approach hai, kai reasons se.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ setInterval animation ke liye kabhi mat use karo</div>
+        <p>
+          (1) <strong>Timing precision</strong>: <code>setInterval</code> ka delay display refresh rate
+          se sync nahi hota — browser ka repaint cycle apni jagah chalta hai, aur agar tumhara interval
+          us cycle ke beech mein fire hua, to us frame ka kaam wasted hai (agla repaint tab tak wait
+          karega). (2) <strong>Multiple animations</strong> = multiple independent timers, jinhe browser
+          ek saath group nahi kar pata — result: zyada layout/paint cycles, zyada CPU. (3) <strong>Background
+          tabs</strong>: tab hidden hone par bhi <code>setInterval</code> chalta rehta hai (throttle hota
+          hai ~1s tak, but band nahi hota) — battery aur CPU waste. <code>requestAnimationFrame</code> in
+          teeno problems ko root se fix karta hai: callback browser ke <strong>agle actual repaint</strong>
+          se pehle exactly ek baar fire hota hai, saare rAF callbacks ek hi frame mein batch hote hain,
+          aur tab hidden hone par rAF <strong>automatically pause</strong> ho jaata hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">requestAnimationFrame — basic syntax<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">requestId</span><span class="tok-punc">;</span>                                    <span class="tok-com">// id store karenge cancel karne ke liye</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">step</span><span class="tok-punc">(</span><span class="tok-punc">timestamp</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                       <span class="tok-com">// browser ye function call karta hai, arg = high-res timestamp (ms)</span>
+  <span class="tok-punc">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">timestamp</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                        <span class="tok-com">// performance.now() jaisa hi origin (page load se ms)</span>
+  <span class="tok-punc">requestId</span> <span class="tok-punc">=</span> <span class="tok-punc">requestAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">step</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// agle repaint ke liye khud ko dobara schedule karo — loop banaya</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">requestId</span> <span class="tok-punc">=</span> <span class="tok-punc">requestAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">step</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// pehli baar schedule kiya, loop shuru</span>
+
+<span class="tok-com">// rok-na ho to:</span>
+<span class="tok-punc">cancelAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">requestId</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// pending callback cancel — clearInterval jaisa hi concept</span></code></pre>
+      </div>
+
+      <h2 id="animate-helper">Generic animate() helper function</h2>
+      <p>
+        Har baar manually rAF loop likhna repetitive hai. Ek reusable <code>animate()</code> helper
+        banate hain jo teen cheezein leta hai — <code>duration</code> (kitni der), <code>timing</code>
+        (progress curve function, wahi jo hum bezier se seekh chuke), aur <code>draw</code> (actual DOM
+        ko update karne wala function, jise sirf progress value pata hona chahiye).
+      </p>
+      <div class="code-block">
+        <div class="code-title">animate({duration, timing, draw}) helper<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">animate</span><span class="tok-punc">(</span><span class="tok-punc">{</span><span class="tok-punc">duration</span><span class="tok-punc">,</span> <span class="tok-punc">timing</span><span class="tok-punc">,</span> <span class="tok-punc">draw</span><span class="tok-punc">}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// destructured options object leta hai — readable call-site ke liye</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">start</span> <span class="tok-punc">=</span> <span class="tok-punc">performance</span><span class="tok-punc">.</span><span class="tok-fn">now</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// high-resolution start timestamp (sub-millisecond precision)</span>
+
+  <span class="tok-kw">function</span> <span class="tok-fn">tick</span><span class="tok-punc">(</span><span class="tok-punc">time</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                          <span class="tok-com">// rAF callback — time bhi high-res timestamp hai</span>
+    <span class="tok-kw">let</span> <span class="tok-punc">timeFraction</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">time</span> <span class="tok-punc">-</span> <span class="tok-punc">start</span><span class="tok-punc">)</span> <span class="tok-punc">/</span> <span class="tok-punc">duration</span><span class="tok-punc">;</span> <span class="tok-com">// abhi tak kitna fraction time beeta (0 se shuru, badhta hua)</span>
+
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">timeFraction</span> <span class="tok-punc">&gt;</span> <span class="tok-num">1</span><span class="tok-punc">)</span> <span class="tok-punc">timeFraction</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-com">// clamp — last frame duration se thoda over-shoot ho sakta hai, cap laga do</span>
+
+    <span class="tok-kw">const</span> <span class="tok-punc">progress</span> <span class="tok-punc">=</span> <span class="tok-punc">timing</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// time-fraction ko easing curve se guzaar ke "visual progress" banaya</span>
+
+    <span class="tok-punc">draw</span><span class="tok-punc">(</span><span class="tok-punc">progress</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                             <span class="tok-com">// caller ka draw function — DOM update yahin hota hai</span>
+
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">timeFraction</span> <span class="tok-punc">&lt;</span> <span class="tok-num">1</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// abhi khatam nahi hua</span>
+      <span class="tok-punc">requestAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">tick</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// agle frame ke liye khud ko phir schedule karo</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-punc">requestAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">tick</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                     <span class="tok-com">// loop kickstart karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Ab timing functions — inhi ka bezier-jaisa role hai, bas hum inhe raw JS math se likh rahe hain
+        instead of CSS cubic-bezier() string:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Timing functions + ease-out wrapper<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">linear</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">timeFraction</span><span class="tok-punc">;</span>                     <span class="tok-com">// progress == time, constant speed — CSS ke linear jaisa</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">quad</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">pow</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// t^2 — start mein slow, end mein fast (ease-in jaisa feel)</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">circ</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-num">1</span> <span class="tok-punc">-</span> <span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">sin</span><span class="tok-punc">(</span><span class="tok-punc">Math</span><span class="tok-punc">.</span><span class="tok-fn">acos</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// circle-arc based curve — dramatic slow start</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">makeEaseOut</span><span class="tok-punc">(</span><span class="tok-punc">timing</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// koi bhi "ease-in-style" function le ke "ease-out" bana deta hai</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-num">1</span> <span class="tok-punc">-</span> <span class="tok-punc">timing</span><span class="tok-punc">(</span><span class="tok-num">1</span> <span class="tok-punc">-</span> <span class="tok-punc">timeFraction</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// time ko reverse karo, result ko reverse karo — mirror trick</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">quadEaseOut</span> <span class="tok-punc">=</span> <span class="tok-punc">makeEaseOut</span><span class="tok-punc">(</span><span class="tok-punc">quad</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// ab fast-start slow-end wala quad ban gaya</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Real usage: circle grow + moving ball with ease-out</div>
+        <pre><code><span class="tok-com">// Example 1: ek circle ko smoothly grow karna width % ke through</span>
+<span class="tok-kw">const</span> <span class="tok-punc">circle</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'.circle'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// target element</span>
+
+<span class="tok-punc">animate</span><span class="tok-punc">(</span><span class="tok-punc">{</span>
+  <span class="tok-punc">duration</span><span class="tok-punc">:</span> <span class="tok-num">1000</span><span class="tok-punc">,</span>                                 <span class="tok-com">// 1 second</span>
+  <span class="tok-punc">timing</span><span class="tok-punc">(</span><span class="tok-punc">timeFraction</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">return</span> <span class="tok-punc">timeFraction</span><span class="tok-punc">;</span> <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// linear — inline shorthand method syntax</span>
+  <span class="tok-punc">draw</span><span class="tok-punc">(</span><span class="tok-punc">progress</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// GPU-friendly: transform: scale() use kiya, width NAHI (layout thrash se bachne ke liye)</span>
+    <span class="tok-punc">circle</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">transform</span> <span class="tok-punc">=</span> <span class="tok-str">`scale(${progress})`</span><span class="tok-punc">;</span> <span class="tok-com">// 0 se 1 tak scale badha</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Example 2: ek ball ko horizontally move karna, ease-out feel ke saath</span>
+<span class="tok-kw">const</span> <span class="tok-punc">ball</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'.ball'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// target element</span>
+<span class="tok-kw">const</span> <span class="tok-punc">distance</span> <span class="tok-punc">=</span> <span class="tok-num">500</span><span class="tok-punc">;</span>                             <span class="tok-com">// total pixels move karni hai</span>
+
+<span class="tok-punc">animate</span><span class="tok-punc">(</span><span class="tok-punc">{</span>
+  <span class="tok-punc">duration</span><span class="tok-punc">:</span> <span class="tok-num">2000</span><span class="tok-punc">,</span>                                 <span class="tok-com">// 2 seconds</span>
+  <span class="tok-punc">timing</span><span class="tok-punc">:</span> <span class="tok-punc">quadEaseOut</span><span class="tok-punc">,</span>                        <span class="tok-com">// upar wala wrapped function reference</span>
+  <span class="tok-punc">draw</span><span class="tok-punc">(</span><span class="tok-punc">progress</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// left ki jagah translateX — compositor thread pe chalega, reflow nahi hoga</span>
+    <span class="tok-punc">ball</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">transform</span> <span class="tok-punc">=</span> <span class="tok-str">`translateX(${progress * distance}px)`</span><span class="tok-punc">;</span> <span class="tok-com">// 0 se 500px tak</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Notice karo: <code>draw</code> function mein hamesha <code>transform</code> use kiya, kabhi
+        <code>width</code> ya <code>left</code> nahi — ye wahi compositor-only-property principle hai jo
+        upar CSS section mein discuss kiya, JS animation pe bhi equally apply hota hai kyunki dono ka
+        rendering pipeline same hai.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Bezier curve</strong> control points se banti hai; CSS <code>cubic-bezier(x1,y1,x2,y2)</code> mein sirf P2, P3 tum control karte ho — P1=(0,0), P4=(1,1) fixed hain.</li>
+        <li>Built-in keywords (<code>ease</code>, <code>ease-in</code>, <code>ease-out</code>, <code>ease-in-out</code>, <code>linear</code>) sab pre-defined cubic-bezier values hain.</li>
+        <li><strong>transition</strong> = ek-baar ka state-change animation (trigger-based); <strong>@keyframes + animation</strong> = multi-step, repeating, self-starting animation.</li>
+        <li><code>transitionend</code>/<code>animationend</code> events har animated property/animation ke complete hone pe fire hote hain — <code>propertyName</code>/<code>animationName</code> aur <code>elapsedTime</code> milte hain.</li>
+        <li><strong>Root cause</strong>: <code>transform</code>/<code>opacity</code> compositor thread pe GPU-accelerated chalte hain (Layout+Paint skip); <code>width/left/margin</code> jaisi geometry properties har frame Layout trigger karti hain — reflow ka perf cost.</li>
+        <li><strong>setInterval kabhi mat use karo animation ke liye</strong> — timing imprecise hai, multiple timers batch nahi hote, aur background tab mein bhi chalta rehta hai. <code>requestAnimationFrame</code> in teeno ko fix karta hai.</li>
+        <li>Generic <code>animate({duration, timing, draw})</code> helper — <code>timing</code> function progress-curve deta hai (bezier ka JS equivalent), <code>draw</code> DOM update karta hai, sab kuch rAF loop ke andar.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>cubic-bezier(x1,y1,x2,y2) mein 4 control points kyun nahi likhte, sirf 4 numbers?</strong><br>Hint: P1=(0,0) aur P4=(1,1) spec-fixed hain (animation hamesha 0% se 100% tak jaati hai) — sirf P2=(x1,y1) aur P3=(x2,y2) hi variable hain.</li>
+        <li><strong>transform/opacity animate karna width/left animate karne se fast kyun hai — root mechanism batao.</strong><br>Hint: transform/opacity compositor thread pe GPU layers ke through handle hote hain (Layout+Paint skip); width/left geometry change karte hain, jisse browser har frame pe Layout (reflow) + Paint + Composite teeno dobara chalata hai.</li>
+        <li><strong>setInterval se animation karne mein kya-kya galat ho sakta hai?</strong><br>Hint: display refresh rate se sync nahi hota (dropped/misaligned frames), multiple timers batch nahi hote (extra layout/paint), background tab mein throttle hoke bhi chalta rehta hai (CPU/battery waste).</li>
+        <li><strong>requestAnimationFrame tab-hidden hone par kya karta hai, aur ye kyun important hai?</strong><br>Hint: browser automatically rAF callbacks ko pause kar deta hai jab tab visible nahi hota — CPU/battery save hota hai, setInterval ke against ek core advantage.</li>
+        <li><strong>animate() helper mein timeFraction ko clamp (Math.min(1, ...)) karna kyun zaroori hai?</strong><br>Hint: rAF callback ka exact timestamp duration ko thoda overshoot kar sakta hai (frame boundaries align nahi hoti); bina clamp ke timing/draw function 1 se bade progress values dekh sakte hain jo unexpected visual glitch de sakta hai.</li>
+        <li><strong>transition aur @keyframes animation mein kab kya use karoge?</strong><br>Hint: transition = simple state-A-to-state-B, trigger-based (hover, class toggle); @keyframes = multi-step/repeating/self-starting animations jo bina external trigger ke bhi chal sakti hain.</li>
+        <li><strong>makeEaseOut wrapper function kaise kaam karta hai, "mirror trick" samjhao.</strong><br>Hint: <code>1 - timing(1 - timeFraction)</code> — time-axis ko reverse karke original (ease-in-style) function ko call karta hai, phir result ko bhi reverse karta hai; ye geometrically curve ko horizontally+vertically flip kar deta hai, jisse slow-start curve slow-end ban jaati hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="28-storing-data-browser.html">
+        <div class="label">← Previous</div>
+        <div class="title">Storing Data in Browser</div>
+      </a>
+      <a class="next" href="30-web-components-1.html">
+        <div class="label">Next →</div>
+        <div class="title">Web Components I</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Performance Handbook — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link active" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs</div>
+      <div class="progress-pill">13 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Performance · Core Web Vitals · Loading</span>
+      <h1>Web Performance Handbook</h1>
+      <p class="subtitle">
+        Ye handbook Google ke <a href="https://web.dev/learn/performance/welcome" target="_blank" rel="noopener">web.dev
+        "Learn Performance"</a> course ka full, root-level Hinglish adaptation hai — real code examples,
+        senior-level "kyun/kaise andar se kaam karta hai" explanations, aur practical before/after
+        optimizations ke saath.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Is course ka structure</div>
+        <p>
+          Ye 13 chapters web.dev ke Learn Performance course ke modules 2-14 ko follow karte hain
+          (module 1 "Welcome" sirf ek intro tha, wo is home page mein already cover ho chuka hai).
+          Course HTML parsing se shuru hokar, critical rendering path, resources (CSS/JS/images/videos/fonts),
+          code-splitting, lazy loading, prefetch/prerender/precache, aur end mein Web Workers tak jaata hai —
+          yaani <strong>network se leke main thread tak</strong> ka poora performance story.
+        </p>
+      </div>
+
+      <h2 style="border-top:none; padding-top:0; margin-top:32px;">Available Chapters</h2>
+      <div class="grid">
+
+        <a class="card" href="01-why-speed-matters.html">
+          <div class="card-num">1</div>
+          <h3>Why Speed Matters</h3>
+          <p>Performance sirf engineering nahi, business metric hai — conversion, bounce rate, SEO ranking sab connected hain.</p>
+          <div class="topics"><span>Business Impact</span><span>Core Web Vitals Intro</span><span>SEO</span></div>
+        </a>
+
+        <a class="card" href="02-html-performance.html">
+          <div class="card-num">2</div>
+          <h3>General HTML Performance</h3>
+          <p>HTML caching, parser-blocking vs render-blocking resources, document ka pehla byte kitna matter karta hai.</p>
+          <div class="topics"><span>Caching</span><span>Parser Blocking</span><span>Render Blocking</span></div>
+        </a>
+
+        <a class="card" href="03-critical-rendering-path.html">
+          <div class="card-num">3</div>
+          <h3>Critical Rendering Path</h3>
+          <p>DOM → CSSOM → Render Tree → Layout → Paint pipeline ka andar ka mechanism, step by step.</p>
+          <div class="topics"><span>DOM</span><span>CSSOM</span><span>Layout</span><span>Paint</span></div>
+        </a>
+
+        <a class="card" href="04-resource-loading.html">
+          <div class="card-num">4</div>
+          <h3>Optimize Resource Loading</h3>
+          <p>CSS/JS ko async, defer, module kaise load karein taaki critical path block na ho.</p>
+          <div class="topics"><span>async/defer</span><span>Critical CSS</span><span>Bundle Size</span></div>
+        </a>
+
+        <a class="card" href="05-resource-hints.html">
+          <div class="card-num">5</div>
+          <h3>Resource Hints</h3>
+          <p>preconnect, dns-prefetch, preload, prefetch — browser ko time se pehle hint dena.</p>
+          <div class="topics"><span>preload</span><span>preconnect</span><span>dns-prefetch</span></div>
+        </a>
+
+        <a class="card" href="06-image-performance.html">
+          <div class="card-num">6</div>
+          <h3>Image Performance</h3>
+          <p>Modern formats (AVIF/WebP), responsive srcset/sizes, CDN transforms, native lazy loading.</p>
+          <div class="topics"><span>AVIF/WebP</span><span>srcset</span><span>loading="lazy"</span></div>
+        </a>
+
+        <a class="card" href="07-video-performance.html">
+          <div class="card-num">7</div>
+          <h3>Video Performance</h3>
+          <p>Autoplay GIF-replacement pattern, preload attribute, poster images, adaptive streaming basics.</p>
+          <div class="topics"><span>video vs gif</span><span>preload</span><span>poster</span></div>
+        </a>
+
+        <a class="card" href="08-web-fonts.html">
+          <div class="card-num">8</div>
+          <h3>Optimize Web Fonts</h3>
+          <p>font-display, subsetting, variable fonts, FOIT vs FOUT, self-hosting vs Google Fonts.</p>
+          <div class="topics"><span>font-display</span><span>Variable Fonts</span><span>FOIT/FOUT</span></div>
+        </a>
+
+        <a class="card" href="09-code-splitting.html">
+          <div class="card-num">9</div>
+          <h3>Code-split JavaScript</h3>
+          <p>Route-based aur component-based splitting, dynamic import(), bundle analysis.</p>
+          <div class="topics"><span>Dynamic import()</span><span>React.lazy</span><span>Route Splitting</span></div>
+        </a>
+
+        <a class="card" href="10-lazy-loading.html">
+          <div class="card-num">10</div>
+          <h3>Lazy Load Images/iframes</h3>
+          <p>Native loading="lazy", Intersection Observer se custom lazy loading, third-party embeds.</p>
+          <div class="topics"><span>Intersection Observer</span><span>loading="lazy"</span></div>
+        </a>
+
+        <a class="card" href="11-prefetch-prerender-precache.html">
+          <div class="card-num">11</div>
+          <h3>Prefetch/Prerender/Precache</h3>
+          <p>Speculative loading strategies aur Service Worker precaching — next navigation ko instant banana.</p>
+          <div class="topics"><span>Speculation Rules</span><span>Service Worker</span><span>Precaching</span></div>
+        </a>
+
+        <a class="card" href="12-web-workers-overview.html">
+          <div class="card-num">12</div>
+          <h3>Web Workers — Overview</h3>
+          <p>Main thread ko free rakhna — Web Worker API, postMessage, structured clone, use cases.</p>
+          <div class="topics"><span>Web Worker API</span><span>postMessage</span><span>Main Thread</span></div>
+        </a>
+
+        <a class="card" href="13-web-workers-demo.html">
+          <div class="card-num">13</div>
+          <h3>Web Workers — Real Use Case</h3>
+          <p>End-to-end demo: JPEG metadata parsing ko worker mein offload karna, poore code ke saath.</p>
+          <div class="topics"><span>EXIF Parsing</span><span>Worker Demo</span><span>Practical Example</span></div>
+        </a>
+
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Har chapter mein kya milega</div>
+        <p>
+          Concept ka root-level "kyun/andar se kaise" explanation, ek before/after real code example
+          (har line commented — copy-paste karke seekh sakte ho), ek "Senior Dev Note" callout jisme
+          production gotchas hain, aur measurement tips (Lighthouse/Chrome DevTools/PageSpeed Insights se
+          kaise verify karein ki optimization kaam kar raha hai).
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

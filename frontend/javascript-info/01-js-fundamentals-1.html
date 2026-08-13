@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Fundamentals I — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link active" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 1</div>
+      <div class="progress-pill">1 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JavaScript · Language · Root-Level</span>
+      <h1>JS Fundamentals I</h1>
+      <p class="subtitle">
+        Engine ke andar kya hota hai, script tag kaise kaam karta hai, semicolons kyun important hain,
+        strict mode se semantics kaise badalte hain, aur variables/types/type-conversion ka root-level
+        mental model — sab kuch ek jagah, senior-dev depth ke saath.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#what-is-js">JavaScript kya hai, engines andar se kaise kaam karte hain</a></li>
+          <li><a href="#hello-world">Hello World — script tag ki anatomy</a></li>
+          <li><a href="#structure">Code structure — statements, semicolons, comments</a></li>
+          <li><a href="#strict-mode">"use strict" — semantics kaise badalte hain</a></li>
+          <li><a href="#variables">Variables — let/const/var, naming, hoisting preview</a></li>
+          <li><a href="#types">8 Data Types aur typeof ke quirks</a></li>
+          <li><a href="#dialogs">Browser dialogs — alert/prompt/confirm</a></li>
+          <li><a href="#type-conversion">Type Conversion — implicit vs explicit rules</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="what-is-js">JavaScript kya hai — engines andar se kaise kaam karte hain</h2>
+      <p>
+        JavaScript originally banaya gaya tha web pages ko "alive" banane ke liye — HTML ke andar embed
+        hone wale scripts jo page load hote hi automatically execute ho jaate. Naam marketing gimmick
+        tha (Java tab popular tha), lekin language ka actual spec hai <strong>ECMAScript</strong> — Java
+        se koi runtime relation nahi hai. Aaj JavaScript sirf browser tak limited nahi — Node.js jaise
+        runtimes ke through server pe bhi chalta hai, kyunki koi bhi environment jisme
+        <strong>JS engine</strong> embed hai, JS run kar sakta hai.
+      </p>
+      <p>
+        Har browser vendor apna alag engine maintain karta hai: Chrome/Edge/Opera mein <strong>V8</strong>,
+        Firefox mein <strong>SpiderMonkey</strong>, Safari mein <strong>JavaScriptCore (Nitro)</strong>.
+        Root-level pe engine teen phases mein kaam karta hai:
+      </p>
+      <ol>
+        <li><strong>Parse</strong> — source code ko tokens mein todke ek Abstract Syntax Tree (AST) banaya jaata hai.</li>
+        <li><strong>Compile</strong> — AST ko machine code mein convert kiya jaata hai (JIT — Just-In-Time compilation).</li>
+        <li><strong>Execute + Optimize</strong> — machine code run hota hai, aur engine runtime data flow ko observe karke code ko baar-baar re-optimize karta rehta hai (hot paths ko further specialize karta hai).</li>
+      </ol>
+      <p>
+        Yani JS na purely "interpreted" hai na purely "compiled" — modern engines dono ka hybrid use
+        karte hain (interpret first for fast startup, phir JIT-compile hot code paths ko speed ke liye).
+        Isi wajah se same function baar-baar call hone pe progressively fast hoti jaati hai.
+      </p>
+
+      <p>
+        In-browser JavaScript kya kar sakta hai: HTML content/styles modify karna, user events (click,
+        keypress, mouse move) handle karna, AJAX/network calls, cookies aur local storage manage karna,
+        files download/upload karna. Lekin security ke liye kuch cheezein <strong>deliberately</strong>
+        restrict hain — disk pe arbitrary files access nahi kar sakta, OS functions call nahi kar sakta,
+        camera/mic bina explicit permission ke access nahi kar sakta, aur <strong>Same-Origin Policy</strong>
+        ke wajah se ek origin ki tab dusre origin (alag domain/port/protocol) ke data ko directly touch
+        nahi kar sakti.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Languages "over" JavaScript</div>
+        <p>
+          TypeScript (strict typing, Microsoft), CoffeeScript (syntactic sugar), Dart (Google, apna engine
+          bhi hai), Flow (Facebook) — ye sab languages hain jo <strong>transpile</strong> hoke JavaScript
+          ban jaati hain browser mein run hone se pehle. Inhe use karte waqt bhi underlying JS samajhna
+          zaroori hai — kyunki transpiled output hi actually engine run karta hai.
+        </p>
+      </div>
+
+      <h2 id="hello-world">Hello World — <code>&lt;script&gt;</code> tag ki anatomy</h2>
+      <p>
+        JavaScript HTML document mein almost kahin bhi <code>&lt;script&gt;</code> tag ke through
+        insert ho sakta hai. Browser jaise hi is tag tak pahunchta hai, andar ka code automatically
+        execute karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Basic HTML page with inline script<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!</span><span class="tok-tag">DOCTYPE</span> <span class="tok-tag">HTML</span><span class="tok-punc">&gt;</span>                     <span class="tok-com">&lt;!-- doctype: browser ko batata hai ki HTML5 standards mode use karo --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span>                            <span class="tok-com">&lt;!-- root element: poora document isi ke andar --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>                            <span class="tok-com">&lt;!-- visible content yahan se shuru hota hai --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>Before script<span class="tok-punc">&lt;/</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>          <span class="tok-com">&lt;!-- ye paragraph script se PEHLE render hoga (top-to-bottom parsing) --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>                        <span class="tok-com">&lt;!-- script tag: JS code yahan ya src attribute se load hota hai --&gt;</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'Hello, world!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// browser parser yahan pahunchte hi ye line turant execute karta hai</span>
+  <span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>After script<span class="tok-punc">&lt;/</span><span class="tok-tag">p</span><span class="tok-punc">&gt;</span>           <span class="tok-com">&lt;!-- ye paragraph tab tak render nahi hoga jab tak alert() dismiss na ho --&gt;</span>
+
+<span class="tok-punc">&lt;/</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Purane HTML4-era code mein <code>type="text/javascript"</code> ya <code>language="javascript"</code>
+        attributes milte the — dono aaj obsolete hain, modern HTML mein JavaScript default hai, likhna
+        zaroori nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">External script — src attribute<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- Bade codebases ke liye alag .js file use karo, inline nahi --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"/path/to/script.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+                                     <span class="tok-com">&lt;!-- src: file ka absolute/relative path, browser ise separately fetch karta hai --&gt;</span>
+
+<span class="tok-punc">&lt;!-- INVALID: ek hi tag mein src AND inline code dono nahi ho sakte --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"file.js"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// src ho to ye inline code SILENTLY ignore ho jaata hai</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        External script use karne ka root-level fayda: <strong>browser caching</strong>. Ek baar
+        <code>/path/to/script.js</code> download ho gaya, to same URL wale sab pages usi cached copy ko
+        reuse karte hain — bandwidth aur load-time dono bachte hain.
+      </p>
+
+      <h2 id="structure">Code structure — statements, semicolons, comments</h2>
+      <p>
+        <strong>Statements</strong> syntax constructs hain jo actions perform karte hain (jaise
+        <code>alert(...)</code> ek call statement hai). Convention hai unhe readability ke liye alag
+        lines pe likhna, semicolon se terminate karke.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Semicolons — Automatic Semicolon Insertion (ASI) ka gotcha<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">)</span>          <span class="tok-com">// semicolon nahi hai, phir bhi engine newline dekh ke ASI trigger karta hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"World"</span><span class="tok-punc">)</span>          <span class="tok-com">// ye bhi apne aap terminate ho jaata hai — usually safe</span>
+
+<span class="tok-com">// LEKIN — square bracket ke pehle ASI FAIL karta hai:</span>
+<span class="tok-kw">let</span> a <span class="tok-punc">=</span> <span class="tok-num">3</span>                <span class="tok-com">// semicolon missing</span>
+<span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">]</span>.<span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-fn">alert</span><span class="tok-punc">)</span>  <span class="tok-com">// engine isko "3[1, 2].forEach(alert)" padhta hai — ERROR!</span>
+<span class="tok-com">// root cause: JS ko pata nahi ki previous statement khatam hua ya "3" ko index kiya ja raha hai</span>
+
+<span class="tok-com">// SAFE fix: explicit semicolons hamesha likho — beginners ke liye best practice</span>
+<span class="tok-kw">let</span> b <span class="tok-punc">=</span> <span class="tok-num">3</span><span class="tok-punc">;</span>               <span class="tok-com">// explicit semicolon — ambiguity khatam</span>
+<span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">]</span>.<span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-fn">alert</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab ye clearly ek naya independent statement hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Root cause: ASI kaam kaise karta hai</div>
+        <p>
+          JS parser ek line ke end pe dekhta hai ki agar semicolon na daalein to syntax error aayega ya
+          nahi — agar error aata hai, to wo automatically semicolon insert kar deta hai. Lekin
+          <code>[...]</code> (indexing syntax bhi ho sakta hai) aur <code>(...)</code> (function call
+          syntax bhi ho sakta hai) jaise ambiguous cases mein parser next line ko current statement ka hi
+          continuation maan leta hai — kyunki syntactically dono valid interpretations hain. Isliye
+          production codebases mein linters (ESLint) ya explicit semicolons se ye class of bug hamesha ke
+          liye avoid kiya jaata hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Comments — single-line, multi-line, aur ek trap<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Single-line comment — is line ke end tak sab ignore</span>
+<span class="tok-kw">let</span> x <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>                <span class="tok-com">// inline comment bhi chal sakta hai statement ke baad</span>
+
+<span class="tok-com">/* Multi-line comment
+   ye jitni bhi lines cover kare, sab ignore ho jaayengi
+   jab tak closing */</span>
+<span class="tok-kw">let</span> y <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span>
+
+<span class="tok-com">/* NESTED comments FAIL:
+   /* ye andar wala comment */</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'World'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">/* ye extra */</span>
+<span class="tok-com">// root cause: pehla "*/" hi poore multi-line comment ko close kar deta hai,</span>
+<span class="tok-com">// baaki text ko engine normal code samajhne ki koshish karta hai — syntax error</span></code></pre>
+      </div>
+      <p>
+        Comments runtime pe koi cost nahi lagate — production build tools (minifiers) inhe strip kar
+        dete hain deploy se pehle, isliye liberally comment karna free hai.
+      </p>
+
+      <h2 id="strict-mode">"use strict" — semantics kaise badalte hain</h2>
+      <p>
+        ES5 (2009) mein language mein naye features add hue, lekin backward compatibility todhne se
+        bachne ke liye purana behavior default rakha gaya. <code>"use strict"</code> directive explicitly
+        opt-in karta hai modern, stricter semantics mein.
+      </p>
+      <div class="code-block">
+        <div class="code-title">"use strict" placement — TOP par hona zaroori hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-str">"use strict"</span><span class="tok-punc">;</span>              <span class="tok-com">// script ke bilkul top pe — sirf comments ise precede kar sakte hain</span>
+
+<span class="tok-kw">let</span> num <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>          <span class="tok-com">// is line se aage poora script strict mode mein chalega</span>
+
+<span class="tok-com">// GALAT placement — strict mode ENABLE hi nahi hoga:</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"some code"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// koi bhi real statement pehle aa gaya</span>
+<span class="tok-str">"use strict"</span><span class="tok-punc">;</span>              <span class="tok-com">// ye ab sirf ek harmless string literal hai, directive nahi</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Function-scoped strict mode<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">strictFn</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-str">"use strict"</span><span class="tok-punc">;</span>            <span class="tok-com">// sirf isi function ke andar strict mode active hoga</span>
+  <span class="tok-kw">let</span> local <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>       <span class="tok-com">// local variable, strict semantics ke saath</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// yahan bahar strict mode nahi hai (jab tak file-level directive na ho)</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Console gotcha</div>
+        <p>
+          Browser DevTools console mein <code>"use strict"</code> pehli line pe likhna by default kaam
+          nahi karta kyunki console default non-strict mode mein run hota hai. Fix: Shift+Enter se
+          multi-line mode mein directive ko top pe rakho, ya poore code ko ek IIFE
+          (<code>(function(){ "use strict"; ... })()</code>) ke andar wrap karo.
+        </p>
+      </div>
+
+      <p>
+        Important: strict mode ek baar activate hone ke baad <strong>disable nahi ho sakta</strong> — koi
+        opposite directive exist nahi karta. Modern JS mein <code>class</code> aur ES <code>module</code>
+        syntax automatically strict mode use karte hain, isliye unke saath directive likhna zaroori nahi.
+        Lekin jab tak tum classes/modules exclusively use nahi kar rahe, top pe explicitly likhna hi safe
+        default hai.
+      </p>
+
+      <h2 id="variables">Variables — let/const/var, naming, aur ek hoisting preview</h2>
+      <p>
+        Modern JS mein variable declare karne ka default tareeka <code>let</code> hai. <code>const</code>
+        same hai lekin reassignment allow nahi karta. <code>var</code> legacy keyword hai jiske scoping
+        rules <code>let</code> se different hain (function-scoped vs block-scoped) — full detail Chapter 9
+        (Advanced Functions) mein milega, lekin abhi ke liye samajh lo ki <code>var</code> declarations
+        apne function ke top pe "hoist" ho jaati hain (declaration upar chali jaati hai, assignment wahin
+        rehta hai) — isi wajah se purana code mein var use se pehle bhi accessible dikh sakta hai (value
+        <code>undefined</code> ke saath).
+      </p>
+      <div class="code-block">
+        <div class="code-title">let vs const vs var — naming rules ke saath<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> userName <span class="tok-punc">=</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">;</span>     <span class="tok-com">// camelCase — multi-word variable ka standard convention</span>
+<span class="tok-kw">let</span> $element <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>       <span class="tok-com">// $ aur _ valid pehla character hain (jQuery-style convention)</span>
+<span class="tok-kw">let</span> _private <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>         <span class="tok-com">// underscore prefix, "internal use" signal karne ke liye convention</span>
+
+<span class="tok-kw">const</span> COLOR_RED <span class="tok-punc">=</span> <span class="tok-str">"#F00"</span><span class="tok-punc">;</span>   <span class="tok-com">// UPPER_SNAKE_CASE: hard-coded, run-time se pehle hi known constant</span>
+<span class="tok-kw">const</span> pageLoadTime <span class="tok-punc">=</span> <span class="tok-fn">Date</span>.<span class="tok-fn">now</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                    <span class="tok-com">// lowercase const: value run-time pe CALCULATE hoti hai, hard-coded nahi</span>
+
+<span class="tok-com">// GALAT: repeated let declaration — SyntaxError</span>
+<span class="tok-kw">let</span> age <span class="tok-punc">=</span> <span class="tok-num">20</span><span class="tok-punc">;</span>
+<span class="tok-com">// let age = 25;   // Uncaught SyntaxError: Identifier 'age' has already been declared</span>
+
+<span class="tok-com">// GALAT: const ko reassign karna — TypeError</span>
+<span class="tok-kw">const</span> myBirthday <span class="tok-punc">=</span> <span class="tok-str">"18.04.1982"</span><span class="tok-punc">;</span>
+<span class="tok-com">// myBirthday = "01.01.2001"; // Uncaught TypeError: Assignment to constant variable</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: var hoisting production mein kab bite karta hai</div>
+        <p>
+          <code>var</code> ka hoisting behavior legacy codebases ya third-party scripts debug karte waqt
+          confusing bugs create karta hai — e.g. ek <code>if</code> block ke andar declared
+          <code>var</code> outside bhi accessible ho jaata hai (block scope nahi hota), jabki
+          <code>let</code>/<code>const</code> strictly block-scoped hain. Modern linting configs
+          (<code>no-var</code> ESLint rule) is entire class of bugs ko root pe hi disallow kar dete hain.
+          Agar kabhi purana codebase migrate kar rahe ho, <code>var</code> → <code>let</code>/<code>const</code>
+          switch karte waqt scope-leak wale edge cases carefully check karo.
+        </p>
+      </div>
+
+      <h2 id="types">8 Data Types aur <code>typeof</code> ke quirks</h2>
+      <p>
+        JavaScript dynamically typed hai — variable ka type value assign hone pe decide hota hai, aur
+        runtime pe badal bhi sakta hai. Language mein total <strong>8 data types</strong> hain: 7 primitive
+        + 1 non-primitive (object).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Saare 8 types — ek nazar mein<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> n <span class="tok-punc">=</span> <span class="tok-num">123</span><span class="tok-punc">;</span>              <span class="tok-com">// Number: integers aur floats dono, ek hi type</span>
+n <span class="tok-punc">=</span> <span class="tok-num">1</span> <span class="tok-punc">/</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                  <span class="tok-com">// Infinity — "kisi bhi number se bada" special value</span>
+n <span class="tok-punc">=</span> <span class="tok-str">"str"</span> <span class="tok-punc">/</span> <span class="tok-num">2</span><span class="tok-punc">;</span>              <span class="tok-com">// NaN — computational error, "sticky" hai (aage bhi NaN hi rahega)</span>
+
+<span class="tok-kw">let</span> big <span class="tok-punc">=</span> <span class="tok-num">123</span>n<span class="tok-punc">;</span>            <span class="tok-com">// BigInt: 'n' suffix, ±(2^53-1) se bade integers ke liye</span>
+
+<span class="tok-kw">let</span> str <span class="tok-punc">=</span> <span class="tok-str">`Hello ${n}`</span><span class="tok-punc">;</span>   <span class="tok-com">// String: backtick template literal, ${...} se expression embed hoti hai</span>
+
+<span class="tok-kw">let</span> bool <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>          <span class="tok-com">// Boolean: sirf true/false, comparisons ka result bhi yehi type deta hai</span>
+
+<span class="tok-kw">let</span> age <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>          <span class="tok-com">// null: "value KNOWN hai ki empty hai" — explicit "kuch nahi" assignment</span>
+
+<span class="tok-kw">let</span> x<span class="tok-punc">;</span>                       <span class="tok-com">// undefined: declared but value assign nahi hui — engine default deta hai</span>
+
+<span class="tok-kw">let</span> id <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// Symbol: guaranteed-unique identifier, object keys ke liye use hota hai</span>
+
+<span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span> name<span class="tok-punc">:</span> <span class="tok-str">"Sharad"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+                                <span class="tok-com">// Object: sirf non-primitive type — collections/complex entities store karta hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">typeof — do famous historical quirks<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">typeof</span> <span class="tok-kw">undefined</span><span class="tok-punc">;</span>      <span class="tok-com">// "undefined" — expected behavior</span>
+<span class="tok-fn">typeof</span> <span class="tok-num">0</span><span class="tok-punc">;</span>              <span class="tok-com">// "number"</span>
+<span class="tok-fn">typeof</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>           <span class="tok-com">// "boolean"</span>
+<span class="tok-fn">typeof</span> <span class="tok-str">"foo"</span><span class="tok-punc">;</span>         <span class="tok-com">// "string"</span>
+<span class="tok-fn">typeof</span> <span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "symbol"</span>
+
+<span class="tok-fn">typeof</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>           <span class="tok-com">// "object"  ← QUIRK #1: officially-acknowledged language BUG,</span>
+                          <span class="tok-com">// kept for backward compatibility from JS ke earliest days</span>
+
+<span class="tok-fn">typeof</span> <span class="tok-fn">alert</span><span class="tok-punc">;</span>          <span class="tok-com">// "function" ← QUIRK #2: functions technically objects hain,</span>
+                          <span class="tok-com">// lekin typeof convenience ke liye alag "function" string deta hai</span></code></pre>
+      </div>
+
+      <h2 id="dialogs">Browser dialogs — alert / prompt / confirm</h2>
+      <p>
+        Ye teeno functions <strong>modal</strong> hain — jab tak user dismiss nahi karta, baaki page ka
+        JS execution pause rehta hai aur user page ke saath interact nahi kar sakta. Ye browser-level UI
+        hai, page ke CSS/DOM se completely disconnected — isliye style customize nahi kar sakte.
+      </p>
+      <div class="code-block">
+        <div class="code-title">alert, prompt (default value ke saath), confirm<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// sirf ek message dikhata hai, OK click hone tak execution ruka rehta hai</span>
+
+<span class="tok-kw">let</span> age <span class="tok-punc">=</span> <span class="tok-fn">prompt</span><span class="tok-punc">(</span><span class="tok-str">"Aapki age?"</span><span class="tok-punc">,</span> <span class="tok-num">18</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                            <span class="tok-com">// 1st arg: title text; 2nd arg: default input value — ISE HAMESHA DO</span>
+                            <span class="tok-com">// (purane IE mein bina 2nd arg ke literal "undefined" text bhar jaata tha)</span>
+<span class="tok-com">// Cancel/Escape dabane pe prompt() null return karta hai, OK pe typed string</span>
+
+<span class="tok-kw">let</span> isAdmin <span class="tok-punc">=</span> <span class="tok-fn">confirm</span><span class="tok-punc">(</span><span class="tok-str">"Continue?"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                            <span class="tok-com">// question dikhata hai, OK pe true, Cancel pe false return karta hai</span></code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Production mein alert/prompt/confirm ka use limited hai</div>
+        <p>
+          Position browser decide karta hai (usually center), styling zero customization allow nahi
+          karti, aur ye synchronous blocking calls hain — production UI mein iske jagah custom modal
+          components use hote hain. Ye teeno mostly debugging, prototyping, ya learning ke liye useful
+          hain.
+        </p>
+      </div>
+
+      <h2 id="type-conversion">Type Conversion — implicit vs explicit rules</h2>
+      <p>
+        JavaScript operators aur functions apni marzi se values ko dusre type mein convert kar dete hain
+        — isi ko <strong>implicit (type coercion)</strong> kehte hain. Root-level in teen conversions ko
+        samajhna zaroori hai: String, Number, Boolean.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Explicit conversion — String(), Number(), Boolean()<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">String</span><span class="tok-punc">(</span><span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// "false" — straightforward: value ka readable string form</span>
+<span class="tok-fn">String</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// "null"</span>
+
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// NaN — "value hi nahi hai" ko meaningfully number nahi bana sakte</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// 0 — null ko "empty" treat karke zero diya jaata hai</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// 1</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// 0</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-str">"   123   "</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 123 — leading/trailing whitespace trim ho jaata hai (space/tab/newline)</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-str">""</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// 0 — empty string "no value" ke jaisa treat hoti hai</span>
+<span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-str">"123z"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// NaN — koi bhi invalid trailing content pura parse fail kar deta hai</span>
+
+<span class="tok-fn">Boolean</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// false — falsy value #1</span>
+<span class="tok-fn">Boolean</span><span class="tok-punc">(</span><span class="tok-str">""</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// false — falsy value #2 (empty string)</span>
+<span class="tok-fn">Boolean</span><span class="tok-punc">(</span><span class="tok-str">"0"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// true  ← GOTCHA: non-empty string hamesha truthy, chahe content "0" ho</span>
+<span class="tok-fn">Boolean</span><span class="tok-punc">(</span><span class="tok-str">" "</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// true  — space bhi non-empty string hai, so truthy</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Famous gotchas: [] + [] aur [] + {}</div>
+        <p>
+          Ye classic interview trick questions hain jo implicit coercion ki root mechanics test karte
+          hain. <code>[] + []</code> pehle dono arrays ko <code>String()</code> se convert karta hai
+          (kyunki <code>+</code> operator objects pe string-conversion prefer karta hai jab tak dono numeric
+          na hon) — empty array ka string form <code>""</code> hai, so result <code>"" + "" = ""</code>
+          (empty string). Doosri taraf <code>[] + {}</code> — array <code>""</code> banta hai, plain object
+          <code>"[object Object]"</code> banta hai (uska default <code>toString()</code>), so result
+          <code>"[object Object]"</code> ek string hai. Root cause: <code>+</code> operator dono operands
+          ko pehle "primitive" mein convert karta hai (<code>ToPrimitive</code> abstract operation), aur
+          objects/arrays ke liye default hint <code>"default"</code> hota hai jo <code>valueOf()</code> try
+          karta hai (jo objects/arrays ke liye kuch useful nahi deta, so fallback <code>toString()</code>
+          pe jaata hai).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Debugging console mein verify karo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span>.<span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-punc">]</span> <span class="tok-punc">+</span> <span class="tok-punc">[</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "" — dono empty arrays "" mein convert hote hain, phir concatenate</span>
+<span class="tok-fn">console</span>.<span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-punc">]</span> <span class="tok-punc">+</span> <span class="tok-punc">{</span><span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "[object Object]" — {} ka default toString() ye string deta hai</span>
+<span class="tok-fn">console</span>.<span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">1</span> <span class="tok-punc">+</span> <span class="tok-str">"2"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "12" — number string ke saath mile to number bhi string ban jaata hai</span>
+<span class="tok-fn">console</span>.<span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"5"</span> <span class="tok-punc">-</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// 4 — '-' operator sirf numeric context mein kaam karta hai, string coerce ho jaati hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: implicit coercion se production mein bachna</div>
+        <p>
+          Real-world codebases mein <code>==</code> (loose equality) aur implicit <code>+</code>
+          coercion bahut saare subtle bugs ka source hote hain — jaise API se aayi
+          <code>"0"</code> string ko truthy check karte waqt accidentally true treat kar lena. Isi liye
+          senior teams strict equality (<code>===</code>) enforce karti hain, TypeScript jaisi tools use
+          karti hain (jo implicit coercion ko compile-time pe flag karti hain), aur explicit conversions
+          (<code>Number(x)</code>, <code>String(x)</code>, <code>!!x</code>) prefer karti hain taaki
+          intent code mein saaf dikhe, engine ke internal rules pe implicitly depend na karna pade.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>JS engines (V8, SpiderMonkey, JavaScriptCore) parse → JIT-compile → execute-and-optimize cycle follow karte hain; language purely interpreted ya compiled nahi hai.</li>
+        <li>In-browser JS Same-Origin Policy aur explicit permissions se security-restricted hai — disk/OS/camera direct access allowed nahi.</li>
+        <li><code>&lt;script src&gt;</code> aur inline code ek hi tag mein saath nahi ho sakte; external scripts caching ka fayda dete hain.</li>
+        <li>Semicolons technically ASI se optional hain, lekin <code>[...]</code>/<code>(...)</code> ke pehle ASI fail hota hai — production code mein explicit semicolons safest hain.</li>
+        <li><code>"use strict"</code> file/function ke bilkul TOP pe hona zaroori hai, irreversible hai, aur classes/modules mein automatic hai.</li>
+        <li><code>let</code>/<code>const</code> block-scoped hain, <code>var</code> function-scoped + hoisted hota hai — legacy code debug karte waqt ye difference critical hai.</li>
+        <li>8 data types: number, bigint, string, boolean, null, undefined, symbol, object — <code>typeof null === "object"</code> aur <code>typeof function === "function"</code> dono historical quirks hain.</li>
+        <li>Type conversion rules memorize karne se zyada important hai <em>kyun</em> samajhna: numeric conversion whitespace trim karta hai, boolean conversion sirf 5 falsy values maanta hai (<code>0, "", null, undefined, NaN</code>), aur <code>+</code> operator object-coercion mein string ko prefer karta hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>JS engine ke andar teen phases kya hain, aur JIT compilation ka role kya hai?</strong><br>Hint: Parse (AST banana) → Compile (JIT se machine code) → Execute+Optimize (runtime data dekh ke hot paths ko re-optimize karna); isi wajah se JS "hybrid" hai, purely interpreted ya compiled nahi.</li>
+        <li><strong><code>typeof null</code> "object" kyun return karta hai?</strong><br>Hint: JS ke earliest implementation mein ek bug tha jo backward compatibility ki wajah se aaj tak fix nahi kiya gaya — officially acknowledged language quirk hai.</li>
+        <li><strong>ASI (Automatic Semicolon Insertion) kab fail hota hai, aur kaise avoid karein?</strong><br>Hint: line ki agli statement <code>[</code> ya <code>(</code> se shuru ho to engine previous line ka continuation maan leta hai; explicit semicolons se avoid karo.</li>
+        <li><strong><code>var</code> aur <code>let</code> mein scoping ka fundamental difference kya hai?</strong><br>Hint: var function-scoped + hoisted (declaration top pe chali jaati hai, value undefined rehti hai use se pehle); let block-scoped, temporal dead zone mein hota hai use se pehle.</li>
+        <li><strong><code>[] + []</code> aur <code>[] + {}</code> ka result kya hoga aur kyun?</strong><br>Hint: <code>+</code> operator objects ko ToPrimitive se convert karta hai (default hint), jo valueOf() fail hone pe toString() use karta hai — empty array "" banti hai, plain object "[object Object]" banta hai.</li>
+        <li><strong>Boolean(<code>"0"</code>) aur Number(<code>"0"</code>) alag result kyun dete hain?</strong><br>Hint: Boolean conversion sirf empty string ko falsy maanta hai, non-empty content wali koi bhi string truthy hai — chahe wo "0" text hi kyun na ho; Number conversion actual numeric parsing karta hai.</li>
+        <li><strong>"use strict" ko file ke top pe hi kyun likhna zaroori hai?</strong><br>Hint: parser directive ko sirf tab recognize karta hai jab wo pehla real statement ho (sirf comments allowed pehle); kisi bhi executable statement ke baad likhne se ye sirf ek harmless string literal ban jaata hai.</li>
+        <li><strong>Production codebases implicit type coercion (<code>==</code>, <code>+</code>) se kyun bachte hain?</strong><br>Hint: subtle bugs (jaise API se aayi "0" string ko truthy treat karna) create karta hai; strict equality (<code>===</code>) aur explicit conversions (<code>Number()</code>, <code>String()</code>) intent ko readable aur predictable banate hain, TypeScript jaisi tools bhi compile-time pe isse catch karti hain.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="index.html">
+        <div class="label">← Previous</div>
+        <div class="title">Home</div>
+      </a>
+      <a class="next" href="02-js-fundamentals-2.html">
+        <div class="label">Next →</div>
+        <div class="title">JS Fundamentals II</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

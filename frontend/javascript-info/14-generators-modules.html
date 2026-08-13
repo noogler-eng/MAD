@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generators &amp; Modules — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link active" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 14</div>
+      <div class="progress-pill">14 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Generators · ES Modules</span>
+      <h1>Generators &amp; Modules</h1>
+      <p class="subtitle">
+        Generators ek function ko <strong>pause aur resume</strong> karne ki power dete hain — ye pura
+        custom iterators, lazy sequences, aur async streaming ka foundation hai. Aur ES Modules
+        JavaScript ko finally ek proper, browser-native dependency system dete hain — har module apni
+        scope, apna singleton cache, apna strict mode. Is chapter mein dono ko root-level samjhenge:
+        generator ke andar execution state kaise freeze/unfreeze hota hai, aur module system internally
+        URL-based caching kaise kaam karta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#gen-basics">Generator functions — function*, yield, .next()</a></li>
+          <li><a href="#gen-internals">Root-level: pause/resume andar se kaise kaam karta hai</a></li>
+          <li><a href="#gen-iterable">Generators as iterables — custom range</a></li>
+          <li><a href="#gen-delegate">yield* — generator composition</a></li>
+          <li><a href="#gen-twoway">Two-way communication — next(), throw(), return()</a></li>
+          <li><a href="#async-iter">Async iterators — Symbol.asyncIterator</a></li>
+          <li><a href="#async-gen">Async generators — for await...of</a></li>
+          <li><a href="#modules-basics">ES Modules — core features</a></li>
+          <li><a href="#modules-singleton">Modules singleton-cached-by-URL</a></li>
+          <li><a href="#export-import">export/import syntax variants</a></li>
+          <li><a href="#named-vs-default">Named vs default exports — tree-shaking</a></li>
+          <li><a href="#dynamic-import">Dynamic import() — code-splitting</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="gen-basics">Generator functions — function*, yield, .next()</h2>
+      <p>
+        Normal function ek value <em>return</em> karke khatam ho jaata hai. Generator function is se
+        alag hai — wo multiple values <strong>time ke saath</strong> produce kar sakta hai, beech mein
+        pause hoke. Syntax: function name ke pehle ek <code>*</code> lagta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Basic generator<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// function* — asterisk hi is function ko "generator" banata hai</span>
+  <span class="tok-kw">yield</span> <span class="tok-num">1</span><span class="tok-punc">;</span>                                <span class="tok-com">// yield 1: yahaan execution pause ho jaayega, 1 return hoga</span>
+  <span class="tok-kw">yield</span> <span class="tok-num">2</span><span class="tok-punc">;</span>                                <span class="tok-com">// yield 2: agli baar resume hoga to yahaan tak chalega</span>
+  <span class="tok-kw">return</span> <span class="tok-num">3</span><span class="tok-punc">;</span>                               <span class="tok-com">// return 3: generator ko fully khatam kar deta hai, done:true</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">generator</span> <span class="tok-punc">=</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// call karne se function BODY execute nahi hota, sirf ek "generator object" milta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">generator</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// [object Generator] — suspended state, body abhi tak run hi nahi hua</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">one</span> <span class="tok-punc">=</span> <span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// .next() — body run karo pehle yield tak</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-fn">one</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// {"value":1,"done":false} — value = yield ki value, done = generator khatam hua ya nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">two</span> <span class="tok-punc">=</span> <span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// dubara .next() — pichle yield SE resume, agle yield TAK</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-fn">two</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// {"value":2,"done":false}</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">three</span> <span class="tok-punc">=</span> <span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// return 3 tak pahunch gaya — ab generator "done" ho jaata hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-fn">three</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// {"value":3,"done":true} — return ki value bhi value field mein aati hai</span></code></pre>
+      </div>
+      <p>
+        Do form valid hain — <code>function* foo() {}</code> ya <code>function *foo() {}</code>; convention
+        pehla wala hai kyunki asterisk function-type denote karta hai, function-name ka part nahi.
+      </p>
+
+      <h2 id="gen-internals">Root-level: pause/resume andar se kaise kaam karta hai</h2>
+      <p>
+        Ye samajhna zaroori hai ki generator koi "async" cheez <strong>nahi</strong> hai — sab kuch
+        synchronous hi hota hai. Andar se, generator engine ek generator function ko call karte hi
+        turant execute nahi karta. Instead, JS engine us function call ke liye ek
+        <strong>suspended execution context</strong> allocate karta hai — call stack, local variables,
+        aur "abhi kahaan tak pahuncha hoon" wala instruction pointer, sab kuch memory mein freeze karke
+        rakh diya jaata hai.
+      </p>
+      <p>
+        Jab tum <code>.next()</code> call karte ho, engine us frozen context ko wapas call stack pe
+        restore karta hai aur code ko usi exact point se chalana shuru karta hai jahan pichli baar
+        <code>yield</code> pe rukka tha. Jaise hi agla <code>yield</code> milta hai, engine current
+        state (variables, position) ko dubara freeze kar deta hai aur control caller ko wapas de deta
+        hai. Ye ek <strong>cooperative coroutine</strong> jaisa mechanism hai — normal function calls mein
+        control sirf return pe wapas jaata hai, lekin generator mein control multiple baar, explicitly
+        yield points pe, wapas-forward hota rehta hai.
+      </p>
+      <p>
+        Isi wajah se generator ka <code>.next()</code> ek <strong>special iterator</strong> jaisa
+        behave karta hai — normal iterator ka <code>next()</code> ek fixed logic chalata hai har baar,
+        lekin generator ka <code>next()</code> "jahan chhoda tha wahan se code chalao" karta hai. Yehi
+        core mental model hai: <strong>generator function = ek iterator jiska body khud likha hua hai,
+        aur jiske "next" call par actual JS statements execute hoti hain (na ki koi fixed algorithm)</strong>.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Generator object hi Iterable + Iterator dono hai</div>
+        <p>
+          Generator jo object return karta hai, uske paas <code>Symbol.iterator</code> method bhi
+          hota hai jo khud <code>this</code> return karta hai. Isliye generator object dono
+          <strong>iterable</strong> (for..of mein use ho sakta hai) aur <strong>iterator</strong>
+          (khud <code>.next()</code> rakhta hai) — dono hai. Isi property ki wajah se
+          <code>for (let x of generatorObj)</code> seedha kaam karta hai, bina kisi extra
+          wrapping ke.
+        </p>
+      </div>
+
+      <h2 id="gen-iterable">Generators as iterables — custom range banate hain</h2>
+      <p>
+        Chapter 7 mein humne manual <code>Symbol.iterator</code> implement karna dekha tha — jahan
+        khud ek object banake uske <code>next()</code> method mein state (jaise <code>current</code>
+        variable) manually track karna padta tha. Generator ke saath ye massively simpler ho jaata hai,
+        kyunki state ko manually track karne ki zaroorat nahi — generator ka apna execution position
+        hi state hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">range object — generator-based Symbol.iterator<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">range</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">from</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span>                              <span class="tok-com">// range ki starting value</span>
+  <span class="tok-attr">to</span><span class="tok-punc">:</span> <span class="tok-num">5</span><span class="tok-punc">,</span>                                <span class="tok-com">// range ki ending value (inclusive)</span>
+
+  <span class="tok-punc">*</span><span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-fn">iterator</span><span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// computed method name + generator (*) — object literal shorthand</span>
+    <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">value</span> <span class="tok-punc">=</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">from</span><span class="tok-punc">;</span> <span class="tok-fn">value</span> <span class="tok-punc">&lt;=</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">to</span><span class="tok-punc">;</span> <span class="tok-fn">value</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+                                          <span class="tok-com">// normal for loop — from se to tak, ek-ek karke</span>
+      <span class="tok-kw">yield</span> <span class="tok-fn">value</span><span class="tok-punc">;</span>                    <span class="tok-com">// har iteration pe pause + current value emit karo</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-punc">.</span><span class="tok-punc">.</span><span class="tok-punc">.</span><span class="tok-fn">range</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>           <span class="tok-com">// spread operator range ke Symbol.iterator ko call karta hai</span>
+                                       <span class="tok-com">// output: [1, 2, 3, 4, 5]</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">num</span> <span class="tok-kw">of</span> <span class="tok-fn">range</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// for..of bhi seedha kaam karta hai — same mechanism</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">num</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// 1, phir 2, phir 3... one at a time print hoga</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Compare karo: manual <code>Symbol.iterator</code> version mein tumhe <code>current</code> jaisa
+        variable object pe store karna padta, aur <code>next()</code> ke andar manually
+        <code>{value, done}</code> object return karna padta. Generator version mein ye sab
+        <strong>for-loop ke andar chhupa hua hai</strong> — engine khud state track karta hai.
+      </p>
+
+      <h2 id="gen-delegate">yield* — generator composition</h2>
+      <p>
+        Ek generator ke andar doosre generator ko delegate karne ke liye <code>yield*</code> use hota
+        hai — ye nested generator ke saare yields ko transparently outer generator ke through pass kar
+        deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">yield* delegation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-fn">start</span><span class="tok-punc">,</span> <span class="tok-fn">end</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// reusable helper generator — start se end tak yield karta hai</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">i</span> <span class="tok-punc">=</span> <span class="tok-fn">start</span><span class="tok-punc">;</span> <span class="tok-fn">i</span> <span class="tok-punc">&lt;=</span> <span class="tok-fn">end</span><span class="tok-punc">;</span> <span class="tok-fn">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-fn">yield</span> <span class="tok-fn">i</span><span class="tok-punc">;</span> <span class="tok-com">// har number ko yield karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">generatePasswordCodes</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// outer generator jo teeno ranges ko compose karta hai</span>
+  <span class="tok-kw">yield</span><span class="tok-punc">*</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-num">48</span><span class="tok-punc">,</span> <span class="tok-num">57</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// yield*: '0'-'9' ke char codes delegate karo</span>
+  <span class="tok-kw">yield</span><span class="tok-punc">*</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-num">65</span><span class="tok-punc">,</span> <span class="tok-num">90</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// yield*: 'A'-'Z' ke char codes delegate karo</span>
+  <span class="tok-kw">yield</span><span class="tok-punc">*</span> <span class="tok-fn">generateSequence</span><span class="tok-punc">(</span><span class="tok-num">97</span><span class="tok-punc">,</span> <span class="tok-num">122</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// yield*: 'a'-'z' ke char codes delegate karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">str</span> <span class="tok-punc">=</span> <span class="tok-str">''</span><span class="tok-punc">;</span>                          <span class="tok-com">// result string accumulate karne ke liye</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">code</span> <span class="tok-kw">of</span> <span class="tok-fn">generatePasswordCodes</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// outer generator ko normal for..of se consume karo</span>
+  <span class="tok-fn">str</span> <span class="tok-punc">+</span><span class="tok-punc">=</span> <span class="tok-fn">String</span><span class="tok-punc">.</span><span class="tok-fn">fromCharCode</span><span class="tok-punc">(</span><span class="tok-fn">code</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// char code ko actual character mein convert karke jodo</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"</span></code></pre>
+      </div>
+      <p>
+        <code>yield*</code> ke bina bhi kaam ho sakta tha (nested for-of loop se manually forward
+        karke), lekin <code>yield*</code> use karne se caller ko lagta hai jaise ek hi flat generator
+        chal raha hai — nesting ka detail abstract ho jaata hai.
+      </p>
+
+      <h2 id="gen-twoway">Two-way communication — next(), throw(), return()</h2>
+      <p>
+        <code>yield</code> ek two-way channel hai — sirf value bahar nahi bhejta, <code>.next(arg)</code>
+        ke through value andar bhi le sakta hai. Jab generator <code>let x = yield something</code>
+        pe pause hota hai, agli baar <code>.next(value)</code> call karne pe wahi <code>value</code>
+        us paused <code>yield</code> expression ka result ban jaata hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">next(value) — ping-pong communication<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">gen</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">result</span> <span class="tok-punc">=</span> <span class="tok-kw">yield</span> <span class="tok-str">"2 + 2 = ?"</span><span class="tok-punc">;</span>  <span class="tok-com">// yield question OUT, aur agle next() ki value ANDAR result mein aayegi</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">result</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// jo bhi answer next() se aayega wahi yahaan print hoga</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">generator</span> <span class="tok-punc">=</span> <span class="tok-fn">gen</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                     <span class="tok-com">// pehla next() sirf "2 + 2 = ?" tak chalata hai, andar koi value nahi bhej sakta</span>
+<span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-num">4</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// 4 ANDAR jaata hai — result = 4, phir console.log(4) chalta hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">throw() aur return()<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">gen</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">let</span> <span class="tok-fn">result</span> <span class="tok-punc">=</span> <span class="tok-kw">yield</span> <span class="tok-str">"2 + 2 = ?"</span><span class="tok-punc">;</span>  <span class="tok-com">// yahaan pause — throw() se error yahaan inject ho sakti hai</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span><span class="tok-fn">e</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">e</span><span class="tok-punc">.</span><span class="tok-fn">message</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// normal try/catch se generator ke andar hi error handle ho jaati hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-fn">generator</span> <span class="tok-punc">=</span> <span class="tok-fn">gen</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                             <span class="tok-com">// yield "2 + 2 = ?" tak chalao</span>
+<span class="tok-fn">generator</span><span class="tok-punc">.</span><span class="tok-fn">throw</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">"Not found"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// error ko exact us yield point pe throw karta hai, jaise wahin likhi ho</span>
+
+<span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">gen2</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">yield</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-kw">yield</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-kw">yield</span> <span class="tok-num">3</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">// simple 3-value generator</span>
+<span class="tok-kw">const</span> <span class="tok-fn">g</span> <span class="tok-punc">=</span> <span class="tok-fn">gen2</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">g</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                                <span class="tok-com">// {value: 1, done: false}</span>
+<span class="tok-fn">g</span><span class="tok-punc">.</span><span class="tok-fn">return</span><span class="tok-punc">(</span><span class="tok-str">'foo'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                       <span class="tok-com">// return(): generator ko FORCE-terminate karta hai — {value: "foo", done: true}</span>
+<span class="tok-fn">g</span><span class="tok-punc">.</span><span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                                <span class="tok-com">// {value: undefined, done: true} — ab permanently done, yield 2/3 kabhi nahi milenge</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: generators ka real production use</div>
+        <p>
+          Direct generators production code mein kam dikhte hain, lekin unki design har jagah hai —
+          <code>async/await</code> ka desugar-form internally ek generator + promise-driven runner hai
+          (Babel jaise transpilers async functions ko generator-based state machines mein compile karte
+          the/karte hain). Redux-Saga jaisi libraries generators ko explicitly use karti hain taaki
+          complex async workflows ko <strong>testable, pausable sequences</strong> ki tarah likha jaa
+          sake — har <code>yield</code> ek "effect" describe karta hai jise saga middleware intercept
+          karta hai, actual side-effect khud generator nahi karta. Ye pattern samajhna async architecture
+          debug karne mein directly kaam aata hai.
+        </p>
+      </div>
+
+      <h2 id="async-iter">Async iterators — Symbol.asyncIterator</h2>
+      <p>
+        Normal iterator synchronously value deta hai. Lekin agar data network se, ya kisi delay ke
+        baad aana hai (jaise paginated API), to normal <code>Symbol.iterator</code> kaam nahi karta —
+        uska <code>next()</code> promise return nahi kar sakta while staying spec-compliant for
+        <code>for..of</code>. Iske liye alag protocol hai: <code>Symbol.asyncIterator</code>, jiska
+        <code>next()</code> ek <strong>promise</strong> return karta hai jo <code>{value, done}</code>
+        resolve karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Symbol.asyncIterator manually<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">range</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">from</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-attr">to</span><span class="tok-punc">:</span> <span class="tok-num">5</span><span class="tok-punc">,</span>                     <span class="tok-com">// range boundaries</span>
+
+  <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-fn">asyncIterator</span><span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// Symbol.iterator ki jagah Symbol.asyncIterator — async protocol</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">{</span>
+      <span class="tok-fn">current</span><span class="tok-punc">:</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">from</span><span class="tok-punc">,</span>              <span class="tok-com">// manual state tracking (jaise sync iterator mein tha)</span>
+      <span class="tok-fn">last</span><span class="tok-punc">:</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">to</span><span class="tok-punc">,</span>
+
+      <span class="tok-kw">async</span> <span class="tok-fn">next</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                  <span class="tok-com">// async next() — automatically ek Promise return karta hai</span>
+        <span class="tok-kw">await</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span><span class="tok-punc">(</span><span class="tok-fn">resolve</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-fn">resolve</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                            <span class="tok-com">// simulate network delay: 1 second ruko</span>
+        <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">current</span> <span class="tok-punc">&lt;=</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">last</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+          <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">false</span><span class="tok-punc">,</span> <span class="tok-attr">value</span><span class="tok-punc">:</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">current</span><span class="tok-punc">+</span><span class="tok-punc">+</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+                                            <span class="tok-com">// current value do, phir agli baar ke liye increment karo</span>
+        <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+          <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-attr">done</span><span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>       <span class="tok-com">// range khatam — done: true bhej do</span>
+        <span class="tok-punc">}</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">}</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">(</span><span class="tok-kw">async</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">for</span> <span class="tok-kw">await</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">value</span> <span class="tok-kw">of</span> <span class="tok-fn">range</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// for AWAIT of — plain for..of async iterators ke saath kaam nahi karta</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">value</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 1 second gap se 1, 2, 3, 4, 5 print honge</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <h2 id="async-gen">Async generators — for await...of ke saath streaming</h2>
+      <p>
+        Jaise generator ne manual <code>Symbol.iterator</code> ko simple banaya, <code>async function*</code>
+        manual <code>Symbol.asyncIterator</code> ko simple banata hai — promises aur generators ko combine
+        karke. Andar <code>await</code> bhi use kar sakte ho <em>aur</em> <code>yield</code> bhi — dono
+        ek hi function ke andar.
+      </p>
+      <div class="code-block">
+        <div class="code-title">async function* — streaming async data<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">generateData</span><span class="tok-punc">(</span><span class="tok-fn">start</span><span class="tok-punc">,</span> <span class="tok-fn">end</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// async + generator dono ek saath, isliye "async function*"</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">i</span> <span class="tok-punc">=</span> <span class="tok-fn">start</span><span class="tok-punc">;</span> <span class="tok-fn">i</span> <span class="tok-punc">&lt;=</span> <span class="tok-fn">end</span><span class="tok-punc">;</span> <span class="tok-fn">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">await</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span><span class="tok-punc">(</span><span class="tok-fn">resolve</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-fn">resolve</span><span class="tok-punc">,</span> <span class="tok-num">500</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                              <span class="tok-com">// await: real async work simulate karo (e.g. ek DB/network call)</span>
+    <span class="tok-kw">yield</span> <span class="tok-fn">i</span><span class="tok-punc">;</span>                              <span class="tok-com">// yield: value emit karo aur PAUSE karo agle .next() tak</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">(</span><span class="tok-kw">async</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">for</span> <span class="tok-kw">await</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">value</span> <span class="tok-kw">of</span> <span class="tok-fn">generateData</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">value</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 500ms gap se 1, 2, 3, 4, 5 — code ekdum simple, delegation engine ke bharose</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        Real-world use-case: paginated API se data stream karna — jaise GitHub commits, jahan har page
+        fetch karke uske andar ke items ek-ek karke <code>yield</code> kiye jaate hain, aur jab tak
+        "next page" URL milta rahe, loop chalta rehta hai. Consumer ko ye pata bhi nahi hota ki pagination
+        internally ho rahi hai — usse bas ek flat async stream milta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">paginated API ko async generator se abstract karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span><span class="tok-punc">*</span> <span class="tok-fn">fetchCommits</span><span class="tok-punc">(</span><span class="tok-fn">repo</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">url</span> <span class="tok-punc">=</span> <span class="tok-str">`https://api.github.com/repos/${</span><span class="tok-fn">repo</span><span class="tok-str">}/commits`</span><span class="tok-punc">;</span>
+                                              <span class="tok-com">// starting page ka URL banao</span>
+  <span class="tok-kw">while</span> <span class="tok-punc">(</span><span class="tok-fn">url</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                          <span class="tok-com">// jab tak "next page" ka url mile, loop chalao</span>
+    <span class="tok-kw">const</span> <span class="tok-fn">response</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-fn">url</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                              <span class="tok-com">// await: is page ka data fetch hone tak generator pause rehta hai</span>
+    <span class="tok-kw">const</span> <span class="tok-fn">body</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">response</span><span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                              <span class="tok-com">// response body ko JSON array mein parse karo (commits ka array)</span>
+
+    <span class="tok-kw">let</span> <span class="tok-fn">nextPage</span> <span class="tok-punc">=</span> <span class="tok-fn">response</span><span class="tok-punc">.</span><span class="tok-fn">headers</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-str">'Link'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                              <span class="tok-com">// Link header mein "next page" ka URL hota hai (GitHub API convention)</span>
+    <span class="tok-fn">url</span> <span class="tok-punc">=</span> <span class="tok-fn">nextPage</span><span class="tok-punc">;</span>                    <span class="tok-com">// (yahaan simplify kiya — real code mein regex se URL extract hota)</span>
+
+    <span class="tok-kw">for</span><span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-fn">commit</span> <span class="tok-kw">of</span> <span class="tok-fn">body</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// is page ke saare commits pe loop</span>
+      <span class="tok-kw">yield</span> <span class="tok-fn">commit</span><span class="tok-punc">;</span>                    <span class="tok-com">// har commit ko individually yield karo — consumer ko page boundary nahi dikhti</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ for..of (bina await) async iterator pe silently fail hoga</div>
+        <p>
+          Agar galti se plain <code>for..of</code> use kar diya kisi async iterable pe, to error nahi
+          aayega — lekin <code>value</code> ek unresolved Promise object hoga, actual data nahi. Ye
+          debug karna mushkil hota hai kyunki koi crash nahi hota, bas output galat aata hai. Hamesha
+          <code>for await (... of ...)</code> use karo jab data source async iterable ho, aur ye tabhi
+          use kar sakte ho jab tum khud kisi async function ke andar ho (ya top-level module mein).
+        </p>
+      </div>
+
+      <h2 id="modules-basics">ES Modules — core features</h2>
+      <p>
+        Module bas ek file hai — "one script is one module". Farak ye hai ki module explicitly bataata
+        hai ki wo kya expose karega (<code>export</code>) aur kya use karega (<code>import</code>).
+        Kuch core rules jo module scripts ko regular scripts se fundamentally alag banate hain:
+      </p>
+      <ul>
+        <li><strong>Hamesha strict mode</strong> — module code hamesha implicitly <code>"use strict"</code> mein chalta hai, chahe tumne likha ho ya nahi. Undeclared variable assign karne pe error milega.</li>
+        <li><strong>Apni-apni top-level scope</strong> — module ke andar declare kiya gaya <code>let</code>/<code>const</code>/function doosre module mein automatically leak nahi hota. Global namespace pollute nahi hota.</li>
+        <li><strong>Top-level <code>this</code> undefined hai</strong> — regular script mein top-level <code>this</code> window/globalThis hota, module mein <code>undefined</code>.</li>
+        <li><strong>Deferred by default (browser)</strong> — <code>&lt;script type="module"&gt;</code> automatically defer-jaisa behave karta hai: download parallel, execution DOM parse hone ke baad.</li>
+        <li><strong><code>import.meta</code></strong> — current module ke baare mein metadata deta hai, jaise uska URL (<code>import.meta.url</code>).</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">index.html — module script include karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"module"</span><span class="tok-punc">&gt;</span>    <span class="tok-com">&lt;!-- type="module" — browser ko batata hai ye ES module hai, defer + strict mode automatic --&gt;</span>
+  <span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">sayHi</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./say.js'</span><span class="tok-punc">;</span>  <span class="tok-com">// relative path REQUIRED — bare module names allowed nahi browsers mein</span>
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-str">'Sharad'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// imported function use kar rahe hain</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <h2 id="modules-singleton">Modules singleton-cached-by-URL hote hain</h2>
+      <p>
+        Ye sabse important root-level fact hai jo interview mein aksar miss hota hai: agar ek hi module
+        do jagah se import ho raha hai, uska code sirf <strong>ek baar</strong> execute hota hai — us
+        module ka pehla import trigger karta hai, uske baad module engine internally ek cache maintain
+        karta hai jo module ke <strong>resolved URL</strong> se key hota hai. Baad ke saare imports
+        us same already-executed module object ka reference paate hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">module singleton — config sirf ek baar init hota hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 📁 admin.js</span>
+<span class="tok-kw">export</span> <span class="tok-kw">let</span> <span class="tok-fn">config</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>                <span class="tok-com">// module-level state — sabhi importers isi ek object ko share karenge</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Ready to serve, ${</span><span class="tok-fn">config</span><span class="tok-punc">.</span><span class="tok-fn">user</span><span class="tok-str">}!`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// 📁 init.js</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">config</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./admin.js'</span><span class="tok-punc">;</span>       <span class="tok-com">// SAME config object import kiya — new copy nahi mili</span>
+<span class="tok-fn">config</span><span class="tok-punc">.</span><span class="tok-fn">user</span> <span class="tok-punc">=</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">;</span>              <span class="tok-com">// mutate kiya — kyunki reference same hai, ye sab jagah reflect hoga</span>
+
+<span class="tok-com">// 📁 another.js</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">sayHi</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./admin.js'</span><span class="tok-punc">;</span>       <span class="tok-com">// admin.js DUBARA execute nahi hoga — cache se aayega</span>
+<span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                                <span class="tok-com">// "Ready to serve, Sharad!" — init.js wala mutation yahaan bhi dikha</span></code></pre>
+      </div>
+      <p>
+        Isi wajah se modules ek natural <strong>singleton pattern</strong> provide karte hain — agar
+        tumhe ek shared config, ek shared cache, ya ek shared connection-pool object chahiye jo poore
+        app mein ek hi instance ho, module-level state hi use kar lo, koi singleton-class design pattern
+        implement karne ki zaroorat nahi.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: URL-based caching ka gotcha</div>
+        <p>
+          Cache key <strong>resolved URL</strong> hoti hai, module ka naam nahi. Agar same file do
+          alag paths se import ho (jaise <code>./utils.js</code> aur <code>../src/utils.js</code> jo
+          dono resolve ho ke same file pe point karte hain lekin string-wise alag URLs hain), engine
+          unhe <strong>do alag modules</strong> treat karega — do baar execute hoga, aur do alag
+          singleton instances milenge. Monorepos mein symlinks ya multiple bundler-aliases ki wajah se
+          ye subtle bug production mein aksar dikhta hai — "same class ke do instances kyun bane" jaisa
+          debugging session isi root cause pe khatam hota hai.
+        </p>
+      </div>
+
+      <h2 id="export-import">export/import syntax variants</h2>
+      <p>
+        Export declare karne ke do tareeke — declaration ke saath inline, ya alag se batch mein:
+      </p>
+      <div class="code-block">
+        <div class="code-title">export — inline vs batch<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Variant 1: declaration ke pehle hi export likh do</span>
+<span class="tok-kw">export</span> <span class="tok-kw">let</span> <span class="tok-fn">months</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">'Jan'</span><span class="tok-punc">,</span> <span class="tok-str">'Feb'</span><span class="tok-punc">,</span> <span class="tok-str">'Mar'</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// named export — ye variable named "months" ke naam se export hui</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-fn">user</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// export function — ye ab bhi ek normal function declaration hai, sirf exported</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Hello, ${</span><span class="tok-fn">user</span><span class="tok-str">}!`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Variant 2: pehle declare karo, phir ek jagah export karo</span>
+<span class="tok-kw">function</span> <span class="tok-fn">sayBye</span><span class="tok-punc">(</span><span class="tok-fn">user</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// normal function, abhi export nahi</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Bye, ${</span><span class="tok-fn">user</span><span class="tok-str">}!`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-kw">export</span> <span class="tok-punc">{</span> <span class="tok-fn">sayBye</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>                    <span class="tok-com">// batch export — file ke top ya bottom pe ek list dikhana readability ke liye acha</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">import — named, star, aliasing<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">sayHi</span><span class="tok-punc">,</span> <span class="tok-fn">sayBye</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./say.js'</span><span class="tok-punc">;</span> <span class="tok-com">// specific named imports — sirf jo chahiye wahi</span>
+
+<span class="tok-kw">import</span> <span class="tok-punc">*</span> <span class="tok-kw">as</span> <span class="tok-fn">say</span> <span class="tok-kw">from</span> <span class="tok-str">'./say.js'</span><span class="tok-punc">;</span>     <span class="tok-com">// saara module ek namespace object "say" mein import karo</span>
+<span class="tok-fn">say</span><span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-str">'John'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// namespace object se access karo</span>
+
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">sayHi</span> <span class="tok-kw">as</span> <span class="tok-fn">hi</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./say.js'</span><span class="tok-punc">;</span> <span class="tok-com">// import ke waqt rename — local naam conflict avoid karne ke liye</span>
+<span class="tok-fn">hi</span><span class="tok-punc">(</span><span class="tok-str">'John'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                            <span class="tok-com">// ab "hi" naam se call hoga, "sayHi" se nahi</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">export default aur re-export<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 📁 user.js</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">class</span> <span class="tok-fn">User</span> <span class="tok-punc">{</span>          <span class="tok-com">// "default" export — module mein SIRF ek default ho sakta hai</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span><span class="tok-fn">name</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">this</span><span class="tok-punc">.</span><span class="tok-fn">name</span> <span class="tok-punc">=</span> <span class="tok-fn">name</span><span class="tok-punc">;</span> <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// 📁 main.js</span>
+<span class="tok-kw">import</span> <span class="tok-fn">User</span> <span class="tok-kw">from</span> <span class="tok-str">'./user.js'</span><span class="tok-punc">;</span>          <span class="tok-com">// curly braces NAHI — default import ka naam import karte waqt tum khud chunte ho</span>
+<span class="tok-kw">new</span> <span class="tok-fn">User</span><span class="tok-punc">(</span><span class="tok-str">'John'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// 📁 auth/index.js — "barrel" file: doosre modules ko re-export karta hai</span>
+<span class="tok-kw">export</span> <span class="tok-punc">{</span> <span class="tok-fn">login</span><span class="tok-punc">,</span> <span class="tok-fn">logout</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./helpers.js'</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// helpers.js ke named exports ko forward kar diya, bina yahaan import kiye</span>
+<span class="tok-kw">export</span> <span class="tok-punc">{</span> <span class="tok-kw">default</span> <span class="tok-kw">as</span> <span class="tok-fn">User</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./user.js'</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// default export ko named "User" ke naam se re-export — special syntax zaroori hai</span></code></pre>
+      </div>
+      <p>
+        Note: <code>export User from './user.js'</code> jaisi shortcut syntax <strong>invalid</strong>
+        hai — default re-export ke liye <code>export {default as User} from ...</code> hi likhna padta
+        hai. Aur re-exported cheezein current file ke andar directly available <strong>nahi</strong>
+        hoti — sirf forward hoti hain.
+      </p>
+
+      <h2 id="named-vs-default">Named vs default exports — tree-shaking ka farak</h2>
+      <p>
+        Ye choice sirf syntax preference nahi hai — iska real bundling impact hai. Named exports ke
+        naam <strong>statically fixed</strong> hote hain (module ke source code mein literal string ki
+        tarah likhe hote hain), isliye bundler (Webpack/Rollup/esbuild) build-time pe static analysis
+        karke exactly bata sakta hai ki kaunsa named export kahin use ho raha hai aur kaunsa nahi —
+        unused named exports ko safely <strong>tree-shake</strong> (dead-code-eliminate) kar sakta hai.
+      </p>
+      <p>
+        Default export ka koi fixed "naam" nahi hota (importer jo chahe naam de sakta hai), aur agar
+        default export ek poora object/module ho (jaise <code>export default { a, b, c, d }</code>),
+        to bundler ke liye ye determine karna mushkil ho jaata hai ki object ke andar se sirf kaunse
+        keys actually use ho rahe hain — safe side lene ke liye wo poora object bundle mein rakh leta
+        hai, chahe tumne usme se sirf ek property use ki ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">tree-shaking friendly vs unfriendly<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 📁 utils.js — GOOD: named exports, har function alag se static-analyzable</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">formatDate</span><span class="tok-punc">(</span><span class="tok-fn">d</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">/* ... */</span> <span class="tok-punc">}</span>
+<span class="tok-kw">export</span> <span class="tok-kw">function</span> <span class="tok-fn">parseDate</span><span class="tok-punc">(</span><span class="tok-fn">s</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">/* ... */</span> <span class="tok-punc">}</span>
+
+<span class="tok-com">// consumer.js</span>
+<span class="tok-kw">import</span> <span class="tok-punc">{</span> <span class="tok-fn">formatDate</span> <span class="tok-punc">}</span> <span class="tok-kw">from</span> <span class="tok-str">'./utils.js'</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// bundler ko exactly pata hai parseDate kahin import nahi hua — usko drop kar dega</span>
+
+<span class="tok-com">// 📁 utils-bad.js — BAD: sab kuch ek default object mein bandled</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">formatDate</span><span class="tok-punc">(</span><span class="tok-fn">d</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">/* ... */</span> <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-fn">parseDate</span><span class="tok-punc">(</span><span class="tok-fn">s</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">/* ... */</span> <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// consumer2.js</span>
+<span class="tok-kw">import</span> <span class="tok-fn">utils</span> <span class="tok-kw">from</span> <span class="tok-str">'./utils-bad.js'</span><span class="tok-punc">;</span>
+<span class="tok-fn">utils</span><span class="tok-punc">.</span><span class="tok-fn">formatDate</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// sirf formatDate use ho raha hai, lekin bundler poora object safe nahi drop kar sakta</span>
+                                          <span class="tok-com">// kyunki property access dynamic hai — parseDate bhi bundle mein reh jaayega</span></code></pre>
+      </div>
+      <p>
+        Practical rule: utility modules, component libraries, aur design systems mein named exports
+        prefer karo. Default export tab thik hai jab module ki ek hi clear "main thing" ho (jaise ek
+        React component file jisme sirf ek default component export ho raha ho) aur naming consistency
+        team convention se maintain ho.
+      </p>
+
+      <h2 id="dynamic-import">Dynamic import() — code-splitting</h2>
+      <p>
+        Static <code>import</code>/<code>export</code> sirf module ke top-level pe likhe jaa sakte hain
+        — condition ke andar ya function ke andar nahi. Dynamic <code>import()</code> ye restriction
+        hata deta hai: ye ek expression hai (function jaisa dikhta hai lekin <code>super()</code> jaisa
+        special syntax hai), jo <strong>kahin bhi</strong> call ho sakta hai aur ek Promise return
+        karta hai jo module object resolve karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">import() — runtime pe module load karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">modulePath</span> <span class="tok-punc">=</span> <span class="tok-str">'./say.js'</span><span class="tok-punc">;</span>          <span class="tok-com">// path runtime pe bhi decide ho sakta hai — static import mein aisa nahi hota</span>
+
+<span class="tok-fn">import</span><span class="tok-punc">(</span><span class="tok-fn">modulePath</span><span class="tok-punc">)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span><span class="tok-fn">module</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>              <span class="tok-com">// resolved value = module ka poora namespace object</span>
+    <span class="tok-fn">module</span><span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-str">'Sharad'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// named export ko module.NAME se access karo</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">catch</span><span class="tok-punc">(</span><span class="tok-fn">err</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">'Load failed:'</span><span class="tok-punc">,</span> <span class="tok-fn">err</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// promise hai isliye normal .catch() se error handle hota hai</span>
+
+<span class="tok-com">// async/await ke saath, aur zyada clean</span>
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-fn">hi</span><span class="tok-punc">,</span> <span class="tok-fn">bye</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">import</span><span class="tok-punc">(</span><span class="tok-str">'./say.js'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// destructure directly — named exports await ke turant baad mil jaate hain</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-kw">default</span><span class="tok-punc">:</span> <span class="tok-fn">say</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">import</span><span class="tok-punc">(</span><span class="tok-str">'./say.js'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// default export namespace object mein "default" key ke andar milta hai</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Real use-case: route-based code splitting<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">button</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'click'</span><span class="tok-punc">,</span> <span class="tok-kw">async</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+                                          <span class="tok-com">// click hone tak ye heavy module bilkul download hi nahi hoga</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">{</span> <span class="tok-kw">default</span><span class="tok-punc">:</span> <span class="tok-fn">openModal</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">import</span><span class="tok-punc">(</span><span class="tok-str">'./modal-heavy.js'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                          <span class="tok-com">// lazy-load: sirf tab fetch hota hai jab user ko actually chahiye</span>
+  <span class="tok-fn">openModal</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                       <span class="tok-com">// ab module ready hai, use kar lo</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        Bundlers (Webpack, Vite/Rollup) <code>import()</code> calls ko automatically ek separate chunk
+        file mein split kar dete hain — initial bundle chhota rehta hai, aur heavy/rarely-used code
+        (modals, charts, admin panels, editors) sirf actual need pe download hote hain. Ye poora "code
+        splitting" ka mechanism hai, aur ye <strong>sirf</strong> dynamic <code>import()</code> se hi
+        possible hai — static imports ko bundler compile-time pe hi resolve karta hai, unhe conditionally
+        split nahi kar sakta.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 import() type="module" tak limited nahi</div>
+        <p>
+          Dynamic <code>import()</code> regular (non-module) scripts mein bhi kaam karta hai — isko
+          use karne ke liye <code>&lt;script type="module"&gt;</code> hona zaroori nahi. Ye isliye
+          possible hai kyunki ye ek runtime expression hai, static declarative syntax nahi — engine ko
+          usse handle karne ke liye poore file ko module-mode mein parse karne ki zaroorat nahi padti.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Generator</strong> = ek function jiska execution engine <code>yield</code> points pe freeze/unfreeze kar sakta hai — <code>.next()</code> body ko agle yield tak chalata hai.</li>
+        <li>Generator object khud <strong>iterable + iterator</strong> dono hai, isliye <code>for..of</code> mein seedha use ho sakta hai.</li>
+        <li>Custom iterable banane ke liye generator use karna manual <code>Symbol.iterator</code> se kaafi simpler hai — state manually track nahi karni padti.</li>
+        <li><code>yield*</code> se ek generator doosre generator ko transparently delegate kar sakta hai — composition ke liye.</li>
+        <li><code>.next(value)</code>, <code>.throw(err)</code>, <code>.return(val)</code> se generator ke andar do-tarfa communication ho sakti hai.</li>
+        <li><strong>Async generator</strong> (<code>async function*</code>) promises + generators combine karta hai — andar <code>await</code> aur <code>yield</code> dono chalte hain, consumer <code>for await...of</code> use karta hai.</li>
+        <li>ES modules hamesha <strong>strict mode</strong> mein chalte hain, apni scope rakhte hain, aur top-level <code>this</code> undefined hota hai.</li>
+        <li>Ek module <strong>URL ke hisaab se sirf ek baar</strong> execute hota hai — baad ke saare imports usi cached instance ka reference paate hain (natural singleton).</li>
+        <li>Named exports tree-shaking-friendly hain (static, per-name analyzable); default exports/object-bundles bundler ke liye harder to analyze hote hain.</li>
+        <li>Dynamic <code>import()</code> ek Promise return karta hai, kahin bhi call ho sakta hai, aur bundler code-splitting ka primary mechanism yahi hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Generator function ke andar internally kya hota hai jab .next() call hota hai?</strong><br>Hint: engine call ka execution context (variables, instruction pointer) freeze karke rakhta hai; next() call pe usi point se resume karta hai, agle yield tak chalata hai, phir dubara freeze.</li>
+        <li><strong>Generator object khud ek iterator kaise ban jaata hai for..of ke liye?</strong><br>Hint: generator object ke paas ek Symbol.iterator method hai jo khud <code>this</code> return karta hai — isliye iterable aur iterator dono ek hi object hai.</li>
+        <li><strong>yield* aur normal yield mein kya farak hai?</strong><br>Hint: yield* ek pura doosra generator (ya iterable) delegate karta hai — uske saare yields sequentially outer generator ke through pass hote hain, jaise ek hi flat generator chal raha ho.</li>
+        <li><strong>Async generator mein await aur yield dono ek saath kaise kaam karte hain?</strong><br>Hint: async function* async function ki tarah await pe promise resolve hone tak pause karta hai, AUR generator ki tarah yield pe consumer ko value dekar bhi pause karta hai — for await...of dono ko handle karta hai.</li>
+        <li><strong>Agar same module do alag components se import ho, kya uska code do baar chalega?</strong><br>Hint: nahi — module resolved URL se cache hota hai, sirf pehli baar execute hota hai, baad ke imports same cached exports object share karte hain (singleton behavior).</li>
+        <li><strong>Named export aur default export mein tree-shaking ka farak kyun hai?</strong><br>Hint: named exports statically-named hote hain isliye bundler exact usage track kar sakta hai aur unused ko drop kar sakta hai; default export (especially ek object) ka static analysis harder hota hai, poora bundle mein reh sakta hai.</li>
+        <li><strong>Dynamic import() code-splitting kaise enable karta hai jo static import nahi kar sakta?</strong><br>Hint: static imports compile-time pe resolve hote hain (fixed dependency graph), lekin import() ek runtime Promise-returning expression hai jise bundler automatically alag chunk mein split kar sakta hai aur sirf actual call hone pe fetch karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="13-promises-async-await.html">
+        <div class="label">← Previous</div>
+        <div class="title">Promises, Async/Await</div>
+      </a>
+      <a class="next" href="15-misc-js.html">
+        <div class="label">Next →</div>
+        <div class="title">Miscellaneous JS</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

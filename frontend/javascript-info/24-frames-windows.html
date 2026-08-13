@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frames &amp; Windows — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link active" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 24</div>
+      <div class="progress-pill">24 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Popups · postMessage · Clickjacking</span>
+      <h1>Frames &amp; Windows</h1>
+      <p class="subtitle">
+        Ek browser tab sirf ek window nahi hota — usme <code>iframe</code>s ho sakte hain, wo popups
+        khol sakta hai, aur ye sab windows ek doosre ko dekh/access kar sakte hain — lekin
+        <strong>sirf jab tak same-origin policy allow kare</strong>. Is chapter mein hum root-level
+        dekhenge ki <code>window.open()</code> internally kaise kaam karta hai, browser cross-origin
+        windows ke beech access ko kaise block karta hai, <code>postMessage</code> is restriction ko
+        safely kaise bypass karne ka <em>designed</em> tareeka hai, aur clickjacking — ek real attack
+        jo inhi frame mechanics ko exploit karta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#popup-open">window.open() — popup kholna</a></li>
+          <li><a href="#popup-blocking">Popup blocking rules</a></li>
+          <li><a href="#popup-features">Window features string</a></li>
+          <li><a href="#popup-methods">Popup pe methods — focus, close, closed</a></li>
+          <li><a href="#same-origin">Same-origin policy — exact definition</a></li>
+          <li><a href="#cross-origin-access">Cross-origin access ka reality check</a></li>
+          <li><a href="#postmessage">window.postMessage — safe cross-origin messaging</a></li>
+          <li><a href="#clickjacking">Clickjacking attack — full walkthrough</a></li>
+          <li><a href="#clickjacking-defense">Defense: X-Frame-Options aur CSP frame-ancestors</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="popup-open">window.open() — popup kholna</h2>
+      <p>
+        Popup windows purana technique hai, lekin OAuth login flows (jaise "Sign in with Google") jaisi
+        jagah aaj bhi zinda hai — kyunki popup ka apna alag <code>window</code> object hota hai jo
+        parent se independent navigate ho sakta hai, aur parent ko result <code>postMessage</code> ya
+        <code>window.opener</code> se bata sakta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">window.open() syntax<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// window.open(url, name, params) — teen parameters, teeno optional</span>
+<span class="tok-kw">let</span> <span class="tok-punc">win</span> <span class="tok-punc">=</span> <span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">open</span><span class="tok-punc">(</span>
+  <span class="tok-str">'https://javascript.info/'</span><span class="tok-punc">,</span> <span class="tok-com">// url: naye window mein kaunsa page load hoga</span>
+  <span class="tok-str">'jsinfoWindow'</span><span class="tok-punc">,</span>          <span class="tok-com">// name: window ka naam — agar ye naam pehle se exist karta hai, naya window nahi khulta, WAHI reuse hota hai</span>
+  <span class="tok-str">'width=600,height=400'</span>  <span class="tok-com">// params: comma-separated feature string (koi space nahi honi chahiye beech mein)</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// return value: naye window ka Window object reference, ya null agar block ho gaya</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">win</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Popup block ho gaya browser ne'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ye case handle karna zaroori hai, silently fail nahi karna</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        <code>name</code> parameter ka ek subtle root-level behavior hai: ye <code>&lt;a target="name"&gt;</code>
+        ke exact semantics follow karta hai. Agar same <code>name</code> wala window already open hai,
+        <code>open()</code> naya window <strong>nahi</strong> banata — usi window mein navigate kar deta
+        hai. Isi wajah se hum har baar unique-ish naam use karte hain jab humein har call pe naya
+        popup chahiye hota hai.
+      </p>
+
+      <h2 id="popup-blocking">Popup blocking rules — root cause</h2>
+      <p>
+        Browser ka popup blocker ek simple heuristic follow karta hai: <strong>"kya ye <code>open()</code>
+        call direct user gesture (click/keypress) ke response mein, synchronously chal rahi hai?"</strong>
+        Agar haan, allow. Agar <code>setTimeout</code>, Promise callback, ya async delay ke baad chali,
+        block — kyunki attacker page load hote hi ya user ke interact kiye bina spam popups khol sakta
+        tha.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Allowed vs blocked<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ALLOWED: onclick handler ke andar SYNCHRONOUSLY call ho raha hai</span>
+<span class="tok-punc">button</span><span class="tok-punc">.</span><span class="tok-punc">onclick</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">open</span><span class="tok-punc">(</span><span class="tok-str">'https://javascript.info'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// user ka click hi trigger hai, browser trust karta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// BLOCKED: setTimeout ke andar — user gesture aur open() call ke beech "trust" toot jaata hai</span>
+<span class="tok-punc">button</span><span class="tok-punc">.</span><span class="tok-punc">onclick</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">open</span><span class="tok-punc">(</span><span class="tok-str">'https://javascript.info'</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">3000</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3 sec baad tak "user activation" flag expire ho chuka hota hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "User activation" ek time-bound internal flag hai</div>
+        <p>
+          Spec-level pe iska naam <strong>transient activation</strong> hai — click event ke baad
+          browser kuch seconds ke liye ek internal flag set rakhta hai jo "user abhi active tha" batata
+          hai. Sirf isi window ke andar <code>open()</code>, autoplay, fullscreen jaisi APIs allow hoti
+          hain. Ek chained <code>fetch().then(() =&gt; window.open(...))</code> bhi async gap ki wajah se
+          fail ho sakta hai agar fetch slow hai — isliye OAuth popups mein log button click pe turant
+          <code>open("about:blank")</code> khol dete hain, phir baad mein us window ka <code>location</code>
+          set karte hain, taaki activation window miss na ho.
+        </p>
+      </div>
+
+      <h2 id="popup-features">Window features string</h2>
+      <p>
+        Teesra parameter ek comma-separated string hai — spaces allowed nahi hain beech mein. Ye
+        window chrome (browser UI: toolbar, menubar, scrollbars) aur position/size control karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Minimalistic popup — sirf content, koi chrome nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">params</span> <span class="tok-punc">=</span> <span class="tok-str">`scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,</span>
+<span class="tok-str">width=600,height=300,left=100,top=100`</span><span class="tok-punc">;</span>
+<span class="tok-com">// scrollbars/resizable/status/location/toolbar/menubar=no  → browser chrome ke sab optional parts hide</span>
+<span class="tok-com">// width/height  → popup ka pixel size (bahut chhota diya to browser minimum size force kar deta hai)</span>
+<span class="tok-com">// left/top      → screen ke top-left se popup ka position</span>
+
+<span class="tok-fn">open</span><span class="tok-punc">(</span><span class="tok-str">'/'</span><span class="tok-punc">,</span> <span class="tok-str">'test'</span><span class="tok-punc">,</span> <span class="tok-punc">params</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// naya window in exact features ke saath khulta hai</span></code></pre>
+      </div>
+      <p>
+        Root-level default rule: koi feature specify na kiya jaaye to wo <code>no</code> (disabled) maana
+        jaata hai — sirf <code>left</code>/<code>top</code>/<code>width</code>/<code>height</code>
+        exception hain, jo omit hone par browser pichhle khule window ke paas rakh deta hai (missing
+        <code>left/top</code> to naya window last-opened window ke thoda offset pe khulta hai). Modern
+        browsers is poore feature-string API ko heavily restrict karte hain (chhote/off-screen popups
+        se malicious tricks rokne ke liye) — treat this as a hint, not a guarantee.
+      </p>
+
+      <h2 id="popup-methods">Popup pe methods — focus, close, closed</h2>
+      <div class="code-block">
+        <div class="code-title">Popup lifecycle — open se close tak<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">newWin</span> <span class="tok-punc">=</span> <span class="tok-fn">open</span><span class="tok-punc">(</span><span class="tok-str">'/'</span><span class="tok-punc">,</span> <span class="tok-str">'example'</span><span class="tok-punc">,</span> <span class="tok-str">'width=300,height=300'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// popup khola, reference newWin mein store</span>
+<span class="tok-punc">newWin</span><span class="tok-punc">.</span><span class="tok-fn">focus</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// popup ko foreground mein le aao — kai browsers already-open popup ko background rakh dete hain</span>
+
+<span class="tok-punc">newWin</span><span class="tok-punc">.</span><span class="tok-punc">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// popup ka document load ho chuka hai, ab safe hai DOM touch karna</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">html</span> <span class="tok-punc">=</span> <span class="tok-str">`&lt;div style="font-size:30px"&gt;Welcome!&lt;/div&gt;`</span><span class="tok-punc">;</span> <span class="tok-com">// inject karne ka HTML</span>
+  <span class="tok-punc">newWin</span><span class="tok-punc">.</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-punc">body</span><span class="tok-punc">.</span><span class="tok-fn">insertAdjacentHTML</span><span class="tok-punc">(</span><span class="tok-str">'afterbegin'</span><span class="tok-punc">,</span> <span class="tok-punc">html</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// popup ke document mein insert (SAME-ORIGIN hone par hi allowed)</span>
+
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-punc">newWin</span><span class="tok-punc">.</span><span class="tok-fn">close</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 3 sec baad popup band karo — sirf ye kaam karta hai jab window open() se banaya gaya ho</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">newWin</span><span class="tok-punc">.</span><span class="tok-punc">closed</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — closed property hamesha check karne layak hai before touching newWin further</span>
+  <span class="tok-punc">,</span> <span class="tok-num">3000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        <code>win.close()</code> sirf un windows pe reliably chalta hai jo script se
+        <code>window.open()</code> ke through khule ho — normal user-opened tabs pe browsers isse
+        silently ignore kar dete hain (security ke liye, taaki koi site user ka tab forcibly band na kar
+        de). Isi tarah <code>moveTo/moveBy/resizeTo/resizeBy</code> bhi sirf script-opened popups pe
+        kaam karte hain, maximized windows pe nahi.
+      </p>
+
+      <h2 id="same-origin">Same-origin policy — exact definition</h2>
+      <p>
+        Ye poore chapter ka <strong>foundation</strong> hai — bina isse samjhe na cross-window access,
+        na postMessage, na clickjacking defense samajh aayega. Do URLs "same-origin" tabhi kehlate hain
+        jab teeno match karein:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Same-origin criteria — teeno match chahiye<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// http://site.com  aur  http://site.com/path  → SAME origin (protocol=http, domain=site.com, port=default 80)</span>
+<span class="tok-com">// http://site.com  vs   https://site.com       → DIFFERENT (protocol http vs https)</span>
+<span class="tok-com">// http://site.com  vs   http://site.com:8080   → DIFFERENT (port 80 vs 8080)</span>
+<span class="tok-com">// http://site.com  vs   http://www.site.com    → DIFFERENT (subdomain bhi domain ka hissa hai)</span>
+<span class="tok-com">// http://site.com  vs   http://site.org         → DIFFERENT (TLD/domain hi alag)</span></code></pre>
+      </div>
+      <p>
+        Root cause ye rule kyun hai: origin browser ka "trust boundary" hai. Agar sirf domain match
+        karna kaafi hota (port/protocol ignore), to same server pe chalne wala koi bhi HTTP service
+        (dev server, admin panel kisi weird port pe) production HTTPS site ke saath directly interact
+        kar paata — jo isolation todta hai. Isliye teeno criteria strict hain.
+      </p>
+
+      <h2 id="cross-origin-access">Cross-origin access ka reality check</h2>
+      <p>
+        Same-origin windows (chahe popup ho ya iframe) ek doosre ke <code>document</code>, variables,
+        DOM sab kuch directly read/write kar sakte hain. Cross-origin windows ke liye browser
+        <strong>almost sab kuch block</strong> kar deta hai — sirf ek exception hai:
+        <code>location</code> property pe <em>write</em> allowed hai (redirect karne ke liye), lekin
+        <em>read</em> nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Cross-origin iframe access — kya allowed, kya nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">iframe</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"https://example.com"</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"iframe"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">iframe</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">iframe</span><span class="tok-punc">.</span><span class="tok-punc">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">iframeWindow</span> <span class="tok-punc">=</span> <span class="tok-punc">iframe</span><span class="tok-punc">.</span><span class="tok-punc">contentWindow</span><span class="tok-punc">;</span> <span class="tok-com">// OK — Window reference khud accessible hai, cross-origin ho tab bhi</span>
+
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">let</span> <span class="tok-punc">doc</span> <span class="tok-punc">=</span> <span class="tok-punc">iframe</span><span class="tok-punc">.</span><span class="tok-punc">contentDocument</span><span class="tok-punc">;</span> <span class="tok-com">// FAILS — cross-origin document read blocked</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// SecurityError throw hota hai</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">let</span> <span class="tok-punc">href</span> <span class="tok-punc">=</span> <span class="tok-punc">iframe</span><span class="tok-punc">.</span><span class="tok-punc">contentWindow</span><span class="tok-punc">.</span><span class="tok-punc">location</span><span class="tok-punc">.</span><span class="tok-punc">href</span><span class="tok-punc">;</span> <span class="tok-com">// FAILS — location READ bhi blocked cross-origin</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-punc">iframe</span><span class="tok-punc">.</span><span class="tok-punc">contentWindow</span><span class="tok-punc">.</span><span class="tok-punc">location</span> <span class="tok-punc">=</span> <span class="tok-str">'/'</span><span class="tok-punc">;</span> <span class="tok-com">// OK — location WRITE allowed hai, redirect karwa sakte ho</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Root cause is ek exception (location writable but not readable) ka: parent ko itna control
+        dena useful hai (e.g. ek login iframe ko redirect karna), lekin <em>read</em> allow karne se
+        parent iframe ki current URL se sensitive info (query params mein session tokens, search terms)
+        chura sakta tha — isliye sirf one-way write channel khula rakha gaya hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: window.frames, parent, top</div>
+        <p>
+          Navigation ke liye teen references yaad rakho: <code>window.frames</code> (child iframe
+          windows ka collection — index ya <code>name</code> se access), <code>window.parent</code>
+          (immediate parent), aur <code>window.top</code> (sabse bahar wala window). Ye teeno
+          cross-origin frames ke liye bhi accessible hain (sirf reference, content nahi) — isliye
+          <code>if (window === top)</code> check "kya main topmost window hoon ya kisi frame ke andar
+          hoon" reliably batata hai, chahe embedding cross-origin ho. Yehi check clickjacking defense
+          ka core building block hai (neeche dekho).
+        </p>
+      </div>
+
+      <h2 id="postmessage">window.postMessage — safe cross-origin messaging</h2>
+      <p>
+        Same-origin policy ne cross-origin windows ke beech direct access poori tarah band kar diya —
+        lekin legit use-cases hain jaha do different-origin windows ko baat karni hoti hai (payment
+        gateway iframe, OAuth popup, chat widget). Uske liye spec ne ek <strong>explicit, controlled</strong>
+        channel banaya: <code>postMessage</code>. Ye direct object access nahi deta — sirf messages
+        <em>pass</em> karta hai (structured clone algorithm se data copy hota hai, reference nahi).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Sending — postMessage(data, targetOrigin)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">win</span> <span class="tok-punc">=</span> <span class="tok-punc">window</span><span class="tok-punc">.</span><span class="tok-punc">frames</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// target window ka reference (yahan pehla child iframe)</span>
+
+<span class="tok-com">// targetOrigin ZAROORI hai — browser message tabhi deliver karega jab target window ka</span>
+<span class="tok-com">// ACTUAL origin is string se match kare. Ye check message SEND karte waqt hota hai, receive pe nahi.</span>
+<span class="tok-punc">win</span><span class="tok-punc">.</span><span class="tok-fn">postMessage</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">type</span><span class="tok-punc">:</span> <span class="tok-str">'greet'</span><span class="tok-punc">,</span> <span class="tok-attr">payload</span><span class="tok-punc">:</span> <span class="tok-str">'hello'</span> <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-str">'https://trusted-child.com'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// '*' matlab "kisi bhi origin ko bhej do" — DANGEROUS, sirf tab use karo jab data truly non-sensitive ho</span>
+<span class="tok-punc">win</span><span class="tok-punc">.</span><span class="tok-fn">postMessage</span><span class="tok-punc">(</span><span class="tok-str">'public data'</span><span class="tok-punc">,</span> <span class="tok-str">'*'</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Receiving — message event listener<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"message"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// event.origin: message bhejne wale window ka ACTUAL origin — SIRF isi se trust decide karo</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">origin</span> <span class="tok-punc">!==</span> <span class="tok-str">'https://trusted-parent.com'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span><span class="tok-punc">;</span> <span class="tok-com">// unknown origin se aaya message — ignore karo, kabhi bhi blindly trust mat karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-com">// event.data: bheja gaya actual payload — structured clone se aaya hai, ISKA SHAPE bhi validate karo</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">data</span> <span class="tok-punc">!==</span> <span class="tok-str">'object'</span> <span class="tok-punc">||</span> <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">data</span><span class="tok-punc">.</span><span class="tok-punc">type</span> <span class="tok-punc">!==</span> <span class="tok-str">'greet'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span><span class="tok-punc">;</span> <span class="tok-com">// malformed ya unexpected shape — trust mat karo, silently drop karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Received: ${event.data.payload}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab safe hai payload use karna</span>
+
+  <span class="tok-com">// event.source: sender window ka reference — reply bhejne ke liye useful, cross-origin ho tab bhi</span>
+  <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">source</span><span class="tok-punc">.</span><span class="tok-fn">postMessage</span><span class="tok-punc">(</span><span class="tok-str">'ack'</span><span class="tok-punc">,</span> <span class="tok-punc">event</span><span class="tok-punc">.</span><span class="tok-punc">origin</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// reply — targetOrigin yahan bhi explicit rakho, event.origin se</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// addEventListener use karo — window.onmessage= sirf ek handler allow karta hai aur overwrite ho sakta hai</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ targetOrigin: '*' ka real danger</div>
+        <p>
+          Agar tum <code>win.postMessage(data, '*')</code> likhte ho aur beech mein <code>win</code>
+          navigate ho chuka hai (user ne link click kar diya, ya attacker ne apne iframe ko us URL pe
+          redirect kar diya jaha tumhara code message bhej raha tha), to message <strong>jahan bhi wo
+          window ab pahunch chuka hai</strong> wahin deliver ho jaata hai — chahe wo koi malicious
+          third-party page ho. Agar data mein session token, user email, ya koi bhi sensitive info hai,
+          ye directly attacker ko leak ho sakta hai. Root fix: <strong>hamesha exact targetOrigin do</strong>
+          jab data sensitive ho — <code>'*'</code> sirf truly-public data ke liye.
+        </p>
+      </div>
+
+      <h2 id="clickjacking">Clickjacking attack — full walkthrough</h2>
+      <p>
+        Clickjacking exactly wahi frame mechanics exploit karta hai jo humne abhi dekhi — ek page
+        (attacker ka) doosre origin ke page ko <code>&lt;iframe&gt;</code> mein embed kar sakta hai
+        (jab tak target site ise explicitly block na kare), aur CSS se us iframe ko <strong>invisible</strong>
+        bana sakta hai. User ko lagta hai wo attacker ke fake button pe click kar raha hai — asal mein
+        wo click invisible iframe ke andar target site ke real button tak "chala jaata" hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Clickjacking — invisible iframe overlay<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">.</span><span class="tok-fn">iframe-container</span> <span class="tok-punc">{</span>
+    <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">400</span><span class="tok-punc">px</span><span class="tok-punc">;</span>       <span class="tok-com">/* target site ke real button ke around ka size match karta hai */</span>
+    <span class="tok-attr">height</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">px</span><span class="tok-punc">;</span>
+    <span class="tok-attr">position</span><span class="tok-punc">:</span> <span class="tok-fn">absolute</span><span class="tok-punc">;</span> <span class="tok-com">/* fake button ke exact upar precisely position karne ke liye */</span>
+    <span class="tok-attr">top</span><span class="tok-punc">:</span> <span class="tok-num">5</span><span class="tok-punc">px</span><span class="tok-punc">;</span> <span class="tok-attr">left</span><span class="tok-punc">:</span> <span class="tok-punc">-</span><span class="tok-num">14</span><span class="tok-punc">px</span><span class="tok-punc">;</span> <span class="tok-com">/* target ke real "Delete Account" button ke upar align */</span>
+    <span class="tok-attr">opacity</span><span class="tok-punc">:</span> <span class="tok-num">0</span><span class="tok-punc">;</span>       <span class="tok-com">/* KEY: poora invisible — user ko iframe dikhta hi nahi */</span>
+    <span class="tok-attr">z-index</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">;</span>      <span class="tok-com">/* fake button ke upar stack karo, taaki click iframe ko hi mile */</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span><span class="tok-tag">Click</span> <span class="tok-tag">to</span> <span class="tok-tag">get</span> <span class="tok-tag">a</span> <span class="tok-tag">free</span> <span class="tok-tag">prize</span><span class="tok-punc">:</span><span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>              <span class="tok-com">&lt;!-- decoy text jo user ko lure kare --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">iframe</span> <span class="tok-attr">class</span><span class="tok-punc">=</span><span class="tok-str">"iframe-container"</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"https://victim-bank.com/transfer-confirm"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">iframe</span><span class="tok-punc">&gt;</span>
+                                                                       <span class="tok-com">&lt;!-- REAL target page, poori tarah invisible --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span><span class="tok-tag">Click</span> <span class="tok-tag">here</span><span class="tok-punc">!</span><span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>                                            <span class="tok-com">&lt;!-- FAKE visible button, invisible iframe ke NEECHE, click "through" jaata hai --&gt;</span></code></pre>
+      </div>
+      <p>
+        User dekhta hai sirf "Click here!" button — jab wo click karta hai, actual click coordinate pe
+        z-index se upar wala invisible iframe hota hai, so browser click ko us iframe ke andar (real
+        bank site ke real "Confirm Transfer" button) ko deliver kar deta hai. Result: user apni marzi
+        ke bina, apne already-logged-in session se, ek real transaction confirm kar deta hai — bina
+        kabhi bank ka page dekhe.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Ye sirf mouse clicks pe kaam karta hai, lekin utna hi dangerous hai</div>
+        <p>
+          Keyboard input clickjack karna mushkil hai (user ko realize ho jaata agar text field mein type
+          karte waqt characters screen pe na dikhein) — lekin single clicks (delete account, confirm
+          payment, "like"/"follow" jaisi social actions, permission grant dialogs) is attack ka prime
+          target hain kyunki inka feedback minimal hota hai. 2008-09 mein Twitter, Facebook, aur Adobe
+          Flash settings panel tak is attack se compromise hue the.
+        </p>
+      </div>
+
+      <h2 id="clickjacking-defense">Defense: X-Frame-Options aur CSP frame-ancestors</h2>
+      <p>
+        Purana defense tha "frame busting" — JS se check karna ki page kisi frame ke andar to nahi
+        (<code>if (top != window) top.location = window.location</code>). Ye <strong>obsolete</strong>
+        hai kyunki attacker parent page pe <code>onbeforeunload</code> handler laga ke navigation ko
+        cancel-prompt karwa sakta hai, ya iframe ko <code>sandbox="allow-scripts"</code> (bina
+        <code>allow-top-navigation</code> ke) se embed karke JS ko top navigate karne se hi rok sakta
+        hai. Modern defense <strong>server-side HTTP headers</strong> hain, jinhe browser guaranteed
+        respect karta hai HTML load hone se pehle hi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">X-Frame-Options header — server response mein<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># DENY: page KABHI bhi kisi frame ke andar load nahi hoga, chahe same-origin bhi ho</span>
+<span class="tok-attr">X-Frame-Options</span><span class="tok-punc">:</span> <span class="tok-str">DENY</span>
+
+<span class="tok-com"># SAMEORIGIN: sirf apni hi origin ke frame ke andar embed hone do — sabse common default</span>
+<span class="tok-attr">X-Frame-Options</span><span class="tok-punc">:</span> <span class="tok-str">SAMEORIGIN</span>
+
+<span class="tok-com"># ALLOW-FROM: legacy, sirf ek specific origin allow — poorly supported hai, mat use karo</span>
+<span class="tok-attr">X-Frame-Options</span><span class="tok-punc">:</span> <span class="tok-str">ALLOW-FROM https://partner-site.com</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">CSP frame-ancestors — modern replacement<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># frame-ancestors 'none' — X-Frame-Options: DENY ke equivalent, koi bhi origin embed nahi kar sakta</span>
+<span class="tok-attr">Content-Security-Policy</span><span class="tok-punc">:</span> <span class="tok-str">frame-ancestors 'none'</span>
+
+<span class="tok-com"># frame-ancestors 'self' — SAMEORIGIN ke equivalent</span>
+<span class="tok-attr">Content-Security-Policy</span><span class="tok-punc">:</span> <span class="tok-str">frame-ancestors 'self'</span>
+
+<span class="tok-com"># frame-ancestors ke saath MULTIPLE trusted origins list ho sakte hain — X-Frame-Options mein ye possible nahi tha</span>
+<span class="tok-attr">Content-Security-Policy</span><span class="tok-punc">:</span> <span class="tok-str">frame-ancestors 'self' https://partner-site.com https://checkout.partner-site.com</span></code></pre>
+      </div>
+      <p>
+        <code>frame-ancestors</code> CSP directive <code>X-Frame-Options</code> ka officially recommended
+        successor hai — zyada flexible (multiple origins list kar sakte ho, wildcards support karta hai)
+        aur sabhi modern browsers isse respect karte hain. Best practice: <strong>dono headers bhejo</strong>
+        — <code>frame-ancestors</code> primary defense ke liye, <code>X-Frame-Options: SAMEORIGIN/DENY</code>
+        fallback ke liye un ancient browsers ke liye jo CSP nahi samajhte.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: SameSite cookies — ek aur defense layer</div>
+        <p>
+          Clickjacking attack sirf tab kaam karta hai jab victim already target site pe
+          <strong>logged in</strong> ho (uska session cookie invisible iframe ke saath automatically
+          bhej diya jaata hai). <code>Set-Cookie: sessionId=xyz; SameSite=Lax</code> (ya
+          <code>Strict</code>) is cross-site cookie-sending ko hi block kar deta hai — cookie sirf
+          tabhi bhejta hai jab request same-site navigation se aaya ho, cross-origin iframe embed se
+          nahi. Ye <code>frame-ancestors</code>/<code>X-Frame-Options</code> ka replacement nahi hai
+          (public/non-authenticated content ab bhi framing se vulnerable rehta hai), balki
+          <strong>defense-in-depth</strong> ka extra layer hai — modern production apps mein dono ek
+          saath use hote hain.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>window.open(url, name, params)</code> — <code>name</code> agar existing window se match kare to naya window nahi khulta, reuse hota hai. Popup sirf synchronous user-gesture handler ke andar reliably khulta hai — async delay ke baad "transient activation" expire ho jaata hai.</li>
+        <li>Same-origin policy: <strong>protocol + domain + port</strong> teeno match hone chahiye. Cross-origin windows/iframes ke beech sirf <code>location</code> WRITE allowed hai, sab kuch aur (document, variables, location READ) blocked hai.</li>
+        <li><code>postMessage(data, targetOrigin)</code> hi cross-origin communication ka <em>designed</em>, safe channel hai — data structured-clone hokar copy hota hai, direct reference nahi milta.</li>
+        <li><code>targetOrigin: '*'</code> khatarnak hai agar data sensitive ho — window navigate ho chuka ho to message wrong (potentially malicious) origin ko chala jaata hai.</li>
+        <li>Receiving side pe <strong>hamesha</strong> <code>event.origin</code> validate karo — <code>event.data</code> attacker-controlled ho sakta hai, blindly trust mat karo.</li>
+        <li>Clickjacking = invisible iframe overlay jo real button ke upar precisely position hota hai, user ka click "through" real site ke button tak jaata hai.</li>
+        <li>Frame busting (<code>if (top != window) top.location = ...</code>) obsolete hai — <code>onbeforeunload</code> se defeat ho jaata hai. Real defense: <code>X-Frame-Options</code> + <code>Content-Security-Policy: frame-ancestors</code> HTTP headers, plus <code>SameSite</code> cookies defense-in-depth ke liye.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>window.open() popup blocker se kab bachta hai aur kab block hota hai?</strong><br>Hint: sirf tab jab call synchronously, direct user-gesture event handler (click/keypress) ke andar ho — koi async gap (setTimeout, awaited fetch) transient activation expire kar deta hai.</li>
+        <li><strong>Same-origin policy ki exact definition kya hai?</strong><br>Hint: protocol, domain, aur port — teeno match hone chahiye. Subdomain bhi domain ka hissa maana jaata hai (www.site.com != site.com).</li>
+        <li><strong>Cross-origin window pe location property ka special behavior kya hai?</strong><br>Hint: WRITE allowed hai (redirect ke liye), READ blocked hai — one-way exception, taaki parent kisi child ki current URL se sensitive info steal na kar sake.</li>
+        <li><strong>postMessage mein targetOrigin: '*' kab dangerous ban jaata hai?</strong><br>Hint: agar target window beech mein navigate ho chuka ho, message us naye (potentially attacker-controlled) origin ko deliver ho jaata hai — sensitive data leak ho sakta hai.</li>
+        <li><strong>Message receive karte waqt security ke liye kya-kya validate karna chahiye?</strong><br>Hint: event.origin ko whitelist ke against check karo, aur event.data ka shape/type bhi validate karo — kabhi blindly trust mat karo, chahe origin match bhi kare.</li>
+        <li><strong>Frame busting technique (top.location reassignment) ko attacker kaise defeat kar sakta hai?</strong><br>Hint: parent page pe onbeforeunload handler laga ke navigation prompt trigger karta hai, ya iframe ko sandbox="allow-scripts" (allow-top-navigation ke bina) se embed karta hai.</li>
+        <li><strong>X-Frame-Options aur CSP frame-ancestors mein kya farak hai, aur dono ek saath kyun bheje jaate hain?</strong><br>Hint: frame-ancestors zyada flexible hai (multiple origins list kar sakta hai) aur modern standard hai; X-Frame-Options legacy fallback hai un browsers ke liye jo CSP support nahi karte — defense-in-depth ke liye dono bhejte hain.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="23-misc-browser.html">
+        <div class="label">← Previous</div>
+        <div class="title">Misc Browser</div>
+      </a>
+      <a class="next" href="25-binary-data-files.html">
+        <div class="label">Next →</div>
+        <div class="title">Binary Data &amp; Files</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

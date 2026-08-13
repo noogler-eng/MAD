@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Understanding the Critical Rendering Path — Web Performance Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link active" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Critical Rendering Path</div>
+      <div class="progress-pill">Chapter 3 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Rendering Pipeline · DOM · CSSOM · Layout</span>
+      <h1>Understanding the Critical Rendering Path</h1>
+      <p class="subtitle">
+        Browser tumhare HTML/CSS/JS ko pixels mein kaise convert karta hai — DOM se leke screen tak ka poora
+        internal pipeline, root-level detail mein, taaki "render-blocking" aur "parser-blocking" jaise terms
+        sirf buzzwords na rahe, balki tumhe pata ho ki andar exactly kya block ho raha hai aur kyun.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#pipeline-overview">1. Rendering Pipeline — Bird's Eye View</a></li>
+          <li><a href="#dom">2. DOM Construction</a></li>
+          <li><a href="#cssom">3. CSSOM Construction</a></li>
+          <li><a href="#render-tree">4. Render Tree</a></li>
+          <li><a href="#layout-paint-composite">5. Layout → Paint → Composite</a></li>
+          <li><a href="#render-blocking">6. Render-Blocking Resources</a></li>
+          <li><a href="#parser-blocking">7. Parser-Blocking Resources</a></li>
+          <li><a href="#timeline">8. Narrated Timeline — Ek Real Document</a></li>
+          <li><a href="#crp-optimization">9. Critical Rendering Path Optimize Karna</a></li>
+          <li><a href="#contentful-path">10. Critical Contentful Rendering Path</a></li>
+          <li><a href="#devtools">11. DevTools mein Ye Sab Dikhega Kahan</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="pipeline-overview">1. Rendering Pipeline — Bird's Eye View</h2>
+      <p>
+        Jab browser koi page load karta hai, wo ek fixed sequence of steps follow karta hai jisse
+        <strong>"Critical Rendering Path" (CRP)</strong> kehte hain — yaani wo minimum steps aur resources
+        jo browser ko chahiye hote hain page ka <em>first render</em> screen pe dikhane ke liye. Ye sirf
+        academic concept nahi hai — jitna lamba ye path hoga (jitne zyada blocking resources honge), utna
+        der se user ko kuch dikhega.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 8-step pipeline (root to pixel)</div>
+        <ol>
+          <li><strong>DOM Construction</strong> — HTML parse hoke Document Object Model banta hai.</li>
+          <li><strong>CSSOM Construction</strong> — CSS parse hoke CSS Object Model banta hai.</li>
+          <li><strong>JavaScript Execution</strong> — Scripts DOM/CSSOM ko modify kar sakte hain.</li>
+          <li><strong>Render Tree</strong> — DOM + CSSOM combine hoke sirf "visible" nodes ka tree banta hai.</li>
+          <li><strong>Layout (Reflow)</strong> — Har visible node ka exact position aur size calculate hota hai.</li>
+          <li><strong>Paint</strong> — Har element ke actual pixels (color, text, shadow, border) memory mein draw hote hain.</li>
+          <li><strong>Compositing</strong> — Alag-alag layers ke painted pixels ko sahi order mein overlay kiya jaata hai.</li>
+          <li><strong>Display</strong> — Final composited frame screen pe draw hota hai (GPU ke through).</li>
+        </ol>
+        <p>Jab tak ye saare steps complete nahi ho jaate, user ko screen pe kuch bhi content dikhega nahi.</p>
+      </div>
+
+      <p>
+        Browser ka goal ek balance maintain karna hota hai: bahut jaldi render karega to broken/unstyled
+        content dikhega (jaise purana "Flash of Unstyled Content"), aur agar <em>saare</em> resources ka
+        wait karega to page bilkul blank rahega zyada der tak. Isliye browser decide karta hai ki
+        <strong>minimum kaunse resources</strong> ke bina render karna "obviously broken" experience dega —
+        aur sirf unhi ka wait karta hai. Ye set of resources hi "critical resources" kehlate hain.
+      </p>
+
+      <table>
+        <tr><th>Browser wait karta hai in par</th><th>Browser typically wait NAHI karta</th></tr>
+        <tr><td>HTML ka jitna portion abhi tak mila hai</td><td>Poora HTML document (streaming parse)</td></tr>
+        <tr><td><code>&lt;head&gt;</code> mein render-blocking CSS</td><td>Web fonts</td></tr>
+        <tr><td><code>&lt;head&gt;</code> mein render-blocking JS</td><td>Images</td></tr>
+        <tr><td>—</td><td>Non-render-blocking JS (async/defer/body ke end mein)</td></tr>
+        <tr><td>—</td><td>Non-matching media CSS (jaise <code>media="print"</code>)</td></tr>
+      </table>
+
+      <h2 id="dom">2. DOM Construction</h2>
+      <p>
+        Browser HTML bytes ko network se stream mein padhta hai — ek baar mein poora file load hone ka
+        wait nahi karta. Process ye hota hai:
+      </p>
+      <ol>
+        <li><strong>Bytes → Characters</strong>: Raw bytes ko document ke declared encoding (jaise UTF-8) ke hisaab se characters mein decode kiya jaata hai.</li>
+        <li><strong>Characters → Tokens</strong>: HTML tokenizer characters ko tokens mein todta hai — jaise <code>&lt;div&gt;</code>, <code>class="x"</code>, text content, <code>&lt;/div&gt;</code>.</li>
+        <li><strong>Tokens → Nodes</strong>: Har token ek object (node) mein convert hota hai jisme uske properties hote hain.</li>
+        <li><strong>Nodes → DOM Tree</strong>: Nodes ko unke parent-child relationship ke hisaab se ek tree mein link kiya jaata hai — jo HTML ki nesting reflect karta hai.</li>
+      </ol>
+      <p>
+        Ye poora process <strong>incremental/streaming</strong> hai — browser HTML ka jitna hissa abhi tak
+        mila hai, usi se DOM banata jaata hai, aur saath-saath aage ka HTML bhi parse karta rehta hai. Isi
+        wajah se ek "preload scanner" (secondary, lightweight parser) parallel mein chalta hai jo aage aane
+        wale resources (<code>&lt;img&gt;</code>, <code>&lt;link&gt;</code>, <code>&lt;script&gt;</code>) ko
+        turant discover karke unki download start kar deta hai — chahe main parser kahin block ho.
+      </p>
+
+      <h2 id="cssom">3. CSSOM Construction</h2>
+      <p>
+        CSS bhi same tarah parse hota hai — bytes → characters → tokens → nodes → CSSOM tree. Lekin ek
+        fundamental difference hai: <strong>CSS additive nahi hai, cascading hai</strong>. Kisi bhi element
+        ka final computed style decide karne ke liye browser ko us element ke saare matching rules
+        (specificity, source order, inheritance sab) resolve karne padte hain. Isliye CSSOM tree ka structure
+        DOM se thoda alag hota hai — ye rules ko cascade order mein organize karta hai, aur child nodes
+        parent ke computed styles ko <em>inherit</em> karte hain jab tak explicitly override na ho.
+      </p>
+      <p>
+        Practical impact: jab tak <strong>poori</strong> CSSOM nahi ban jaati (yaani jab tak saara
+        render-blocking CSS download + parse nahi ho jaata), browser confident nahi ho sakta ki kisi element
+        ka final style kya hoga — kyunki neeche koi rule us element ko override kar sakta hai. Isi wajah se
+        CSS "render-blocking" hota hai by default.
+      </p>
+
+      <h2 id="render-tree">4. Render Tree</h2>
+      <p>
+        DOM tree aur CSSOM tree ready hone ke baad, browser dono ko combine karke <strong>Render Tree</strong>
+        banata hai. Ye sirf wo nodes include karta hai jo actually visually render honge:
+      </p>
+      <ul>
+        <li><code>&lt;head&gt;</code>, <code>&lt;script&gt;</code>, <code>&lt;meta&gt;</code> jaise non-visual nodes render tree mein <strong>exclude</strong> ho jaate hain.</li>
+        <li>Jo elements <code>display: none</code> hain wo bhi render tree se bahar reh jaate hain (lekin DOM mein rehte hain — <code>visibility: hidden</code> se ye different hai, wo render tree mein rehta hai bas invisible hota hai).</li>
+        <li>Har remaining node apne computed CSS styles ke saath render tree mein ek entry banata hai.</li>
+      </ul>
+      <p>
+        Yehi wajah hai ki render tree banane ke liye <strong>dono</strong> — DOM aur CSSOM — poore complete
+        chahiye. Agar CSSOM abhi partial hai (kyunki CSS abhi download ho raha hai), browser render tree
+        construction start hi nahi karega.
+      </p>
+
+      <h2 id="layout-paint-composite">5. Layout → Paint → Composite</h2>
+      <h3>Layout (Reflow)</h3>
+      <p>
+        Render tree ready hone ke baad, browser <strong>Layout</strong> step run karta hai — har node ka
+        exact <code>x, y</code> position aur <code>width, height</code> viewport ke relative calculate hota
+        hai. Ye recursive process hai: root se shuru hokar box model (content + padding + border + margin)
+        ke hisaab se poore tree ke through geometry compute hoti hai. Iska ek dusra naam "reflow" bhi hai
+        kyunki JS se DOM/style change hone par ye step baar-baar trigger ho sakta hai.
+      </p>
+      <h3>Paint</h3>
+      <p>
+        Layout complete hone ke baad, browser actual pixels draw karta hai — text, colors, borders, shadows,
+        images sab. Ye multiple layers mein hota hai (browser internally content ko layers mein split karta
+        hai — jaise ek fixed header apni alag layer mein ho sakta hai for performance).
+      </p>
+      <h3>Composite</h3>
+      <p>
+        Agar page multiple layers mein paint hua hai (jo aksar hota hai — z-index, transforms, opacity,
+        fixed positioning jaise properties naye layers create karte hain), to browser un layers ko sahi
+        stacking order mein combine karta hai — ye <strong>Compositing</strong> step hai. Ye largely
+        GPU-accelerated hota hai, isliye sirf compositor-only properties (<code>transform</code>,
+        <code>opacity</code>) animate karna layout/paint dono ko skip kar deta hai — yehi wajah hai ki
+        <code>transform</code> se animate karna <code>top/left</code> se animate karne se kaafi fast hota
+        hai.
+      </p>
+
+      <h2 id="render-blocking">6. Render-Blocking Resources</h2>
+      <p>
+        <strong>CSS by default render-blocking hoti hai.</strong> Jab browser ko <code>&lt;link rel="stylesheet"&gt;</code>
+        milta hai, wo us CSS file ke <em>fully download aur parse</em> hone tak render tree construction
+        (aur isliye screen pe kuch bhi draw karna) rok deta hai. Kyun? Kyunki jaisa upar dekha, koi bhi
+        element ka final style tab tak certain nahi hai jab tak poori CSSOM na ban jaaye.
+      </p>
+      <p>
+        Important nuance: render-blocking sirf <strong>rendering</strong> ko rokta hai, <strong>HTML parsing
+        ko nahi</strong> — browser CSS download hone ke dauraan bhi HTML parse karta rehta hai (taaki
+        preload scanner aage ke resources discover kar sake), bas render tree tab tak nahi banta.
+      </p>
+      <p>
+        Modern browsers (pehle Firefox, ab Chrome bhi) mein ek refinement hai: agar render-blocking CSS
+        <code>&lt;body&gt;</code> ke beech mein milti hai (head ke bahar), to sirf <em>usse neeche wala
+        content</em> block hota hai — jo already render ho chuka hai wo stay karta hai. Lekin practically,
+        jyadatar CSS <code>&lt;head&gt;</code> mein hoti hai, to effectively poora page hi block ho jaata
+        hai jab tak wo CSS load na ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">non-render-blocking CSS ka trick — media attribute</div>
+        <button class="copy-btn">Copy</button>
+        <pre><code><span class="tok-com">&lt;!-- Ye link render-blocking NAHI hai kyunki media="print" --&gt;</span>
+<span class="tok-com">&lt;!-- current viewing condition (screen) se match nahi karta, --&gt;</span>
+<span class="tok-com">&lt;!-- isliye browser HTML parsing/rendering ko is par block nahi karta, --&gt;</span>
+<span class="tok-com">&lt;!-- lekin file download phir bhi ho jaati hai background mein. --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-com">&lt;!-- ye ek external stylesheet hai --&gt;</span>
+      <span class="tok-attr">href</span>=<span class="tok-str">"print.css"</span> <span class="tok-com">&lt;!-- print-only styles is file mein hain --&gt;</span>
+      <span class="tok-attr">media</span>=<span class="tok-str">"print"</span><span class="tok-tag">&gt;</span> <span class="tok-com">&lt;!-- media query jo sirf printing ke time match hoti hai --&gt;</span>
+
+<span class="tok-com">&lt;!-- Explicit render-blocking control — naya "blocking" attribute --&gt;</span>
+<span class="tok-com">&lt;!-- Iske saath developer explicitly bol sakta hai ki ye resource --&gt;</span>
+<span class="tok-com">&lt;!-- render ko block kare, lekin HTML parsing continue rahe. --&gt;</span>
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"critical.js"</span> <span class="tok-com">&lt;!-- ye script critical maana ja raha hai --&gt;</span>
+        <span class="tok-attr">blocking</span>=<span class="tok-str">"render"</span><span class="tok-tag">&gt;&lt;/script&gt;</span> <span class="tok-com">&lt;!-- explicitly render-blocking mark kiya --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="parser-blocking">7. Parser-Blocking Resources</h2>
+      <p>
+        <strong>JavaScript by default "parser-blocking" hoti hai</strong> — jab tak <code>async</code> ya
+        <code>defer</code> se mark na ki jaaye. Reason simple hai: JS execute hote hi DOM ya CSSOM ko
+        <em>modify</em> kar sakta hai (jaise <code>document.write()</code>, <code>appendChild()</code>, ya
+        <code>element.style</code> set karna). Browser ko pata nahi hota ki script kya karega, isliye wo
+        <strong>safe side lene ke liye HTML parsing hi rok deta hai</strong> jab tak script download +
+        execute na ho jaaye.
+      </p>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Parser-blocking, render-blocking se bhi zyada costly hai</div>
+        <p>
+          Render-blocking sirf paint ko delay karta hai, lekin <strong>parser-blocking to HTML parsing
+          hi rok deta hai</strong> — matlab us script ke aage ka DOM hi nahi banega, jo aage ke saare
+          discovery (images, more CSS, more scripts) ko bhi delay kar deta hai. Isliye ek sync
+          <code>&lt;script&gt;</code> jo <code>&lt;head&gt;</code> mein hai, poore page ke first render
+          ko severely delay kar sakta hai — sirf apne aap ko block nahi karta, balki uske baad aane wale
+          sab kuch ko bhi.
+        </p>
+      </div>
+      <p>
+        Ek subtle interaction bhi hai: agar sync JS DOM query karta hai jo <code>getComputedStyle()</code>
+        jaisa kuch call karta hai, to us script ko execute karne se pehle browser ko CSSOM bhi complete
+        chahiye hoti hai (kyunki computed style ke liye poori cascade resolve karni padti hai). Isliye
+        <strong>agar CSS aur sync JS dono <code>&lt;head&gt;</code> mein hon</strong>, to JS ko CSS ke baad
+        rakhne se JS ko CSSOM-ready hone ka wait karna padta hai — is se "CSS blocks JS execution" wala
+        classic scenario banta hai, jo indirectly parsing ko aur delay kar deta hai.
+      </p>
+      <p>
+        Isko mitigate karne ke liye browsers ek <strong>preload scanner</strong> use karte hain — ek
+        secondary, lightweight HTML parser jo main parser ke block hone par bhi aage ka HTML scan karke
+        upcoming resources (scripts, styles, images) ki network requests <em>speculatively</em> shuru kar
+        deta hai, taaki jab main parser resume ho to resources already download ho chuke hon.
+      </p>
+
+      <table>
+        <tr><th>Attribute</th><th>Parsing block karta hai?</th><th>Execution kab hota hai</th></tr>
+        <tr><td>(kuch nahi — plain <code>&lt;script src&gt;</code>)</td><td>Haan</td><td>Turant, download hote hi, parsing rok ke</td></tr>
+        <tr><td><code>async</code></td><td>Nahi (download parallel)</td><td>Download complete hote hi, jaldi jab bhi ready ho (order guarantee nahi)</td></tr>
+        <tr><td><code>defer</code></td><td>Nahi (download parallel)</td><td>DOM parsing poori hone ke baad, document order mein</td></tr>
+      </table>
+
+      <h2 id="timeline">8. Narrated Timeline — Ek Real Document</h2>
+      <p>
+        Chalo ek concrete example lete hain aur line-by-line dekhte hain browser exactly kya karta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">index.html</div>
+        <button class="copy-btn">Copy</button>
+        <pre><code><span class="tok-tag">&lt;!DOCTYPE</span> <span class="tok-attr">html</span><span class="tok-tag">&gt;</span> <span class="tok-com">&lt;!-- 1. Browser HTML stream padhna shuru karta hai --&gt;</span>
+<span class="tok-tag">&lt;html&gt;</span> <span class="tok-com">&lt;!-- 2. Root DOM node bana --&gt;</span>
+<span class="tok-tag">&lt;head&gt;</span> <span class="tok-com">&lt;!-- 3. head node bana, non-visual hai isliye render tree mein nahi jaayega --&gt;</span>
+
+  <span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"style.css"</span><span class="tok-tag">&gt;</span>
+  <span class="tok-com">&lt;!-- 4. RENDER-BLOCKING CSS discover hua. Download start (network request). --&gt;</span>
+  <span class="tok-com">&lt;!-- Parsing RUKTI NAHI hai — HTML parser aage badhta rehta hai, --&gt;</span>
+  <span class="tok-com">&lt;!-- lekin render tree ab tak build nahi ho sakta jab tak ye CSS na aa jaaye. --&gt;</span>
+
+  <span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"analytics.js"</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+  <span class="tok-com">&lt;!-- 5. SYNC, PARSER-BLOCKING script discover hua. --&gt;</span>
+  <span class="tok-com">&lt;!-- HTML PARSING YAHIN RUK JAATI HAI. --&gt;</span>
+  <span class="tok-com">&lt;!-- Browser is script ko download karega, aur execute karne se pehle --&gt;</span>
+  <span class="tok-com">&lt;!-- CSSOM complete hone ka bhi wait karega (agar script styles query karta hai), --&gt;</span>
+  <span class="tok-com">&lt;!-- kyunki step 4 ki CSS abhi tak block kar rahi hai. --&gt;</span>
+  <span class="tok-com">&lt;!-- Preload scanner already aage ke resources ko discover kar chuka hoga --&gt;</span>
+  <span class="tok-com">&lt;!-- (jaise neeche wali hero-image), taaki unki download parallel mein shuru ho. --&gt;</span>
+
+<span class="tok-tag">&lt;/head&gt;</span> <span class="tok-com">&lt;!-- 6. head band. Ab tak DOM parsing analytics.js par ruki hui hai. --&gt;</span>
+<span class="tok-tag">&lt;body&gt;</span>
+  <span class="tok-tag">&lt;h1&gt;</span>Welcome<span class="tok-tag">&lt;/h1&gt;</span>
+  <span class="tok-com">&lt;!-- 7. Ye node abhi tak DOM mein add nahi hui — parser abhi bhi analytics.js pe blocked hai. --&gt;</span>
+
+  <span class="tok-tag">&lt;img</span> <span class="tok-attr">src</span>=<span class="tok-str">"hero.jpg"</span> <span class="tok-attr">alt</span>=<span class="tok-str">"Hero"</span><span class="tok-tag">&gt;</span>
+  <span class="tok-com">&lt;!-- 8. Image bhi critical resource NAHI hai — DOM node banega (jab parser yahan pahunchega), --&gt;</span>
+  <span class="tok-com">&lt;!-- lekin browser iske decode hone ka wait karke render nahi rokega. --&gt;</span>
+
+  <span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"widget.js"</span> <span class="tok-attr">defer</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+  <span class="tok-com">&lt;!-- 9. defer hone ki wajah se ye parsing ko block NAHI karta. --&gt;</span>
+  <span class="tok-com">&lt;!-- Download background mein hota hai, execution poore DOM parse hone ke baad. --&gt;</span>
+
+<span class="tok-tag">&lt;/body&gt;</span>
+<span class="tok-tag">&lt;/html&gt;</span> <span class="tok-com">&lt;!-- 10. DOM parsing yahan poori hoti hai (analytics.js ke resolve hone ke baad). --&gt;</span>
+
+<span class="tok-com">&lt;!--
+STEP-BY-STEP TIMELINE (jab tak sab resources ready nahi):
+
+t=0ms    HTML stream milna shuru → DOM construction shuru
+t=5ms    style.css discover → CSS download request fire (render-blocking)
+t=8ms    analytics.js discover → JS download request fire (parser-blocking)
+         HTML PARSING PAUSE (h1, img, widget.js abhi DOM mein nahi hain)
+t=8ms    (parallel) Preload scanner ne hero.jpg aur widget.js already
+         discover karke unki download bhi shuru kar di hai speculatively
+t=120ms  style.css download + parse complete → CSSOM ready
+t=140ms  analytics.js download complete
+         → execute hone se pehle CSSOM chahiye (already ready hai) → execute ho gaya
+         → HTML PARSING RESUME
+t=141ms  h1, img, widget.js (defer) discover — parsing tez chalti hai kyunki
+         inmein se koi bhi parser-blocking nahi hai
+t=145ms  DOM construction complete, </html> mil gaya
+t=145ms  DOM + CSSOM dono ready → RENDER TREE construction shuru
+t=150ms  Layout calculate hua (positions/sizes)
+t=155ms  Paint hua (pixels draw)
+t=158ms  Composite + Display → USER KO PEHLI BAAR KUCH DIKHA (First Paint)
+t=160ms  widget.js (defer) ab execute hota hai, kyunki DOM parsing complete ho chuki hai
+--&gt;</span></code></pre>
+      </div>
+      <p>
+        Notice karo: agar <code>analytics.js</code> ko <code>defer</code> laga dete, to HTML parsing kabhi
+        pause hi nahi hoti — <code>h1</code>, <code>img</code>, aur DOM turant ban jaate, aur first paint
+        bahut jaldi (CSS ready hote hi) ho sakta tha, analytics.js ke execution ka wait kiye bina.
+      </p>
+
+      <h2 id="crp-optimization">9. Critical Rendering Path Optimize Karna</h2>
+      <p>
+        CRP optimization ke teen core levers hain — inhe samajhna hi is chapter ka asli goal hai:
+      </p>
+
+      <h3>a) Critical Resources ki Count Minimize Karo</h3>
+      <p>
+        Jitne kam resources render-blocking honge, utni jaldi render tree ban sakta hai. Non-essential CSS
+        ko media queries se non-blocking banao, aur non-essential JS ko <code>defer</code>/<code>async</code>
+        pe move karo.
+      </p>
+      <div class="code-block">
+        <div class="code-title">before / after — critical resource count</div>
+        <button class="copy-btn">Copy</button>
+        <pre><code><span class="tok-com">&lt;!-- BEFORE: 3 render/parser-blocking resources in head --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"main.css"</span><span class="tok-tag">&gt;</span>   <span class="tok-com">&lt;!-- render-blocking --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"print.css"</span><span class="tok-tag">&gt;</span>  <span class="tok-com">&lt;!-- media missing → ye bhi render-blocking ban gaya --&gt;</span>
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"tracker.js"</span><span class="tok-tag">&gt;&lt;/script&gt;</span>          <span class="tok-com">&lt;!-- parser-blocking, non-essential for render --&gt;</span>
+
+<span class="tok-com">&lt;!-- AFTER: sirf 1 critical resource --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"main.css"</span><span class="tok-tag">&gt;</span>
+<span class="tok-com">&lt;!-- ye ab tak zaroori hai kyunki above-the-fold styling isi mein hai --&gt;</span>
+
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"print.css"</span> <span class="tok-attr">media</span>=<span class="tok-str">"print"</span><span class="tok-tag">&gt;</span>
+<span class="tok-com">&lt;!-- media="print" add kiya → ab non-render-blocking, --&gt;</span>
+<span class="tok-com">&lt;!-- kyunki screen viewing ke time ye rule match nahi karta --&gt;</span>
+
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"tracker.js"</span> <span class="tok-attr">defer</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-com">&lt;!-- defer add kiya → ab parser-blocking nahi, --&gt;</span>
+<span class="tok-com">&lt;!-- background mein download hoga, DOM ready hone ke baad chalega --&gt;</span></code></pre>
+      </div>
+
+      <h3>b) Critical Bytes Minimize Karo</h3>
+      <p>
+        Jo resources genuinely critical hain unka <em>size</em> chhota rakho — taaki download + parse jaldi
+        khatam ho. Techniques: minification, compression (gzip/brotli), aur <strong>critical CSS
+        inlining</strong> (sirf above-the-fold styles ko <code>&lt;head&gt;</code> mein directly inline
+        karna, baaki CSS ko async load karna).
+      </p>
+      <div class="code-block">
+        <div class="code-title">critical CSS inlining pattern</div>
+        <button class="copy-btn">Copy</button>
+        <pre><code><span class="tok-tag">&lt;head&gt;</span>
+  <span class="tok-tag">&lt;style&gt;</span> <span class="tok-com">&lt;!-- inline style tag — koi extra network request nahi lagti --&gt;</span>
+    <span class="tok-com">/* Sirf above-the-fold ke liye zaroori rules yahan hain */</span>
+    <span class="tok-fn">body</span> { <span class="tok-attr">margin</span>: <span class="tok-num">0</span>; <span class="tok-attr">font-family</span>: <span class="tok-str">sans-serif</span>; } <span class="tok-com">/* base reset */</span>
+    <span class="tok-fn">.hero</span> { <span class="tok-attr">height</span>: <span class="tok-num">60vh</span>; <span class="tok-attr">background</span>: <span class="tok-str">#111</span>; } <span class="tok-com">/* hero section jo pehle visible hoga */</span>
+  <span class="tok-tag">&lt;/style&gt;</span>
+
+  <span class="tok-com">&lt;!-- Baaki poora CSS bundle async load hota hai — --&gt;</span>
+  <span class="tok-com">&lt;!-- media="print" trick + onload se real media set karke --&gt;</span>
+  <span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"full.css"</span>
+        <span class="tok-attr">media</span>=<span class="tok-str">"print"</span> <span class="tok-com">&lt;!-- abhi non-blocking treat hota hai --&gt;</span>
+        <span class="tok-attr">onload</span>=<span class="tok-str">"this.media='all'"</span><span class="tok-tag">&gt;</span> <span class="tok-com">&lt;!-- load hote hi asli media set kar do --&gt;</span>
+<span class="tok-tag">&lt;/head&gt;</span></code></pre>
+      </div>
+
+      <h3>c) Critical Path ki Length Minimize Karo</h3>
+      <p>
+        Path length matlab kitne <em>round trips</em> (network hops) lagte hain critical resources download
+        hone mein. Ye reduce karne ke liye: server response time (TTFB) fast rakho, resource hints
+        (<code>preconnect</code>, <code>preload</code> — agla chapter dekhna) use karo, aur critical
+        resources ki <strong>dependency chains</strong> chhoti rakho (jaise ek CSS file jisme
+        <code>@import</code> se aur CSS files chained hon — ye extra round trips add karta hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">chained request avoid karo</div>
+        <button class="copy-btn">Copy</button>
+        <pre><code><span class="tok-com">/* BAD: main.css browser ko chahiye pehle, --</span>
+<span class="tok-com">   phir usko parse karke pata chalega ki base.css bhi chahiye --</span>
+<span class="tok-com">   → 2 sequential round trips (chain), path length badh gayi */</span>
+<span class="tok-kw">@import</span> <span class="tok-str">url("base.css")</span>; <span class="tok-com">/* main.css ke andar dusri file import ho rahi hai */</span>
+
+<span class="tok-com">/* GOOD: dono files ko HTML mein directly, parallel discover honge */</span>
+<span class="tok-com">&lt;!-- &lt;link rel="stylesheet" href="base.css"&gt; --&gt;</span>
+<span class="tok-com">&lt;!-- &lt;link rel="stylesheet" href="main.css"&gt; --&gt;</span>
+<span class="tok-com">&lt;!-- preload scanner dono ko ek saath discover kar lega, --&gt;</span>
+<span class="tok-com">&lt;!-- @import wali chain se ek extra sequential hop bach jaata hai --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="contentful-path">10. Critical Contentful Rendering Path</h2>
+      <p>
+        Traditional CRP sirf "first paint" tak dekhta hai — jo blank/skeleton page bhi ho sakta hai. Ek
+        newer perspective, <strong>Critical Contentful Rendering Path</strong>, isse aage jaake ye dekhta
+        hai ki <em>meaningful content</em> kab dikha — measured via <strong>First Contentful Paint (FCP)</strong>
+        aur <strong>Largest Contentful Paint (LCP)</strong>. Isme wo resources bhi count hote hain jo
+        technically render-blocking nahi hain, lekin phir bhi main content dikhane ke liye zaroori hain —
+        jaise hero image ya heading font.
+      </p>
+      <p>
+        Lighthouse ab LCP element ko identify karke rendering ko phases mein todta hai:
+        <strong>Time to First Byte → Load Delay → Load Time → Render Delay</strong> — taaki tumhe pata chale
+        exactly kaunsa phase sabse zyada time le raha hai.
+      </p>
+
+      <h2 id="devtools">11. DevTools mein Ye Sab Dikhega Kahan</h2>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Chrome DevTools Performance panel</div>
+        <p>
+          Performance panel mein ek page load record karo, aur "Main" thread track expand karo — tumhe
+          literally in steps ke corresponding events dikhenge: <code>Parse HTML</code>,
+          <code>Recalculate Style</code> (CSSOM + render tree), <code>Layout</code>, <code>Paint</code>, aur
+          <code>Composite Layers</code>. Agar koi sync <code>&lt;script&gt;</code> parsing ko block kar raha
+          hai, to timeline mein ek clear gap dikhega jahan "Parse HTML" pause hoke "Evaluate Script" chal
+          raha hoga — yehi hai parser-blocking ka visual proof.
+        </p>
+        <p>
+          React jaisi libraries ka "Virtual DOM" is CRP se ek level upar operate karta hai — VDOM diffing
+          khud rendering pipeline ka part nahi hai, wo bas ye decide karta hai ki <em>real</em> DOM mein
+          minimum konse mutations bhejne hain. Lekin jab wo mutations apply hote hain, browser wahi 8-step
+          pipeline phir se chalata hai — Style Recalc → Layout → Paint → Composite — isliye React app mein
+          bhi agar tum baar-baar layout-triggering properties (<code>width</code>, <code>top</code>) change
+          karte ho, "reflow thrashing" ho sakta hai, VDOM hone ke bawajood.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>CRP = minimum resources + steps jo browser ko page ka first render dikhane ke liye chahiye: DOM → CSSOM → Render Tree → Layout → Paint → Composite.</li>
+        <li>CSS <strong>render-blocking</strong> hai by default kyunki final styles cascade resolve hone tak certain nahi hote.</li>
+        <li>Sync JS <strong>parser-blocking</strong> hai by default — aur ye render-blocking se bhi zyada costly hai kyunki poori HTML parsing hi rok deta hai.</li>
+        <li><code>async</code>/<code>defer</code>/<code>media</code> attributes se non-essential resources ko critical path se bahar nikala ja sakta hai.</li>
+        <li>Optimization ke 3 levers: critical resources ki <strong>count</strong> ghatao, unke <strong>bytes</strong> ghatao, aur path ki <strong>length</strong> (round trips) ghatao.</li>
+        <li>First Paint kaafi nahi hai — <strong>FCP/LCP</strong> se measure karo ki meaningful content kab dikha (Critical Contentful Rendering Path).</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: CSS render-blocking kyun hai, lekin images nahi?</strong><br>A: CSSOM cascade-based hai — kisi bhi element ka final style tab tak certain nahi jab tak poori CSS resolve na ho jaaye, isliye render tree banane ke liye poora CSSOM chahiye. Images sirf apna khud ka box hain, unke bina bhi layout/paint proceed kar sakta hai (broken image icon ya blank space ke saath), isliye wo non-critical maane jaate hain.</li>
+        <li><strong>Q: async aur defer mein core difference kya hai, aur kab kaunsa use karoge?</strong><br>A: Dono parsing block nahi karte aur download parallel hota hai. async execute hote hi turant chalta hai (parsing ko interrupt kar sakta hai, order guarantee nahi) — independent scripts (analytics) ke liye best. defer DOM parsing complete hone ke baad, document order mein chalta hai — jo scripts DOM ready hone par depend karte hain (jaise widget init) unke liye best.</li>
+        <li><strong>Q: Ek sync script jo <code>&lt;head&gt;</code> mein CSS ke baad hai — wo kis-kis cheez ka wait karta hai execute hone se pehle?</strong><br>A: Pehle apna khud ka download complete hone ka, phir agar wo koi computed style query karta hai (ya generally as a safety behavior) to us tak ki CSSOM bhi ready honi chahiye — jo upar wali CSS ke download+parse complete hone tak block rahegi. Isliye "CSS before JS" ordering ek indirect extra delay create kar sakti hai.</li>
+        <li><strong>Q: Preload scanner kya hai aur ye kyun zaroori hai?</strong><br>A: Ek secondary, lightweight HTML parser jo main parser ke parser-blocking resource par ruke hone ke bawajood aage ka raw HTML scan karke upcoming resources (script/link/img) discover karke unki network requests speculatively fire kar deta hai — taaki jab main parser resume ho, resources already (ya jaldi) available hon, waste round-trips avoid ho.</li>
+        <li><strong>Q: Critical Rendering Path vs Critical Contentful Rendering Path — difference?</strong><br>A: CRP first paint tak dekhta hai (jo blank/skeleton bhi ho sakta hai). Contentful CRP FCP/LCP tak dekhta hai — yaani meaningful content kab visible hua, jisme non-render-blocking lekin content-critical resources (jaise hero image) bhi factor hote hain.</li>
+        <li><strong>Q: transform/opacity animate karna top/left animate karne se fast kyun hai, CRP ke terms mein?</strong><br>A: <code>top/left</code> change karna Layout (reflow) trigger karta hai, jo poore pipeline — Layout → Paint → Composite — dobara chalata hai. <code>transform</code>/<code>opacity</code> compositor-only properties hain, ye Layout aur Paint dono skip karke seedha Composite step mein resolve ho jaate hain (GPU par), isliye kaafi cheaper hote hain.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="02-html-performance.html">
+          <div class="label">← Previous</div>
+          <div class="title">General HTML Performance</div>
+        </a>
+        <a class="next" href="04-resource-loading.html">
+          <div class="label">Next →</div>
+          <div class="title">Optimize Resource Loading</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

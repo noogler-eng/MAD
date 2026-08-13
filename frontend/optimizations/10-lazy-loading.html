@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lazy Load Images and iframe Elements — Web Performance Handbook</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link active" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 10</div>
+      <div class="progress-pill">10 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Loading · Intersection Observer · Third-Party Embeds</span>
+      <h1>Lazy Load Images and iframe Elements</h1>
+      <p class="subtitle">
+        Below-the-fold cheezon ko turant load karne ka koi matlab nahi — user ne unhe dekha bhi nahi.
+        Is chapter mein dekhenge native <code>loading="lazy"</code> browser internally kaise kaam karta hai,
+        Intersection Observer se manual control kaise milta hai, aur third-party embeds (YouTube/ads/maps)
+        ka facade pattern se cost kaise 90% tak kaat sakte ho.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#kyun">1. Lazy loading kyun zaroori hai</a></li>
+          <li><a href="#native">2. Native <code>loading="lazy"</code> — andar se kaise kaam karta hai</a></li>
+          <li><a href="#lcp-danger">3. LCP element ko kabhi lazy mat karo</a></li>
+          <li><a href="#intersection-observer">4. Intersection Observer API — manual fallback</a></li>
+          <li><a href="#bg-image">5. CSS background-image lazy loading — full implementation</a></li>
+          <li><a href="#third-party">6. Third-party iframe embeds lazy loading</a></li>
+          <li><a href="#facade">7. Facade pattern — click-to-load</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="kyun">1. Lazy loading kyun zaroori hai</h2>
+      <p>
+        Ek typical e-commerce ya blog page mein 20-50 images ho sakti hain, lekin user apne pehle scroll
+        mein sirf 3-4 dekhta hai. Agar saari images page load ke time hi fetch ho jaayen, toh:
+      </p>
+      <ul>
+        <li>Network bandwidth un images pe waste hoti hai jo shayad user dekhega hi nahi.</li>
+        <li>Critical resources (jaise above-the-fold CSS, hero image, fonts) ke saath connection contention hoti hai — browser ke paas limited parallel HTTP connections hote hain.</li>
+        <li>Mobile data users ke liye ye directly cost hai — unnecessary MBs download ho rahe hain.</li>
+        <li>Main thread aur memory bhi extra images decode/paint karne mein busy hoti hai.</li>
+      </ul>
+      <p>
+        Lazy loading ka core idea simple hai: <strong>resource ko tab fetch karo jab wo viewport ke
+        "near" ho</strong>, na ki page load hote hi. Do tareeke hain isko implement karne ke — native
+        browser attribute, ya JavaScript se manual (Intersection Observer).
+      </p>
+
+      <h2 id="native">2. Native <code>loading="lazy"</code> — andar se kaise kaam karta hai</h2>
+      <p>
+        <code>&lt;img&gt;</code> aur <code>&lt;iframe&gt;</code> dono ka <code>loading</code> attribute
+        do values leta hai:
+      </p>
+      <table>
+        <tr><th>Value</th><th>Behavior</th></tr>
+        <tr><td><code>eager</code></td><td>Default. Resource turant, page parse hote hi fetch hota hai.</td></tr>
+        <tr><td><code>lazy</code></td><td>Resource tab fetch hota hai jab wo viewport se "set distance" ke andar aa jaaye.</td></tr>
+      </table>
+      <p>
+        Ye "set distance" (yaani lazy-load threshold) browser-specific hota hai — spec isko fix number
+        nahi karta. Chrome jaise browsers internally ek distance-from-viewport calculation karte hain,
+        aur ye factors pe depend kar sakta hai jaise <strong>effective connection type</strong>
+        (4G vs slow-3G) aur <strong>image ka type</strong>. Idea ye hai ki threshold itna bada rakha jaaye
+        ki jab tak user scroll karke wahan pahunche, image already load ho chuki ho — taaki visually
+        koi "pop-in" na dikhe.
+      </p>
+      <p>
+        Best part: ye purely browser-managed hai — <strong>zero JavaScript</strong> chahiye. Browser
+        khud decide karta hai kab fetch karna hai, kab decode karna hai. Support bhi ab universal hai
+        (sab major browsers mein <code>&lt;img&gt;</code> aur <code>&lt;iframe&gt;</code> dono pe).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Native lazy loading — below-the-fold image aur embedded map<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Ye image page ke bottom section mein hai, fold ke bahar --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"team-photo.jpg"</span>
+  <span class="tok-com">&lt;!-- loading="lazy" — browser ko batata hai ki jab tak ye viewport ke</span>
+       <span class="tok-com">"near" na aaye tab tak fetch mat karo. Andar se koi JS event nahi</span>
+       <span class="tok-com">lagta, browser ka internal scheduler distance-from-viewport check</span>
+       <span class="tok-com">karke khud network request trigger karta hai --&gt;</span>
+  <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"lazy"</span>
+  <span class="tok-com">&lt;!-- decoding="async" — main thread ko block kiye bina image ko</span>
+       <span class="tok-com">decode karne ki permission deta hai, taaki paint smooth rahe --&gt;</span>
+  <span class="tok-attr">decoding</span><span class="tok-punc">=</span><span class="tok-str">"async"</span>
+  <span class="tok-com">&lt;!-- width/height dena zaroori hai — browser ko layout space pehle se</span>
+       <span class="tok-com">pata chal jaata hai, isliye CLS (layout shift) nahi hota jab image</span>
+       <span class="tok-com">later load hoti hai --&gt;</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"480"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"320"</span>
+  <span class="tok-attr">alt</span><span class="tok-punc">=</span><span class="tok-str">"Team photo — office offsite 2025"</span>
+<span class="tok-punc">&gt;</span>
+
+<span class="tok-com">&lt;!-- Ek embedded Google Map, jo aksar page ke footer/contact section mein</span>
+     <span class="tok-com">hota hai — user tab hi scroll karke wahan pahunchega jab use address</span>
+     <span class="tok-com">dekhna ho, isliye lazy loading perfect fit hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">iframe</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"https://maps.example.com/embed?q=clear-office"</span>
+  <span class="tok-com">&lt;!-- loading="lazy" iframe pe bhi same tarah kaam karta hai — Chrome</span>
+       <span class="tok-com">is dauran ek placeholder space reserve kar leta hai taaki layout</span>
+       <span class="tok-com">shift na ho jab iframe actually load ho --&gt;</span>
+  <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"lazy"</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"600"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"400"</span>
+  <span class="tok-com">&lt;!-- referrerpolicy/title accessibility aur privacy ke liye best</span>
+       <span class="tok-com">practice hai, lazy loading se directly related nahi --&gt;</span>
+  <span class="tok-attr">title</span><span class="tok-punc">=</span><span class="tok-str">"Office location map"</span>
+<span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">iframe</span><span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ LCP element ko kabhi lazy mat karo</div>
+        <p id="lcp-danger">
+          Ye sabse common real-world mistake hai: developer poore page ki saari <code>&lt;img&gt;</code>
+          tags pe blindly <code>loading="lazy"</code> laga deta hai — including hero image jo LCP
+          (Largest Contentful Paint) candidate hai. Ye seedha ulta result deta hai.
+        </p>
+        <p>
+          Wajah root-level: agar viewport ke andar dikh rahi <code>&lt;img&gt;</code> pe
+          <code>loading="lazy"</code> hai, toh browser usse tab tak fetch nahi karega jab tak
+          <strong>saari CSS download, parse aur apply</strong> na ho jaaye — kyunki lazy-loaded image
+          ko pehle layout complete hone ka wait karna padta hai taaki browser confirm kar sake ki uski
+          final position viewport ke andar hai ya nahi. Iska matlab hai image ka network request
+          artificially delay ho jaata hai — exactly wahi resource jiska LCP timing sabse zyada matter
+          karta hai. Result: LCP score worse ho jaata hai, kabhi kabhi 500ms-1s tak degrade.
+        </p>
+        <p>
+          Rule: <strong>hero images ya kisi bhi element jo likely above-the-fold hai, usse
+          <code>loading="lazy"</code> attribute mat lagao</strong> — ya toh attribute omit karo (default
+          eager), ya explicitly <code>loading="eager"</code> + <code>fetchpriority="high"</code> use
+          karo taaki browser usse sabse pehle fetch kare.
+        </p>
+      </div>
+
+      <h2 id="intersection-observer">3. Intersection Observer API — manual fallback</h2>
+      <p>
+        Native <code>loading="lazy"</code> sirf <code>&lt;img&gt;</code> aur <code>&lt;iframe&gt;</code>
+        pe kaam karta hai. Lekin kai cheezein is scope se bahar hain:
+      </p>
+      <ul>
+        <li><code>&lt;video&gt;</code> elements aur unke <code>poster</code> images</li>
+        <li>CSS <code>background-image</code> se load hone waali images (ye browser-level lazy loading feature nahi hai)</li>
+        <li>Custom widgets jinhe tum khud control karna chahte ho (custom root margin, priority order, analytics events on visibility, etc.)</li>
+      </ul>
+      <p>
+        Isliye libraries jaise <code>lazysizes</code> aur <code>yall.js</code> internally
+        <strong>Intersection Observer API</strong> use karti hain (aur agar page ka HTML dynamically
+        change hota hai, toh saath mein Mutation Observer bhi) — taaki pata chale element kab
+        viewport mein enter kar raha hai. Pattern ye hota hai: real attribute (<code>src</code>) ki
+        jagah ek non-standard placeholder attribute (<code>data-src</code>) rakha jaata hai, aur jab
+        element intersect ho jaata hai, JS usse swap karke asli attribute set karta hai — tab jaake
+        network request fire hoti hai.
+      </p>
+
+      <h3>3.1 Intersection Observer ka mental model</h3>
+      <p>
+        <code>IntersectionObserver</code> ek browser-native API hai jo tumhe ek callback deta hai jab
+        koi target element apne "root" (default: viewport) ke saath intersect (overlap) karna shuru
+        ya band karta hai — <strong>bina scroll event listener ke</strong>. Ye important hai kyunki
+        traditional <code>scroll</code> event listener + <code>getBoundingClientRect()</code> polling
+        main thread pe bahut expensive hota hai (har scroll frame pe layout recalculation force karta
+        hai — "layout thrashing"). Intersection Observer ye calculation browser ke compositor thread
+        pe async karta hai, isliye scroll performance pe zero impact padta hai.
+      </p>
+
+      <h2 id="bg-image">4. CSS background-image lazy loading — full implementation</h2>
+      <p>
+        Ye classic use-case hai jahan native <code>loading="lazy"</code> kaam nahi karega, kyunki wo
+        sirf <code>&lt;img&gt;</code>/<code>&lt;iframe&gt;</code> tags pe applicable hai, CSS property
+        pe nahi. Neeche ek complete, production-style implementation hai — har line commented.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">HTML — placeholder markup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Real image URL ko data-* attribute mein rakha hai, actual "src" ya</span>
+     <span class="tok-com">"background-image" abhi set NAHI kiya — taaki browser abhi request</span>
+     <span class="tok-com">fire na kare --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span>
+  <span class="tok-attr">class</span><span class="tok-punc">=</span><span class="tok-str">"lazy-bg"</span>
+  <span class="tok-attr">data-bg</span><span class="tok-punc">=</span><span class="tok-str">"/images/hero-banner-section2.jpg"</span>
+  <span class="tok-com">&lt;!-- Placeholder ke liye chhota blurred/low-res background ya solid</span>
+       <span class="tok-com">color CSS mein already laga sakte ho, taaki layout shift na ho --&gt;</span>
+  <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-str">"min-height: 400px; background-color: #262524;"</span>
+<span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">h2</span><span class="tok-punc">&gt;</span>Featured Collection<span class="tok-punc">&lt;/</span><span class="tok-tag">h2</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">JavaScript — Intersection Observer se background-image lazy load<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. Saare ".lazy-bg" elements ko DOM se select kar rahe hain jinke</span>
+<span class="tok-com">//    background-image ko lazy load karna hai</span>
+<span class="tok-kw">const</span> lazyBgElements = <span class="tok-fn">document.querySelectorAll</span>(<span class="tok-str">".lazy-bg"</span>);
+
+<span class="tok-com">// 2. Observer callback — ye function tab call hota hai jab observed</span>
+<span class="tok-com">//    elements ki intersection status change hoti hai (viewport ke</span>
+<span class="tok-com">//    andar aaye ya bahar gaye)</span>
+<span class="tok-kw">const</span> onIntersect = (entries, observer) => {
+  <span class="tok-com">// 3. "entries" ek array hai — har entry ek observed element ke baare</span>
+  <span class="tok-com">//    mein current intersection info deta hai</span>
+  entries.<span class="tok-fn">forEach</span>((entry) => {
+    <span class="tok-com">// 4. isIntersecting true tabhi hota hai jab element root (viewport)</span>
+    <span class="tok-com">//    ke saath overlap kar raha ho — yaani ab visible ho raha hai</span>
+    <span class="tok-kw">if</span> (entry.isIntersecting) {
+      <span class="tok-com">// 5. entry.target = wahi DOM element jo intersect hua hai</span>
+      <span class="tok-kw">const</span> el = entry.target;
+
+      <span class="tok-com">// 6. data-bg attribute se real image URL nikal rahe hain</span>
+      <span class="tok-kw">const</span> bgUrl = el.<span class="tok-fn">getAttribute</span>(<span class="tok-str">"data-bg"</span>);
+
+      <span class="tok-com">// 7. Ab actual background-image CSS property set kar rahe hain —</span>
+      <span class="tok-com">//    yehi line network request trigger karti hai, image ab</span>
+      <span class="tok-com">//    download hogi</span>
+      el.style.backgroundImage = <span class="tok-str">`url("${bgUrl}")`</span>;
+
+      <span class="tok-com">// 8. Ek class add kar rahe hain taaki CSS transition (fade-in</span>
+      <span class="tok-com">//    effect) trigger ho sake — purely visual polish</span>
+      el.classList.<span class="tok-fn">add</span>(<span class="tok-str">"bg-loaded"</span>);
+
+      <span class="tok-com">// 9. CRITICAL cleanup step: is element ko observer se unobserve</span>
+      <span class="tok-com">//    kar rahe hain. Agar ye step miss kiya toh observer element</span>
+      <span class="tok-com">//    ko forever track karta rahega — memory leak aur unnecessary</span>
+      <span class="tok-com">//    callback firing (jaise user scroll up/down karta rahe)</span>
+      observer.<span class="tok-fn">unobserve</span>(el);
+    }
+    <span class="tok-com">// 10. Agar isIntersecting false hai (abhi viewport se bahar hai),</span>
+    <span class="tok-com">//     kuch nahi karte — bas wait karte hain agle intersection tak</span>
+  });
+};
+
+<span class="tok-com">// 11. Observer instance banate hain — pehla argument callback function</span>
+<span class="tok-com">//     hai, dusra ek "options" object hai jo threshold/rootMargin</span>
+<span class="tok-com">//     control karta hai</span>
+<span class="tok-kw">const</span> observer = <span class="tok-kw">new</span> <span class="tok-fn">IntersectionObserver</span>(onIntersect, {
+  <span class="tok-com">// 12. root: null matlab default viewport ko intersection container</span>
+  <span class="tok-com">//     bana rahe hain (kisi custom scrollable div ke bajaye)</span>
+  root: <span class="tok-kw">null</span>,
+
+  <span class="tok-com">// 13. rootMargin: viewport ke "virtual boundary" ko expand karta hai.</span>
+  <span class="tok-com">//     "200px 0px" ka matlab hai top aur bottom mein 200px ka extra</span>
+  <span class="tok-com">//     margin add ho gaya — yaani element viewport mein actually aane</span>
+  <span class="tok-com">//     se 200px PEHLE hi "intersecting" maana jaayega. Isse image ko</span>
+  <span class="tok-com">//     preload karne ka thoda extra time milta hai, taaki jab tak user</span>
+  <span class="tok-com">//     scroll karke wahan pahunche, image already load ho chuki ho</span>
+  rootMargin: <span class="tok-str">"200px 0px"</span>,
+
+  <span class="tok-com">// 14. threshold: kitna % element visible hona chahiye callback fire</span>
+  <span class="tok-com">//     hone ke liye. 0 ka matlab hai — even 1 pixel bhi visible/near</span>
+  <span class="tok-com">//     ho (rootMargin ke combined saath) toh trigger ho jaayega</span>
+  threshold: <span class="tok-num">0</span>,
+});
+
+<span class="tok-com">// 15. Har ek lazy-bg element ko observer ke saath register kar rahe</span>
+<span class="tok-com">//     hain — ab observer inhe track karna shuru karega</span>
+lazyBgElements.<span class="tok-fn">forEach</span>((el) => {
+  observer.<span class="tok-fn">observe</span>(el);
+});
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚙️ rootMargin ko production mein kaise tune karein</div>
+        <p>
+          <code>rootMargin</code> ka best value network speed pe depend karta hai. Fast connections
+          (WiFi/4G) pe <code>200-300px</code> reasonable hai. Slow connections pe zyada margin
+          (<code>600-800px</code>) rakhna better hota hai taaki loading ka time mile — is decision ke
+          liye <code>navigator.connection.effectiveType</code> check karke dynamically rootMargin
+          adjust kar sakte ho. Yehi wo "custom control" hai jo native <code>loading="lazy"</code> nahi
+          deta — browser apna fixed heuristic use karta hai, tum apna khud define nahi kar sakte.
+        </p>
+      </div>
+
+      <h2 id="third-party">5. Third-party iframe embeds lazy loading</h2>
+      <p>
+        Real-world apps mein sabse bada perf killer aksar apna khud ka code nahi hota — third-party
+        embeds hote hain: YouTube video embed, Google Maps, ads, chat widgets, social share buttons.
+        Ye har ek apna khud ka JS bundle, CSS, aur network requests laata hai — often <strong>100s of
+        KB</strong>, jo page load ke time hi fire ho jaate hain agar lazy load nahi kiya.
+      </p>
+      <p>
+        Concrete numbers: ek average YouTube <code>&lt;iframe&gt;</code> embed ko lazy load karna
+        initial page load se <strong>500+ KiB</strong> bacha sakta hai. Facebook "Like" button plugin
+        ko lazy load karna <strong>200+ KiB</strong> bachata hai — jisme se zyadatar JavaScript hota
+        hai.
+      </p>
+      <p>
+        Solution simple hai — same native <code>loading="lazy"</code> attribute jo images pe use
+        kiya, wahi <code>&lt;iframe&gt;</code> pe bhi laga do:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">YouTube embed — native lazy loading<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Ye iframe below-the-fold hai (video article ke middle/end mein) --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">iframe</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"560"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"315"</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"https://www.youtube.com/embed/VIDEO_ID"</span>
+  <span class="tok-com">&lt;!-- loading="lazy" — Chrome jab tak ye iframe viewport ke near nahi</span>
+       <span class="tok-com">aata, YouTube ka poora player JS/CSS download hi nahi karega.</span>
+       <span class="tok-com">Iske saath Chrome placeholder space bhi reserve kar leta hai</span>
+       <span class="tok-com">taaki jab iframe load ho, koi layout shift (CLS) na ho --&gt;</span>
+  <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"lazy"</span>
+  <span class="tok-attr">title</span><span class="tok-punc">=</span><span class="tok-str">"Demo video"</span>
+  <span class="tok-attr">frameborder</span><span class="tok-punc">=</span><span class="tok-str">"0"</span>
+  <span class="tok-attr">allow</span><span class="tok-punc">=</span><span class="tok-str">"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"</span>
+  <span class="tok-attr">allowfullscreen</span>
+<span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">iframe</span><span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+      <p>
+        Rule of thumb: <strong>jab bhi koi <code>&lt;iframe&gt;</code> fold ke neeche hai aur upfront
+        load karna critical nahi hai, strongly consider karo usse lazy load karna.</strong> Ads ke case
+        mein bhi yahi apply hota hai — sirf visible ad slots ko load karo, baaki lazy.
+      </p>
+
+      <h2 id="facade">6. Facade pattern — click-to-load</h2>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Facade pattern for heavy embeds</div>
+        <p>
+          <code>loading="lazy"</code> sirf load ko <em>defer</em> karta hai — jab element viewport ke
+          near aayega, poora heavy embed (JS bundle, tracking scripts, player code) still download
+          hoga. Agar embed genuinely heavy hai (jaise YouTube player, jo apna khub sara JS aur ads-related
+          tracking laata hai), toh better strategy hai <strong>facade pattern</strong>: real iframe ki
+          jagah ek static, lightweight placeholder (jaise YouTube ka thumbnail image + play button icon)
+          dikhao. Sirf tab jab user usse <strong>interact</strong> kare (click ya hover-hold), tab actual
+          iframe ko DOM mein inject karo.
+        </p>
+        <p>
+          Fayda: agar user video kabhi play hi nahi karta (jo bahut common hai — bahut log scroll karke
+          aage nikal jaate hain), toh us heavy resource ka network aur JS cost <strong>kabhi lagta hi
+          nahi</strong>. Ye lazy loading se ek level aage hai — lazy loading "jab visible ho tab load
+          karo", facade "jab user chahe tab hi load karo". Production mein khud implement karne ke
+          bajaye battle-tested libraries use karo — <code>lite-youtube-embed</code> YouTube ke liye,
+          <code>lite-vimeo-embed</code> Vimeo ke liye. Chat widgets (Intercom/Drift jaise) ke liye same
+          pattern apply hota hai — ek fake "Start Chat" button dikhao, real widget sirf meaningful
+          interaction (click ya pointer-hold) pe load karo.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Facade pattern — minimal vanilla JS implementation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Real iframe ki jagah ek lightweight div — sirf ek thumbnail image</span>
+     <span class="tok-com">aur play button, koi YouTube JS load nahi ho raha --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span>
+  <span class="tok-attr">class</span><span class="tok-punc">=</span><span class="tok-str">"yt-facade"</span>
+  <span class="tok-attr">data-video-id</span><span class="tok-punc">=</span><span class="tok-str">"VIDEO_ID"</span>
+  <span class="tok-attr">style</span><span class="tok-punc">=</span><span class="tok-str">"background-image:url('https://i.ytimg.com/vi/VIDEO_ID/hqdefault.jpg');"</span>
+<span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">button</span> <span class="tok-attr">class</span><span class="tok-punc">=</span><span class="tok-str">"play-btn"</span> <span class="tok-attr">aria-label</span><span class="tok-punc">=</span><span class="tok-str">"Play video"</span><span class="tok-punc">&gt;</span>▶<span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">// 1. Saare facade elements select kar rahe hain</span>
+  <span class="tok-fn">document.querySelectorAll</span>(<span class="tok-str">".yt-facade"</span>).<span class="tok-fn">forEach</span>((facade) => {
+    <span class="tok-com">// 2. Har facade pe ek click listener laga rahe hain</span>
+    facade.<span class="tok-fn">addEventListener</span>(<span class="tok-str">"click"</span>, () => {
+      <span class="tok-com">// 3. data-video-id se actual video ID nikal rahe hain</span>
+      <span class="tok-kw">const</span> videoId = facade.<span class="tok-fn">getAttribute</span>(<span class="tok-str">"data-video-id"</span>);
+
+      <span class="tok-com">// 4. Ab asli YouTube iframe ka element banate hain — ye tabhi</span>
+      <span class="tok-com">//    banta hai jab user ne explicitly click kiya ho, isliye</span>
+      <span class="tok-com">//    YouTube ka JS/CSS/network cost sirf ab lagega</span>
+      <span class="tok-kw">const</span> iframe = <span class="tok-fn">document.createElement</span>(<span class="tok-str">"iframe"</span>);
+      iframe.src = <span class="tok-str">`https://www.youtube.com/embed/${videoId}?autoplay=1`</span>;
+      iframe.allow = <span class="tok-str">"autoplay; encrypted-media"</span>;
+      iframe.allowFullscreen = <span class="tok-kw">true</span>;
+      iframe.width = <span class="tok-str">"560"</span>;
+      iframe.height = <span class="tok-str">"315"</span>;
+
+      <span class="tok-com">// 5. Facade div ko real iframe se replace kar rahe hain — user ko</span>
+      <span class="tok-com">//    seamless lagta hai, video turant play hone lagta hai</span>
+      facade.<span class="tok-fn">replaceWith</span>(iframe);
+    });
+  });
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>loading="lazy"</code> <code>&lt;img&gt;</code> aur <code>&lt;iframe&gt;</code> dono pe kaam karta hai, zero JS ke saath — browser khud distance-from-viewport threshold decide karta hai (connection type, image type jaise factors se influenced).</li>
+        <li>Hero/LCP images pe <strong>kabhi</strong> <code>loading="lazy"</code> mat lagao — lazy image ka fetch tab tak delay hota hai jab tak CSS fully parse/apply na ho jaaye, jo LCP ko directly worsen karta hai.</li>
+        <li>Jo cheezein native attribute cover nahi karta (CSS <code>background-image</code>, <code>&lt;video&gt;</code>, custom root margins) — unke liye <strong>Intersection Observer API</strong> use karo, jo scroll-event polling se kaafi zyada performant hai.</li>
+        <li>Har Intersection Observer implementation mein <code>observer.unobserve()</code> cleanup call karna non-negotiable hai — nahi toh memory leak aur unnecessary re-firing hoti rahegi.</li>
+        <li>Below-the-fold third-party <code>&lt;iframe&gt;</code> embeds (YouTube, maps, ads) ko lazy load karna 100s of KB directly bacha sakta hai.</li>
+        <li>Heavy embeds ke liye facade pattern (static thumbnail → click-to-load real iframe) lazy loading se ek level aage hai — resource sirf tab lagta hai jab user genuinely interact kare.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: Native <code>loading="lazy"</code> ka distance threshold browser kaise decide karta hai?</strong><br>Hint: Spec fixed number nahi deta — browser-specific heuristic hai, jisme effective connection type aur resource type jaise factors involve ho sakte hain. Purpose: user scroll karke pahunche tab tak resource ready ho.</li>
+        <li><strong>Q: Hero image pe <code>loading="lazy"</code> lagane se LCP kyun worsen hota hai?</strong><br>Hint: Lazy image ka fetch tab tak trigger nahi hota jab tak CSS fully download/parse/apply na ho jaaye — kyunki browser ko layout confirm karna padta hai ki element viewport ke andar hai. Ye delay LCP-critical resource ko late kar deta hai.</li>
+        <li><strong>Q: Intersection Observer scroll event + getBoundingClientRect() se better kyun hai?</strong><br>Hint: Scroll listener + getBoundingClientRect() har frame pe forced synchronous layout recalculation karta hai (layout thrashing), main thread block karta hai. Intersection Observer async hai, compositor thread pe kaam karta hai.</li>
+        <li><strong>Q: rootMargin aur threshold options mein kya difference hai?</strong><br>Hint: rootMargin viewport ke virtual boundary ko expand/shrink karta hai (early trigger ke liye). threshold define karta hai element ka kitna % visible hona chahiye callback fire hone ke liye.</li>
+        <li><strong>Q: Facade pattern lazy loading se kaise better hai heavy third-party embeds ke liye?</strong><br>Hint: Lazy loading "jab visible ho tab load karo" — resource phir bhi load hota hai eventually. Facade "jab user interact kare tab hi load karo" — agar user interact hi nahi karta, resource ka cost kabhi lagta hi nahi.</li>
+        <li><strong>Q: Intersection Observer callback mein unobserve() call na kare toh kya production issue aayega?</strong><br>Hint: Observer element ko forever track karta rahega — memory leak, aur agar element repeatedly intersect/un-intersect hota hai (scroll up-down), callback baar baar unnecessarily fire hoga.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="09-code-splitting.html">
+          <div class="label">← Previous</div>
+          <div class="title">Code-split JavaScript</div>
+        </a>
+        <a class="next" href="11-prefetch-prerender-precache.html">
+          <div class="label">Next →</div>
+          <div class="title">Prefetch/Prerender/Precache</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

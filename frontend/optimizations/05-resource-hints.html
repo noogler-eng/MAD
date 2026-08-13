@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resource Hints — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link active" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 5</div>
+      <div class="progress-pill">5 / 13 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Performance · Resource Hints · Network Layer</span>
+      <h1>Assist the Browser with Resource Hints</h1>
+      <p class="subtitle">
+        Browser bahut smart hai, lekin wo future dekh nahi sakta. Woh HTML ko top-to-bottom parse karte
+        hue hi resources discover karta hai — jab tak parser kisi <code>&lt;link&gt;</code> ya
+        <code>&lt;img&gt;</code> tak nahi pahunchta, uska origin ka DNS bhi resolve nahi hua hota. Resource
+        hints ek chhota sa API hai jisse hum browser ko "abhi se pata hai, tujhe aage ye chahiye hoga"
+        wala signal de sakte hain — network layer ke exact stages (DNS → TCP → TLS → fetch) ko manually
+        pre-warm karke.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#network-stages">Network connection ke stages (root cause)</a></li>
+          <li><a href="#dns-prefetch">dns-prefetch</a></li>
+          <li><a href="#preconnect">preconnect</a></li>
+          <li><a href="#preload">preload (+ as attribute + font gotcha)</a></li>
+          <li><a href="#prefetch">prefetch</a></li>
+          <li><a href="#modulepreload">modulepreload</a></li>
+          <li><a href="#comparison">Comparison table</a></li>
+          <li><a href="#combo">Real example: font + hero image combo</a></li>
+          <li><a href="#fetchpriority">Fetch Priority API</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="network-stages">Network connection ke stages — root cause samjho</h2>
+      <p>
+        Resource hints samajhne se pehle ye samajhna zaroori hai ki jab browser ek cross-origin resource
+        fetch karta hai, to network layer mein sequentially kya hota hai. Har hint in stages mein se
+        <strong>kitne stages ko pre-warm karta hai</strong> — yehi unka core differentiator hai:
+      </p>
+      <ol>
+        <li><strong>DNS Lookup</strong> — domain name (jaise <code>fonts.gstatic.com</code>) ko IP address mein resolve karna. Ye ek round-trip hai, typically 20-120ms (recursive resolver, ISP, geography pe depend karta hai).</li>
+        <li><strong>TCP Handshake</strong> — client aur server ke beech connection establish karna (SYN → SYN-ACK → ACK). Ek aur round-trip.</li>
+        <li><strong>TLS Negotiation</strong> — agar HTTPS hai (aaj-kal almost hamesha), to certificate exchange aur cipher negotiation. HTTP/1.1/2 pe ye 1-2 extra round-trips leta hai (TLS 1.3 mein thoda kam).</li>
+        <li><strong>Request + Response (actual fetch)</strong> — asli resource bytes download hote hain.</li>
+      </ol>
+      <p>
+        Ek naye cross-origin connection ke liye ye pehle 3 stages hi <strong>100-500ms</strong> tak le sakte
+        hain — resource ka ek single byte download hone se pehle. Resource hints ka pura game ye hai ki
+        in stages ko browser ke idle time mein, actual discovery se pehle hi complete kar liya jaaye.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root mechanism: Priority Hints List</div>
+        <p>
+          Har resource hint internally browser ke networking stack ko ek instruction bhejta hai jo
+          normal HTML-parsing-driven resource discovery se <strong>independent</strong> hai. Yani
+          <code>&lt;link rel="preconnect"&gt;</code> parser ko block nahi karta — ye ek side-channel
+          request hai jo turant background mein fire ho jaata hai, jabki main parsing continue rehti hai.
+        </p>
+      </div>
+
+      <h2 id="dns-prefetch">dns-prefetch — sirf DNS lookup</h2>
+      <p>
+        <code>dns-prefetch</code> sabse halka (cheapest) hint hai — ye <strong>sirf stage 1 (DNS lookup)</strong>
+        pre-resolve karta hai. TCP handshake ya TLS negotiation nahi hota. Result browser ke DNS cache
+        mein store ho jaata hai, taaki jab actual request fire ho, DNS lookup skip ho jaaye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">dns-prefetch usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- Kisi external analytics/social embed domain ke liye --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span>                                    <span class="tok-com">&lt;!-- &lt;link&gt; tag: resource hint declare karne ka standard tareeka --&gt;</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"dns-prefetch"</span>                     <span class="tok-com">&lt;!-- rel="dns-prefetch": sirf DNS resolve karo, connection nahi banao --&gt;</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://www.google-analytics.com"</span> <span class="tok-com">&lt;!-- href: jis origin ka DNS pre-resolve karna hai (path nahi, sirf origin) --&gt;</span>
+<span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;!-- Multiple third-party origins ke liye — sabse common real-world use case --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"dns-prefetch"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://ads.example.com"</span><span class="tok-punc">&gt;</span>   <span class="tok-com">&lt;!-- ad network domain --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"dns-prefetch"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://cdn.example-widget.com"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- widget CDN domain --&gt;</span></code></pre>
+      </div>
+      <p>
+        Use-case: jab tumhare paas <strong>bahut saare</strong> third-party origins hain (5-10+), jinme se
+        sab critical nahi hain (e.g. footer social links, analytics beacons), to har origin pe full
+        <code>preconnect</code> lagana overkill hai — kyunki preconnect ek open TCP+TLS connection
+        maintain karta hai jo agar use hi nahi hua to resources waste karta hai. Wahan
+        <code>dns-prefetch</code> zyada safe, cheap default hai.
+      </p>
+
+      <h2 id="preconnect">preconnect — DNS + TCP + TLS, teeno</h2>
+      <p>
+        <code>preconnect</code> teeno connection-setup stages complete karta hai — DNS lookup, TCP
+        handshake, <em>aur</em> TLS negotiation (agar HTTPS hai) — lekin actual resource fetch nahi
+        karta. Jab HTML parser baad mein us origin se koi resource maangega, connection already garam
+        (warm) hoga, so sirf request+response stage bachta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">preconnect usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- Case 1: non-CORS resource (jaise ek CDN se generic JS/CSS) --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preconnect"</span>                <span class="tok-com">&lt;!-- rel="preconnect": DNS+TCP+TLS teeno abhi complete karo --&gt;</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://cdn.example.com"</span> <span class="tok-com">&lt;!-- jis origin se resource baad mein aayega uska base URL --&gt;</span>
+<span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;!-- Case 2: CORS resource — fonts.gstatic.com jahan se font FILES CORS ke saath aate hain --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preconnect"</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://fonts.gstatic.com"</span>
+  <span class="tok-attr">crossorigin</span>              <span class="tok-com">&lt;!-- ZAROORI: CORS resources ke liye connection anonymous mode mein khulna chahiye --&gt;</span>
+<span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ crossorigin bhoolna = wasted preconnect</div>
+        <p>
+          Browser ek origin ke liye <strong>do alag connection pools</strong> maintain karta hai —
+          ek anonymous (no-CORS) mode ke liye, ek credentialed/CORS mode ke liye. Agar
+          <code>crossorigin</code> attribute chhod diya aur actual resource (jaise font file via
+          <code>@font-face</code>) CORS mode mein fetch hota hai, to browser preconnect wale connection
+          ko <strong>reuse nahi karega</strong> — ek naya connection banayega from scratch. Matlab tumne
+          jo DNS+TCP+TLS pehle se kiya, wo bilkul waste ho gaya, aur ulta ek extra unused connection ka
+          overhead bhi laga.
+        </p>
+      </div>
+
+      <p>
+        Root cause: <code>crossorigin</code> attribute browser ko batata hai ki request CORS mode
+        (anonymous credentials) mein bhejni hai. Fonts hamesha CORS mode mein fetch hote hain (spec
+        requirement hai, chahe same-origin ho ya nahi), isliye font preconnects pe ye attribute
+        <strong>hamesha</strong> chahiye.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Zyada preconnect bhi bura hai</div>
+        <p>
+          Har open TCP/TLS connection browser aur OS dono pe resource consume karta hai (memory, socket
+          limits, CPU for TLS handshake). Sirf un 3-4 sabse critical cross-origin domains ke liye
+          preconnect use karo jinse render-blocking ya LCP-critical resources aa rahe hain — baaki ke
+          liye <code>dns-prefetch</code> use karo.
+        </p>
+      </div>
+
+      <h2 id="preload">preload — DNS + TCP + TLS + actual fetch</h2>
+      <p>
+        <code>preload</code> sabse aggressive hint hai — ye sirf connection nahi banata, balki resource
+        ko <strong>abhi download karna shuru kar deta hai</strong>, uss priority ke saath jo tum specify
+        karte ho, bina HTML parser ke us point tak pahunchne ka wait kiye. Isliye ye un resources ke
+        liye best hai jo <em>late-discovered</em> hain — matlab jinka reference HTML/CSS ke deep andar
+        chhupa hai (jaise CSS ke andar <code>@font-face</code> se referenced font file, ya JS se
+        conditionally load hone wali CSS background-image).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">preload basic syntax<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preload"</span>                       <span class="tok-com">&lt;!-- rel="preload": resource ko abhi high priority pe fetch karo --&gt;</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/hero-image.webp"</span>          <span class="tok-com">&lt;!-- jo file preload karni hai uska exact URL --&gt;</span>
+  <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"image"</span>                      <span class="tok-com">&lt;!-- as: ZAROORI — browser ko resource type batata hai --&gt;</span>
+  <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"high"</span>            <span class="tok-com">&lt;!-- optional: is fetch ko explicitly high priority queue mein daalo --&gt;</span>
+<span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root cause: as attribute kyun mandatory hai</div>
+        <p>
+          Browser ke andar har resource type ka apna <strong>alag cache partition aur request priority
+          queue</strong> hota hai (image queue, font queue, style queue, script queue — inki priorities
+          alag hain, aur CORS mode bhi type ke hisaab se differ karta hai). <code>as</code> attribute ke
+          bina browser ko pata nahi hota ki resource kis queue/priority/CORS-mode mein jaayega, so wo
+          <strong>generic priority pe fetch kar leta hai</strong>. Jab baad mein asli consumer (e.g.
+          <code>&lt;img&gt;</code> tag ya CSS) usi URL ko sahi <code>as</code>-equivalent context ke
+          saath maangta hai, browser ye match nahi kar paata ki ye wahi resource hai — result: resource
+          <strong>do baar download</strong> hota hai. Chrome DevTools console mein iske liye ek warning
+          bhi dikhta hai: "was preloaded using link preload but not used within a few seconds."
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Font preload — crossorigin gotcha<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preload"</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/fonts/inter-var.woff2"</span>  <span class="tok-com">&lt;!-- self-hosted variable font file ka path --&gt;</span>
+  <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"font"</span>                 <span class="tok-com">&lt;!-- as="font": browser ko batata hai ye font-loading priority queue mein jaaye --&gt;</span>
+  <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"font/woff2"</span>          <span class="tok-com">&lt;!-- MIME type dena optional but recommended — unsupported format ho to browser skip kar sakta hai --&gt;</span>
+  <span class="tok-attr">crossorigin</span>                <span class="tok-com">&lt;!-- ZAROORI: fonts hamesha CORS mode mein fetch hote hain, SAME-ORIGIN font ke liye bhi --&gt;</span>
+<span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;!-- Agar crossorigin attribute yahaan chhoot gaya, to CSS ka --&gt;</span>
+<span class="tok-punc">&lt;!-- @font-face { src: url(/fonts/inter-var.woff2) } wala fetch is preload se MATCH nahi karega --&gt;</span>
+<span class="tok-punc">&lt;!-- kyunki font requests spec ke hisaab se hamesha anonymous-CORS mode mein jaate hain, --&gt;</span>
+<span class="tok-punc">&lt;!-- aur preload agar crossorigin ke bina hua to wo no-CORS mode mein tha — mismatch = double download --&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Ye font wala gotcha bahut common hai kyunki intuitively lagta hai ki same-origin font ko
+        <code>crossorigin</code> ki zaroorat nahi — lekin font fetching spec ka rule hai ki font
+        requests <strong>hamesha</strong> CORS mode mein bhejte hain, chahe origin same ho ya nahi. Iska
+        matlab preload aur actual usage dono jagah <code>crossorigin</code> consistent hona chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Responsive image preload — imagesrcset<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preload"</span>
+  <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"image"</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/hero-800.webp"</span>                          <span class="tok-com">&lt;!-- fallback URL — jo browsers imagesrcset support nahi karte unke liye --&gt;</span>
+  <span class="tok-attr">imagesrcset</span><span class="tok-punc">=</span><span class="tok-str">"/hero-400.webp 400w, /hero-800.webp 800w, /hero-1200.webp 1200w"</span>
+                                                <span class="tok-com">&lt;!-- imagesrcset: &lt;img srcset&gt; jaisa hi syntax, viewport ke hisaab se sahi variant preload hota hai --&gt;</span>
+  <span class="tok-attr">imagesizes</span><span class="tok-punc">=</span><span class="tok-str">"100vw"</span>                        <span class="tok-com">&lt;!-- imagesizes: &lt;img sizes&gt; ka equivalent — layout width ka hint --&gt;</span>
+<span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;!-- Bina imagesrcset ke, preload sirf href wali single image download karta, --&gt;</span>
+<span class="tok-punc">&lt;!-- lekin actual &lt;img srcset&gt; kisi aur variant ko select kar sakta — phir double download --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="prefetch">prefetch — future navigation ke liye, low priority</h2>
+      <p>
+        <code>prefetch</code> bhi puri fetch karta hai (DNS+TCP+TLS+download) jaise preload, lekin do
+        fundamental differences hain: (1) ye <strong>lowest priority</strong> pe queue hota hai — current
+        page ke resources ke baad, browser ke idle network time mein; aur (2) ye current navigation ke
+        liye nahi, <strong>agli (future) navigation</strong> ke liye hai — speculative hai, ho sakta hai
+        user wahan jaaye hi na.
+      </p>
+      <div class="code-block">
+        <div class="code-title">prefetch usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- Checkout flow: cart page pe hone par, agla likely step hai payment page --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"prefetch"</span>                  <span class="tok-com">&lt;!-- rel="prefetch": low-priority speculative fetch --&gt;</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/payment.css"</span>          <span class="tok-com">&lt;!-- future page ka critical CSS --&gt;</span>
+  <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"style"</span>                 <span class="tok-com">&lt;!-- as attribute yahaan bhi zaroori — same double-fetch problem se bachne ke liye --&gt;</span>
+<span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Use sirf tab karo jab tumhare paas analytics/data ho jo confidently predict kare ki user is next
+        step pe jaayega (e.g. multi-step checkout, ya "next article" jisko 80%+ users click karte hain).
+        Random prefetching data waste karta hai — aur <code>Save-Data</code> header wale users (jo
+        explicitly kam data consume karna chahte hain) ke liye ye disable karna chahiye.
+      </p>
+
+      <h2 id="modulepreload">modulepreload — JS module graph ke liye</h2>
+      <p>
+        ES modules (<code>&lt;script type="module"&gt;</code>) ek dependency tree banate hain — ek module
+        doosre module ko <code>import</code> karta hai, jiska pata browser ko tab chalta hai jab wo
+        parent module ko fetch aur <em>parse</em> kar leta hai. Ye sequential discovery latency add karta
+        hai. <code>modulepreload</code> is poore module graph ko upfront fetch (aur parse/compile bhi)
+        karwa deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">modulepreload usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+  <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"modulepreload"</span>              <span class="tok-com">&lt;!-- rel="modulepreload": ES module ko fetch + parse dono abhi karo --&gt;</span>
+  <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/js/app.js"</span>              <span class="tok-com">&lt;!-- entry module ka path — iske andar ke imports bhi discover honge --&gt;</span>
+<span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"module"</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"/js/app.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+                                       <span class="tok-com">&lt;!-- actual execution — preload ke saath match hoga to double-fetch nahi hoga --&gt;</span></code></pre>
+      </div>
+      <p>
+        Farak <code>preload as="script"</code> se: <code>modulepreload</code> sirf network fetch nahi
+        karta, module ko <strong>parse aur compile</strong> bhi kar deta hai, aur uske static imports ko
+        bhi recursively discover kar leta hai — jo plain <code>preload</code> nahi karta.
+      </p>
+
+      <h2 id="comparison">Comparison table</h2>
+      <table>
+        <thead>
+          <tr><th>Hint</th><th>Kya karta hai (network stages)</th><th>Kab use karein</th><th>Priority</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dns-prefetch</code></td>
+            <td>Sirf DNS lookup</td>
+            <td>Bahut saare (5+) third-party origins, sab critical nahi</td>
+            <td>Very low / best-effort</td>
+          </tr>
+          <tr>
+            <td><code>preconnect</code></td>
+            <td>DNS + TCP + TLS (connection ready, fetch nahi)</td>
+            <td>2-4 critical cross-origin domains jinse render/LCP-blocking resource aayega</td>
+            <td>Low, network-layer only</td>
+          </tr>
+          <tr>
+            <td><code>preload</code></td>
+            <td>DNS + TCP + TLS + actual resource fetch</td>
+            <td>Late-discovered critical resources: LCP image, font-face fonts, critical CSS-imported assets</td>
+            <td>High (as per <code>as</code> type; boost with <code>fetchpriority</code>)</td>
+          </tr>
+          <tr>
+            <td><code>prefetch</code></td>
+            <td>DNS + TCP + TLS + actual resource fetch (current page ke baad)</td>
+            <td>High-confidence next-navigation resources (checkout step 2, next article)</td>
+            <td>Lowest, idle-time only</td>
+          </tr>
+          <tr>
+            <td><code>modulepreload</code></td>
+            <td>DNS + TCP + TLS + fetch + parse/compile + import-graph discovery</td>
+            <td>ES module entry points jinke dependency imports jaldi resolve karne hain</td>
+            <td>High, module-graph aware</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="combo">Real example: third-party font + hero image combo</h2>
+      <p>
+        Ek typical marketing landing page socho: font Google Fonts (<code>fonts.gstatic.com</code>) se aa
+        raha hai (cross-origin), aur hero image LCP element hai jo CSS <code>background-image</code> se
+        set hota hai (isliye HTML parser ko late pata chalta hai). Sahi combination:
+      </p>
+      <div class="code-block">
+        <div class="code-title">index.html &lt;head&gt; — sahi order</div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;!-- Step 1: font ORIGIN ke liye connection warm karo (fetch nahi, sirf connect) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preconnect"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://fonts.gstatic.com"</span> <span class="tok-attr">crossorigin</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- crossorigin zaroori hai kyunki font files CORS mode mein fetch hoti hain --&gt;</span>
+
+  <span class="tok-punc">&lt;!-- Step 2: font FILE ko directly preload karo (fonts.googleapis.com ka CSS wait karne ki zaroorat nahi) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+    <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preload"</span>
+    <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://fonts.gstatic.com/s/inter/v12/inter-latin.woff2"</span> <span class="tok-com">&lt;!-- direct .woff2 URL, Google Fonts CSS inspect karke nikala hua --&gt;</span>
+    <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"font"</span>
+    <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"font/woff2"</span>
+    <span class="tok-attr">crossorigin</span>
+  <span class="tok-punc">&gt;</span>
+
+  <span class="tok-punc">&lt;!-- Step 3: hero image ko preload karo — CSS background-image parser ke discovery se pehle hi --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span>
+    <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"preload"</span>
+    <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"/images/hero-1600.webp"</span>
+    <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">"image"</span>
+    <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"high"</span>   <span class="tok-com">&lt;!-- ye LCP element hai, explicit high priority se aur fast bana do --&gt;</span>
+  <span class="tok-punc">&gt;</span>
+
+  <span class="tok-punc">&lt;!-- Step 4: normal font CSS bhi load hoga, lekin ab uske andar ka font file --&gt;</span>
+  <span class="tok-punc">&lt;!-- already preloading/preloaded hoga, so render-blocking wait kam hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"https://fonts.googleapis.com/css2?family=Inter&amp;display=swap"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">.</span><span class="tok-fn">hero</span> <span class="tok-punc">{</span>
+    <span class="tok-attr">background-image</span><span class="tok-punc">:</span> <span class="tok-fn">url</span><span class="tok-punc">(</span><span class="tok-str">"/images/hero-1600.webp"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">/* URL preload ke href se EXACTLY match hona chahiye, warna double-fetch */</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Note: <code>preconnect</code> aur direct <code>preload</code> dono font ke liye use kiye — ye
+        redundant nahi hai. Preconnect turant fire hota hai (connection ke liye), aur agar direct
+        <code>.woff2</code> URL pehle se pata hai (Google Fonts CSS ko inspect karke), to preload use kar
+        sakte ho taaki font file fetch bhi jaldi shuru ho, na ki font-CSS ke download+parse ka wait kare.
+      </p>
+
+      <h2 id="fetchpriority">Bonus: Fetch Priority API</h2>
+      <p>
+        <code>fetchpriority</code> attribute <code>&lt;link&gt;</code>, <code>&lt;img&gt;</code>, aur
+        <code>&lt;script&gt;</code> pe kaam karta hai — browser ke default priority-calculation ko
+        override karne ke liye:
+      </p>
+      <div class="code-block">
+        <div class="code-title">fetchpriority examples<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- LCP image ko high priority — jaldi discover + jaldi fetch ho --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"/hero.webp"</span> <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"high"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;!-- Below-the-fold thumbnail ko low priority — bandwidth LCP ko milne do --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"/thumbnail.webp"</span> <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"low"</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Root mechanism: browser resources ko do broad phases mein load karta hai — pehla phase
+        render-critical (HTML, CSS, fonts, viewport images) ke liye reserved hota hai. Bina hint ke,
+        images generally is high-priority window mein nahi aatin. <code>fetchpriority="high"</code>
+        explicitly image ko us pehle phase mein daal deta hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Common mistake: har cheez preload karna</div>
+        <p>
+          Preload ek <strong>zero-sum resource</strong> hai — network bandwidth aur HTTP/2-3 connection
+          slots limited hain. Agar tum apni har CSS, font, script, aur image ko preload kar doge, to
+          browser ke paas "critical vs non-critical" ka koi signal nahi bachta — sab kuch high priority
+          ban jaata hai, jo effectively <strong>koi priority nahi</strong> hota. Isse asli LCP-critical
+          resource (jaise hero image) ko utna bandwidth share nahi milta jitna milna chahiye tha, kyunki
+          wo 10 doosre "preloaded" resources ke saath compete kar raha hota hai. Result: LCP better hone
+          ki jagah <strong>worse</strong> ho jaata hai. Rule of thumb: preload ka use tab karo jab
+          resource (a) critical ho AND (b) HTML parser ko late discover ho — dono conditions saath.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: frameworks ye automatically kar dete hain</div>
+        <p>
+          Next.js ka <code>next/font</code> build-time pe fonts ko self-host kar leta hai aur automatically
+          matching <code>&lt;link rel="preload"&gt;</code> tags inject karta hai — tumhe manually
+          <code>crossorigin</code> ya <code>as="font"</code> yaad rakhne ki zaroorat nahi. Isi tarah
+          <code>next/image</code> jab <code>priority</code> prop set karte ho (LCP image ke liye), to wo
+          automatically <code>fetchpriority="high"</code> aur ek <code>&lt;link rel="preload" as="image"&gt;</code>
+          dono generate kar deta hai, page's <code>&lt;head&gt;</code> mein. Ye framework-level automation
+          exactly wahi mistakes prevent karta hai jo humne upar discuss kiye — missing <code>as</code>,
+          missing <code>crossorigin</code>, over-preloading. Lekin samajhna zaroori hai ki <strong>andar</strong>
+          kya ho raha hai, kyunki agar tum manually custom fonts/images use kar rahe ho (jo framework ke
+          optimized components se bypass karte hain), to ye hints tumhe khud lagane padenge.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>dns-prefetch</strong> = sirf DNS resolve, cheapest hint, bahut saare non-critical third-party origins ke liye.</li>
+        <li><strong>preconnect</strong> = DNS + TCP + TLS, connection ready but no fetch — 2-4 critical cross-origin domains tak limit rakho.</li>
+        <li><strong>preload</strong> = poora fetch abhi, high priority — sirf late-discovered critical resources ke liye, <code>as</code> attribute mandatory hai warna double-download hota hai.</li>
+        <li>Fonts ke saath preload/preconnect dono jagah <code>crossorigin</code> attribute chahiye — font requests spec-mandated CORS mode mein jaate hain, same-origin ho tab bhi.</li>
+        <li><strong>prefetch</strong> = future navigation ke liye speculative fetch, lowest priority, sirf high-confidence predictions pe use karo, aur <code>Save-Data</code> respect karo.</li>
+        <li><strong>modulepreload</strong> = ES module fetch + parse + import-graph discovery, plain preload se zyada powerful for JS modules.</li>
+        <li>Overuse of preload bandwidth contention create karta hai aur LCP ko hurt kar sakta hai — sab kuch "high priority" ban jaana matlab kuch bhi priority nahi.</li>
+        <li>Next.js jaise frameworks (<code>next/font</code>, <code>next/image</code>) ye hints automatically emit karte hain, but underlying mechanism samajhna debugging aur custom cases ke liye zaroori hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>preconnect aur dns-prefetch mein kya farak hai, aur dono ek saath kyun likhe jaate hain (fallback pattern)?</strong><br>Hint: preconnect DNS+TCP+TLS karta hai but sirf ~6 concurrent hi effective hain (browser limit); dns-prefetch sirf DNS karta hai, wider browser support, unlimited practically — dono saath likhna ek graceful degradation pattern hai.</li>
+        <li><strong>as attribute preload mein kyun mandatory hai — agar chhod diya to internally kya hota hai?</strong><br>Hint: resource type-specific priority queue aur CORS-mode match nahi ho paata, so browser dusri baar fetch karta hai jab actual consumer usse maangta hai.</li>
+        <li><strong>Font preload mein crossorigin attribute kyun chahiye, chahe font same-origin ho?</strong><br>Hint: font fetch spec ke hisaab se hamesha anonymous CORS mode use karta hai, isliye preload request bhi usi mode mein hona chahiye taaki dono match karke resource reuse ho.</li>
+        <li><strong>preload aur prefetch mein priority aur use-case ka farak batao.</strong><br>Hint: preload = current page, high priority, critical; prefetch = future navigation, lowest/idle priority, speculative.</li>
+        <li><strong>Bahut zyada preload use karne se LCP kaise worse ho sakta hai?</strong><br>Hint: bandwidth ek fixed resource hai; agar sab kuch high-priority preload ho jaaye, to actual LCP resource ko utna bandwidth share nahi milta — priority signal dilute ho jaata hai.</li>
+        <li><strong>modulepreload plain preload as="script" se better kyun hai JS modules ke liye?</strong><br>Hint: modulepreload sirf fetch nahi karta, parse/compile bhi karta hai aur static import graph ko recursively discover karta hai — plain preload sirf bytes download karta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="04-resource-loading.html">
+        <div class="label">← Previous</div>
+        <div class="title">Optimize Resource Loading</div>
+      </a>
+      <a class="next" href="06-image-performance.html">
+        <div class="label">Next →</div>
+        <div class="title">Image Performance</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

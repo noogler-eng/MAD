@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Handling — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link active" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 12</div>
+      <div class="progress-pill">12 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · try/catch/finally · Custom Errors</span>
+      <h1>Error Handling</h1>
+      <p class="subtitle">
+        Production code mein cheezein fail hongi hi — network down ho sakta hai, JSON malformed aa
+        sakta hai, user ka input garbage ho sakta hai. Farak achhe aur bure engineer mein ye hai ki
+        error hone par program crash hota hai ya gracefully recover karta hai. Is chapter mein
+        <code>try/catch/finally</code> ka exact execution model, Error object ke andar kya hota hai,
+        aur ek proper layered custom-error hierarchy kaise banayein — root-level, senior-dev depth ke
+        saath dekhte hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#try-catch">try/catch mechanics</a></li>
+          <li><a href="#error-object">Error object: name, message, stack</a></li>
+          <li><a href="#throw">throw operator aur non-Error values</a></li>
+          <li><a href="#finally">finally ka execution guarantee</a></li>
+          <li><a href="#async">try/catch async code ko catch kyun nahi karta</a></li>
+          <li><a href="#rethrow">Rethrowing pattern — catch specific, rethrow unknown</a></li>
+          <li><a href="#custom-errors">Custom error hierarchy banana</a></li>
+          <li><a href="#wrapping">Wrapping exceptions pattern</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="try-catch">try/catch mechanics — root-level flow</h2>
+      <p>
+        <code>try...catch</code> ka basic idea simple hai: <code>try</code> block ke andar wala code
+        execute hota hai, aur agar beech mein koi <strong>runtime exception</strong> throw hoti hai, to
+        JS engine turant us block ke andar aage ka execution rok deta hai aur control seedha
+        <code>catch</code> block mein jump kar deta hai — error object ke saath.
+      </p>
+      <div class="code-block">
+        <div class="code-title">try/catch basic flow<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">try</span> <span class="tok-punc">{</span>                                  <span class="tok-com">// try block: yahan wo code jo fail ho sakta hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"start"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// ye line normally chalti hai, print hoga "start"</span>
+  <span class="tok-kw">let</span> result <span class="tok-punc">=</span> <span class="tok-kw">undefined</span><span class="tok-punc">.</span>x<span class="tok-punc">;</span>   <span class="tok-com">// undefined.x — TypeError throw karega yahan</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"never reached"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// engine yahan tak kabhi nahi pahunchega — try turant abort ho gaya</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>                    <span class="tok-com">// catch(err): error object yahan milta hai jaise hi try fail ho</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"caught: "</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "caught: Cannot read properties of undefined..."</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// agar try mein koi error na aati, catch block ka pura body skip ho jaata — bilkul run hi nahi hota</span></code></pre>
+      </div>
+      <p>
+        Root-level pe important cheez: agar error na aaye to <code>catch</code> block <strong>execute
+        hi nahi hota</strong> — sirf error-path mein wo triggered hota hai. Ye ek control-flow branch
+        hai jo normal execution se completely alag hai (exception unwinding), function calls ke
+        beech-beech mein bhi kaam karta hai — agar <code>try</code> ke andar ek deep nested function
+        call throw karti hai, to bhi wahi <code>catch</code> catch karega, bashart beech mein koi aur
+        <code>try/catch</code> na ho jo pehle intercept kar le.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Sirf runtime errors — parse-time errors nahi</div>
+        <p>
+          <code>try/catch</code> ka mechanism sirf <strong>valid, syntactically-correct code</strong> pe
+          kaam karta hai jo runtime pe fail hota hai. Agar tumhare <code>try</code> block ke andar hi
+          syntax error hai (jaise ek missing closing brace), JS engine code ko parse hi nahi kar
+          payega — aur ye ek parse-time failure hai jo pura script load hone se pehle hi hota hai.
+          Iska matlab <code>try/catch</code> ye catch nahi kar sakta, kyunki engine ne abhi tak us code
+          ko "samjha" hi nahi.
+        </p>
+      </div>
+
+      <h2 id="error-object">Error object — name, message, stack</h2>
+      <p>
+        Jab bhi koi built-in error throw hoti hai (ya tum khud <code>new Error(...)</code> banate ho),
+        result object teen standard properties leke aata hai. Root cause: JS engine ke andar built-in
+        <code>Error</code> constructor approximately is tarah kaam karta hai —
+      </p>
+      <div class="code-block">
+        <div class="code-title">Error ka internal shape (conceptual)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">Error</span> <span class="tok-punc">{</span>                          <span class="tok-com">// built-in Error class ka mental model — asli spec-defined hai, ye simplified hai</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// constructor sirf "message" leta hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>message <span class="tok-punc">=</span> message<span class="tok-punc">;</span>       <span class="tok-com">// message: human-readable description jo humne pass kiya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"Error"</span><span class="tok-punc">;</span>          <span class="tok-com">// name: default "Error" — subclasses (TypeError etc) ise override karte hain</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>stack <span class="tok-punc">=</span> <span class="tok-punc">&lt;</span>call stack<span class="tok-punc">&gt;</span><span class="tok-punc">;</span>  <span class="tok-com">// stack: non-standard lekin sab engines support karte hain — call chain string</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Error properties inspect karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">lalala</span><span class="tok-punc">;</span>                          <span class="tok-com">// undeclared variable ko reference kiya — ReferenceError guaranteed</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// "ReferenceError" — error ka exact type/class naam</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// "lalala is not defined" — human-readable detail</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>stack<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// nested call trace with line numbers — debugging ke liye gold hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// pura object as-is — devtools mein pretty-printed dikhta hai</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        <code>stack</code> technically ECMA-262 spec ka part nahi hai, lekin V8 (Chrome/Node),
+        SpiderMonkey (Firefox), aur JavaScriptCore (Safari) — sab isko de dete hain, isliye practically
+        <strong>de-facto standard</strong> hai. Production logging/monitoring (Sentry jaise tools) is
+        stack trace pe hi depend karte hain root cause pinpoint karne ke liye.
+      </p>
+
+      <h2 id="throw">throw operator — aur non-Error values kyun avoid karo</h2>
+      <p>
+        <code>throw</code> literally <strong>kuch bhi</strong> throw kar sakta hai — string, number,
+        plain object, ya ek proper <code>Error</code> instance. Lekin sirf <code>Error</code> (ya uski
+        subclass) throw karna hi convention hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">throw ke saath sahi vs galat pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// GALAT: plain string throw karna</span>
+<span class="tok-kw">throw</span> <span class="tok-str">"Something broke"</span><span class="tok-punc">;</span>      <span class="tok-com">// technically valid JS hai, lekin ismein .stack, .name kuch nahi hoga</span>
+
+<span class="tok-com">// SAHI: Error (ya subclass) throw karna</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">"Something broke"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// stack trace milta hai, instanceof checks kaam karte hain</span>
+<span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">TypeError</span><span class="tok-punc">(</span><span class="tok-str">"Expected a number"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// built-in specific types bhi use kar sakte ho jab appropriate ho</span></code></pre>
+      </div>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Non-Error throw karne se debugging nightmare banta hai</div>
+        <p>
+          Agar tum <code>throw "some string"</code> karte ho, to catch block mein <code>err.stack</code>
+          <code>undefined</code> hoga — call trace gaya. Agar koi upstream code assume karta hai ki
+          <code>err instanceof Error</code> true hoga (jo ek reasonable assumption hai), aur tumne
+          string throw kar di, to wo check silently fail ho jaayega aur error ka type-checking logic
+          bypass ho jaayega. Har production codebase mein rule hona chahiye: <strong>hamesha Error ya
+          uski subclass hi throw karo</strong>, kabhi raw value nahi.
+        </p>
+      </div>
+
+      <h2 id="finally">finally ka execution guarantee — return/throw ke saath bhi</h2>
+      <p>
+        <code>finally</code> block <strong>hamesha</strong> chalta hai — chahe <code>try</code> normally
+        complete ho, chahe error aaye aur <code>catch</code> use handle kare, ya chahe <code>try</code>
+        ke andar hi <code>return</code> ya <code>throw</code> ho jaaye. Ye guarantee root mechanism hai
+        resource-cleanup (file handles, DB connections, locks) ke liye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">finally: return ke baad bhi guaranteed run<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"try: start"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// pehle ye print hoga</span>
+    <span class="tok-kw">return</span> <span class="tok-str">"try-value"</span><span class="tok-punc">;</span>          <span class="tok-com">// return yahan trigger ho gaya — lekin function turant exit NAHI hota</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">finally</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"finally: cleanup"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// return ke baad bhi ye chalta hai, function exit se PEHLE</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-com">// engine ka exact order: try ka return VALUE compute + "park" hota hai,</span>
+  <span class="tok-com">// finally poora run hota hai, aur TAB parked value actually return hota hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// Output order: "try: start" -&gt; "finally: cleanup" -&gt; "try-value"</span></code></pre>
+      </div>
+      <p>
+        Root-level detail jo bahut log log miss karte hain: agar <code>try</code> ke andar
+        <code>return X</code> hai, engine <code>X</code> ko turant return nahi karta — pehle
+        <code>finally</code> poora execute hota hai, <em>phir</em> parked return value ke saath function
+        actually exit hota hai. Isi tarah agar <code>try</code> ke andar exception throw hui aur
+        <code>catch</code> use rethrow karta hai, to bhi <code>finally</code> beech mein chalega, error
+        propagate hone se pehle.
+      </p>
+      <div class="code-block">
+        <div class="code-title">finally: rethrow ke saath bhi guaranteed<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">riskyOp</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">"db connection lost"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// try ke andar hi error throw ho gayi</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">finally</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"closing connection..."</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ye phir bhi chalega — catch hai hi nahi yahan, par finally chalega</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-com">// finally ke baad, original error ab bhi propagate hoti hai upar wale caller tak —</span>
+  <span class="tok-com">// finally usse "consume" nahi karta jab tak khud koi return/throw na kare</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ finally ke andar khud return/throw karna = original error/value overwrite</div>
+        <p>
+          Agar <code>finally</code> block ke andar khud <code>return</code> ya <code>throw</code> hai, to
+          wo <strong>try/catch ke original outcome ko silently override</strong> kar deta hai — chahe
+          try mein error hui ho ya normal return. Ye ek classic bug source hai (jaise finally mein galti
+          se <code>return false</code> reh jaana), isliye <code>finally</code> ko strictly cleanup ke
+          liye use karo, control-flow (return/throw) ke liye nahi.
+        </p>
+      </div>
+
+      <h2 id="async">try/catch async code ko catch kyun nahi karta</h2>
+      <p>
+        Ye sabse common senior-level gotcha hai. <code>try/catch</code> sirf <strong>synchronous</strong>
+        code ko cover karta hai jo usi call-stack frame ke andar directly execute hota hai. Agar
+        <code>try</code> block ke andar <code>setTimeout</code> ya koi Promise callback schedule kiya,
+        to us callback ka actual execution <strong>baad mein, ek naye call stack ke saath</strong> hota
+        hai — us waqt tak original <code>try/catch</code> ka scope already khatam ho chuka hota hai
+        (call stack unwind ho chuka hota hai), so wahan hui error ko wapas catch karne ka koi rasta
+        nahi bachta.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Galat: setTimeout ke andar throw try/catch se bahar hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// setTimeout callback: engine ye baad mein, event loop se schedule karta hai</span>
+    <span class="tok-kw">null</span><span class="tok-punc">.</span>foo<span class="tok-punc">;</span>                  <span class="tok-com">// yahan TypeError throw hogi — LEKIN ek naye call stack mein</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"never runs"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// ye kabhi trigger hi nahi hoga — synchronously try/catch turant khatam ho gaya</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// Result: uncaught TypeError, seedha console mein crash-like error dikhega</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Sahi: try/catch ko async callback ke ANDAR rakho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>                              <span class="tok-com">// try/catch ab wahi call stack frame ke andar hai jahan error throw hogi</span>
+    <span class="tok-kw">null</span><span class="tok-punc">.</span>foo<span class="tok-punc">;</span>                  <span class="tok-com">// TypeError throw</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"caught: "</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab sahi se catch ho jaayega</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        Promises ke liye equivalent solution alag hai — direct <code>try/catch</code> Promise
+        constructor executor ke andar chalti hai (kyunki wo synchronously execute hota hai), lekin
+        Promise <em>rejection</em> ko handle karne ka sahi tareeka <code>.catch()</code> hai, ya
+        <code>async/await</code> ke saath <code>try/catch</code> (jahan <code>await</code> effectively
+        rejection ko throw mein convert karta hai — ye Chapter 13 mein detail se cover hoga).
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Global handlers safety-net hain, primary strategy nahi</div>
+        <p>
+          Browser mein <code>window.onerror</code> / <code>window.addEventListener("error", ...)</code>
+          aur unhandled promise rejections ke liye
+          <code>window.addEventListener("unhandledrejection", ...)</code> milte hain — ye "last resort"
+          global catch hain (logging/monitoring ke liye, jaise Sentry). Inpe depend karke normal error
+          handling skip mat karo — ye sirf ek safety net hai jab kuch slip ho jaaye, actual recovery
+          logic yahan se nahi likhi jaati.
+        </p>
+      </div>
+
+      <h2 id="rethrow">Rethrowing pattern — catch specific, rethrow unknown</h2>
+      <p>
+        Ek <code>catch</code> block <strong>sirf un errors ko handle kare jinke baare mein use pata
+        hai</strong> — baaki sabko rethrow kar de. Ye pattern bugs ko silently swallow hone se bachata
+        hai; agar tum har error ko blindly "handle" kar doge, to genuine programming bugs (jaise typo se
+        <code>undefined</code> access) bhi silently ignore ho jaayenge, aur debug karna nightmare ban
+        jaayega.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Rethrow: sirf expected error type handle karo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">readUser</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-kw">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// malformed JSON pe ye khud SyntaxError throw kar dega</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>user<span class="tok-punc">.</span>age<span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// business-rule validation: age field missing</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">"No field: age"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// generic Error — ideally custom class hoga (aage dekhenge)</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> user<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-fn">readUser</span><span class="tok-punc">(</span><span class="tok-str">'{ bad json'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// intentionally malformed input</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">SyntaxError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// case 1: JSON.parse fail hua — hume iska pata hai, handle karo</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Invalid JSON: "</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> err<span class="tok-punc">;</span>                    <span class="tok-com">// case 2: kuch aur (unexpected bug) — hume iske baare mein pata nahi, RETHROW karo</span>
+  <span class="tok-punc">}</span>                                <span class="tok-com">// rethrow karne se ye ek OUTER try/catch (agar exist kare) tak propagate hogi</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Yahan <code>err instanceof SyntaxError</code> use kiya, <code>err.name === "SyntaxError"</code>
+        nahi — kyunki <code>instanceof</code> inheritance chain ko respect karta hai. Jaise hi hum apni
+        custom error classes banayenge (jo <code>Error</code> se extend hongi), <code>instanceof</code>
+        checks automatically parent classes ke against bhi true return karenge — string comparison
+        (<code>.name</code>) ye guarantee nahi deta agar naming kahin typo ho jaaye.
+      </p>
+
+      <h2 id="custom-errors">Custom error hierarchy banana — extending Error</h2>
+      <p>
+        Real applications mein generic <code>Error</code> kaafi nahi hota — humein pata hona chahiye ki
+        <strong>kis kism ki</strong> error hai: validation fail hui, ya required field missing hai, ya
+        network fail hua. Iske liye hum <code>Error</code> ko extend karke apni class hierarchy banate
+        hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Level 1: ValidationError extends Error<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">ValidationError</span> <span class="tok-kw">extends</span> <span class="tok-fn">Error</span> <span class="tok-punc">{</span>    <span class="tok-com">// built-in Error class se inherit — subclassing pattern</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// super(): parent Error constructor call karna ZAROORI hai —</span>
+                                    <span class="tok-com">// isi se this.message set hota hai aur this.stack generate hota hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"ValidationError"</span><span class="tok-punc">;</span> <span class="tok-com">// super() ke baad name reset karo — warna "Error" hi reh jaayega</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ValidationError</span><span class="tok-punc">(</span><span class="tok-str">"Whoops!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// custom error instance throw kiya</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">test</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span><span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "Whoops!"</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "ValidationError"</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">ValidationError</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">Error</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — chain ke through parent bhi match karta hai</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Ab isse aage badhate hain — ek deeper hierarchy jahan
+        <code>PropertyRequiredError</code>, <code>ValidationError</code> ka hi ek more-specific subtype
+        hai. Ye real production pattern hai: broad category (<code>ValidationError</code>) se lekar
+        specific reason (<code>PropertyRequiredError</code>) tak.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Level 2: PropertyRequiredError extends ValidationError<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">ValidationError</span> <span class="tok-kw">extends</span> <span class="tok-fn">Error</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"ValidationError"</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">PropertyRequiredError</span> <span class="tok-kw">extends</span> <span class="tok-fn">ValidationError</span> <span class="tok-punc">{</span> <span class="tok-com">// ab ValidationError se hi extend kar rahe hain — 2-level chain</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>property<span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// constructor ka signature alag hai — property name leta hai, message nahi</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span><span class="tok-str">"No property: "</span> <span class="tok-punc">+</span> property<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// message KHUD construct karke parent (ValidationError) ko diya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"PropertyRequiredError"</span><span class="tok-punc">;</span> <span class="tok-com">// name ko is level pe phir se override kiya</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>property <span class="tok-punc">=</span> property<span class="tok-punc">;</span>       <span class="tok-com">// extra custom data — kaunsa property missing tha, structured field mein</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">readUser</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-kw">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// bad JSON pe engine khud SyntaxError throw karega</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>user<span class="tok-punc">.</span>age<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">PropertyRequiredError</span><span class="tok-punc">(</span><span class="tok-str">"age"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// specific subtype throw kiya, generic ValidationError nahi</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>user<span class="tok-punc">.</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">PropertyRequiredError</span><span class="tok-punc">(</span><span class="tok-str">"name"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> user<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-fn">readUser</span><span class="tok-punc">(</span><span class="tok-str">'{ "age": 25 }'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "name" field missing hai isme</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">ValidationError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// broad category check — PropertyRequiredError bhi isme MATCH karega,</span>
+                                          <span class="tok-com">// kyunki wo chain mein ValidationError se hi extend hota hai</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Invalid data: "</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Invalid data: No property: name"</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "PropertyRequiredError" — exact subtype yahan preserved hai</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>err<span class="tok-punc">.</span>property<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "name" — custom field jo humne add kiya tha</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-kw">if</span> <span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">SyntaxError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// JSON.parse ki apni error — alag branch</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"JSON Syntax Error: "</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> err<span class="tok-punc">;</span>                      <span class="tok-com">// unknown error type — rethrow karo, mat swallow karo</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Har level pe <code>this.name</code> manually likhna repetitive hai. Ek clean pattern: ek base
+        <code>MyError</code> class banao jo automatically <code>this.constructor.name</code> se
+        <code>name</code> derive kare — is trick se child classes ko sirf apna logic likhna padta hai,
+        <code>name</code> assignment repeat nahi karna padta.
+      </p>
+      <div class="code-block">
+        <div class="code-title">DRY pattern: MyError base class<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">MyError</span> <span class="tok-kw">extends</span> <span class="tok-fn">Error</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>constructor<span class="tok-punc">.</span>name<span class="tok-punc">;</span> <span class="tok-com">// this.constructor: jo bhi asli class instantiate hui uska reference —</span>
+                                        <span class="tok-com">// chahe MyError ho, ValidationError ho, ya kisi bhi depth ka subclass —</span>
+                                        <span class="tok-com">// .name automatically class ka sahi naam de deta hai, hardcode nahi karna padta</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">ValidationError</span> <span class="tok-kw">extends</span> <span class="tok-fn">MyError</span> <span class="tok-punc">{</span> <span class="tok-punc">}</span>  <span class="tok-com">// khaali body — sirf naming ke liye ek intermediate layer hai</span>
+
+<span class="tok-kw">class</span> <span class="tok-fn">PropertyRequiredError</span> <span class="tok-kw">extends</span> <span class="tok-fn">ValidationError</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>property<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span><span class="tok-str">"No property: "</span> <span class="tok-punc">+</span> property<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// message chain ke through MyError tak jaata hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>property <span class="tok-punc">=</span> property<span class="tok-punc">;</span>       <span class="tok-com">// name yahan set karne ki zaroorat nahi — MyError ka constructor already kar chuka</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">PropertyRequiredError</span><span class="tok-punc">(</span><span class="tok-str">"field"</span><span class="tok-punc">)</span><span class="tok-punc">.</span>name<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "PropertyRequiredError" — automatically correct</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: transpiled/older environments mein extends Error tootta tha</div>
+        <p>
+          Babel jaise transpilers (ES5 target ke saath) mein <code>class X extends Error</code> ka
+          naive downleveling historically broken hota tha — <code>instanceof</code> checks fail ho
+          jaate the aur custom properties (<code>this.name</code>, custom fields) parent constructor ke
+          baad set hote hue bhi kabhi-kabhi lost ho jaate the. Root cause: ES5 mein built-in classes
+          (<code>Error</code>, <code>Array</code>) properly subclass nahi ho sakte the kyunki unka
+          internal <code>[[Construct]]</code> behavior native tha, jabki transpiled code plain function
+          + prototype-chain simulate karta tha — <code>super(message)</code> call se return hua object
+          asal mein wahi instance nahi hota jispe tum aage properties set kar rahe ho. Fix: modern
+          TypeScript/Babel setups mein target ko ES2015+ rakho, ya agar ES5 target zaroori hai to
+          explicitly <code>Object.setPrototypeOf(this, X.prototype)</code> constructor ke andar call
+          karo taaki prototype chain manually fix ho jaaye. Node.js aur modern browsers (native ES2015+
+          classes) mein ye problem exist hi nahi karta — sirf legacy transpile targets mein aata hai,
+          lekin agar tum ek library maintain kar rahe ho jo purane bundlers/browsers support karti hai,
+          ye trap yaad rakhna zaroori hai.
+        </p>
+      </div>
+
+      <h2 id="wrapping">Wrapping exceptions pattern</h2>
+      <p>
+        Jab ek function <strong>multiple different types</strong> ki low-level errors throw kar sakta
+        hai (jaise JSON parse fail, ya validation fail), to caller ko har low-level type individually
+        handle karne ke bajaye, ek single high-level wrapper error do jo original error ko
+        <code>cause</code> property mein preserve kare. Ye caller-side handling ko drastically simplify
+        karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">ReadError: low-level errors ko wrap karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-fn">ReadError</span> <span class="tok-kw">extends</span> <span class="tok-fn">Error</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">constructor</span><span class="tok-punc">(</span>message<span class="tok-punc">,</span> cause<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// do params: apna message, aur original error (cause)</span>
+    <span class="tok-kw">super</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>cause <span class="tok-punc">=</span> cause<span class="tok-punc">;</span>            <span class="tok-com">// cause: original low-level error ko yahan store kiya — kuch lose nahi hota</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"ReadError"</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">validateUser</span><span class="tok-punc">(</span>user<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>user<span class="tok-punc">.</span>age<span class="tok-punc">)</span> <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">PropertyRequiredError</span><span class="tok-punc">(</span><span class="tok-str">"age"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>user<span class="tok-punc">.</span>name<span class="tok-punc">)</span> <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">PropertyRequiredError</span><span class="tok-punc">(</span><span class="tok-str">"name"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">readUser</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> user<span class="tok-punc">;</span>
+
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    user <span class="tok-punc">=</span> <span class="tok-kw">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span>json<span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// stage 1: parsing — SyntaxError yahan aa sakti hai</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">SyntaxError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ReadError</span><span class="tok-punc">(</span><span class="tok-str">"Syntax Error"</span><span class="tok-punc">,</span> err<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// original SyntaxError ko cause ke roop mein wrap karke throw</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">throw</span> err<span class="tok-punc">;</span>                    <span class="tok-com">// koi anjaan error — rethrow, wrap mat karo</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">validateUser</span><span class="tok-punc">(</span>user<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// stage 2: business validation — ValidationError family aa sakti hai</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>err <span class="tok-kw">instanceof</span> <span class="tok-fn">ValidationError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ReadError</span><span class="tok-punc">(</span><span class="tok-str">"Validation Error"</span><span class="tok-punc">,</span> err<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// isko bhi wrap kiya — caller ko sirf ReadError dikhega</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">throw</span> err<span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> user<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">readUser</span><span class="tok-punc">(</span><span class="tok-str">'{bad json}'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>e<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>e <span class="tok-kw">instanceof</span> <span class="tok-fn">ReadError</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// caller sirf EK type check karta hai — ReadError</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>e<span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// "ReadError: Syntax Error"</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Original: "</span> <span class="tok-punc">+</span> e<span class="tok-punc">.</span>cause<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// underlying SyntaxError bhi accessible hai .cause se, drop nahi hua</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">throw</span> e<span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Note: modern JS (ES2022+) mein native <code>Error</code> constructor khud bhi ek second
+        argument ke roop mein <code>{ cause: err }</code> option accept karta hai
+        (<code>new Error("msg", { cause: err })</code>), jo yahi <code>cause</code> convention
+        standardize karta hai — lekin custom class mein manually property set karna older environments
+        mein bhi kaam karta hai aur zyada explicit hai.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>try/catch</code> sirf <strong>synchronous</strong> code cover karta hai — <code>setTimeout</code>/Promise callbacks ke andar try/catch khud us callback ke andar hona chahiye.</li>
+        <li><code>finally</code> hamesha chalta hai — chahe try normal complete ho, error ho, ya try ke andar <code>return</code>/<code>throw</code> ho. Return value <code>finally</code> ke poora hone ke baad hi actually return hoti hai.</li>
+        <li><code>finally</code> ke andar khud <code>return</code>/<code>throw</code> karna original outcome ko silently override kar deta hai — sirf cleanup ke liye use karo.</li>
+        <li>Hamesha <code>Error</code> (ya subclass) throw karo, raw string/object nahi — warna <code>.stack</code> aur <code>instanceof</code> checks kaam nahi karenge.</li>
+        <li>Rethrowing pattern: sirf jaana-pehchana error type handle karo, baaki <code>throw err</code> se propagate hone do — bugs silently swallow mat karo.</li>
+        <li>Custom errors banate waqt <code>super(message)</code> call karna mandatory hai, aur uske baad <code>this.name</code> set karo (ya <code>this.constructor.name</code> trick use karo).</li>
+        <li><code>instanceof</code> ko <code>.name</code> string comparison se prefer karo — inheritance chain ke saath correctly kaam karta hai.</li>
+        <li>Wrapping exceptions (<code>cause</code> property) multi-source errors ko ek single high-level type mein consolidate karta hai, caller-side handling simplify karta hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>try/catch ke andar setTimeout mein throw hui error kyun catch nahi hoti?</strong><br>Hint: setTimeout callback ek naye call stack frame mein, baad mein execute hota hai — us waqt tak original try/catch ka scope already unwind ho chuka hota hai.</li>
+        <li><strong>finally aur try ke andar return dono ho, to execution order aur return value kya hoga?</strong><br>Hint: try ka return value pehle compute/park hota hai, phir finally poora chalta hai, uske baad hi parked value actually return hoti hai — order hamesha finally return se pehle poora complete hota hai.</li>
+        <li><strong>finally ke andar khud return/throw karne se kya problem ho sakti hai?</strong><br>Hint: ye try/catch ka original outcome (chahe normal ho ya error) silently overwrite kar deta hai — classic subtle bug source.</li>
+        <li><strong>Custom error class mein super(message) call karna kyun mandatory hai?</strong><br>Hint: parent Error constructor hi this.message set karta hai aur this.stack generate karta hai — super() call kiye bina ye missing rahenge, aur JS engine subclass constructor mein this ko super() se pehle use karne bhi nahi dega.</li>
+        <li><strong>err.name === "ValidationError" check karne ke bajaye err instanceof ValidationError kyun better hai?</strong><br>Hint: instanceof inheritance chain ko respect karta hai — subclasses (jaise PropertyRequiredError) bhi automatically match karengi; string comparison brittle hai aur naming typo se silently fail ho sakta hai.</li>
+        <li><strong>Wrapping exceptions pattern (cause property) kis problem ko solve karta hai?</strong><br>Hint: jab ek function multiple low-level error types throw kar sakta hai, caller ko har type individually handle karne ke bajaye sirf ek high-level wrapper error check karni padti hai, original error cause mein preserved rehta hai.</li>
+        <li><strong>Babel/ES5-target transpiled environments mein extends Error historically kyun break hota tha?</strong><br>Hint: native built-ins ka [[Construct]] internal behavior transpiled prototype-chain simulation se properly replicate nahi hota tha — instanceof aur constructor ke baad set kiye properties lost ho sakti thin; fix hai target ES2015+ rakhna ya Object.setPrototypeOf manually call karna.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="11-classes.html">
+        <div class="label">← Previous</div>
+        <div class="title">Classes</div>
+      </a>
+      <a class="next" href="13-promises-async-await.html">
+        <div class="label">Next →</div>
+        <div class="title">Promises, Async/Await</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

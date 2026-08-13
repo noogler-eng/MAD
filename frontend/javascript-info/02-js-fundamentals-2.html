@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Fundamentals II — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link active" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 2</div>
+      <div class="progress-pill">2 / 34 chapters</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Operators · Control Flow</span>
+      <h1>JS Fundamentals II</h1>
+      <p class="subtitle">
+        Operators, comparisons, if/else/ternary, logical operators (&amp;&amp; || !), nullish coalescing
+        (??), loops (while/for), aur switch — sab kuch root-level pe: ye chize "andar se" kaam kaise
+        karti hain, sirf syntax nahi.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#operators">Operators &amp; math</a></li>
+          <li><a href="#comparison">Comparisons &amp; type coercion</a></li>
+          <li><a href="#ifelse">if / else / ternary</a></li>
+          <li><a href="#logical">Logical operators (&amp;&amp; || !)</a></li>
+          <li><a href="#nullish">Nullish coalescing (??) vs ||</a></li>
+          <li><a href="#loops">while / for loops + labels</a></li>
+          <li><a href="#switch">switch statement</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="operators">Operators &amp; Math</h2>
+      <p>
+        JavaScript mein har operator ek <strong>precedence number</strong> ke saath define hota hai —
+        ye number decide karta hai ki multiple operators ek expression mein kis order mein evaluate
+        honge. Ye sirf trivia nahi hai — production bugs (especially string+number concatenation ke
+        around) is precedence table ki misunderstanding se aate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Basic arithmetic operators<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> a <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">,</span> b <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span>                  <span class="tok-com">// do numbers declare kiye</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">+</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 7 — addition</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">-</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 3 — subtraction</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">*</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 10 — multiplication</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">/</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 2.5 — division (integer division nahi hoti, JS mein sab float hai)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">%</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 1 — remainder: 5 ko 2 se divide karne ke baad jo bacha</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a <span class="tok-punc">**</span> b<span class="tok-punc">)</span><span class="tok-punc">;</span>             <span class="tok-com">// 25 — exponentiation: 5 ka power 2 (5*5)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">4</span> <span class="tok-punc">**</span> <span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">/</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 2 — fractional power = square root, ** sirf integers tak limited nahi</span></code></pre>
+      </div>
+
+      <h3>Binary <code>+</code> ka dual-personality — string concat vs addition</h3>
+      <p>
+        Root cause samajhna zaroori hai: <code>+</code> operator JS engine ke andar ek algorithm
+        follow karta hai — "agar dono operands mein se koi ek bhi string hai, to dusre ko bhi string
+        mein convert karo aur concatenate karo. Warna dono ko number bana ke add karo." Ye rule sirf
+        <code>+</code> pe apply hota hai — <code>-</code>, <code>*</code>, <code>/</code> hamesha
+        dono operands ko number mein convert karte hain, string hone ka koi special case nahi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">+ operator ka type coercion gotcha<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'1'</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "12" — ek operand string hai, so dusra bhi string ban gaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">2</span> <span class="tok-punc">+</span> <span class="tok-num">2</span> <span class="tok-punc">+</span> <span class="tok-str">'1'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "41" — left-to-right eval: pehle 2+2=4 (dono number), phir 4+'1'="41"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'1'</span> <span class="tok-punc">+</span> <span class="tok-num">2</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "122" — left-to-right: pehle '1'+2="12" (string ban gaya), phir "12"+2="122"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">6</span> <span class="tok-punc">-</span> <span class="tok-str">'2'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 4 — minus operator string-aware nahi, '2' number mein convert ho gaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'6'</span> <span class="tok-punc">/</span> <span class="tok-str">'2'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 3 — same, division bhi dono operand ko number bana deta hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — unary <code>+</code> ka real use-case</div>
+        <p>
+          Unary <code>+</code> (ek operand pe apply hone wala plus, jaise <code>+"5"</code>) internally
+          <code>Number(...)</code> hi call karta hai — bas syntax chhota hai. Production mein ye tab
+          critical ban jaata hai jab HTML form inputs, <code>prompt()</code>, ya query params se
+          values aati hain — wo hamesha <strong>strings</strong> hoti hain, chahe user ne "42" type
+          kiya ho. <code>+prompt("Number?") + +prompt("Number?")</code> likhna zaroori hai, warna dono
+          strings concatenate ho jaayenge (<code>"2" + "3" = "23"</code>) instead of adding
+          (<code>5</code>). Ye ek real-world bug class hai jo har "form input ka sum nikalo" feature
+          mein dikhta hai.
+        </p>
+      </div>
+
+      <h3>Precedence, assignment ka return value, aur chaining</h3>
+      <p>
+        Assignment (<code>=</code>) bhi ek operator hai, jiski precedence sabse kam (2) hai — matlab
+        pehle right-hand side poora evaluate hota hai, phir assignment hota hai. Aur ek subtle fact:
+        <strong>assignment khud ek value return karta hai</strong> — wahi value jo assign hui.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Assignment returns a value + chaining<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> a<span class="tok-punc">,</span> b<span class="tok-punc">,</span> c<span class="tok-punc">;</span>
+
+<span class="tok-com">// right-to-left evaluate hota hai: pehle c = 2+2 (4), uska return value b ko, uska a ko</span>
+a <span class="tok-punc">=</span> b <span class="tok-punc">=</span> c <span class="tok-punc">=</span> <span class="tok-num">2</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">,</span> c<span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 4 4 4 — teeno mein same value chali gayi</span>
+
+<span class="tok-kw">let</span> x <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">,</span> y <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>
+<span class="tok-com">// (y = x + 1) khud "3" return karta hai kyunki assignment ka return value assigned value hoti hai</span>
+<span class="tok-kw">let</span> z <span class="tok-punc">=</span> <span class="tok-num">3</span> <span class="tok-punc">-</span> <span class="tok-punc">(</span>y <span class="tok-punc">=</span> x <span class="tok-punc">+</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>y<span class="tok-punc">,</span> z<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// y=3, z=0 — 3 - 3 = 0</span></code></pre>
+      </div>
+
+      <h3>Increment/decrement — prefix vs postfix</h3>
+      <p>
+        <code>++counter</code> (prefix) pehle increment karta hai, phir <strong>new value</strong>
+        return karta hai. <code>counter++</code> (postfix) bhi increment karta hai, lekin
+        <strong>old value</strong> return karta hai — increment expression evaluate hone ke baad hota
+        hai, is order ko engine internally guarantee karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Prefix vs postfix — return value differs<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> counter <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> a <span class="tok-punc">=</span> <span class="tok-punc">++</span>counter<span class="tok-punc">;</span>          <span class="tok-com">// prefix: pehle counter 2 hua, phir a = 2 (new value)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>a<span class="tok-punc">,</span> counter<span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 2 2</span>
+
+counter <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>                    <span class="tok-com">// reset kiya reuse ke liye</span>
+<span class="tok-kw">let</span> d <span class="tok-punc">=</span> counter<span class="tok-punc">++</span><span class="tok-punc">;</span>          <span class="tok-com">// postfix: d = 1 (old value), FIR counter 2 hua</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>d<span class="tok-punc">,</span> counter<span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 1 2</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Ek statement mein multiple ops mat mix karo</div>
+        <p>
+          <code>let x = 2 * counter++;</code> jaisa code technically valid hai (postfix ki old value
+          multiply hogi), lekin readability ke liye pehle counter increment karo alag line pe, phir
+          expression likho. Comma operator (<code>(1+2, 3+4)</code> jo sirf last value return karta
+          hai) similarly rarely useful hai — code-golf mein dikhta hai, production mein avoid karo.
+        </p>
+      </div>
+
+      <h2 id="comparison">Comparisons &amp; Type Coercion</h2>
+      <p>
+        Comparison operators (<code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>,
+        <code>&lt;=</code>, <code>==</code>, <code>!=</code>) hamesha boolean return karte hain.
+        Root-level pe interesting cheez ye hai ki jab do <em>different types</em> compare hote hain,
+        JS engine internally values ko numbers mein convert karta hai (strict equality ke case ko
+        chhod ke).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">String comparison — Unicode order, dictionary nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Z'</span> <span class="tok-punc">&gt;</span> <span class="tok-str">'A'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// true — character-by-character Unicode code compare hota hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Glow'</span> <span class="tok-punc">&gt;</span> <span class="tok-str">'Glee'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true — 'G','l' match, 3rd char pe 'o' > 'e' hai, wahin decide ho gaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Bee'</span> <span class="tok-punc">&gt;</span> <span class="tok-str">'Be'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// true — prefix match ho gaya, jo lamba hai wo bada mana jaata hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'a'</span> <span class="tok-punc">&gt;</span> <span class="tok-str">'A'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// true — lowercase ka Unicode code uppercase se bada hota hai, true dictionary order nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Loose (==) vs strict (===) equality<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">0</span> <span class="tok-punc">==</span> <span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// true — == dono ko number mein convert karta hai: false -&gt; 0, phir 0==0</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">0</span> <span class="tok-punc">===</span> <span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// false — === koi conversion nahi karta, type differ karti hai (number vs boolean) so seedha false</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">''</span> <span class="tok-punc">==</span> <span class="tok-kw">false</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — '' number mein convert hoke 0 banti hai, false bhi 0, so equal</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'2'</span> <span class="tok-punc">&gt;</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// true — comparison operators (&gt; &lt; &gt;= &lt;=) string ko number mein convert karte hain</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Root cause — kyun <code>0 == false</code> par <code>0 === false</code> nahi</div>
+        <p>
+          <code>==</code> (loose equality) ka spec algorithm agar dono operands ka type mismatch ho, to
+          unhe <strong>coerce</strong> karta hai (usually numbers mein) phir compare karta hai —
+          <code>false</code> hamesha <code>0</code> mein convert hota hai comparisons ke liye. Isliye
+          <code>0 == false</code> true hai. Lekin <code>===</code> (strict equality) spec ke first hi
+          step mein type check karta hai — <strong>agar type match nahi, to turant false</strong>,
+          koi conversion nahi hoti. Yehi wajah hai production code review guidelines almost hamesha
+          <code>===</code> mandate karte hain — <code>==</code> ka coercion behavior non-obvious aur
+          bug-prone hai (jaise famous <code>[] == false</code> bhi true hai kyunki empty array pehle
+          string "" mein convert hota hai, phir 0 mein).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">null aur undefined ke special comparison rules<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">===</span> <span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// false — strict equality types check karti hai, ye do alag types hain</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">==</span> <span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// true — spec ka special-case rule: == mein ye dono sirf ek dusre ke barabar hote hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">&gt;</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// false — mathematical comparison mein null number(0) banta hai, aur 0 &gt; 0 false hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">&gt;=</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// true — null -&gt; 0, aur 0 &gt;= 0 true hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">==</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// false — ye == hai (equality), aur == mein null sirf undefined/null ke barabar hota hai, kisi aur value ke nahi</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">undefined</span> <span class="tok-punc">&gt;</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// false — undefined mathematical context mein NaN banta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">undefined</span> <span class="tok-punc">==</span> <span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// false — special rule sirf null ke saath match karta hai, 0 se nahi</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ NaN kabhi apne aap ke barabar nahi hota</div>
+        <p>
+          <code>undefined</code> comparisons mein <code>NaN</code> mein convert hota hai, aur
+          <code>NaN</code> ki spec-defined property ye hai: <strong>koi bhi comparison jisme NaN shamil
+          ho — chahe <code>&gt;</code>, <code>&lt;</code>, ya khud <code>NaN === NaN</code> — hamesha
+          <code>false</code> return karta hai</strong>. Isi wajah se <code>undefined &gt; 0</code>,
+          <code>undefined &lt; 0</code>, aur <code>undefined == 0</code> — teeno false hain, jo
+          intuitively confusing lagta hai. Production check ke liye <code>Number.isNaN(x)</code> use
+          karo, kabhi <code>x === NaN</code> nahi — wo hamesha false milega.
+        </p>
+      </div>
+
+      <h2 id="ifelse">if / else / Ternary</h2>
+      <p>
+        <code>if(...)</code> apne parentheses ke andar ki value ko boolean mein convert karta hai
+        (same rule jo <code>Boolean(x)</code> follow karta hai). Falsy values hain:
+        <code>0</code>, <code>""</code>, <code>null</code>, <code>undefined</code>, <code>NaN</code>
+        — baaki sab truthy hai, including string <code>"0"</code> jo bahut logon ko surprise karta
+        hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">if/else if/else chain + ternary<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> year <span class="tok-punc">=</span> <span class="tok-num">2026</span><span class="tok-punc">;</span>                  <span class="tok-com">// variable jise multiple conditions se test karenge</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>year <span class="tok-punc">&lt;</span> <span class="tok-num">2015</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// pehla condition check</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Too early...'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// agar year 2015 se kam hai to ye chalega</span>
+<span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-kw">if</span> <span class="tok-punc">(</span>year <span class="tok-punc">&gt;</span> <span class="tok-num">2015</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// pehla false hua to ye check hoga</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Too late'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// year 2026 hai, so 2015 se zyada hai — ye run hoga</span>
+<span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>                        <span class="tok-com">// dono conditions false hue to fallback</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Exactly!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// sirf tab jab year === 2015</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// ternary — value produce karta hai, statement nahi</span>
+<span class="tok-kw">let</span> access <span class="tok-punc">=</span> <span class="tok-punc">(</span>year <span class="tok-punc">&gt;</span> <span class="tok-num">2000</span><span class="tok-punc">)</span> <span class="tok-punc">?</span> <span class="tok-str">'allowed'</span> <span class="tok-punc">:</span> <span class="tok-str">'denied'</span><span class="tok-punc">;</span> <span class="tok-com">// condition ? truthy-case : falsy-case</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>access<span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// "allowed"</span>
+
+<span class="tok-com">// chained ternaries — multiple ? ek line mein, if-else-if ka compact equivalent</span>
+<span class="tok-kw">let</span> age <span class="tok-punc">=</span> <span class="tok-num">25</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> msg <span class="tok-punc">=</span> <span class="tok-punc">(</span>age <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">)</span> <span class="tok-punc">?</span> <span class="tok-str">'Hi, baby!'</span> <span class="tok-punc">:</span>
+  <span class="tok-punc">(</span>age <span class="tok-punc">&lt;</span> <span class="tok-num">18</span><span class="tok-punc">)</span> <span class="tok-punc">?</span> <span class="tok-str">'Hello!'</span> <span class="tok-punc">:</span>          <span class="tok-com">// pehla false, second check</span>
+  <span class="tok-punc">(</span>age <span class="tok-punc">&lt;</span> <span class="tok-num">100</span><span class="tok-punc">)</span> <span class="tok-punc">?</span> <span class="tok-str">'Greetings!'</span> <span class="tok-punc">:</span>      <span class="tok-com">// age=25 yahaan match hoga (25 &lt; 100)</span>
+  <span class="tok-str">'What an unusual age!'</span><span class="tok-punc">;</span>            <span class="tok-com">// fallback agar upar koi match na kare</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>msg<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "Greetings!"</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Ternary ka sahi use — value select karo, execute mat karo</div>
+        <p>
+          Ternary ka purpose ek value return karna hai, koi side-effecting code run karna nahi. Isliye
+          <code>company === 'X' ? doSomething() : doSomethingElse()</code> jaisa "action-dispatch"
+          pattern avoid karo — is ke liye plain <code>if/else</code> use karo, kyunki multi-line code
+          blocks single horizontal ternary se zyada readable hote hain, especially jab team review
+          karega.
+        </p>
+      </div>
+
+      <h2 id="logical">Logical Operators — &amp;&amp;, ||, !</h2>
+      <p>
+        Ye JS ki sabse misunderstood cheez hai: <strong>&amp;&amp; aur || boolean return nahi karte —
+        wo operands mein se ek ki actual value return karte hain</strong>. Boolean sirf internal
+        decision-making ke liye use hota hai, final return value original (uncoerced) hoti hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">|| — first truthy value return karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">||</span> <span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// 1 — null falsy hai, so || agla operand check karta hai aur "1" (number) return karta hai, "true" nahi</span>
+
+<span class="tok-kw">let</span> firstName <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">;</span>            <span class="tok-com">// empty string — falsy</span>
+<span class="tok-kw">let</span> lastName <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">;</span>             <span class="tok-com">// empty string — falsy</span>
+<span class="tok-kw">let</span> nickName <span class="tok-punc">=</span> <span class="tok-str">"SuperCoder"</span><span class="tok-punc">;</span>   <span class="tok-com">// non-empty string — truthy</span>
+
+<span class="tok-com">// left-to-right evaluate, jo pehla truthy mile wahi return, sab falsy ho to last operand return</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>firstName <span class="tok-punc">||</span> lastName <span class="tok-punc">||</span> nickName <span class="tok-punc">||</span> <span class="tok-str">"Anonymous"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "SuperCoder"</span>
+
+<span class="tok-kw">true</span> <span class="tok-punc">||</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"skipped"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// short-circuit — pehla operand truthy hai, dusra kabhi evaluate hi nahi hota</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">&amp;&amp; — first falsy value return karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">1</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-num">5</span><span class="tok-punc">)</span><span class="tok-punc">;</span>           <span class="tok-com">// 5 — dono truthy hain, so && last operand return karta hai (not just "true")</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">1</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-kw">null</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// null — jaise hi falsy mila (null), wahin ruk jaata hai, 2 evaluate hi nahi hota</span>
+
+<span class="tok-kw">false</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"skipped"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// short-circuit — pehla operand hi falsy, alert() kabhi call hi nahi hota</span>
+
+<span class="tok-com">// precedence: && ki precedence || se zyada hai, isliye parentheses ke bina bhi ye grouping implicit hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">null</span> <span class="tok-punc">||</span> <span class="tok-num">2</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-num">3</span> <span class="tok-punc">||</span> <span class="tok-num">4</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3 — (null) || (2 && 3) || (4) => null || 3 || 4 => 3</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">! NOT operator + double NOT (!!) for boolean conversion<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// false — direct inversion</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                 <span class="tok-com">// true — 0 falsy hai, ! usko boolean bana ke invert karta hai</span>
+
+<span class="tok-com">// !! trick: pehla ! boolean mein convert karke invert karta hai, dusra ! wapas invert karke pure boolean deta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">!!</span><span class="tok-str">"non-empty"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// true — Boolean("non-empty") ke barabar, lekin chhota syntax</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">!!</span><span class="tok-kw">null</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// false</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ && ko if ka replacement mat banao</div>
+        <p>
+          <code>(x &gt; 0) &amp;&amp; alert('Positive!')</code> technically kaam karta hai (agar x&gt;0
+          hai to alert chalega), lekin ye "clever" code hai jo readability kam karta hai. Explicit
+          <code>if (x &gt; 0) alert('Positive!')</code> use karo — intent turant clear hoti hai, aur
+          code review mein next developer ko guess nahi karna padta ki && yahan control-flow ke liye
+          use ho raha hai ya normal boolean logic ke liye.
+        </p>
+      </div>
+
+      <h2 id="nullish">Nullish Coalescing (??) vs ||</h2>
+      <p>
+        <code>??</code> ES2020 mein isliye add hua kyunki <code>||</code> "falsy" ki definition
+        bahut broad hai — <code>0</code>, <code>""</code>, <code>false</code> sab falsy hain, lekin
+        ye legitimate, meaningful values hain (jaise height=0, ya empty-but-valid string). <code>??</code>
+        sirf <code>null</code> aur <code>undefined</code> ko "missing" maanta hai — baaki sab, chahe
+        falsy ho, "defined" maana jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">?? vs || — zero-height wala classic bug<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> height <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                <span class="tok-com">// ye ek VALID value hai — user ne explicitly 0 set kiya</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>height <span class="tok-punc">||</span> <span class="tok-num">100</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// 100 — BUG: || sirf truthy check karta hai, 0 falsy hai so 0 ignore ho gaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>height <span class="tok-punc">??</span> <span class="tok-num">100</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// 0 — CORRECT: ?? sirf null/undefined ko replace karta hai, 0 defined value hai so wahi return hui</span>
+
+<span class="tok-kw">let</span> u<span class="tok-punc">;</span>                          <span class="tok-com">// undefined — actually "missing"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>u <span class="tok-punc">??</span> <span class="tok-str">"Anonymous"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Anonymous" — yahaan ?? sahi kaam kar raha hai kyunki u genuinely undefined hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">?? ki precedence + && || ke saath mandatory parentheses<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> height2 <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">,</span> width <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// ?? ki precedence low hai (arithmetic se kam), isliye grouping explicit karna zaroori hai</span>
+<span class="tok-kw">let</span> area <span class="tok-punc">=</span> <span class="tok-punc">(</span>height2 <span class="tok-punc">??</span> <span class="tok-num">100</span><span class="tok-punc">)</span> <span class="tok-punc">*</span> <span class="tok-punc">(</span>width <span class="tok-punc">??</span> <span class="tok-num">50</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// (null??100)=100, (null??50)=50, 100*50</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>area<span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 5000</span>
+
+<span class="tok-com">// let x = 1 &amp;&amp; 2 ?? 3; -&gt; SYNTAX ERROR, JS spec ye combination bina parens allow hi nahi karta</span>
+<span class="tok-kw">let</span> x <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-num">1</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-num">2</span><span class="tok-punc">)</span> <span class="tok-punc">??</span> <span class="tok-num">3</span><span class="tok-punc">;</span>       <span class="tok-com">// explicit parens ke saath valid — (1&amp;&amp;2)=2, phir 2??3=2</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>x<span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// 2</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 && / || ke saath ?? mixing ban kyun hai</div>
+        <p>
+          Ye purely developer-safety ke liye hai — jab log <code>||</code> se <code>??</code> migrate
+          karte hain, precedence confusion bahut easily silent bugs create karti hai (jaise
+          <code>a ?? b || c</code> ka matlab kya hai — ambiguous lagta hai). JS spec ne isliye
+          <code>&amp;&amp;</code>/<code>||</code> ko <code>??</code> ke saath directly mix karna hi
+          <strong>SyntaxError</strong> bana diya, jab tak explicit parentheses na ho — compiler-level
+          hi force karta hai ki tum apna intent clearly likho.
+        </p>
+      </div>
+
+      <h2 id="loops">while / for Loops + Labels</h2>
+      <p>
+        Teen primary loop constructs hain, condition check karne ke timing mein differ karte hain:
+        <code>while</code> pehle check karta hai (0 iterations bhi ho sakti hain), <code>do..while</code>
+        baad mein check karta hai (kam se kam 1 iteration guaranteed), <code>for</code> ek structured
+        3-part header deta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">while, do-while, for — teeno ka comparison<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+<span class="tok-kw">while</span> <span class="tok-punc">(</span>i <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// condition PEHLE check hota hai, false ho to body kabhi na chale</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>i<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 0, 1, 2 print karega</span>
+  i<span class="tok-punc">++</span><span class="tok-punc">;</span>                       <span class="tok-com">// increment manually karna padta hai, warna infinite loop</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> j <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>
+<span class="tok-kw">do</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>j<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 5 — chalta hai even though condition already false hai</span>
+<span class="tok-punc">}</span> <span class="tok-kw">while</span> <span class="tok-punc">(</span>j <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// condition BAAD mein check hota hai — body kam se kam ek baar guaranteed run karti hai</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> k <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> k <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> k<span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// begin(k=0) ek baar; condition(k&lt;3) har iteration se pehle; step(k++) body ke baad</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>k<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 0, 1, 2</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// k yahaan accessible nahi hai — let ka scope loop ke andar tak hi limited hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">break, continue, aur labeled loops (nested exit)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> <span class="tok-num">10</span><span class="tok-punc">;</span> i<span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>i <span class="tok-punc">%</span> <span class="tok-num">2</span> <span class="tok-punc">==</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-kw">continue</span><span class="tok-punc">;</span>   <span class="tok-com">// even numbers skip — remaining body chhod ke seedha step pe jaata hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>i<span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 1, 3, 5, 7, 9 — sirf odd numbers</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// nested loops se ek saath bahar nikalne ke liye label chahiye — plain break sirf innermost loop todta</span>
+outer<span class="tok-punc">:</span> <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> i<span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// "outer:" ye loop ka label hai</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> j <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> j <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> j<span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>i <span class="tok-punc">===</span> <span class="tok-num">1</span> <span class="tok-punc">&amp;&amp;</span> j <span class="tok-punc">===</span> <span class="tok-num">1</span><span class="tok-punc">)</span> <span class="tok-kw">break</span> outer<span class="tok-punc">;</span> <span class="tok-com">// dono loop ek saath break, sirf inner nahi</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>i<span class="tok-punc">,</span> j<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// (0,0)(0,1)(0,2)(1,0) print karega, phir (1,1) pe outer break</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — for ka internal execution algorithm</div>
+        <p>
+          Engine <code>for(begin; condition; step)</code> ko is exact order mein run karta hai:
+          <strong>begin ek baar</strong> → phir loop: <strong>condition check</strong> (false ho to
+          exit) → <strong>body</strong> → <strong>step</strong> → wapas condition check. Isliye
+          <code>begin</code> ya <code>step</code> ko chhod sakte ho (<code>for (; i &lt; 3;)</code>) —
+          dono semicolons zaroori hain structure define karne ke liye, lekin expressions optional
+          hain. <code>for(;;)</code> ek infinite loop hai jisme sab teen parts missing hain — ye
+          production code mein "run until break" pattern ke liye deliberately use hota hai (jaise
+          event-loop-driven servers, retry logic).
+        </p>
+      </div>
+
+      <h2 id="switch">switch Statement</h2>
+      <p>
+        <code>switch</code> multiple <code>if (x === value)</code> checks ka descriptive replacement
+        hai. Root-level cheez ye hai: <strong>switch hamesha strict equality (<code>===</code>) use
+        karta hai</strong>, comparison mein koi type coercion nahi hoti.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">switch — strict equality aur fall-through ka effect<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> a <span class="tok-punc">=</span> <span class="tok-num">2</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">;</span>                <span class="tok-com">// a = 4</span>
+
+<span class="tok-kw">switch</span> <span class="tok-punc">(</span>a<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">case</span> <span class="tok-num">3</span><span class="tok-punc">:</span>                     <span class="tok-com">// internally if (a === 3) jaisa hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Too small'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>                   <span class="tok-com">// break zaroori — warna next case mein "fall-through" ho jaayega</span>
+  <span class="tok-kw">case</span> <span class="tok-num">4</span><span class="tok-punc">:</span>                     <span class="tok-com">// a===4 match karta hai, yahin se execution start hota hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Exactly!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// ye print hoga</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>                   <span class="tok-com">// yahaan break hai so aage nahi jaayega</span>
+  <span class="tok-kw">case</span> <span class="tok-num">5</span><span class="tok-punc">:</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Too big'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>
+  <span class="tok-kw">default</span><span class="tok-punc">:</span>                   <span class="tok-com">// koi case match na ho to ye fallback chalega</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"I don't know such values"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Grouping cases (intentional fall-through)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> a <span class="tok-punc">=</span> <span class="tok-num">3</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">switch</span> <span class="tok-punc">(</span>a<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">case</span> <span class="tok-num">4</span><span class="tok-punc">:</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Right!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>
+  <span class="tok-kw">case</span> <span class="tok-num">3</span><span class="tok-punc">:</span>                     <span class="tok-com">// is case ka apna code nahi — break bhi nahi hai, so 5 ke code tak "fall through" karega</span>
+  <span class="tok-kw">case</span> <span class="tok-num">5</span><span class="tok-punc">:</span>                     <span class="tok-com">// 3 aur 5 dono yahaan land karte hain — intentional grouping</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Wrong!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// a=3 ke liye ye chalega</span>
+    <span class="tok-kw">break</span><span class="tok-punc">;</span>
+  <span class="tok-kw">default</span><span class="tok-punc">:</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'The result is strange.'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Strict equality ka gotcha — string "3" vs number 3</div>
+        <p>
+          Kyunki switch hamesha <code>===</code> use karta hai, agar user input (jo hamesha string
+          hoti hai, e.g. <code>prompt()</code> se) directly kisi number-literal case se compare hoti
+          hai, to match kabhi nahi hoga. <code>case 3:</code> tab tak kabhi nahi chalega jab tak
+          switch-expression khud number <code>3</code> na ho — string <code>"3"</code> chahe value se
+          "same" dikhe, type mismatch ki wajah se silently <code>default</code> block mein chala
+          jaata hai. Isse bachne ke liye switch-expression ko explicitly convert karo
+          (<code>Number(arg)</code>) ya cases ko strings hi rakho consistently.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>+</code> ka special-case hai — agar koi bhi operand string hai to concatenation, warna dono operands number mein coerce hoke arithmetic; baaki sab arithmetic operators (<code>-</code>, <code>*</code>, <code>/</code>) hamesha number-coerce karte hain.</li>
+        <li>Assignment <code>=</code> ek expression hai jo assigned value return karta hai — isliye chaining (<code>a = b = c</code>) aur inline assignment (<code>x = (y = 5)</code>) possible hai.</li>
+        <li><code>==</code> type coercion karta hai (spec algorithm ke through), <code>===</code> nahi karta — production code mein hamesha <code>===</code> prefer karo, <code>null == undefined</code> ke special case ke alawa jahan intentional ho.</li>
+        <li><code>null</code>/<code>undefined</code> ka comparison behavior inconsistent lagta hai — <code>==</code> mein special rule hai, mathematical comparisons (<code>&lt;</code> <code>&gt;</code>) mein coercion (null→0, undefined→NaN) alag rules follow karti hai.</li>
+        <li><code>&amp;&amp;</code> aur <code>||</code> boolean nahi, operand values return karte hain — <code>||</code> pehli truthy, <code>&amp;&amp;</code> pehli falsy value.</li>
+        <li><code>??</code> sirf <code>null</code>/<code>undefined</code> ko "missing" treat karta hai — <code>0</code>, <code>""</code>, <code>false</code> jaisi legitimate falsy values ke liye <code>||</code> se zyada correct default hai.</li>
+        <li><code>switch</code> hamesha strict (<code>===</code>) comparison karta hai — type mismatch silently default block mein gir jaata hai.</li>
+        <li>Labels (<code>outer:</code>) nested loops se ek saath <code>break</code>/<code>continue</code> karne ka only tareeka hain — arbitrary code jump ke liye nahi.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>0 == false hai lekin 0 === false nahi — root cause kya hai?</strong> Hint: spec algorithm difference — coercion vs type-check-first.</li>
+        <li><strong>NaN !== NaN kyun hai?</strong> Hint: IEEE 754 spec definition, aur ise check karne ka sahi tareeka (<code>Number.isNaN</code>).</li>
+        <li><strong><code>console.log(1 + '2' + 2)</code> aur <code>console.log(1 + 2 + '2')</code> ka output kya hoga aur kyun differ karta hai?</strong> Hint: left-to-right evaluation + <code>+</code> ka type-dependent behavior.</li>
+        <li><strong><code>height || 100</code> aur <code>height ?? 100</code> mein kab different result aayega?</strong> Hint: jab height = 0 ya "" ho.</li>
+        <li><strong>&amp;&amp; aur || sirf true/false kyun nahi return karte?</strong> Hint: short-circuit ka implementation detail — default-value patterns kaise possible hote hain isi wajah se.</li>
+        <li><strong>switch statement mein <code>case '3':</code> aur <code>case 3:</code> alag kyun behave karte hain?</strong> Hint: strict equality, type matters.</li>
+        <li><strong>Nested loops se ek saath bahar nikalne ka correct tareeka kya hai, aur kyun ek flag variable use karna bura idea hai?</strong> Hint: labeled break vs manual flag-checking readability/perf tradeoff.</li>
+        <li><strong><code>1 &amp;&amp; 2 ?? 3</code> likhne pe kya hota hai?</strong> Hint: SyntaxError — explain kyun spec ne ye restriction rakhi.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a href="01-js-fundamentals-1.html">
+          <div class="label">← Previous</div>
+          <div class="title">JS Fundamentals I</div>
+        </a>
+        <a class="next" href="03-functions-basics.html">
+          <div class="label">Next →</div>
+          <div class="title">Functions Basics</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

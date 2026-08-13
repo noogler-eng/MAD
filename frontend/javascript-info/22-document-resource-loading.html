@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document &amp; Resource Loading — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link active" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 22</div>
+      <div class="progress-pill">22 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Browser · Page Lifecycle · Resource Loading</span>
+      <h1>Document &amp; Resource Loading</h1>
+      <p class="subtitle">
+        Page load ek single moment nahi hai — ye ek <strong>sequence of events</strong> hai jo alag-alag
+        timing pe fire hoti hain: pehle HTML parse hoti hai, phir scripts (kab? kaise? order kya hai?),
+        phir images/stylesheets load hoti hain, aur finally page "complete" hoti hai. Is chapter mein hum
+        <code>DOMContentLoaded</code>, <code>load</code>, <code>beforeunload</code>, <code>unload</code> —
+        char lifecycle events ka exact contract samjhenge, <code>async</code>/<code>defer</code> ka
+        precise execution-order model dekhenge, aur individual resources (images, scripts, stylesheets)
+        ke apne <code>onload</code>/<code>onerror</code> events explore karenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#dcl">DOMContentLoaded — exact guarantee kya hai</a></li>
+          <li><a href="#dcl-scripts">Scripts DOMContentLoaded ko kyun block karte hain</a></li>
+          <li><a href="#dcl-styles">Stylesheets ka nuanced ordering effect</a></li>
+          <li><a href="#autofill">Browser autofill aur DOMContentLoaded</a></li>
+          <li><a href="#load">window.onload — sab kuch complete</a></li>
+          <li><a href="#readystate">document.readyState — teen states</a></li>
+          <li><a href="#async-defer">async vs defer — timeline comparison</a></li>
+          <li><a href="#dynamic-scripts">Dynamically created scripts</a></li>
+          <li><a href="#beforeunload">beforeunload — confirmation dialog</a></li>
+          <li><a href="#unload">unload aur sendBeacon</a></li>
+          <li><a href="#resource-events">Resource loading: img/script/link onload/onerror</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="dcl">DOMContentLoaded — exact guarantee kya hai</h2>
+      <p>
+        <code>DOMContentLoaded</code> event <code>document</code> object pe fire hota hai jab browser ne
+        <strong>HTML fully parse kar li ho aur DOM tree ban chuka ho</strong> — lekin external resources
+        jaise <code>&lt;img&gt;</code> aur stylesheets zaroori nahi ki load ho chuke hon. Iska root-level
+        matlab: is point pe tum DOM ko safely query/manipulate kar sakte ho (elements exist karte hain,
+        attributes set hain), lekin agar tumhe kisi image ka <code>width</code>/<code>height</code>
+        chahiye, ya kisi stylesheet se aane wale computed style pe depend karna hai, to wo abhi guaranteed
+        nahi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">DOMContentLoaded basic listener<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"DOMContentLoaded"</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>  <span class="tok-com">// document pe listener — event ka naam exact string case-sensitive hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"DOM ready hai, HTML fully parsed"</span><span class="tok-punc">);</span>  <span class="tok-com">// yahan DOM elements guaranteed exist karte hain</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">img</span> <span class="tok-punc">=</span> <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">"img"</span><span class="tok-punc">);</span>  <span class="tok-com">// img element milega (DOM node exist karta hai)</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">offsetWidth</span><span class="tok-punc">);</span>  <span class="tok-com">// ⚠️ ye 0 ho sakta hai — image ka pixel data abhi download nahi hua</span>
+<span class="tok-punc">});</span></code></pre>
+      </div>
+
+      <h2 id="dcl-scripts">Scripts DOMContentLoaded ko kyun block karte hain</h2>
+      <p>
+        Root cause: HTML parser jab ek <code>&lt;script&gt;</code> tag ke upar pahunchta hai (bina
+        <code>async</code>/<code>defer</code> ke), to wo parsing <strong>ruk jaata hai</strong> aur script
+        ko download (agar external hai) + <strong>execute</strong> karta hai, tabhi aage badhta hai. Isko
+        "parser-blocking script" kehte hain. Ye precaution isliye hai kyunki script ke andar
+        <code>document.write()</code> ho sakta hai jo current parsing position pe naya HTML inject kar
+        sakta hai — browser ko pehle se pata nahi ki script DOM modify karega ya nahi, isliye safe side pe
+        wo hamesha wait karta hai.
+      </p>
+      <p>
+        Isi wajah se agar tumhare page mein bada external script hai (jaise ek analytics library), to
+        <code>DOMContentLoaded</code> tab tak fire nahi hoga jab tak wo script pura download +
+        execute nahi ho jaata — chahe script DOM se related kuch bhi na kare.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Blocking script demo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"DOMContentLoaded"</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>  <span class="tok-com">// ye listener page load ke shuru mein hi register ho gaya</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"DOM ready — is line ka fire hona script ke NEECHE hai"</span><span class="tok-punc">);</span>  <span class="tok-com">// ye tabhi chalega jab neeche wala script pura load ho chuka ho</span>
+<span class="tok-punc">});</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- ⬆ async/defer nahi hai, isliye parser yahan RUKTA hai, lodash ko download+execute karta hai --&gt;</span>
+<span class="tok-com">&lt;!-- tab tak DOMContentLoaded fire NAHI hoga, chahe lodash DOM ko touch bhi na kare --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="dcl-styles">Stylesheets ka nuanced ordering effect</h2>
+      <p>
+        Ye sabse confusing part hai, isliye carefully samjho: <strong>external stylesheet khud
+        <code>DOMContentLoaded</code> ko block NAHI karta</strong> — browser CSS load hone ka wait kiye
+        bina HTML parsing continue rakh sakta hai. Lekin agar stylesheet ke <strong>baad</strong> koi
+        <code>&lt;script&gt;</code> tag aata hai, to <strong>wo script us stylesheet ke load hone tak
+        wait karega</strong> — kyunki script ke andar CSSOM query ho sakti hai (jaise
+        <code>getComputedStyle</code>), aur browser ko pehle CSSOM complete banana padta hai script chalane
+        se pehle. Result: stylesheet indirectly parsing ko delay kar deta hai, sirf isliye kyunki uske
+        baad wala script uska wait karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Stylesheet → script ordering<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text/css"</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">"style.css"</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- ⬆ ye khud parsing ko block nahi karta — HTML parser aage badh sakta hai --&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">// lekin ye script style.css ke load hone ka WAIT karega,</span>
+  <span class="tok-com">// kyunki getComputedStyle ko accurate CSSOM chahiye</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">getComputedStyle</span><span class="tok-punc">(</span><span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">).</span><span class="tok-fn">marginTop</span><span class="tok-punc">);</span>  <span class="tok-com">// style.css apply hone ke baad hi accurate value milega</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- chain effect: stylesheet → blocks this script → jo aage HTML parsing ko block karta hai --&gt;</span>
+<span class="tok-com">&lt;!-- to net result: is order mein stylesheet load hone tak DOMContentLoaded bhi delay ho sakta hai --&gt;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: ordering ka practical impact</div>
+        <p>
+          Ye chaining effect (stylesheet → blocks next script → blocks parsing) hi ek reason hai ki
+          production sites <code>&lt;link rel="stylesheet"&gt;</code> ko <strong>hamesha</strong>
+          <code>&lt;head&gt;</code> mein sabse pehle rakhte hain aur uske baad koi inline/blocking script
+          nahi daalte — taaki parser jaldi se jaldi CSSOM build kar sake bina kisi script ke intermediate
+          mein wait kiye. Agar tumhe script chahiye bhi hai jo styles read kare, use stylesheet se pehle
+          mat rakho — ya better, <code>defer</code> use karo taaki wo parsing complete hone ke baad hi
+          chale, jab CSSOM already ready ho.
+        </p>
+      </div>
+
+      <h2 id="autofill">Browser autofill aur DOMContentLoaded</h2>
+      <p>
+        Firefox, Chrome aur Opera browser saved form data (username/password) ko exactly
+        <code>DOMContentLoaded</code> ke time pe autofill karte hain. Chunki <code>DOMContentLoaded</code>
+        khud blocking scripts ka wait karta hai (upar dekha), agar tumhare page mein bahut saare
+        render-blocking scripts hain, to login form ka autofill bhi utna hi late hoga — user ko lagega
+        page "slow" hai jabki asal mein wo script-loading delay hai.
+      </p>
+
+      <h2 id="load">window.onload — sab kuch complete</h2>
+      <p>
+        <code>load</code> event <code>window</code> object pe fire hota hai jab <strong>poora page load
+        ho chuka ho</strong> — HTML, saare stylesheets, saari images, sab kuch. Ye
+        <code>DOMContentLoaded</code> se hamesha baad (ya same time pe, agar koi external resource hi na
+        ho) fire hoga.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">window.onload example<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">window</span><span class="tok-punc">.</span><span class="tok-fn">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// window pe handler assign — ye "complete" state pe chalega</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">img</span> <span class="tok-punc">=</span> <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">"img"</span><span class="tok-punc">);</span>  <span class="tok-com">// same img jo upar 0 width de raha tha</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Image size: `</span> <span class="tok-punc">+</span> <span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">offsetWidth</span> <span class="tok-punc">+</span> <span class="tok-str">"x"</span> <span class="tok-punc">+</span> <span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">offsetHeight</span><span class="tok-punc">);</span>  <span class="tok-com">// ab guaranteed non-zero accurate dimensions</span>
+<span class="tok-punc">};</span></code></pre>
+      </div>
+
+      <h2 id="readystate">document.readyState — teen states</h2>
+      <p>
+        <code>document.readyState</code> property loading progress ko track karti hai, teen possible
+        values ke saath:
+      </p>
+      <ul>
+        <li><code>"loading"</code> — document abhi parse ho raha hai (initial state)</li>
+        <li><code>"interactive"</code> — DOM complete ban chuka hai (ye <code>DOMContentLoaded</code> ke saath coincide karta hai)</li>
+        <li><code>"complete"</code> — document + saare resources load ho chuke hain (ye <code>window.onload</code> ke saath coincide karta hai)</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">readyState-based safe listener registration<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">work</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// actual kaam jo DOM ready hone par karna hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"DOM ready, kaam shuru"</span><span class="tok-punc">);</span>  <span class="tok-com">// safe hai DOM access karna</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">readyState</span> <span class="tok-punc">==</span> <span class="tok-str">'loading'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// abhi tak parsing chal rahi hai — event ka wait karna hoga</span>
+  <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'DOMContentLoaded'</span><span class="tok-punc">,</span> <span class="tok-fn">work</span><span class="tok-punc">);</span>  <span class="tok-com">// event fire hone par work() call hoga</span>
+<span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>  <span class="tok-com">// script itna late load hua ki DOM already ready hai</span>
+  <span class="tok-fn">work</span><span class="tok-punc">();</span>  <span class="tok-com">// event kabhi nahi fire hoga (already fire ho chuka), isliye directly call karo</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">// ye pattern zaroori hai jab script dynamically ya deferred load hota hai —</span>
+<span class="tok-com">// warna addEventListener kabhi trigger na hone wale event ka wait karta reh jaayega</span></code></pre>
+      </div>
+
+      <h2 id="async-defer">async vs defer — timeline comparison</h2>
+      <p>
+        Dono attributes sirf <strong>external</strong> scripts (<code>src</code> wale) pe kaam karte hain
+        — agar <code>src</code> nahi hai to dono ignore ho jaate hain. Dono ka common goal: HTML parsing
+        ko block mat karo. Lekin execution-order guarantee bilkul alag hai.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th>Plain <code>&lt;script&gt;</code></th><th><code>async</code></th><th><code>defer</code></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>HTML parsing</td>
+            <td>Block karta hai (download+execute dono ke liye)</td>
+            <td>Block nahi karta (parallel download)</td>
+            <td>Block nahi karta (parallel download)</td>
+          </tr>
+          <tr>
+            <td>Execution order</td>
+            <td>Document order (guaranteed)</td>
+            <td>Jo pehle download ho jaaye (order guaranteed NAHI)</td>
+            <td>Document order (guaranteed, jaise plain scripts)</td>
+          </tr>
+          <tr>
+            <td>Execution timing</td>
+            <td>Turant jahan tag hai wahin, synchronously</td>
+            <td>Download complete hote hi, turant (parsing beech mein ruk jaati hai us waqt)</td>
+            <td>Sirf HTML parsing <strong>complete</strong> hone ke baad</td>
+          </tr>
+          <tr>
+            <td>DOMContentLoaded se relation</td>
+            <td>Isse pehle chalta hai (block karta hai)</td>
+            <td>Independent — pehle ya baad, kuch bhi ho sakta hai</td>
+            <td>Hamesha DOMContentLoaded se <strong>pehle</strong> chalta hai</td>
+          </tr>
+          <tr>
+            <td>Best use-case</td>
+            <td>Chhote critical inline scripts</td>
+            <td>Independent third-party code — analytics, ads, widgets</td>
+            <td>App logic jo pura DOM aur ek dusre se order-dependent ho</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">defer — document order guarantee<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">defer</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"long-script.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- long-script.js download background mein shuru ho jaata hai, parsing block nahi hoti --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">defer</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"small-script.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- small-script.js pehle download ho sakta hai (chhota hai), --&gt;</span>
+<span class="tok-com">&lt;!-- LEKIN execution order document order hi follow karega: --&gt;</span>
+<span class="tok-com">&lt;!-- long-script.js PEHLE execute hoga, small-script.js uske baad, --&gt;</span>
+<span class="tok-com">&lt;!-- chahe download kaunsa pehle complete hua ho --&gt;</span>
+<span class="tok-com">&lt;!-- aur dono, HTML parsing complete hone ke baad, DOMContentLoaded se PEHLE run honge --&gt;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">async — load-order, no guarantee<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">async</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"analytics.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- ye script poori tarah INDEPENDENT hai — koi doosra script iska wait nahi karta, --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">async</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"ads.js"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- aur ye bhi kisi ka wait nahi karta --&gt;</span>
+<span class="tok-com">&lt;!-- jo bhi pehle download ho jaaye — chahe ads.js pehle likha ho ya baad mein — --&gt;</span>
+<span class="tok-com">&lt;!-- wo PEHLE execute hoga. Order network speed pe depend karta hai, code order pe nahi --&gt;</span>
+<span class="tok-com">&lt;!-- aur DOMContentLoaded inn dono se pehle ya baad mein, kabhi bhi fire ho sakta hai --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="dynamic-scripts">Dynamically created scripts</h2>
+      <p>
+        Jab tum <code>document.createElement('script')</code> se runtime pe script banate ho, to uska
+        default behavior <strong><code>async</code> jaisa hi hota hai</strong> — matlab wo apne aap
+        independent load hoga, koi document order guarantee nahi. Agar tumhe order chahiye (jaise multiple
+        dynamic scripts ek sequence mein chalane hain), to explicitly <code>script.async = false</code>
+        set karna padta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Dynamic script — order enforce karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-fn">src</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// helper function — src diya, script tag bana ke inject karega</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">script</span> <span class="tok-punc">=</span> <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'script'</span><span class="tok-punc">);</span>  <span class="tok-com">// naya &lt;script&gt; element create kiya, abhi DOM mein nahi hai</span>
+  <span class="tok-fn">script</span><span class="tok-punc">.</span><span class="tok-fn">src</span> <span class="tok-punc">=</span> <span class="tok-fn">src</span><span class="tok-punc">;</span>  <span class="tok-com">// src set karte hi browser background download shuru kar deta hai</span>
+  <span class="tok-fn">script</span><span class="tok-punc">.</span><span class="tok-fn">async</span> <span class="tok-punc">=</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>  <span class="tok-com">// ZAROORI: default async=true ko override karke document-order execution force kiya</span>
+  <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">head</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">script</span><span class="tok-punc">);</span>  <span class="tok-com">// script ko DOM mein daala — ab wo actually load/execute hoga</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-str">"/js/module-a.js"</span><span class="tok-punc">);</span>  <span class="tok-com">// pehla call — is order mein execute hoga</span>
+<span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-str">"/js/module-b.js"</span><span class="tok-punc">);</span>  <span class="tok-com">// dusra call — chahe module-a se pehle download ho jaaye, execute BAAD mein hoga</span>
+<span class="tok-com">// async=false set kiye bina, dono scripts jo bhi pehle download ho wo pehle chalega —</span>
+<span class="tok-com">// jo module-b agar module-a pe depend karta hai to crash ho sakta hai</span></code></pre>
+      </div>
+
+      <h2 id="beforeunload">beforeunload — confirmation dialog</h2>
+      <p>
+        <code>beforeunload</code> event tab fire hota hai jab user page se navigate away karne wala ho
+        (tab close, reload, ya kisi aur URL pe jaana). Iska primary use-case: unsaved changes ke liye user
+        ko warn karna. Handler mein value return karne se browser ek native confirmation dialog dikhata
+        hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">beforeunload — unsaved changes warning<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">window</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"beforeunload"</span><span class="tok-punc">,</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>  <span class="tok-com">// window pe listener, event object milta hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-fn">hasUnsavedChanges</span><span class="tok-punc">())</span> <span class="tok-punc">{</span>  <span class="tok-com">// custom check — agar kuch unsaved nahi hai</span>
+    <span class="tok-kw">return</span><span class="tok-punc">;</span>  <span class="tok-com">// kuch mat karo, silently navigate hone do</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">preventDefault</span><span class="tok-punc">();</span>  <span class="tok-com">// spec ke hisaab se ye chahiye hota hai, lekin real effect returnValue se hota hai</span>
+  <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">returnValue</span> <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">;</span>  <span class="tok-com">// ZAROORI: returnValue set karna hi actual trigger hai dialog dikhane ka</span>
+<span class="tok-punc">});</span>
+<span class="tok-com">// Note: modern browsers custom string show nahi karte security reasons se —</span>
+<span class="tok-com">// sirf ek generic browser-controlled message dikhta hai ("Changes you made may not be saved")</span>
+<span class="tok-com">// tumhara custom text dialog mein show hi nahi hota, ye deliberate browser restriction hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ beforeunload pe browser restrictions</div>
+        <p>
+          Modern browsers <code>beforeunload</code> ka misuse (spammy "are you sure" popups) rokne ke liye
+          strict hain: (1) tumhara custom message string ignore ho jaata hai — browser apna generic text
+          use karta hai; (2) dialog sirf tab dikhta hai jab user ne page ke saath kabhi interact kiya ho
+          (ek click ya keypress) — pure passive page-load pe dialog suppress ho jaata hai; (3)
+          <code>alert()</code>/<code>confirm()</code> jaisi custom UI is event ke andar allowed nahi hai,
+          sirf native <code>returnValue</code>-based dialog chalta hai.
+        </p>
+      </div>
+
+      <h2 id="unload">unload aur sendBeacon</h2>
+      <p>
+        <code>unload</code> event tab fire hota hai jab user actually page chhod raha ho (already committed
+        navigation). Is point pe koi delay-causing operation (alert, confirm, ya async fetch jiska response
+        wait karna ho) allowed nahi hai — browser bas page destroy kar dega. Analytics jaise "last-moment
+        data bhejna" use-cases ke liye <code>navigator.sendBeacon()</code> use hota hai, jo background mein
+        POST request fire-and-forget style bhejta hai, page transition ko block kiye bina.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">unload + sendBeacon — analytics pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">analyticsData</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">timeOnPage</span><span class="tok-punc">:</span> <span class="tok-num">42</span><span class="tok-punc">,</span> <span class="tok-attr">scrollDepth</span><span class="tok-punc">:</span> <span class="tok-num">0.8</span> <span class="tok-punc">};</span>  <span class="tok-com">// gather kiya hua session data</span>
+
+<span class="tok-kw">window</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"unload"</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// page destroy hone se theek pehle chalta hai</span>
+  <span class="tok-kw">navigator</span><span class="tok-punc">.</span><span class="tok-fn">sendBeacon</span><span class="tok-punc">(</span><span class="tok-str">"/analytics"</span><span class="tok-punc">,</span> <span class="tok-kw">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-fn">analyticsData</span><span class="tok-punc">));</span>  <span class="tok-com">// non-blocking POST, page navigate hone ko rokta nahi</span>
+<span class="tok-punc">});</span>
+<span class="tok-com">// sendBeacon ke fayde: background mein POST bhejta hai; navigation ko delay nahi karta;</span>
+<span class="tok-com">// max ~64kb data allowed hai per beacon</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Load-sequence, top se bottom</div>
+        <p>
+          Typical order: (1) <code>readyState</code> → <code>"interactive"</code>, (2)
+          <code>DOMContentLoaded</code> fire, (3) individual resources (images, iframes) apne
+          <code>load</code> events fire karte rehte hain jaise-jaise complete hote hain, (4)
+          <code>readyState</code> → <code>"complete"</code>, (5) <code>window.onload</code>. Navigation ke
+          time: <code>beforeunload</code> (cancellable, dialog) → user confirm karta hai → <code>unload</code>
+          (final, non-cancellable) → page destroyed.
+        </p>
+      </div>
+
+      <h2 id="resource-events">Resource loading: img/script/link onload/onerror</h2>
+      <p>
+        Individual resources (images, dynamically loaded scripts, stylesheets, iframes) apne khud ke
+        <code>load</code> aur <code>error</code> events fire karte hain — independent of DOMContentLoaded
+        ya window.onload. Ye tab useful hai jab tumhe kisi specific resource ke ready hone ka wait karna
+        ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Dynamic script — onload/onerror<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">script</span> <span class="tok-punc">=</span> <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'script'</span><span class="tok-punc">);</span>  <span class="tok-com">// naya script element</span>
+<span class="tok-fn">script</span><span class="tok-punc">.</span><span class="tok-fn">src</span> <span class="tok-punc">=</span> <span class="tok-str">"https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.3.0/lodash.js"</span><span class="tok-punc">;</span>  <span class="tok-com">// external CDN URL set kiya</span>
+<span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">head</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">script</span><span class="tok-punc">);</span>  <span class="tok-com">// DOM mein daala — download shuru</span>
+
+<span class="tok-fn">script</span><span class="tok-punc">.</span><span class="tok-fn">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// script load + execute successfully hone par</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">_</span><span class="tok-punc">.</span><span class="tok-fn">VERSION</span><span class="tok-punc">);</span>  <span class="tok-com">// ab lodash ka global _ safely accessible hai</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-fn">script</span><span class="tok-punc">.</span><span class="tok-fn">onerror</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// loading fail (404, network down, etc.)</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">"Error loading "</span> <span class="tok-punc">+</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">src</span><span class="tok-punc">);</span>  <span class="tok-com">// "this" script element ko refer karta hai, uska src print</span>
+<span class="tok-punc">};</span>
+<span class="tok-com">// ⚠️ IMPORTANT: onload/onerror sirf LOADING track karte hain, execution errors nahi —</span>
+<span class="tok-com">// agar script mein syntax error hai lekin download successful hua, onload phir bhi chalega</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Cross-origin scripts — error details hidden</div>
+        <p>
+          Agar script cross-origin hai (different domain), to security policy ke wajah se error ke andar
+          ka detail (stack trace, exact message) browser hide kar deta hai — sirf generic "Script error."
+          milta hai <code>window.onerror</code> mein. Isse fix karne ke liye <code>&lt;script
+          crossorigin="anonymous" src="..."&gt;</code> add karo, aur remote server ko
+          <code>Access-Control-Allow-Origin</code> header ke saath respond karna hoga. Bina iske, production
+          error-tracking tools (Sentry, etc.) third-party script crashes ka useful stack trace nahi de
+          paate.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Image onload/onerror<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-fn">img</span> <span class="tok-punc">=</span> <span class="tok-kw">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'img'</span><span class="tok-punc">);</span>  <span class="tok-com">// naya img element, abhi src nahi hai</span>
+
+<span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">onload</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// image download complete hone par</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Image loaded, size `</span> <span class="tok-punc">+</span> <span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">width</span> <span class="tok-punc">+</span> <span class="tok-str">"x"</span> <span class="tok-punc">+</span> <span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">height</span><span class="tok-punc">);</span>  <span class="tok-com">// natural pixel dimensions ab accurate hain</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">onerror</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>  <span class="tok-com">// 404 ya invalid image data</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">error</span><span class="tok-punc">(</span><span class="tok-str">"Image load failed"</span><span class="tok-punc">);</span>  <span class="tok-com">// fallback UI dikhane ka trigger yahan lagta hai</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-fn">img</span><span class="tok-punc">.</span><span class="tok-fn">src</span> <span class="tok-punc">=</span> <span class="tok-str">"https://js.cx/clipart/train.gif"</span><span class="tok-punc">;</span>  <span class="tok-com">// ⚠️ ZAROORI: images ka loading src set hone PAR shuru hota hai</span>
+<span class="tok-com">// (jabki scripts/stylesheets ka loading generally DOM mein INSERT hone par shuru hota hai) —</span>
+<span class="tok-com">// isliye onload/onerror handlers src set karne se PEHLE attach karne chahiye,</span>
+<span class="tok-com">// warna race condition mein event miss ho sakta hai agar image cache se instantly load ho jaaye</span></code></pre>
+      </div>
+
+      <p>
+        Same <code>load</code>/<code>error</code> pattern <code>&lt;link rel="stylesheet"&gt;</code> aur
+        <code>&lt;iframe&gt;</code> pe bhi kaam karta hai. Ek historical quirk: <strong>iframe hamesha
+        <code>onload</code> fire karta hai</strong> — chahe uske andar ka content successfully load hua ho
+        ya error page dikha ho — kyunki iframe apne aap mein ek complete document hai jo "load" ho gaya,
+        chahe uska content 404 hi kyun na ho.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>DOMContentLoaded</strong> = HTML parsed, DOM ready, images/stylesheets guaranteed nahi. Blocking scripts (bina async/defer) ise delay karte hain.</li>
+        <li>Stylesheet khud DOMContentLoaded ko block nahi karta, lekin uske baad wale script ko block karta hai (CSSOM dependency) — jo indirectly parsing delay kar sakta hai.</li>
+        <li>Browser autofill DOMContentLoaded pe hota hai — script-heavy pages pe delayed autofill isi wajah se hota hai.</li>
+        <li><strong>window.onload</strong> = sab kuch complete — images, stylesheets, sab loaded. Accurate dimensions ke liye ye chahiye, DOMContentLoaded nahi.</li>
+        <li><strong>defer</strong> = document order guaranteed, DOMContentLoaded se pehle chalta hai. <strong>async</strong> = load-order (koi guarantee nahi), DOMContentLoaded se independent timing.</li>
+        <li>Dynamically created scripts default <code>async=true</code> hote hain — order chahiye to explicitly <code>script.async = false</code> set karo.</li>
+        <li><strong>beforeunload</strong> confirmation dialog de sakta hai (<code>event.returnValue</code> set karke), lekin custom message browsers ignore karte hain aur user-interaction requirement hai.</li>
+        <li><strong>unload</strong> mein delay-causing operations allowed nahi — <code>navigator.sendBeacon()</code> use karo background analytics ke liye.</li>
+        <li>Resource-level <code>onload</code>/<code>onerror</code> sirf loading track karte hain, execution errors nahi. Images ke liye handlers <code>src</code> set karne se pehle attach karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>DOMContentLoaded aur window.onload mein exact farak kya hai?</strong><br>Hint: DOMContentLoaded = HTML parsed + DOM built (images/CSS guaranteed nahi); load = sab kuch complete including all external resources.</li>
+        <li><strong>Ek external stylesheet, jo khud DOMContentLoaded ko block nahi karta, kaise indirectly parsing ko delay kar sakta hai?</strong><br>Hint: agar stylesheet ke baad script hai jo computed styles read karta hai, wo script stylesheet ka wait karega, jo aage parsing ko block karega.</li>
+        <li><strong>async aur defer dono parsing ko block nahi karte — to inka fundamental farak kya hai?</strong><br>Hint: defer document order preserve karta hai aur DOMContentLoaded se pehle chalta hai; async load-order (unpredictable) mein chalta hai, DOMContentLoaded se independent hai.</li>
+        <li><strong>Dynamically createElement se banaya gaya script default kaunsa behavior follow karta hai, aur order enforce kaise karoge?</strong><br>Hint: default async=true jaisa hai; explicitly script.async = false set karke document order enforce karte hain.</li>
+        <li><strong>beforeunload event mein custom confirmation message kyun show nahi hota modern browsers mein?</strong><br>Hint: spam/abuse prevent karne ke liye browsers deliberately generic message use karte hain aur dialog sirf user-interaction ke baad allow karte hain.</li>
+        <li><strong>unload event mein async fetch ka response wait kyun nahi kar sakte, aur iska solution kya hai?</strong><br>Hint: unload ke time browser page destroy kar raha hota hai, delay-causing operations allowed nahi; navigator.sendBeacon() background POST bhejta hai bina block kiye.</li>
+        <li><strong>Image ke onload/onerror handlers ko src set karne se pehle kyun attach karna chahiye?</strong><br>Hint: image loading src assign hote hi turant shuru ho jaata hai (especially cache se); agar handler baad mein attach hua, race condition mein load event miss ho sakta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="21-forms-controls.html">
+        <div class="label">← Previous</div>
+        <div class="title">Forms &amp; Controls</div>
+      </a>
+      <a class="next" href="23-misc-browser.html">
+        <div class="label">Next →</div>
+        <div class="title">Misc Browser</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

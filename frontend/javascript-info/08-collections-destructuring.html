@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collections &amp; Destructuring — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link active" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 8</div>
+      <div class="progress-pill">8 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Map · Set · WeakMap/WeakSet · Destructuring · Date · JSON</span>
+      <h1>Collections &amp; Destructuring</h1>
+      <p class="subtitle">
+        Plain object aur array bahut kaam aate hain, lekin har problem unke liye best-fit nahi hoti.
+        Is chapter mein hum dekhenge <code>Map</code>/<code>Set</code> plain object se kaise aur kyun
+        better hain kuch cases mein, <code>WeakMap</code>/<code>WeakSet</code> garbage collector ke
+        saath kaise cooperate karte hain, destructuring ka exact matching mechanism, <code>Date</code>
+        object ke internals + zero-indexed month gotcha, aur <code>JSON</code> serialization ke exact
+        rules — sab root-level "andar kya ho raha hai" ke saath.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#map-vs-object">Map vs plain object</a></li>
+          <li><a href="#set">Set — uniqueness ke liye</a></li>
+          <li><a href="#weakmap-weakset">WeakMap/WeakSet aur garbage collection</a></li>
+          <li><a href="#keys-values-entries">Object.keys/values/entries + iterating objects</a></li>
+          <li><a href="#destructuring">Destructuring — arrays, objects, defaults, rest</a></li>
+          <li><a href="#date">Date object internals + timezone gotchas</a></li>
+          <li><a href="#json">JSON.stringify/parse — replacer, reviver, toJSON</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="map-vs-object">Map vs plain object — root-level farak</h2>
+      <p>
+        Plain object bhi key-value pairs store karta hai, to Map kyun chahiye? Do fundamental
+        differences hain jo root mechanism se aate hain: <strong>(1) key ka type</strong> aur
+        <strong>(2) iteration order ki guarantee</strong>.
+      </p>
+      <p>
+        Plain object mein har key internally <strong>string ya Symbol</strong> mein convert ho jaati
+        hai — chahe tum object key ke roop mein number ya object pass karo, engine use
+        <code>toString()</code> karke string bana deta hai. Map internally ek <em>hash table jaisi
+        structure</em> use karta hai jo key ki <strong>identity</strong> (same reference/same primitive
+        value) preserve karti hai — koi implicit stringification nahi hoti, isliye key ka original type
+        (number, boolean, object reference, function) bilkul waisa hi rehta hai jaisa set kiya tha.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Object vs Map — key type coercion<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">obj</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>                    <span class="tok-com">// plain object banaya</span>
+<span class="tok-punc">obj</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"num-key"</span><span class="tok-punc">;</span>            <span class="tok-com">// key 1 (number) diya — internally "1" string mein convert hoga</span>
+<span class="tok-punc">obj</span><span class="tok-punc">[</span><span class="tok-str">"1"</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"str-key"</span><span class="tok-punc">;</span>          <span class="tok-com">// key "1" (string) diya — same "1" hi bantа hai, so ye overwrite ho jaata hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "str-key" — dono keys clash ho gayi kyunki dono "1" ban gayi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">map</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// naya Map instance banaya</span>
+<span class="tok-punc">map</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-str">"num-key"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// key 1 (number type) ke against value set kiya</span>
+<span class="tok-punc">map</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-str">"1"</span><span class="tok-punc">,</span> <span class="tok-str">"str-key"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// key "1" (string type) — DIFFERENT key hai, koi clash nahi</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">map</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "num-key" — number key apni identity retain karta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">map</span><span class="tok-punc">.</span><span class="tok-fn">size</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 2 — dono keys alag-alag treat hui</span></code></pre>
+      </div>
+
+      <p>
+        Doosra bada advantage: Map <strong>objects ko bhi key</strong> ban sakte hain, aur equality
+        reference-based hoti hai (same object reference tabhi match karega). Ye Map ko ek natural fit
+        banata hai un cases ke liye jahan tumhe "kisi object ke against extra metadata attach karni ho,
+        without touching that object" — jaise DOM element ke against click-count store karna.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Map with object keys<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">john</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>   <span class="tok-com">// ek user object</span>
+<span class="tok-kw">let</span> <span class="tok-punc">visitsCountMap</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// object ki key ban sakti hai aisa Map</span>
+
+<span class="tok-punc">visitsCountMap</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">john</span><span class="tok-punc">,</span> <span class="tok-num">123</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// john OBJECT (reference) ko key banaya, value 123 hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">visitsCountMap</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">john</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 123 — same reference se lookup ho gaya</span>
+
+<span class="tok-com">// plain object mein aisa nahi kar sakte — john automatically string mein coerce ho jaata,</span>
+<span class="tok-com">// aur "[object Object]" banta, jisse DIFFERENT objects bhi same key pe collide kar jaate</span></code></pre>
+      </div>
+
+      <p>
+        Iteration order bhi guaranteed hai — Map <strong>insertion order</strong> follow karta hai
+        (spec-mandated), jabki plain object ka key order historically integer-like keys ko numeric
+        ascending order mein pehle rakhta hai, phir string keys ko insertion order mein — ye subtle
+        inconsistency Map mein exist hi nahi karti.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Map — core API + iteration<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">recipeMap</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">(</span><span class="tok-punc">[</span>    <span class="tok-com">// array-of-pairs se directly Map initialize kiya</span>
+  <span class="tok-punc">[</span><span class="tok-str">'cucumber'</span><span class="tok-punc">,</span> <span class="tok-num">500</span><span class="tok-punc">]</span><span class="tok-punc">,</span>          <span class="tok-com">// pehla [key, value] pair</span>
+  <span class="tok-punc">[</span><span class="tok-str">'tomatoes'</span><span class="tok-punc">,</span> <span class="tok-num">350</span><span class="tok-punc">]</span>          <span class="tok-com">// doosra [key, value] pair</span>
+<span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">recipeMap</span><span class="tok-punc">.</span><span class="tok-fn">size</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// 2 — total entries ka count</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">recipeMap</span><span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span><span class="tok-str">'cucumber'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — key exist karti hai?</span>
+<span class="tok-punc">recipeMap</span><span class="tok-punc">.</span><span class="tok-fn">delete</span><span class="tok-punc">(</span><span class="tok-str">'cucumber'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// key-value pair remove kiya</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">vegetable</span> <span class="tok-kw">of</span> <span class="tok-punc">recipeMap</span><span class="tok-punc">.</span><span class="tok-fn">keys</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// sirf keys pe iterate — insertion order guaranteed</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">vegetable</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// har key print</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">]</span> <span class="tok-kw">of</span> <span class="tok-punc">recipeMap</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// Map khud iterable hai (entries() implicit) — [key,value] destructure hota hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// key aur value dono ek saath mil gaye</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Object &lt;-&gt; Map conversions — real-world interop ke liye zaroori</span>
+<span class="tok-kw">let</span> <span class="tok-punc">obj</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span> <span class="tok-attr">age</span><span class="tok-punc">:</span> <span class="tok-num">30</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">fromObj</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">(</span><span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">entries</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// Object.entries obj ko [[k,v],...] array deta hai, Map us se ban jaata hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">backToObj</span> <span class="tok-punc">=</span> <span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">fromEntries</span><span class="tok-punc">(</span><span class="tok-punc">fromObj</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// wapas plain object mein convert — Map iterable hai, fromEntries directly accept karta</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: Map kab use karo, plain object kab</div>
+        <p>
+          Rule of thumb: agar keys <strong>runtime pe dynamically add/remove</strong> hoti hain (jaise
+          cache, ya per-object metadata), Map use karo — frequent add/delete pe Map internally better
+          optimized hai kyunki engine ko "is ye ek dictionary hai" hint mil jaata hai, jabki plain object
+          "shape" (hidden class) ke around optimize hota hai aur dynamic keys add/delete karna us shape
+          ko baar-baar invalidate karta hai (V8 mein "dictionary mode" mein fallback ho jaata hai, jo
+          slower hai). Fixed, known-at-authoring-time keys (jaise config, DTOs) ke liye plain object
+          better hai — JSON-serializable bhi hota hai directly, jo Map nahi hai (JSON.stringify(map)
+          <code>{}</code> deta hai, tumhe Object.fromEntries se convert karna padega).
+        </p>
+      </div>
+
+      <h2 id="set">Set — uniqueness guarantee, hash-based</h2>
+      <p>
+        <code>Set</code> ek collection hai jisme <strong>har value sirf ek baar</strong> exist kar sakti
+        hai. Root mechanism Map jaisa hi hai — internally ek hash-table-like structure jo value ki
+        equality (<code>===</code> semantics, thoda tweaked for <code>NaN</code>) check karke duplicate
+        insert ko silently ignore kar deta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Set — core API<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">set</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Set</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// naya empty Set</span>
+
+<span class="tok-punc">set</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">"apple"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "apple" add kiya</span>
+<span class="tok-punc">set</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">"apple"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// dobara "apple" — ye NO-OP hai, Set already isse hold kar raha</span>
+<span class="tok-punc">set</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">"banana"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// naya unique value add hua</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">set</span><span class="tok-punc">.</span><span class="tok-fn">size</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 2 — duplicate count nahi hua</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">set</span><span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span><span class="tok-str">"apple"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — membership check O(1) hai (array ke .includes() jaisa O(n) nahi)</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">unique</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// array se duplicates hatane ka one-liner utility</span>
+  <span class="tok-kw">return</span> <span class="tok-fn">Array</span><span class="tok-punc">.</span><span class="tok-fn">from</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">Set</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// arr se Set banaya (auto-dedupe), phir wapas array mein spread</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">unique</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-str">"Hare"</span><span class="tok-punc">,</span> <span class="tok-str">"Krishna"</span><span class="tok-punc">,</span> <span class="tok-str">"Hare"</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ["Hare", "Krishna"]</span></code></pre>
+      </div>
+
+      <p>
+        Set bhi insertion order maintain karta hai, aur iterable hai (<code>for..of</code>, spread,
+        <code>Array.from</code> sab kaam karte hain). <code>set.forEach((value, valueAgain, set) =&gt;
+        {...})</code> ka signature Map ke saath compatible rakhne ke liye value ko <strong>do baar</strong>
+        deta hai — historical/API-consistency reason hai, real use mein doosra argument generally ignore
+        hota hai.
+      </p>
+
+      <h2 id="weakmap-weakset">WeakMap/WeakSet — garbage-collection-friendly references</h2>
+      <p>
+        Ye samajhne ke liye pehle GC ka basic model yaad karo: JavaScript ka garbage collector kisi bhi
+        value ko memory mein tab tak rakhta hai jab tak wo <strong>reachable</strong> hai — matlab kisi
+        root (global scope, currently-executing function ki call stack) se koi chain of references us
+        tak pahunch sakti hai. Jaise hi last reference hat jaata hai, engine us memory ko free kar sakta
+        hai.
+      </p>
+      <p>
+        Regular <code>Map</code> apni keys (aur values) ko <strong>strong reference</strong> se hold
+        karta hai — matlab agar tum kisi object ko Map ki key banao, aur baad mein us object ka poora
+        baaki application se reference hata bhi do, Map abhi bhi use hold kiye rahega, isliye GC use
+        clean nahi kar sakta. Ye ek silent memory leak ban sakta hai agar tum "per-object metadata"
+        jaisa pattern use kar rahe ho aur wo objects poori application life mein baar-baar create/discard
+        hote hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Map memory leak vs WeakMap auto-cleanup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// --- Regular Map: LEAK scenario ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">john</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>   <span class="tok-com">// object banaya</span>
+<span class="tok-kw">let</span> <span class="tok-punc">map</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">map</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">john</span><span class="tok-punc">,</span> <span class="tok-str">"some metadata"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// john ko key banaya — Map ab STRONG reference hold karta hai</span>
+
+<span class="tok-punc">john</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>              <span class="tok-com">// "outside" wala reference hata diya</span>
+<span class="tok-com">// PHIR BHI john ka original object memory mein zinda hai, kyunki map[key] abhi bhi</span>
+<span class="tok-com">// use reference kar raha hai internally — GC isse clean nahi kar sakta</span>
+
+<span class="tok-com">// --- WeakMap: auto-cleanup scenario ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">jane</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"Jane"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">weakMap</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">WeakMap</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">weakMap</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">jane</span><span class="tok-punc">,</span> <span class="tok-str">"some metadata"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// jane WEAK reference se hold hoti hai</span>
+
+<span class="tok-punc">jane</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>              <span class="tok-com">// last "real" reference gaya</span>
+<span class="tok-com">// ab jane object ke pass koi reachable strong reference nahi bacha (WeakMap gin nahi ke)</span>
+<span class="tok-com">// so GC engine ki marzi se (kab, deterministic nahi) is entry ko WeakMap se bhi hata dega</span></code></pre>
+      </div>
+
+      <p>
+        Isi weak-reference property ki wajah se WeakMap/WeakSet <strong>jaan-boojh kar</strong> apni
+        API restrict karte hain: no <code>size</code>, no <code>clear()</code>, no iteration
+        (<code>keys()</code>/<code>values()</code>/<code>entries()</code>/<code>for..of</code> koi nahi
+        chalta). Root reason — GC kab actual collection karega ye <strong>engine-dependent aur
+        non-deterministic</strong> hai (spec ise define nahi karta), so agar iteration allowed hota, to
+        "iterate karte time entry beech mein hi GC ho jaana" jaisa race condition create hota, aur
+        <code>size</code> bhi ek pal true, doosre pal false ho sakta tha — ye unpredictable API design
+        hoti. Isliye sirf <code>set/get/has/delete</code> (WeakMap) aur <code>add/has/delete</code>
+        (WeakSet) available hain — sab operations jinke liye tumhe key ka reference already chahiye
+        hota hai (blind iteration ki zaroorat nahi).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">WeakMap real use case — caching without leaks<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">cache</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">WeakMap</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// object -&gt; computed-result cache</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">process</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-punc">cache</span><span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// pehli baar dekha ye obj?</span>
+    <span class="tok-kw">let</span> <span class="tok-punc">result</span> <span class="tok-punc">=</span> <span class="tok-punc">obj</span><span class="tok-punc">.</span><span class="tok-punc">data</span> <span class="tok-punc">*</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// (dummy) expensive computation</span>
+    <span class="tok-punc">cache</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">,</span> <span class="tok-punc">result</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// result cache mein daal diya, obj ke against</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">result</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">cache</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// pehle se computed — cache se seedha return</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">obj</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">data</span><span class="tok-punc">:</span> <span class="tok-num">21</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">process</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// pehli call — compute + cache</span>
+<span class="tok-fn">process</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// doosri call — direct cache hit</span>
+
+<span class="tok-punc">obj</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>                   <span class="tok-com">// obj discard kar diya (e.g. component unmount ho gaya)</span>
+<span class="tok-com">// regular Map hota to cached entry hamesha ke liye memory mein reh jaati (leak)</span>
+<span class="tok-com">// WeakMap hone se, obj GC hote hi cache entry bhi apne aap saaf ho jaati hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ WeakSet/WeakMap sirf OBJECT keys accept karte hain</div>
+        <p>
+          Primitives (string, number, boolean) ko key ke roop mein use nahi kar sakte — root reason
+          simple hai: primitives value-semantics follow karte hain (ek naya <code>"abc"</code> string
+          literal aur purana <code>"abc"</code> effectively "same" treat hote hain, koi unique memory
+          address nahi jise weakly-reference kiya ja sake), jabki objects reference-semantics follow
+          karte hain (har <code>{}</code> apni alag memory identity rakhta hai) — weak referencing ka
+          concept sirf reference-semantics values pe hi meaningful hai.
+        </p>
+      </div>
+
+      <h2 id="keys-values-entries">Object.keys/values/entries + iterating objects</h2>
+      <p>
+        Array/Map/Set ke <code>.keys()</code>/<code>.values()</code>/<code>.entries()</code> instance
+        methods hote hain, lekin plain object ke liye ye <strong>static</strong> methods hain —
+        <code>Object.keys(obj)</code>, na ki <code>obj.keys()</code>. Root reason: object JavaScript ke
+        har complex structure ka base hai — agar <code>keys()</code> ko instance method banate, to koi
+        bhi custom object jo khud apna <code>.keys</code> property/method define karta hai (jaise ek
+        <code>data</code> object jisme business-logic <code>values()</code> method ho), wahan naming
+        clash ho jaata. Static form (<code>Object.keys(obj)</code>) is ambiguity ko completely avoid
+        karta hai kyunki wo obj ke apne namespace ko touch hi nahi karta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Object.keys/values/entries + transform pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">prices</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">banana</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span>                   <span class="tok-com">// key: banana, value: 1</span>
+  <span class="tok-attr">orange</span><span class="tok-punc">:</span> <span class="tok-num">2</span><span class="tok-punc">,</span>                   <span class="tok-com">// key: orange, value: 2</span>
+  <span class="tok-attr">meat</span><span class="tok-punc">:</span> <span class="tok-num">4</span>                     <span class="tok-com">// key: meat, value: 4</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">keys</span><span class="tok-punc">(</span><span class="tok-punc">prices</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// ["banana", "orange", "meat"] — REAL array (Map jaisa iterable nahi)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">values</span><span class="tok-punc">(</span><span class="tok-punc">prices</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// [1, 2, 4]</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">entries</span><span class="tok-punc">(</span><span class="tok-punc">prices</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// [["banana",1], ["orange",2], ["meat",4]]</span>
+
+<span class="tok-com">// Step 1-2-3 pattern: object -&gt; array (transform) -&gt; object</span>
+<span class="tok-kw">let</span> <span class="tok-punc">doublePrices</span> <span class="tok-punc">=</span> <span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">fromEntries</span><span class="tok-punc">(</span>   <span class="tok-com">// step 3: array-of-pairs ko wapas object mein convert</span>
+  <span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">entries</span><span class="tok-punc">(</span><span class="tok-punc">prices</span><span class="tok-punc">)</span>                <span class="tok-com">// step 1: object -&gt; [[key,value], ...] array</span>
+    <span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">]</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span> <span class="tok-punc">*</span> <span class="tok-num">2</span><span class="tok-punc">]</span><span class="tok-punc">)</span> <span class="tok-com">// step 2: array method (map/filter) apply — object khud [] nahi rakhta</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">doublePrices</span><span class="tok-punc">.</span><span class="tok-punc">meat</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 8 — meat: 4 * 2</span></code></pre>
+      </div>
+
+      <p>
+        Ek subtle detail: <code>Object.keys/values/entries</code>, <code>for..in</code> ki tarah,
+        <strong>Symbol keys ko skip</strong> kar dete hain — sirf string keys return hoti hain. Agar
+        Symbol keys bhi chahiye, to <code>Object.getOwnPropertySymbols(obj)</code> ya
+        <code>Reflect.ownKeys(obj)</code> (jo dono — string aur symbol — deta hai) use karo.
+      </p>
+
+      <h2 id="destructuring">Destructuring — position-vs-name matching ka exact mechanism</h2>
+      <p>
+        Destructuring "unpack" karne ka syntax hai — lekin array aur object destructuring ka
+        underlying matching mechanism <strong>fundamentally different</strong> hai, aur ye samajhna
+        zaroori hai taaki bugs na ho:
+      </p>
+      <ul>
+        <li><strong>Array destructuring — position-based hai.</strong> <code>let [a, b] = arr</code> mein <code>a</code> ko arr ka pehla iterated value milta hai, <code>b</code> ko doosra — chahe unke naam kuch bhi ho. Internally ye array ke iterable protocol (<code>Symbol.iterator</code>) se driven hota hai, isliye kisi bhi iterable (string, Set, generator) pe kaam karta hai.</li>
+        <li><strong>Object destructuring — name-based hai.</strong> <code>let {width, height} = options</code> mein engine <code>options.width</code> aur <code>options.height</code> property lookup karta hai — property ka order object mein matter nahi karta.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Array destructuring — position-based matching<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">arr</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"John"</span><span class="tok-punc">,</span> <span class="tok-str">"Smith"</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">[</span><span class="tok-punc">firstName</span><span class="tok-punc">,</span> <span class="tok-punc">surname</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-punc">arr</span><span class="tok-punc">;</span>  <span class="tok-com">// index 0 -&gt; firstName, index 1 -&gt; surname (POSITION se)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">firstName</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// "John"</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">[</span><span class="tok-punc">first</span><span class="tok-punc">,</span> <span class="tok-punc">,</span> <span class="tok-punc">third</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Julius"</span><span class="tok-punc">,</span> <span class="tok-str">"Caesar"</span><span class="tok-punc">,</span> <span class="tok-str">"Consul"</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// khaali comma se ek position SKIP kar diya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">third</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// "Consul" — index 2</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">[</span><span class="tok-punc">a</span><span class="tok-punc">,</span> <span class="tok-punc">b</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"ab"</span><span class="tok-punc">.</span><span class="tok-fn">split</span><span class="tok-punc">(</span><span class="tok-str">""</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// string bhi iterable hai, so ye bhi array-jaisa destructure hota hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Object destructuring — name-based matching, order irrelevant<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">options</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">"Menu"</span><span class="tok-punc">,</span>
+  <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">,</span>
+  <span class="tok-attr">height</span><span class="tok-punc">:</span> <span class="tok-num">200</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-punc">height</span><span class="tok-punc">,</span> <span class="tok-punc">title</span><span class="tok-punc">,</span> <span class="tok-punc">width</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">options</span><span class="tok-punc">;</span> <span class="tok-com">// order badla hua hai LHS mein, phir bhi correctly match hoga — NAME se lookup</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">width</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 100 — kyunki "width" property se match hua, position se nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-punc">w</span><span class="tok-punc">,</span> <span class="tok-attr">height</span><span class="tok-punc">:</span> <span class="tok-punc">h</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">options</span><span class="tok-punc">;</span> <span class="tok-com">// "propertyName: localVarName" — rename karte hue destructure</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">w</span><span class="tok-punc">,</span> <span class="tok-punc">h</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// 100 200 — local variable names w/h hain, lekin values width/height se aayi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Defaults, rest, nested destructuring<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// --- Defaults: sirf tab lagte hain jab value undefined ho (missing key ya missing array slot) ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-attr">width</span> <span class="tok-punc">=</span> <span class="tok-num">100</span><span class="tok-punc">,</span> <span class="tok-attr">title</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">"Menu"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// width object mein hai hi nahi -&gt; default 100 use hua</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">width</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                 <span class="tok-com">// 100</span>
+
+<span class="tok-com">// --- Rest: baaki bache hue properties ek naye object/array mein collect ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-punc">title</span><span class="tok-punc">:</span> <span class="tok-punc">t</span><span class="tok-punc">,</span> <span class="tok-punc">...</span><span class="tok-punc">rest</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">"Menu"</span><span class="tok-punc">,</span> <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">,</span> <span class="tok-attr">height</span><span class="tok-punc">:</span> <span class="tok-num">200</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">rest</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                  <span class="tok-com">// { width: 100, height: 200 } — title consume ho gaya, baaki rest mein</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">[</span><span class="tok-punc">name1</span><span class="tok-punc">,</span> <span class="tok-punc">...</span><span class="tok-punc">others</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">"Julius"</span><span class="tok-punc">,</span> <span class="tok-str">"Caesar"</span><span class="tok-punc">,</span> <span class="tok-str">"Consul"</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// array rest — remaining elements ka array</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">others</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// ["Caesar", "Consul"]</span>
+
+<span class="tok-com">// --- Nested destructuring: structure ko exactly mirror karo ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">settings</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">size</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">,</span> <span class="tok-attr">height</span><span class="tok-punc">:</span> <span class="tok-num">200</span> <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// nested object</span>
+  <span class="tok-attr">items</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"Cake"</span><span class="tok-punc">,</span> <span class="tok-str">"Donut"</span><span class="tok-punc">]</span>          <span class="tok-com">// nested array</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">size</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-punc">width</span><span class="tok-punc">,</span> <span class="tok-punc">height</span> <span class="tok-punc">}</span><span class="tok-punc">,</span>              <span class="tok-com">// settings.size ke andar se width/height nikaale</span>
+  <span class="tok-attr">items</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-punc">item1</span><span class="tok-punc">,</span> <span class="tok-punc">item2</span><span class="tok-punc">]</span>          <span class="tok-com">// settings.items array ke pehle 2 elements</span>
+<span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">settings</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">width</span><span class="tok-punc">,</span> <span class="tok-punc">item1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// 100 "Cake"</span></code></pre>
+      </div>
+
+      <p>
+        Real-world sabse common use: function parameters ke saath. Config-object-style parameters ko
+        directly destructure karna caller ko named-argument jaisa ergonomics deta hai (order matter
+        nahi karta, defaults free milte hain):
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Smart function parameters — object destructuring<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">showMenu</span><span class="tok-punc">(</span><span class="tok-punc">{</span>
+  <span class="tok-attr">title</span> <span class="tok-punc">=</span> <span class="tok-str">"Untitled"</span><span class="tok-punc">,</span>      <span class="tok-com">// param object mein title na ho to "Untitled" default</span>
+  <span class="tok-attr">width</span> <span class="tok-punc">=</span> <span class="tok-num">200</span><span class="tok-punc">,</span>            <span class="tok-com">// width ka default</span>
+  <span class="tok-attr">height</span> <span class="tok-punc">=</span> <span class="tok-num">100</span><span class="tok-punc">,</span>           <span class="tok-com">// height ka default</span>
+  <span class="tok-attr">items</span> <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-punc">]</span>              <span class="tok-com">// items ka default — empty array</span>
+<span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// = {} zaroori: agar caller koi argument hi na de, destructure {} pe hoga (crash nahi)</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`${title} ${width}x${height}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// template literal se sab ek saath print</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">showMenu</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">"My Menu"</span><span class="tok-punc">,</span> <span class="tok-attr">items</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"Item1"</span><span class="tok-punc">]</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// width/height defaults se aayenge, order matter nahi karta</span>
+<span class="tok-fn">showMenu</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// koi argument nahi — sab defaults use honge, error nahi aayega</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Object destructuring bina let/const ke — parentheses zaroori</div>
+        <p>
+          <code>{title, width} = obj;</code> likhoge to JS engine line-start pe <code>{</code> ko
+          <strong>code block</strong> samajh leta hai (statement, expression nahi), aur syntax error de
+          deta hai. Fix: <code>({title, width} = obj);</code> — parentheses se engine ko batate ho ki ye
+          expression hai, block nahi.
+        </p>
+      </div>
+
+      <h2 id="date">Date object — internals + timezone gotchas</h2>
+      <p>
+        <code>Date</code> internally ek single number store karta hai — <strong>Unix epoch se
+        milliseconds</strong> (1 Jan 1970, 00:00:00 UTC se). Har <code>getFullYear()</code>,
+        <code>getMonth()</code>, etc. call is internal number ko <strong>local timezone</strong> ke
+        hisaab se decode karke deta hai (UTC variants — <code>getUTCFullYear()</code> etc. — bina
+        timezone-adjustment ke deते hain).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Date creation — 4 tareeke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">now</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// current date+time (system clock se)</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">epoch</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 0 ms since epoch = 1 Jan 1970, 00:00:00 UTC</span>
+<span class="tok-kw">let</span> <span class="tok-punc">dayAfter</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-num">24</span> <span class="tok-punc">*</span> <span class="tok-num">3600</span> <span class="tok-punc">*</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 1 din baad = 86400000 ms se banaya</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">fromStr</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-str">"2017-01-26"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ISO string se parse — local timezone mein interpret hota hai</span>
+
+<span class="tok-com">// year, month(0-11!), day, hours, min, sec, ms — components se</span>
+<span class="tok-kw">let</span> <span class="tok-punc">fromParts</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-num">2024</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">15</span><span class="tok-punc">,</span> <span class="tok-num">10</span><span class="tok-punc">,</span> <span class="tok-num">30</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// month=0 matlab JANUARY, 15 Jan 2024 10:30</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Month zero-indexed hai — sabse common Date bug</div>
+        <p>
+          <code>getMonth()</code> aur constructor ka month-param <strong>0 se 11</strong> tak hota hai
+          — January = 0, December = 11. Root reason historical hai (Java's original Date API se
+          inherited convention, jo JS ke earliest versions mein carry ho gaya aur ab backward-compat ke
+          liye badal nahi sakte). Bug pattern: <code>new Date(2024, 3, 1)</code> April 1 dega, March 1
+          nahi — bahut developers <code>month</code> ko human-month (1-12) samajh ke off-by-one bug daal
+          dete hain. Isi tarah <code>getDay()</code> bhi 0-6 return karta hai, jahan <strong>0 =
+          Sunday</strong> (day-of-MONTH ke liye <code>getDate()</code> use karo, jo 1-31 hai).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Autocorrection + Date arithmetic<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">date</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-num">2013</span><span class="tok-punc">,</span> <span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">32</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// Jan 32 out-of-range hai — engine AUTO-CORRECT karta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">date</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                  <span class="tok-com">// 1 Feb 2013 — overflow agle month mein carry ho gaya</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">feb28</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-num">2016</span><span class="tok-punc">,</span> <span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">28</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 28 Feb 2016 (leap year hai)</span>
+<span class="tok-punc">feb28</span><span class="tok-punc">.</span><span class="tok-fn">setDate</span><span class="tok-punc">(</span><span class="tok-punc">feb28</span><span class="tok-punc">.</span><span class="tok-fn">getDate</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 28 + 2 = 30, jo Feb mein exist nahi karta — auto overflow into March</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">feb28</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                  <span class="tok-com">// 1 Mar 2016 — is leap-year-aware manual calculation ki zaroorat khatam</span>
+
+<span class="tok-com">// --- Date -&gt; number conversion, subtraction ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">start</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">i</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-punc">i</span> <span class="tok-punc">&lt;</span> <span class="tok-num">100000</span><span class="tok-punc">;</span> <span class="tok-punc">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">}</span> <span class="tok-com">// kuch busy-work</span>
+<span class="tok-kw">let</span> <span class="tok-punc">end</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">end</span> <span class="tok-punc">-</span> <span class="tok-punc">start</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// dono Dates ko unary "-" implicit number banata hai -&gt; ms difference</span>
+
+<span class="tok-com">// --- Date.now(): benchmarking ke liye BEHTAR — intermediate Date object nahi banata ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">t0</span> <span class="tok-punc">=</span> <span class="tok-fn">Date</span><span class="tok-punc">.</span><span class="tok-fn">now</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// current timestamp (number), no object allocation overhead</span>
+<span class="tok-com">// ... work ...</span>
+<span class="tok-kw">let</span> <span class="tok-punc">elapsed</span> <span class="tok-punc">=</span> <span class="tok-fn">Date</span><span class="tok-punc">.</span><span class="tok-fn">now</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">-</span> <span class="tok-punc">t0</span><span class="tok-punc">;</span>    <span class="tok-com">// ms elapsed</span></code></pre>
+      </div>
+
+      <p>
+        Timezone gotcha: <code>new Date("2017-01-26")</code> jaisa <strong>date-only</strong> ISO
+        string diya jaaye to spec ke hisaab se ye <strong>UTC midnight</strong> maana jaata hai — lekin
+        display/getters (<code>getHours()</code> etc.) tumhari machine ke <strong>local timezone</strong>
+        mein show hote hain. Agar tum UTC-negative timezone (jaise US) mein ho, to
+        <code>new Date("2017-01-26").getDate()</code> kabhi-kabhi <strong>25</strong> print kar sakta
+        hai, na ki 26 — kyunki UTC midnight local time mein pichle din ki shaam thi. Ye ek notorious
+        production bug source hai; date-only strings ko handle karte waqt hamesha explicit rehna
+        chahiye ki UTC use kar rahe ho ya local.
+      </p>
+
+      <h2 id="json">JSON.stringify/parse — exact serialization rules</h2>
+      <p>
+        <code>JSON.stringify(value, replacer, space)</code> value ko JSON text mein convert karta hai,
+        lekin JSON format JS ke har construct ko represent nahi kar sakta — spec explicitly kuch
+        cheezein <strong>silently skip</strong> karta hai:
+      </p>
+      <ul>
+        <li><strong>Function properties (methods)</strong> — completely ignore ho jaati hain</li>
+        <li><strong>Symbol keys aur Symbol values</strong> — dono skip</li>
+        <li><strong><code>undefined</code> valued properties</strong> — key hi drop ho jaati hai</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Stringify skip-rules demo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-punc">}</span><span class="tok-punc">,</span>          <span class="tok-com">// method — SKIP hogi</span>
+  <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">]</span><span class="tok-punc">:</span> <span class="tok-num">123</span><span class="tok-punc">,</span>       <span class="tok-com">// symbol key — SKIP hogi</span>
+  <span class="tok-attr">something</span><span class="tok-punc">:</span> <span class="tok-kw">undefined</span><span class="tok-punc">,</span>    <span class="tok-com">// undefined value — SKIP hogi</span>
+  <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span>            <span class="tok-com">// normal string — INCLUDE hoga</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// '{"name":"John"}' — sirf serializable data bacha</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">replacer — function form (filter/transform) aur array form<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">room</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">number</span><span class="tok-punc">:</span> <span class="tok-num">23</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">meetup</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">"Conference"</span><span class="tok-punc">,</span>
+  <span class="tok-attr">room</span><span class="tok-punc">,</span>                       <span class="tok-com">// shorthand — room: room</span>
+  <span class="tok-attr">participants</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"john"</span><span class="tok-punc">,</span> <span class="tok-str">"ann"</span><span class="tok-punc">]</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">meetup</span><span class="tok-punc">.</span><span class="tok-punc">self</span> <span class="tok-punc">=</span> <span class="tok-punc">meetup</span><span class="tok-punc">;</span>          <span class="tok-com">// circular reference (self-pointer) — plain stringify yahaan CRASH karega</span>
+
+<span class="tok-com">// --- Array replacer: sirf listed keys hi include hongi (whitelist) ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">json1</span> <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">meetup</span><span class="tok-punc">,</span> <span class="tok-punc">[</span><span class="tok-str">'title'</span><span class="tok-punc">,</span> <span class="tok-str">'participants'</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "room" aur "self" (circular) dono skip ho jaate</span>
+
+<span class="tok-com">// --- Function replacer: har [key, value] pair ke liye call hota hai, undefined return = skip ---</span>
+<span class="tok-kw">let</span> <span class="tok-punc">json2</span> <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">meetup</span><span class="tok-punc">,</span> <span class="tok-kw">function</span> <span class="tok-fn">replacer</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">(</span><span class="tok-punc">key</span> <span class="tok-punc">==</span> <span class="tok-str">'self'</span><span class="tok-punc">)</span> <span class="tok-punc">?</span> <span class="tok-kw">undefined</span> <span class="tok-punc">:</span> <span class="tok-punc">value</span><span class="tok-punc">;</span> <span class="tok-com">// "self" key hit hone pe undefined -&gt; circular ref se bacha, warna value as-is</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// --- space param: readability ke liye indentation ---</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">room</span><span class="tok-punc">,</span> <span class="tok-kw">null</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 2-space indent — replacer nahi chahiye to null do</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">toJSON — custom serialization hook<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">room</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">number</span><span class="tok-punc">:</span> <span class="tok-num">23</span><span class="tok-punc">,</span>
+  <span class="tok-fn">toJSON</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// agar object mein toJSON() method mile, JSON.stringify use ISE call karta hai</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">number</span><span class="tok-punc">;</span>       <span class="tok-com">// poore object ki jagah sirf ye return value serialize hogi</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">room</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "23" — {number:23} nahi, kyunki toJSON() ne override kar diya</span>
+
+<span class="tok-com">// Date built-in objects mein already toJSON() define hai — isliye Date directly stringify hoti hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">meetup</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">date</span><span class="tok-punc">:</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-fn">Date</span><span class="tok-punc">.</span><span class="tok-fn">UTC</span><span class="tok-punc">(</span><span class="tok-num">2017</span><span class="tok-punc">,</span> <span class="tok-num">10</span><span class="tok-punc">,</span> <span class="tok-num">30</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">stringify</span><span class="tok-punc">(</span><span class="tok-punc">meetup</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// '{"date":"2017-11-30T00:00:00.000Z"}' — Date.toJSON() ISO string deta hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">JSON.parse + reviver — Date strings ko wapas Date banao<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">'{"title":"Conference","date":"2017-11-30T12:00:00.000Z"}'</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// bina reviver ke — date sirf ek plain STRING hi rahegi, Date object nahi ban paayega automatically</span>
+<span class="tok-kw">let</span> <span class="tok-punc">plain</span> <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">plain</span><span class="tok-punc">.</span><span class="tok-punc">date</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "string" — .getDate() jaisa Date method call karoge to CRASH</span>
+
+<span class="tok-com">// reviver: har [key, value] pair pe recursively call hota hai (deepest nodes pehle, phir parent)</span>
+<span class="tok-kw">let</span> <span class="tok-punc">meetup</span> <span class="tok-punc">=</span> <span class="tok-fn">JSON</span><span class="tok-punc">.</span><span class="tok-fn">parse</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">key</span> <span class="tok-punc">==</span> <span class="tok-str">'date'</span><span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Date</span><span class="tok-punc">(</span><span class="tok-punc">value</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "date" key mile to string -&gt; real Date object mein convert</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">value</span><span class="tok-punc">;</span>                    <span class="tok-com">// baaki sab as-is return</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">meetup</span><span class="tok-punc">.</span><span class="tok-punc">date</span><span class="tok-punc">.</span><span class="tok-fn">getDate</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// works! — ab ye ek asli Date instance hai, method call safe hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: JSON round-trip data loss production mein</div>
+        <p>
+          API responses/localStorage se aane wala JSON <strong>kabhi bhi</strong> apne-aap Date, Map,
+          Set, ya Symbol nahi banata — sab kuch primitives (string/number/boolean/null) aur plain
+          objects/arrays mein flatten ho jaata hai. Ye sabse common source hai un bugs ka jahan
+          "backend se aayi date <code>.getMonth()</code> pe crash karti hai" — kyunki wo ek string hai,
+          Date object nahi. Production apps mein isliye ya to consistent reviver/replacer pair maintain
+          karo (jaise upar), ya boundary layer (API client) mein explicitly parse karo before data app
+          ke andar propagate ho.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Map</strong>: koi bhi type key ban sakta hai (objects included), insertion order guaranteed, string coercion nahi hoti — dynamic/frequently-mutating key-value data ke liye plain object se behtar.</li>
+        <li><strong>Set</strong>: unique values ka collection, <code>add()</code> duplicate pe silently no-op karta hai, membership check O(1) hai.</li>
+        <li><strong>WeakMap/WeakSet</strong>: sirf object keys, weak references rakhte hain isliye keys unreachable hote hi GC-eligible ban jaate hain — iski wajah se hi iteration/size/clear API se hata diye gaye hain (non-deterministic GC timing ke saath unreliable hote).</li>
+        <li><strong>Object.keys/values/entries</strong> static methods hain (namespace clash avoid karne ke liye), real array return karte hain, Symbol keys skip karte hain.</li>
+        <li><strong>Array destructuring</strong> position-based hai (iterable protocol driven), <strong>object destructuring</strong> name-based hai (property lookup driven) — dono defaults aur rest (<code>...</code>) support karte hain.</li>
+        <li><strong>Date</strong> internally epoch-ms number store karta hai; <code>getMonth()</code> 0-indexed hai (Jan=0) — sabse common Date bug source.</li>
+        <li><strong>JSON.stringify</strong> functions/symbols/undefined silently skip karta hai, <code>toJSON()</code> method ho to use call karta hai (Date mein built-in hai), replacer function/array se custom filtering ho sakti hai.</li>
+        <li><strong>JSON.parse ka reviver</strong> zaroori hai custom types (Date, etc.) wapas reconstruct karne ke liye — plain parse sab kuch string/number/boolean/plain-object/array tak hi degrade karta hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Map plain object se better kyun hai kuch scenarios mein?</strong><br>Hint: koi bhi type key ban sakta hai bina stringification ke, guaranteed insertion-order iteration, frequent add/delete pe better optimized (V8 dictionary-mode fallback avoid).</li>
+        <li><strong>WeakMap mein iteration aur size property kyun nahi hote?</strong><br>Hint: garbage collection timing non-deterministic/engine-dependent hai — agar size/iteration allowed hote, to result unpredictable hota (entries kabhi bhi silently disappear ho sakti thin mid-iteration).</li>
+        <li><strong>WeakMap ka ek real production use-case batao.</strong><br>Hint: per-object metadata/cache jo automatically cleanup ho jaaye jab wo object discard ho — jaise DOM element ke against listener state, ya memoization cache.</li>
+        <li><strong>Array destructuring aur object destructuring ke matching mechanism mein exact farak kya hai?</strong><br>Hint: array = position/iteration-order based (iterable protocol se driven); object = property-name based (order irrelevant, lookup by key).</li>
+        <li><strong>new Date(2024, 3, 1) kaunsa month dega, aur kyun?</strong><br>Hint: April — month parameter 0-indexed hai (0=Jan...11=Dec), historically Java Date API se inherited convention.</li>
+        <li><strong>JSON.stringify function properties aur undefined values ko kyun skip karta hai?</strong><br>Hint: JSON format spec sirf primitives + plain objects/arrays represent kar sakta hai — functions/undefined/symbols JSON mein koi valid representation nahi rakhte, isliye silently drop hote hain (arrays mein undefined "null" ban jaata hai, objects mein poori key hi gayab ho jaati hai).</li>
+        <li><strong>toJSON method kya karta hai, aur Date isse kyun use karta hai?</strong><br>Hint: JSON.stringify agar object pe toJSON() method paata hai to poore object ki jagah uska return value serialize karta hai — Date isse apna ISO-string representation dene ke liye use karta hai, warna Date ka default JSON representation meaningless hota.</li>
+        <li><strong>JSON round-trip (stringify phir parse) ke baad ek Date field ka type kya hoga, aur isse kaise fix karte hain?</strong><br>Hint: type "string" ban jaata hai (Date object nahi), fix ke liye JSON.parse ka reviver function use karo jo specific keys ko wapas new Date(value) mein convert kare.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="07-arrays-iterables.html">
+        <div class="label">← Previous</div>
+        <div class="title">Arrays &amp; Iterables</div>
+      </a>
+      <a class="next" href="09-advanced-functions.html">
+        <div class="label">Next →</div>
+        <div class="title">Advanced Functions</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forms &amp; Controls — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link active" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 21</div>
+      <div class="progress-pill">21 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Forms · Focus · Input/Change · Submit</span>
+      <h1>Forms &amp; Controls</h1>
+      <p class="subtitle">
+        Form ek "mini DOM" hai — <code>document.forms</code> se leke <code>form.elements</code> tak sab
+        live named collections hain. Is chapter mein hum root-level dekhenge ki form navigation kaise
+        kaam karta hai, focus/blur ka bubbling-related gotcha kya hai, <code>input</code> vs
+        <code>change</code> event ka fundamental timing difference kya hai (ye interview mein bahut
+        pucha jaata hai), aur <code>submit</code> event ko intercept karke AJAX-based form kaise banate
+        hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#form-navigation">Form navigation — document.forms, form.elements</a></li>
+          <li><a href="#named-access">Named access ka internal mechanism</a></li>
+          <li><a href="#focus-blur">focus/blur events aur methods</a></li>
+          <li><a href="#tabindex">tabindex — kisi bhi element ko focusable banana</a></li>
+          <li><a href="#focus-bubble-gotcha">focus/blur bubble nahi karte — focusin/focusout</a></li>
+          <li><a href="#input-vs-change">input vs change — root-level timing difference</a></li>
+          <li><a href="#cut-copy-paste">cut, copy, paste events</a></li>
+          <li><a href="#submit">submit event aur form submission</a></li>
+          <li><a href="#ajax-submit">Real example: AJAX-based form submit</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="form-navigation">Form navigation — document.forms, form.elements</h2>
+      <p>
+        Har <code>&lt;form&gt;</code> automatically <code>document.forms</code> naam ki ek special
+        collection ka member ban jaata hai — ye collection <strong>named aur indexed</strong> dono tarah
+        se access hoti hai, kyunki ye ek <code>HTMLCollection</code> hai jo <code>name</code> attribute
+        ke basis pe named lookup bhi support karta hai. Similarly, form ke andar ke controls
+        <code>form.elements</code> collection mein aa jaate hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">document.forms + form.elements<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">form</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"my"</span><span class="tok-punc">&gt;</span>                        <span class="tok-com">&lt;!-- name="my" ke wajah se ye document.forms.my ban jaata hai --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"one"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"1"</span><span class="tok-punc">&gt;</span>        <span class="tok-com">&lt;!-- name="one" — form.elements.one se access hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"two"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"2"</span><span class="tok-punc">&gt;</span>        <span class="tok-com">&lt;!-- name="two" — form.elements.two se access hoga --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">form</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-kw">let</span> form <span class="tok-punc">=</span> document<span class="tok-punc">.</span>forms<span class="tok-punc">.</span>my<span class="tok-punc">;</span>              <span class="tok-com">// document.forms se named access — form DOM node milta hai</span>
+  <span class="tok-kw">let</span> form2 <span class="tok-punc">=</span> document<span class="tok-punc">.</span>forms<span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">];</span>          <span class="tok-com">// same collection indexed access bhi support karta hai (document order)</span>
+
+  <span class="tok-kw">let</span> elem <span class="tok-punc">=</span> form<span class="tok-punc">.</span>elements<span class="tok-punc">.</span>one<span class="tok-punc">;</span>          <span class="tok-com">// form.elements — form ke andar ke sab controls ki live named collection</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>elem<span class="tok-punc">.</span>value<span class="tok-punc">);</span>                    <span class="tok-com">// "1" — input.value property se actual current value milti hai</span>
+
+  <span class="tok-com">// shorter notation — form.elements chhod ke seedha form pe property access</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>form<span class="tok-punc">.</span>one<span class="tok-punc">.</span>value<span class="tok-punc">);</span>              <span class="tok-com">// "1" — form.one bhi wahi element deta hai (form.elements.one ka shortcut)</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        <code>form.elements</code> ek <strong>live collection</strong> hai — root-level pe ye
+        <code>HTMLFormControlsCollection</code> type ka hota hai, jo document ke actual DOM se backed
+        hai. Iska matlab agar tum runtime pe koi <code>&lt;input&gt;</code> add/remove karo, collection
+        automatically update ho jaati hai — ye ek static array/snapshot nahi hai. Ye same "live
+        collection" pattern hai jo <code>childNodes</code>, <code>getElementsByTagName</code> waghera
+        mein bhi dikhta hai — DOM APIs ka ek consistent design decision.
+      </p>
+
+      <h2 id="named-access">Same-name elements — radio buttons ka collection</h2>
+      <p>
+        Jab multiple elements same <code>name</code> share karte hain (jaise radio button group), to
+        <code>form.elements[name]</code> ek single element nahi, balki ek <strong>sub-collection</strong>
+        deta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Radio group — form.elements.age ek collection hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">form</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"my"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"radio"</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"age"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"10"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- pehla radio, same name="age" --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"radio"</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"age"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"20"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- dusra radio, same name="age" --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">form</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-kw">let</span> form <span class="tok-punc">=</span> document<span class="tok-punc">.</span>forms<span class="tok-punc">.</span>my<span class="tok-punc">;</span>
+  <span class="tok-kw">let</span> ageElems <span class="tok-punc">=</span> form<span class="tok-punc">.</span>elements<span class="tok-punc">.</span>age<span class="tok-punc">;</span>       <span class="tok-com">// duplicate name ki wajah se ye ek RadioNodeList collection hai, single node nahi</span>
+
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>ageElems<span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]);</span>              <span class="tok-com">// pehla &lt;input type="radio"&gt; element</span>
+
+  <span class="tok-com">// RadioNodeList ka .value getter bhi special hai — jo radio checked hai uska value seedha deta hai</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>ageElems<span class="tok-punc">.</span>value<span class="tok-punc">);</span>              <span class="tok-com">// jo bhi radio abhi checked hai uska value — checked radio dhoondhne ka loop nahi likhna padta</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Root-level: <code>form.elements.age</code> internally ek <code>RadioNodeList</code> return karta
+        hai — ye HTML spec ka ek dedicated type hai, jisme <code>.value</code> getter checked radio ka
+        value directly deta hai. Ye ek chhota lekin practical detail hai jo manually
+        <code>querySelectorAll('input:checked')</code> likhne se bachata hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: backreference aur fieldset</div>
+        <p>
+          Har form control ka apna <code>.form</code> property hota hai jo waapas parent form ko point
+          karta hai — <code>input.form === form</code>. Ye bidirectional navigation useful hai jab tumhe
+          ek input event handler ke andar poore form tak access chahiye, bina DOM traverse kiye
+          (<code>event.target.form</code>). Agar form ke andar <code>&lt;fieldset&gt;</code> hai, to
+          fieldset khud ek "subform" jaisa behave karta hai — uska apna <code>.elements</code> hota hai
+          jisme sirf uske andar ke controls hote hain, lekin outer <code>form.elements</code> mein bhi
+          wahi controls flat list mein aate hain. Renaming: agar tum <code>name</code> attribute badal
+          do, purana naam turant kaam karna band nahi karta — browser thodi der backward-compat rakhta
+          hai, lekin production code mein isपे depend mat karo.
+        </p>
+      </div>
+
+      <h2 id="focus-blur">focus/blur events aur methods</h2>
+      <p>
+        <code>focus</code> event tab fire hota hai jab element focus paata hai, <code>blur</code> tab
+        jab wo focus khota hai. In dono ka classic use-case hai validate-on-leave pattern:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Validate on blur, clear error on focus<button class="copy-btn">Copy</button></div>
+        <pre><code>input<span class="tok-punc">.</span>onblur <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>          <span class="tok-com">// jab user field se hat ke kahin aur click/tab kare</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>input<span class="tok-punc">.</span>value<span class="tok-punc">.</span><span class="tok-fn">includes</span><span class="tok-punc">(</span><span class="tok-str">'@'</span><span class="tok-punc">))</span> <span class="tok-punc">{</span>   <span class="tok-com">// value mein "@" nahi hai — invalid email</span>
+    input<span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'invalid'</span><span class="tok-punc">);</span>       <span class="tok-com">// visually error state dikhane ke liye CSS class add karo</span>
+    error<span class="tok-punc">.</span>innerHTML <span class="tok-punc">=</span> <span class="tok-str">'Sahi email daalo.'</span><span class="tok-punc">;</span> <span class="tok-com">// user-facing error message dikhao</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+
+input<span class="tok-punc">.</span>onfocus <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>         <span class="tok-com">// jab user wapas field pe click/tab kare</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">contains</span><span class="tok-punc">(</span><span class="tok-str">'invalid'</span><span class="tok-punc">))</span> <span class="tok-punc">{</span> <span class="tok-com">// agar pehle se invalid marked hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'invalid'</span><span class="tok-punc">);</span>   <span class="tok-com">// error class hatao — user retry kar raha hai</span>
+    error<span class="tok-punc">.</span>innerHTML <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">;</span>        <span class="tok-com">// error message bhi clear kar do</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span></code></pre>
+      </div>
+      <p>
+        Programmatically focus control karne ke liye <code>elem.focus()</code> aur
+        <code>elem.blur()</code> methods hain. Ek common pattern hai user ko invalid field se bahar
+        jaane se rokna, focus() wapas call karke:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Focus wapas force karna on invalid data<button class="copy-btn">Copy</button></div>
+        <pre><code>input<span class="tok-punc">.</span>onblur <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span><span class="tok-kw">this</span><span class="tok-punc">.</span>value<span class="tok-punc">.</span><span class="tok-fn">includes</span><span class="tok-punc">(</span><span class="tok-str">'@'</span><span class="tok-punc">))</span> <span class="tok-punc">{</span>   <span class="tok-com">// invalid value hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">"error"</span><span class="tok-punc">);</span>      <span class="tok-com">// error styling do</span>
+    input<span class="tok-punc">.</span><span class="tok-fn">focus</span><span class="tok-punc">();</span>                  <span class="tok-com">// force karo focus wapas isी field pe aa jaaye</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">"error"</span><span class="tok-punc">);</span>   <span class="tok-com">// valid hai to error class hata do</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ event.preventDefault() blur ko cancel nahi kar sakta</div>
+        <p>
+          Root cause: <code>onblur</code> handler <strong>us waqt run hota hai jab element already
+          focus kho chuka hota hai</strong> — ye "after the fact" notification hai, "about to happen"
+          wala intercept-able event nahi. Isliye <code>event.preventDefault()</code> ka yahan koi asar
+          nahi hota. Agar tumhe user ko field mein "trap" karna hai, to sirf ek hi tareeka hai — jaise
+          upar diya, khud se <code>focus()</code> call karke user ko waapas la do.
+        </p>
+      </div>
+
+      <p>
+        <code>autofocus</code> ek HTML attribute hai jo page load pe hi kisi element pe focus daal deta
+        hai — <code>&lt;input autofocus&gt;</code>. Isse form pe seedha typing shuru ho sakti hai bina
+        user ko click karne ki zaroorat ke.
+      </p>
+
+      <h2 id="tabindex">tabindex — kisi bhi element ko focusable banana</h2>
+      <p>
+        By default sirf interactive elements (<code>input</code>, <code>button</code>, <code>a
+        href</code> waghera) focusable hote hain — <code>elem.focus()</code> ek plain
+        <code>&lt;div&gt;</code> pe kaam nahi karta, focus/blur events fire hi nahi hote. Ye badalne ke
+        liye <code>tabindex</code> attribute lagate hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">tabindex order — root mechanism<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">ul</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">tabindex</span><span class="tok-punc">=</span><span class="tok-str">"1"</span><span class="tok-punc">&gt;</span>One<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>      <span class="tok-com">&lt;!-- positive tabindex: explicit order mein sabse pehle aate hain (1 se badhte hue) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">tabindex</span><span class="tok-punc">=</span><span class="tok-str">"0"</span><span class="tok-punc">&gt;</span>Zero<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>     <span class="tok-com">&lt;!-- tabindex="0": focusable ban gaya, lekin document-order-based (positive ke baad) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">tabindex</span><span class="tok-punc">=</span><span class="tok-str">"2"</span><span class="tok-punc">&gt;</span>Two<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>      <span class="tok-com">&lt;!-- positive tabindex: 1 ke baad number 2 aata hai --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">tabindex</span><span class="tok-punc">=</span><span class="tok-str">"-1"</span><span class="tok-punc">&gt;</span>Minus one<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- negative: Tab key se skip hota hai, sirf elem.focus() se hi focus milega --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">ul</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;!-- Tab-key press order: One(1) -&gt; Two(2) -&gt; Zero(0), fir document order wale baaki elements --&gt;</span></code></pre>
+      </div>
+      <p>
+        Root-level semantics: <strong>positive values</strong> ek explicit numeric priority set karte
+        hain (chhote number pehle, browser inhe sabse pehle Tab-cycle karta hai);
+        <strong>tabindex="0"</strong> element ko document-flow order mein focusable bana deta hai (jaise
+        wo naturally interactive ho, bas custom position add nahi karta); aur
+        <strong>tabindex="-1"</strong> Tab-key navigation se element ko hata deta hai lekin
+        <code>elem.focus()</code> call se programmatic focus abhi bhi kaam karta hai — ye pattern
+        accessibility mein bahut use hota hai (jaise modal open hone pe usе focus() se le jaana, lekin
+        background content Tab se skip ho).
+      </p>
+
+      <h2 id="focus-bubble-gotcha">focus/blur bubble NAHI karte — focusin/focusout use karo</h2>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Real gotcha: event delegation focus/blur pe kaam nahi karega</div>
+        <p>
+          <code>focus</code> aur <code>blur</code> events <strong>bubble nahi karte</strong>. Agar tum
+          form pe ek single <code>onfocus</code>/<code>onblur</code> listener laga ke expect karo ki wo
+          child inputs ke focus/blur events ko catch karega (event delegation ki tarah jaise click pe
+          hota hai), wo kaam <strong>nahi karega</strong> — event sirf us exact element tak limited
+          rehta hai jisne focus paaya/khoya. Solution: <code>focusin</code> aur <code>focusout</code>
+          events use karo — ye same cheez track karte hain lekin bubble karte hain, aur inhe sirf
+          <code>addEventListener</code> se attach kar sakte ho, <code>on&lt;event&gt;</code> property se
+          nahi (<code>elem.onfocusin</code> jaisa kuch nahi hota).
+        </p>
+      </div>
+      <div class="code-block">
+        <div class="code-title">focusin/focusout — form-level delegation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">form</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"form"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text"</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"name"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"Name"</span><span class="tok-punc">&gt;</span>       <span class="tok-com">&lt;!-- pehla input --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text"</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"surname"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"Surname"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- dusra input --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">form</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span> <span class="tok-punc">.</span><span class="tok-fn">focused</span> <span class="tok-punc">{</span> <span class="tok-attr">outline</span><span class="tok-punc">:</span> <span class="tok-num">1px</span> <span class="tok-kw">solid</span> <span class="tok-kw">red</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">// focusin sirf addEventListener se attach hota hai — form.onfocusin bilkul kaam nahi karega</span>
+  form<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"focusin"</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> form<span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'focused'</span><span class="tok-punc">));</span>
+  <span class="tok-com">// koi bhi child input focus paaye — event bubble ho ke form tak pahunchta hai, class add ho jaati hai</span>
+
+  form<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">"focusout"</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> form<span class="tok-punc">.</span>classList<span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'focused'</span><span class="tok-punc">));</span>
+  <span class="tok-com">// child input focus khoye — bubble hoke class remove ho jaati hai</span>
+  <span class="tok-com">// NOTE: agar user ek input se dusre input mein Tab kare (dono form ke andar),</span>
+  <span class="tok-com">// to focusout+focusin dono fire honge, lekin class remove-then-add hone se koi flicker nahi dikhta</span>
+  <span class="tok-com">// kyunki browser same microtask/synchronous cycle mein handle karta hai</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Root cause ye hai: bubbling events "target se document tak" propagate hote hain taaki ancestors
+        unhe suno saken. <code>focus</code>/<code>blur</code> ko spec-writers ne intentionally
+        non-bubbling banaya kyunki agar ye bubble karte, to nested focusable elements ke case mein
+        (jaise ek contenteditable ke andar ek input) bahar ke saare ancestors bhi "focus paaya" event
+        receive karte, jo confusing hota. <code>focusin</code>/<code>focusout</code> baad mein add kiye
+        gaye taaki delegation use-case explicitly serve ho sake.
+      </p>
+
+      <h2 id="input-vs-change">input vs change — root-level timing difference</h2>
+      <p>
+        Ye do events bahut confuse karte hain naye developers ko, kyunki dono "value change hone pe"
+        fire hote lagte hain — lekin unka <strong>timing fundamentally alag</strong> hai:
+      </p>
+      <ul>
+        <li><code>input</code> — <strong>har single character/value modification</strong> pe turant
+        fire hota hai — keyboard se type karo, mouse se paste karo, ya voice-to-text — jo bhi actual
+        value change kare. Ye "live" event hai.</li>
+        <li><code>change</code> — sirf tab fire hota hai jab value <strong>"committed"</strong> ho —
+        text input/textarea ke liye ye <strong>blur (focus loss)</strong> par hota hai (agar value badla
+        ho), aur select/checkbox/radio ke liye <strong>turant selection change hone par</strong> (kyunki
+        wahan koi intermediate "typing" state hoti hi nahi).</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Contrast: live character counter (input) vs validate-on-commit (change)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">label</span><span class="tok-punc">&gt;</span>Bio (live counter uses <span class="tok-punc">&lt;</span><span class="tok-tag">b</span><span class="tok-punc">&gt;</span>input<span class="tok-punc">&lt;/</span><span class="tok-tag">b</span><span class="tok-punc">&gt;</span>)<span class="tok-punc">:&lt;/</span><span class="tok-tag">label</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">textarea</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"bio"</span> <span class="tok-attr">maxlength</span><span class="tok-punc">=</span><span class="tok-str">"140"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">textarea</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">span</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"counter"</span><span class="tok-punc">&gt;</span>140<span class="tok-punc">&lt;/</span><span class="tok-tag">span</span><span class="tok-punc">&gt;</span> characters left
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">label</span><span class="tok-punc">&gt;</span>Username (validate uses <span class="tok-punc">&lt;</span><span class="tok-tag">b</span><span class="tok-punc">&gt;</span>change<span class="tok-punc">&lt;/</span><span class="tok-tag">b</span><span class="tok-punc">&gt;</span>)<span class="tok-punc">:&lt;/</span><span class="tok-tag">label</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text"</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"username"</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">span</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"usernameStatus"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">span</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">// ===== Part 1: input event — LIVE character counter =====</span>
+  <span class="tok-kw">const</span> bio <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'bio'</span><span class="tok-punc">);</span>       <span class="tok-com">// textarea reference lo</span>
+  <span class="tok-kw">const</span> counter <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'counter'</span><span class="tok-punc">);</span> <span class="tok-com">// counter span reference lo</span>
+
+  bio<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'input'</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>       <span class="tok-com">// har keystroke/paste pe fire hoga — is wajah se "live" hai</span>
+    <span class="tok-kw">const</span> remaining <span class="tok-punc">=</span> <span class="tok-num">140</span> <span class="tok-punc">-</span> bio<span class="tok-punc">.</span>value<span class="tok-punc">.</span>length<span class="tok-punc">;</span> <span class="tok-com">// har call pe fresh length nikaalo</span>
+    counter<span class="tok-punc">.</span>textContent <span class="tok-punc">=</span> remaining<span class="tok-punc">;</span>       <span class="tok-com">// counter turant update — user ko real-time feedback</span>
+    counter<span class="tok-punc">.</span>style<span class="tok-punc">.</span>color <span class="tok-punc">=</span> remaining <span class="tok-punc">&lt;</span> <span class="tok-num">10</span> <span class="tok-punc">?</span> <span class="tok-str">'red'</span> <span class="tok-punc">:</span> <span class="tok-str">''</span><span class="tok-punc">;</span> <span class="tok-com">// limit ke paas ho to red warning</span>
+  <span class="tok-punc">});</span>
+  <span class="tok-com">// AGAR yahan 'change' use karte, to counter tab tak update hi nahi hota jab tak user</span>
+  <span class="tok-com">// textarea se blur na kare — jo ek "live" counter ke liye bilkul useless UX hota</span>
+
+  <span class="tok-com">// ===== Part 2: change event — validate-on-COMMIT, harek keystroke pe nahi =====</span>
+  <span class="tok-kw">const</span> username <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'username'</span><span class="tok-punc">);</span> <span class="tok-com">// input reference</span>
+  <span class="tok-kw">const</span> status <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'usernameStatus'</span><span class="tok-punc">);</span> <span class="tok-com">// status span</span>
+
+  username<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'change'</span><span class="tok-punc">,</span> <span class="tok-punc">()</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>   <span class="tok-com">// sirf blur pe (ya Enter dabane pe) fire hoga, na ki har character pe</span>
+    <span class="tok-com">// simulate karo ek "check-username-availability" API call — ye expensive hoti hai</span>
+    status<span class="tok-punc">.</span>textContent <span class="tok-punc">=</span> <span class="tok-str">`Checking "</span><span class="tok-punc">${</span>username<span class="tok-punc">.</span>value<span class="tok-punc">}</span><span class="tok-str">"...`</span><span class="tok-punc">;</span> <span class="tok-com">// commit hone ke baad hi ek baar call trigger hota hai</span>
+    <span class="tok-com">// agar yahan 'input' use karte, to server pe har keystroke pe ek expensive availability-check</span>
+    <span class="tok-com">// request jaati — bina debounce ke ye network aur backend dono ko overload kar dega</span>
+  <span class="tok-punc">});</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: kab kya use karo</div>
+        <p>
+          Root-level rule of thumb: <strong>UI jo turant respond karna chahiye</strong> (character
+          counters, live search-as-you-type suggestions, real-time formatting/masking, enabling/disabling
+          a submit button based on current text) — wahan <code>input</code>. <strong>Expensive ya
+          commit-semantics wala kaam</strong> (server validation, analytics event, triggering a
+          recalculation that's costly) — wahan <code>change</code>, ya <code>input</code> ko manually
+          <em>debounce</em> karke. Select/checkbox/radio jaise "discrete choice" controls mein
+          <code>input</code> aur <code>change</code> practically same waqt fire hote hain (koi
+          intermediate typing state nahi hoti), isliye wahan farak matter nahi karta — differences sirf
+          free-text fields (text/textarea) mein critical hote hain. Ek aur gotcha: <code>input</code>
+          event ke andar <code>event.preventDefault()</code> ka koi effect nahi hota, kyunki ye event
+          <strong>value change ho chuke hone ke baad</strong> fire hota hai — action already commit ho
+          chuka.
+        </p>
+      </div>
+
+      <h2 id="cut-copy-paste">cut, copy, paste events</h2>
+      <p>
+        Ye teeno <code>ClipboardEvent</code> class ke instances hain aur clipboard data tak access dete
+        hain — aur ye <strong>cancellable</strong> hain (unlike input), matlab
+        <code>preventDefault()</code> se action rok sakte ho:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Paste block/inspect karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text"</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"input"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  input<span class="tok-punc">.</span>onpaste <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>event<span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// paste hone se pehle fire hota hai</span>
+    <span class="tok-kw">const</span> pasted <span class="tok-punc">=</span> event<span class="tok-punc">.</span>clipboardData<span class="tok-punc">.</span><span class="tok-fn">getData</span><span class="tok-punc">(</span><span class="tok-str">'text/plain'</span><span class="tok-punc">);</span> <span class="tok-com">// clipboardData se plain text nikaalo</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"paste: "</span> <span class="tok-punc">+</span> pasted<span class="tok-punc">);</span>            <span class="tok-com">// jo copy hua tha wo dikhao</span>
+    event<span class="tok-punc">.</span><span class="tok-fn">preventDefault</span><span class="tok-punc">();</span>                <span class="tok-com">// actual paste ko cancel kar do — input mein text nahi aayega</span>
+  <span class="tok-punc">};</span>
+
+  input<span class="tok-punc">.</span>oncut <span class="tok-punc">=</span> input<span class="tok-punc">.</span>oncopy <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>event<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// dono cut aur copy ke liye same handler</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span>event<span class="tok-punc">.</span>type <span class="tok-punc">+</span> <span class="tok-str">'-'</span> <span class="tok-punc">+</span> document<span class="tok-punc">.</span><span class="tok-fn">getSelection</span><span class="tok-punc">());</span> <span class="tok-com">// selected text dikhao (event.type se pata chalega cut ya copy)</span>
+    event<span class="tok-punc">.</span><span class="tok-fn">preventDefault</span><span class="tok-punc">();</span>                <span class="tok-com">// clipboard operation cancel — copy/cut nahi hoga</span>
+  <span class="tok-punc">};</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ cut/copy handler ke andar clipboardData khaali milta hai</div>
+        <p>
+          <code>oncut</code>/<code>oncopy</code> ke andar <code>event.clipboardData.getData(...)</code>
+          call karoge to empty string milegi. Root cause: ye events <strong>data actual clipboard mein
+          jaane se pehle</strong> fire hote hain — us waqt tak OS-level clipboard update hua hi nahi
+          hota. Isliye cut/copy mein tumhe data <code>document.getSelection()</code> se khud nikaalna
+          padta hai (jaise upar example mein), <code>event.clipboardData</code> se nahi — sirf
+          <code>onpaste</code> mein <code>clipboardData</code> reliably populated hota hai kyunki wahan
+          data already source se aa chuka hai.
+        </p>
+      </div>
+
+      <h2 id="submit">submit event aur form submission</h2>
+      <p>
+        <code>submit</code> event tab fire hota hai jab form submit ho raha ho — do tareeke se trigger
+        hota hai: (1) <code>&lt;input type="submit"&gt;</code>/<code>button</code> pe click, ya (2)
+        kisi text input mein focus ke saath <strong>Enter</strong> dabana (jo internally submit button
+        pe ek synthetic <code>click</code> event trigger karta hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">submit event intercept karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">form</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"myForm"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"text"</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"query"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"text"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- Enter dabane se bhi submit trigger hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"submit"</span> <span class="tok-attr">value</span><span class="tok-punc">=</span><span class="tok-str">"Submit"</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- click se bhi submit trigger hoga --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">form</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  myForm<span class="tok-punc">.</span>onsubmit <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>event<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// submit event handler — event object milta hai</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'submit!'</span><span class="tok-punc">);</span>                    <span class="tok-com">// koi validation ya custom logic yahan</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>                        <span class="tok-com">// return false = preventDefault() ka shorthand — page reload nahi hoga</span>
+  <span class="tok-punc">};</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span></code></pre>
+      </div>
+      <p>
+        <code>form.submit()</code> method se programmatically bhi submit kar sakte ho — lekin ye
+        <strong>submit event fire nahi karta</strong>:
+      </p>
+      <div class="code-block">
+        <div class="code-title">form.submit() — event bypass hota hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> form <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'form'</span><span class="tok-punc">);</span>   <span class="tok-com">// naya form element runtime pe banaya</span>
+form<span class="tok-punc">.</span>action <span class="tok-punc">=</span> <span class="tok-str">'https://example.com/search'</span><span class="tok-punc">;</span> <span class="tok-com">// kahan submit karna hai</span>
+form<span class="tok-punc">.</span>method <span class="tok-punc">=</span> <span class="tok-str">'GET'</span><span class="tok-punc">;</span>                <span class="tok-com">// GET method use karo</span>
+
+form<span class="tok-punc">.</span>innerHTML <span class="tok-punc">=</span> <span class="tok-str">'&lt;input name="q" value="test"&gt;'</span><span class="tok-punc">;</span> <span class="tok-com">// ek hidden-jaisa input daala</span>
+
+document<span class="tok-punc">.</span>body<span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span>form<span class="tok-punc">);</span>          <span class="tok-com">// DOM mein daalna zaroori hai submit karne ke liye</span>
+
+form<span class="tok-punc">.</span><span class="tok-fn">submit</span><span class="tok-punc">();</span>                     <span class="tok-com">// direct submit — onsubmit handler CALL NAHI hoga, browser seedha navigate karega</span></code></pre>
+      </div>
+      <p>
+        Root cause: <code>form.submit()</code> spec ke hisaab se ek "programmer already validate kar
+        chuka" signal maana jaata hai — browser assume karta hai ki tum ye method jaan-boojh ke call kar
+        rahe ho after doing your own checks, isliye redundant validation-hook (submit event) skip kar
+        deta hai. Iske contrast mein <code>form.requestSubmit()</code> (newer API) hai — ye ek "real"
+        user-initiated submit ki tarah behave karta hai, matlab <code>submit</code> event
+        <strong>normally fire hota hai</strong> (aur agar koi <code>&lt;button type="submit"&gt;</code>
+        pass karo to uski validity bhi check hoti hai) — jab tumhe "jaise user ne submit button dabaya
+        waisa hi trigger karo, lekin code se" chahiye, tab <code>requestSubmit()</code> zyada correct
+        choice hai <code>submit()</code> ke bajaye.
+      </p>
+
+      <h2 id="ajax-submit">Real example: AJAX-based form submit (page reload roknA)</h2>
+      <p>
+        Modern SPA-style forms full page reload nahi karte — <code>submit</code> event ko intercept
+        karke <code>fetch</code> se background mein data bhejte hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">preventDefault + fetch — no page reload<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">form</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"loginForm"</span> <span class="tok-attr">action</span><span class="tok-punc">=</span><span class="tok-str">"/api/login"</span> <span class="tok-attr">method</span><span class="tok-punc">=</span><span class="tok-str">"POST"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"email"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"email"</span> <span class="tok-attr">required</span><span class="tok-punc">&gt;</span>   <span class="tok-com">&lt;!-- required: HTML5 built-in validation bhi chalti hai submit se pehle --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">input</span> <span class="tok-attr">name</span><span class="tok-punc">=</span><span class="tok-str">"password"</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"password"</span> <span class="tok-attr">required</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">button</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"submit"</span><span class="tok-punc">&gt;</span>Login<span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">form</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-kw">const</span> form <span class="tok-punc">=</span> document<span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'loginForm'</span><span class="tok-punc">);</span>   <span class="tok-com">// form reference</span>
+
+  form<span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'submit'</span><span class="tok-punc">,</span> <span class="tok-kw">async</span> <span class="tok-punc">(</span>event<span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span> <span class="tok-com">// async handler taaki fetch await kar sakein</span>
+    event<span class="tok-punc">.</span><span class="tok-fn">preventDefault</span><span class="tok-punc">();</span>          <span class="tok-com">// SABSE PEHLE ye — warna browser default full-page GET/POST navigation kar dega</span>
+
+    <span class="tok-kw">const</span> formData <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FormData</span><span class="tok-punc">(</span>form<span class="tok-punc">);</span> <span class="tok-com">// form ke sab named fields ko FormData object mein pack karo</span>
+
+    <span class="tok-kw">try</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">const</span> res <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span>form<span class="tok-punc">.</span>action<span class="tok-punc">,</span> <span class="tok-punc">{</span>  <span class="tok-com">// form.action attribute se URL uthaya — HTML aur JS ek hi source of truth share karte hain</span>
+        method<span class="tok-punc">:</span> form<span class="tok-punc">.</span>method<span class="tok-punc">,</span>       <span class="tok-com">// form.method attribute se HTTP method uthaya (yahan "POST")</span>
+        body<span class="tok-punc">:</span> formData             <span class="tok-com">// fetch FormData ko seedha samajhta hai — multipart body auto-serialize hoti hai</span>
+      <span class="tok-punc">});</span>
+
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">!</span>res<span class="tok-punc">.</span>ok<span class="tok-punc">)</span> <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">`Login failed: </span><span class="tok-punc">${</span>res<span class="tok-punc">.</span>status<span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span> <span class="tok-com">// non-2xx status pe manually error throw karo</span>
+
+      <span class="tok-kw">const</span> data <span class="tok-punc">=</span> <span class="tok-kw">await</span> res<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">();</span>   <span class="tok-com">// response body ko JSON parse karo</span>
+      <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Welcome, </span><span class="tok-punc">${</span>data<span class="tok-punc">.</span>name<span class="tok-punc">}</span><span class="tok-str">!`</span><span class="tok-punc">);</span>  <span class="tok-com">// no page reload — SPA mein state update ya redirect JS se karo</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'Error: '</span> <span class="tok-punc">+</span> err<span class="tok-punc">.</span>message<span class="tok-punc">);</span> <span class="tok-com">// network/HTTP error ko user ko dikhao, form reset mat karo taaki wo retry kar sake</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">});</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+      <p>
+        Ye pattern <code>form.action</code>/<code>form.method</code> attributes ko hi source-of-truth
+        rakhta hai (progressive enhancement ke liye achha — JS disabled ho to bhi form normal HTML
+        submit kar sakta hai server-side), lekin JS enabled hone par <code>preventDefault()</code> se
+        default navigation rok ke, wahi data <code>fetch</code> se background mein bhej deta hai — bina
+        full page reload ke.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>document.forms</code> aur <code>form.elements</code> live named+indexed collections
+        hain — DOM change hone par apne aap update hoti hain.</li>
+        <li>Same-name elements (radio groups) ke liye <code>form.elements[name]</code> ek
+        <code>RadioNodeList</code> collection deta hai, jiska <code>.value</code> checked radio ka
+        value directly return karta hai.</li>
+        <li><code>focus</code>/<code>blur</code> bubble <strong>nahi</strong> karte — delegation ke
+        liye <code>focusin</code>/<code>focusout</code> use karo (sirf <code>addEventListener</code> se
+        attach hote hain).</li>
+        <li><code>onblur</code> mein <code>preventDefault()</code> kaam nahi karta kyunki event focus
+        chale jaane ke baad fire hota hai — trap karna ho to <code>focus()</code> wapas call karo.</li>
+        <li><code>tabindex="0"</code> = document-order focusable, positive value = explicit numeric
+        priority, <code>tabindex="-1"</code> = sirf programmatic focus, Tab se skip.</li>
+        <li><code>input</code> = har value-change pe turant (live UI ke liye); <code>change</code> =
+        sirf commit (blur/Enter) pe (expensive/validation logic ke liye).</li>
+        <li>cut/copy handler ke andar <code>clipboardData</code> khaali hota hai (data abhi clipboard
+        mein gaya nahi); paste mein reliably populated hota hai.</li>
+        <li><code>form.submit()</code> submit event <strong>skip</strong> karta hai; user-triggered
+        submit jaisa behavior chahiye to <code>form.requestSubmit()</code> use karo.</li>
+        <li>AJAX form pattern: <code>submit</code> event pe <code>preventDefault()</code>, phir
+        <code>FormData</code> + <code>fetch</code> se background submission.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>form.elements aur document.forms live collections kyun hain, static array kyun
+        nahi?</strong><br>Hint: ye directly DOM tree se backed hain — DOM APIs ka consistent pattern
+        (childNodes, getElementsByTagName bhi live hote hain) taaki har baar manually re-query na karna
+        pade.</li>
+        <li><strong>focus/blur events bubble kyun nahi karte, jabki click karta hai?</strong><br>Hint:
+        agar bubble karte to nested focusable elements (jaise contenteditable ke andar input) ke case
+        mein saare ancestors "focus paaya" event receive karte — confusing hota; delegation ke liye
+        alag focusin/focusout events specifically add kiye gaye.</li>
+        <li><strong>input aur change event ka fundamental timing difference kya hai, aur kab kaunsa use
+        karoge?</strong><br>Hint: input = har modification pe turant (live UI, character counters);
+        change = commit pe (blur/Enter) ya discrete-choice controls pe turant — expensive/validation
+        logic ke liye behtar.</li>
+        <li><strong>oncut/oncopy handler ke andar event.clipboardData.getData() khaali kyun aata
+        hai?</strong><br>Hint: ye events data actual OS clipboard mein jaane se PEHLE fire hote hain —
+        onpaste mein hi clipboardData reliably populated hota hai kyunki data already source se aa chuka
+        hota hai.</li>
+        <li><strong>form.submit() aur form.requestSubmit() mein kya farak hai?</strong><br>Hint:
+        submit() spec ke hisaab se ek "already-validated" programmer signal maana jaata hai isliye
+        submit event skip karta hai; requestSubmit() ek real user-click jaisa behave karta hai, submit
+        event normally fire hota hai aur button validity bhi check hoti hai.</li>
+        <li><strong>Enter key se form submit hone par internally kya hota hai?</strong><br>Hint: focused
+        text input mein Enter dabane se browser internally us form ke <code>&lt;input
+        type="submit"&gt;</code> pe ek synthetic click event trigger karta hai, jo phir normal submit
+        flow follow karta hai.</li>
+        <li><strong>tabindex="-1" ka practical use-case kya hai?</strong><br>Hint: Tab-key navigation se
+        element hata deta hai (keyboard users usse naturally skip karte) lekin elem.focus() se
+        programmatic focus abhi bhi kaam karta hai — modals/dialogs mein initial focus set karne ke
+        liye common pattern.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="20-ui-events.html">
+        <div class="label">← Previous</div>
+        <div class="title">UI Events</div>
+      </a>
+      <a class="next" href="22-document-resource-loading.html">
+        <div class="label">Next →</div>
+        <div class="title">Document &amp; Resource Loading</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

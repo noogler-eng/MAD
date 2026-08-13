@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>General HTML Performance — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link active" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Chapter 2</div>
+      <div class="progress-pill">2 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">HTML · Parsing · Caching · Blocking Resources</span>
+      <h1>General HTML Performance Considerations</h1>
+      <p class="subtitle">
+        Sabse pehla byte jo browser ko milta hai wahi HTML hota hai — agar wahi slow ya blocking ho gaya,
+        toh baaki sab (CSS, JS, images) uske peeche latakte hain. Chalo dekhte hain HTML document
+        ke andar kya-kya chalta hai, root level se.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#caching">1. HTML Document Caching</a></li>
+          <li><a href="#parser-internals">2. HTML Parser andar se kaise kaam karta hai</a></li>
+          <li><a href="#parser-blocking">3. Parser-Blocking Resources (Scripts)</a></li>
+          <li><a href="#render-blocking">4. Render-Blocking Resources (CSS)</a></li>
+          <li><a href="#fixes">5. Practical Fixes — Before/After</a></li>
+          <li><a href="#takeaways">6. Key Takeaways</a></li>
+          <li><a href="#interview">7. Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="caching">1. HTML Document Caching</h2>
+      <p>
+        Static assets (CSS, JS bundles, images) usually filename mein content-hash rakhte hain
+        (e.g. <code>main.a1b2c3.js</code>), toh unhe browser/CDN <strong>aggressively cache</strong>
+        kar sakte hain — <code>Cache-Control: max-age=31536000, immutable</code> — kyunki content change
+        hoga toh filename bhi change ho jaayega. Lekin <strong>HTML document khud</strong> ek tricky case hai.
+      </p>
+      <p>
+        HTML ka URL usually stable rehta hai (<code>/products/123</code>), aur uske andar hi
+        sub-resources ke fingerprinted URLs hote hain. Agar HTML ko lambe time ke liye cache kar diya,
+        toh user ko purane sub-resource references mil sakte hain — ya worse, purana content hi mil
+        sakta hai jab tak deploy ke baad cache expire na ho. Isliye common practice hai:
+      </p>
+      <ul>
+        <li><strong>Dynamic/personalized HTML</strong> (logged-in dashboards, cart pages) — <code>Cache-Control: no-store</code> ya <code>private, no-cache</code> rakho, kyunki content per-user different hai.</li>
+        <li><strong>Static/marketing HTML</strong> (landing pages, blog posts) — short TTL rakho, jaise <code>max-age=300</code> (5 minutes), taaki CDN edge caching ka fayda mile lekin content bahut stale na rahe.</li>
+        <li><strong>Conditional revalidation</strong> — <code>ETag</code> ya <code>Last-Modified</code> header bhejo. Browser/CDN agla request <code>If-None-Match</code>/<code>If-Modified-Since</code> ke saath bhejega, aur agar content same hai toh server sirf <code>304 Not Modified</code> (empty body) return karta hai — bandwidth bachta hai, full HTML dobara nahi bhejni padti.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Typical response headers — static marketing HTML<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&#x2F;&#x2F; HTTP response headers jo server HTML document ke saath bhejta hai</span>
+<span class="tok-attr">Cache-Control</span><span class="tok-punc">:</span> public, max-age<span class="tok-punc">=</span><span class="tok-num">300</span>, stale-while-revalidate<span class="tok-punc">=</span><span class="tok-num">86400</span>
+<span class="tok-com">&#x2F;&#x2F; public         -&gt; CDN aur browser dono cache kar sakte hain (private data nahi hai)</span>
+<span class="tok-com">&#x2F;&#x2F; max-age=300    -&gt; 5 minute tak "fresh" maana jaayega, revalidate nahi karega</span>
+<span class="tok-com">&#x2F;&#x2F; stale-while-revalidate=86400 -&gt; agar 5 min expire ho gaye, toh purana (stale) HTML turant</span>
+<span class="tok-com">&#x2F;&#x2F;                 serve kar do user ko, aur BACKGROUND mein fresh copy fetch karke cache update</span>
+<span class="tok-com">&#x2F;&#x2F;                 kar do — agle request ko fresh milega. Yani user kabhi slow request ka wait</span>
+<span class="tok-com">&#x2F;&#x2F;                 nahi karta, revalidation "invisible" hoti hai.</span>
+<span class="tok-attr">ETag</span><span class="tok-punc">:</span> <span class="tok-str">&quot;a3f8c9-html-v42&quot;</span>
+<span class="tok-com">&#x2F;&#x2F; ETag      -&gt; content ka unique fingerprint (hash). Agla request isko If-None-Match mein</span>
+<span class="tok-com">&#x2F;&#x2F;              bhejega, server compare karke 304 ya naya 200 return karega.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Cache-Control strategy in production</div>
+        <p>
+          Next.js (App Router) ya kisi bhi CDN-fronted app mein, HTML ke liye edge caching setup karte waqt
+          teen cheezein dhyaan mein rakho: (1) <strong>ISR/on-demand revalidation</strong> use karo agar
+          content occasionally change hota hai — Next.js <code>revalidate</code> option ya
+          <code>res.revalidate()</code> se CDN cache ko surgically invalidate kar sakte ho, poore site ko
+          purge kiye bina. (2) <code>stale-while-revalidate</code> production mein bahut powerful hai
+          kyunki origin server ka load kam hota hai — CDN edge khud background revalidation handle karta
+          hai, origin sirf tab hit hota hai jab genuinely stale ho. (3) <strong>Vary header</strong> ka
+          dhyaan rakho — agar HTML response A/B test cookie, locale, ya auth state ke hisaab se differ
+          karta hai, toh <code>Vary: Cookie</code> ya custom header add karna padega, warna CDN wrong
+          cached variant serve kar dega dusre user ko (cache poisoning jaisa bug — production mein
+          bahut common mistake hai).
+        </p>
+      </div>
+
+      <h2 id="parser-internals">2. HTML Parser andar se kaise kaam karta hai</h2>
+      <p>
+        Jab browser ko HTML bytes milte hain (network se), ek multi-stage pipeline chalta hai jo
+        eventually DOM tree banata hai. Ye samajhna zaroori hai kyunki isi pipeline ke beech mein
+        scripts aur stylesheets "block" karte hain.
+      </p>
+      <ol>
+        <li><strong>Byte Stream → Characters:</strong> Raw bytes ko specified encoding (usually UTF-8, jo <code>&lt;meta charset&gt;</code> ya HTTP header se pata chalta hai) use karke characters mein decode kiya jaata hai.</li>
+        <li><strong>Characters → Tokens:</strong> Tokenizer (HTML5 spec ka state machine) characters ko tokens mein todta hai — start tags (<code>&lt;div&gt;</code>), end tags (<code>&lt;/div&gt;</code>), attribute names/values, text nodes, comments, etc.</li>
+        <li><strong>Tokens → Nodes:</strong> Har token ek object (DOM node) mein convert hota hai, uski properties aur type ke saath.</li>
+        <li><strong>Nodes → DOM Tree:</strong> Nodes ko unke parent-child aur sibling relationships ke basis pe ek tree structure mein connect kiya jaata hai, jo document ki nested structure (jaisa HTML mein likha tha) ko reflect karta hai.</li>
+      </ol>
+      <p>
+        Ye process <strong>incremental</strong> hai — matlab poora HTML file ek saath load hone ka wait
+        nahi karta. Browser ko jitna data mil chuka hai, utna parse karke DOM banata rehta hai, chunks
+        mein. Isi wajah se page "progressively" render hota dikhta hai — top se neeche.
+      </p>
+      <p>
+        Ek aur important optimization hai <strong>preload scanner</strong> (a.k.a speculative parser).
+        Jab main HTML parser kisi blocking resource (script) pe रुक jaata hai, ek dusra lightweight
+        scanner parallel mein aage ka HTML "peek" karta hai — <code>&lt;img&gt;</code>,
+        <code>&lt;link&gt;</code>, aur <code>&lt;script src&gt;</code> jaise resource-referencing tags
+        dhoondh ke unke fetches turant kick-off kar deta hai, bina wait kiye ki main parser wahan tak
+        pahunche. Isi wajah se hamesha resource URLs ko HTML mein statically likhna better hai
+        (JS se inject karne ke bajaye) — preload scanner unhe discover nahi kar paata agar wo
+        JavaScript-generated hain.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 DOM vs CSSOM — quick note</div>
+        <p>
+          HTML parser sirf DOM banata hai. CSS ka apna alag parser hai jo CSSOM banata hai. Dono
+          milke Render Tree banate hain — iski poori detail agle chapter "Critical Rendering Path"
+          mein hai.
+        </p>
+      </div>
+
+      <h2 id="parser-blocking">3. Parser-Blocking Resources (Scripts)</h2>
+      <p>
+        Jab HTML parser ko <code>&lt;script&gt;</code> tag milta hai (bina <code>async</code> ya
+        <code>defer</code> attribute ke), toh parsing <strong>ruk jaati hai</strong>. Kyun? Kyunki
+        JavaScript <code>document.write()</code> jaisi APIs se DOM ko modify kar sakta hai — browser ko
+        pata nahi hota ki script kya karega, isliye safe side pe rehte hue wo pehle script ko:
+      </p>
+      <ol>
+        <li>Fetch karta hai (agar external <code>src</code> hai, toh network round-trip),</li>
+        <li>Parse karta hai,</li>
+        <li>Execute karta hai —</li>
+      </ol>
+      <p>
+        aur tab tak DOM construction pura ruka rehta hai. Agar ye script <code>&lt;head&gt;</code> mein
+        hai (jaisa legacy code mein bahut common hai), toh poora <code>&lt;body&gt;</code> ka content
+        parse hi nahi hoga jab tak script execute na ho jaaye — user ko blank white screen dikhta hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Mistake</div>
+        <p>
+          Bahut se developers analytics ya third-party widgets ka bada inline <code>&lt;script&gt;</code>
+          seedha <code>&lt;head&gt;</code> mein, <code>defer</code>/<code>async</code> ke bina daal dete
+          hain — "isko toh sabse pehle load hona chahiye" soch ke. Result: har page load pe HTML parser
+          us script ke fetch+execute complete hone tak freeze rehta hai, aur First Contentful Paint
+          seconds delay ho jaata hai. Analytics scripts almost hamesha <code>async</code> ke saath
+          load karne chahiye — unka DOM se koi dependency nahi hoti.
+        </p>
+      </div>
+
+      <h2 id="render-blocking">4. Render-Blocking Resources (CSS)</h2>
+      <p>
+        CSS ka blocking behavior thoda different hai. <code>&lt;link rel="stylesheet"&gt;</code> khud
+        HTML <em>parsing</em> ko nahi rokta — DOM banna continue rehta hai. Lekin CSS
+        <strong>render</strong> ko block karta hai: browser is CSS ko FOUC (Flash of Unstyled Content)
+        avoid karne ke liye, jab tak saara render-blocking CSS load+parse na ho jaaye, koi bhi pixel
+        screen pe paint nahi karta.
+      </p>
+      <p>
+        Isse bhi zyada tricky cheez: agar ek <code>&lt;script&gt;</code> tag ke <em>pehle</em> koi
+        CSS <code>&lt;link&gt;</code> hai jo abhi tak load nahi hui, toh browser us script ke execution
+        ko bhi tab tak rok deta hai jab tak CSS load na ho jaaye — kyunki script CSSOM query kar sakta
+        hai (e.g. <code>getComputedStyle()</code>), aur browser ko guarantee chahiye ki styles final
+        hain. Isko <strong>"CSSOM blocks JS execution"</strong> kehte hain — CSS aur JS dono blocking
+        ho, toh unka combined effect aur bhi zyada delay create karta hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Resource</th><th>Parsing block karta hai?</th><th>Rendering block karta hai?</th></tr></thead>
+        <tbody>
+          <tr><td>Sync <code>&lt;script&gt;</code> (no defer/async)</td><td>✅ Haan</td><td>✅ Haan (indirectly)</td></tr>
+          <tr><td><code>&lt;script defer&gt;</code></td><td>❌ Nahi</td><td>❌ Nahi (DOMContentLoaded se pehle execute)</td></tr>
+          <tr><td><code>&lt;script async&gt;</code></td><td>❌ Nahi</td><td>❌ Nahi (jab bhi ready ho, turant execute)</td></tr>
+          <tr><td><code>&lt;link rel="stylesheet"&gt;</code></td><td>❌ Nahi (DOM banta rehta hai)</td><td>✅ Haan (first paint block)</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="fixes">5. Practical Fixes — Before / After</h2>
+      <p>
+        Chalo ek realistic before/after dekhte hain. "Before" mein head mein multiple blocking
+        resources hain; "after" mein wahi cheez optimize ki gayi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">❌ Before — parser-blocking + render-blocking setup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Ye pura head render/parser dono ko block karega --&gt;</span>
+<span class="tok-tag">&lt;!DOCTYPE</span> <span class="tok-attr">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- doctype line browser ko batati hai standards mode use karo, quirks mode nahi --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">html</span> <span class="tok-attr">lang</span><span class="tok-punc">=</span><span class="tok-str">&quot;en&quot;</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- root html element, lang attribute accessibility/SEO ke liye --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- head section shuru — yahan jo bhi resources hain wo body render hone se pehle load honge --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">meta</span> <span class="tok-attr">charset</span><span class="tok-punc">=</span><span class="tok-str">&quot;UTF-8&quot;</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- character encoding declare kar rahe hain, ye sabse pehli line honi chahiye head mein --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>My Slow Page<span class="tok-punc">&lt;/</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- page title, tab mein dikhta hai — ye blocking nahi hai --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">&quot;stylesheet&quot;</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">&quot;/css/main.css&quot;</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- render-blocking CSS — first paint tab tak rukega jab tak ye file load+parse na ho jaaye --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">&quot;https://analytics.example.com/track.js&quot;</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- PARSER-BLOCKING script, bina async/defer ke — browser network round-trip karega,</span>
+       <span class="tok-com">fetch karega, execute karega, TAB TAK document ka baaki parsing pause rahegi --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- ek aur inline script, bina defer ke — ye bhi turant, synchronously execute hota hai --&gt;</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">&#39;analytics init&#39;</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-com">&#x2F;&#x2F; ek dummy log statement, real app mein yahan heavy init logic ho sakta hai</span>
+  <span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- head section khatam — is point tak body ka EK BHI pixel paint nahi hua hoga --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>Welcome<span class="tok-punc">&lt;/</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- ye heading tabhi dikhega jab upar ke sab blocking resources resolve ho chuke honge --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- document end --&gt;</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">✅ After — optimized, non-blocking setup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">&lt;!DOCTYPE</span> <span class="tok-attr">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- doctype same rehta hai, standards mode ke liye zaroori --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">html</span> <span class="tok-attr">lang</span><span class="tok-punc">=</span><span class="tok-str">&quot;en&quot;</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- root element, lang attribute waisa hi rakha --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- head ab minimal hai — sirf woh cheezein jo turant chahiye --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">meta</span> <span class="tok-attr">charset</span><span class="tok-punc">=</span><span class="tok-str">&quot;UTF-8&quot;</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- encoding declaration, sabse pehle line, kam se kam parsing cost --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>My Fast Page<span class="tok-punc">&lt;/</span><span class="tok-tag">title</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- title tag, blocking nahi hai, cheap hai --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">&quot;stylesheet&quot;</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">&quot;/css/critical.css&quot;</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- SIRF critical/above-the-fold CSS yahan inline ya chhoti file ke roop mein —</span>
+       <span class="tok-com">jitna chhota utna jaldi first paint hoga --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">link</span> <span class="tok-attr">rel</span><span class="tok-punc">=</span><span class="tok-str">&quot;preload&quot;</span> <span class="tok-attr">href</span><span class="tok-punc">=</span><span class="tok-str">&quot;/css/main.css&quot;</span> <span class="tok-attr">as</span><span class="tok-punc">=</span><span class="tok-str">&quot;style&quot;</span> <span class="tok-attr">onload</span><span class="tok-punc">=</span><span class="tok-str">&quot;this.rel=&#39;stylesheet&#39;&quot;</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- baaki ka non-critical CSS ko preload se fetch karwa rahe hain (high priority download</span>
+       <span class="tok-com">lekin render-block NAHI karta), onload pe usko asal stylesheet bana rahe hain --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">head</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- head ab bahut halka hai — first paint ke liye kam wait --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>Welcome<span class="tok-punc">&lt;/</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- content ab jaldi render ho sakta hai kyunki head mein koi parser-blocking script nahi --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">&quot;https://analytics.example.com/track.js&quot;</span> <span class="tok-attr">async</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- async attribute -&gt; ye script parallel mein download hoga aur jab bhi ready ho tab</span>
+       <span class="tok-com">execute hoga, HTML parsing ko block kiye bina. Analytics jaisi independent scripts</span>
+       <span class="tok-com">ke liye perfect hai kyunki inka DOM order se koi matlab nahi hota --&gt;</span>
+
+  <span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">&quot;/js/app.js&quot;</span> <span class="tok-attr">defer</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- defer attribute -&gt; ye script bhi parallel download hota hai, LEKIN execution</span>
+       <span class="tok-com">DOMContentLoaded se theek pehle, aur document order maintain karke hota hai —</span>
+       <span class="tok-com">jab tumhare app ko DOM ready chahiye but blocking nahi chahiye, defer best hai --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">body</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">html</span><span class="tok-punc">&gt;</span>
+<span class="tok-com">&lt;!-- document end, ab poora page bina unnecessary blocking ke load hota hai --&gt;</span>
+</code></pre>
+      </div>
+
+      <p>
+        Do choti si detail note karo: (1) <code>defer</code> scripts hamesha
+        <code>DOMContentLoaded</code> se pehle, HTML mein likhe gaye order mein hi execute hote hain —
+        predictable hai. (2) <code>async</code> scripts jis order mein <em>ready</em> hote hain usi order
+        mein execute hote hain — order guarantee nahi hai, isliye dependent scripts ke liye async
+        risky ho sakta hai.
+      </p>
+
+      <h2 id="takeaways">6. Key Takeaways</h2>
+      <ul>
+        <li>HTML document ko usually aggressively cache <strong>nahi</strong> karte — short TTL + <code>stale-while-revalidate</code> + <code>ETag</code>/<code>Last-Modified</code> revalidation better strategy hai.</li>
+        <li>HTML parser incremental hota hai: bytes → characters → tokens → nodes → DOM tree, chunks mein progressively.</li>
+        <li>Preload scanner parallel mein aage ka HTML scan karke resource fetches early start kar deta hai — isliye resource URLs ko HTML mein statically rakho, JS-injected nahi.</li>
+        <li>Sync <code>&lt;script&gt;</code> (bina async/defer) parser ko block karta hai — fetch + parse + execute, tab tak DOM ruka rehta hai.</li>
+        <li>CSS <code>&lt;link&gt;</code> parsing block nahi karta, lekin rendering (first paint) block karta hai; agar script CSS se pehle hai toh CSSOM us script ke execution ko bhi block kar sakta hai.</li>
+        <li>Fix: <code>&lt;head&gt;</code> minimal rakho, critical CSS inline/small, non-critical CSS preload, scripts ko <code>async</code>/<code>defer</code> ke saath ya body ke end mein rakho.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li>
+          <strong>Q: <code>async</code> aur <code>defer</code> mein kya fundamental difference hai, aur kab kaunsa use karoge?</strong><br>
+          Hint: dono parallel download karte hain, block nahi karte parsing ko. Farq execution timing/order mein hai —
+          <code>defer</code> = document order, DOMContentLoaded se pehle (dependent app scripts ke liye).
+          <code>async</code> = jab ready ho tab, koi order guarantee nahi (independent scripts jaise analytics ke liye).
+        </li>
+        <li>
+          <strong>Q: Agar tumhare paas ek <code>&lt;script&gt;</code> hai jo DOM ready hone se pehle chalta hai aur CSS ke baad hai, toh kya hoga?</strong><br>
+          Hint: CSSOM abhi build ho raha hai toh script ka execution us CSS load hone tak ruka rahega — "CSSOM blocks script execution" scenario.
+        </li>
+        <li>
+          <strong>Q: HTML document ko kyun aggressively cache nahi karte, jabki JS/CSS bundles karte hain?</strong><br>
+          Hint: bundles content-hashed filenames use karte hain (immutable), lekin HTML ka URL stable hota hai aur usmein hi latest resource references hote hain — long cache se stale content/broken references ka risk.
+        </li>
+        <li>
+          <strong>Q: Preload scanner kya hota hai aur ye kyun important hai?</strong><br>
+          Hint: speculative secondary parser jo main parser ke blocked hone par bhi aage ka HTML scan karta hai resources discover/fetch karne ke liye — isliye JS se dynamically inject kiye gaye resource tags is optimization ko miss kar dete hain.
+        </li>
+        <li>
+          <strong>Q: <code>stale-while-revalidate</code> kaise kaam karta hai aur production mein iska kya fayda hai?</strong><br>
+          Hint: cache expire hone ke baad bhi stale response turant serve hoti hai user ko, background mein fresh fetch hoke cache update hota hai — origin server ka load kam, perceived latency zero.
+        </li>
+        <li>
+          <strong>Q: Kya <code>&lt;script&gt;</code> ko body ke end mein rakhna hamesha sahi solution hai, ya <code>defer</code> better hai?</strong><br>
+          Hint: body-end placement purane browsers ke liye workaround tha; <code>defer</code> better hai kyunki preload scanner ise jaldi discover karke parallel fetch shuru kar deta hai (body-end scripts sirf parser wahan tak pahunchne pe discover hote hain).
+        </li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="01-why-speed-matters.html">
+          <div class="label">← Previous</div>
+          <div class="title">Why Speed Matters</div>
+        </a>
+        <a class="next" href="03-critical-rendering-path.html">
+          <div class="label">Next →</div>
+          <div class="title">Understanding the Critical Path</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

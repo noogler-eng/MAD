@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Functions — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link active" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 9</div>
+      <div class="progress-pill">9 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Functions · Closures · Scheduling</span>
+      <h1>Advanced Functions</h1>
+      <p class="subtitle">
+        Yahaan tak humne functions ko "kaam karne wala block" jaisa treat kiya. Ab hum andar jhaankenge —
+        recursion call stack pe kaise chalta hai, closures ka asli mechanism (Lexical Environment object,
+        koi magic nahi), <code>var</code> ka function-scoping kyun leak karta hai, global object kya hai,
+        function khud ek object kyun hai, <code>setTimeout(fn, 0)</code> "turant" kyun nahi chalta, aur
+        <code>call</code>/<code>apply</code>/<code>bind</code> se <code>this</code> control karna. Ye
+        chapter senior interviews mein sabse zyada poocha jaane wala JS internals hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#recursion">Recursion aur call stack</a></li>
+          <li><a href="#rest-spread">Rest parameters vs spread syntax</a></li>
+          <li><a href="#closures">Closures — Lexical Environment se samjho</a></li>
+          <li><a href="#var">var ka function-scoping aur hoisting</a></li>
+          <li><a href="#global-object">Global object — window / globalThis</a></li>
+          <li><a href="#function-object">Function object, NFE</a></li>
+          <li><a href="#new-function">new Function syntax</a></li>
+          <li><a href="#settimeout">setTimeout/setInterval aur "zero delay" gotcha</a></li>
+          <li><a href="#decorators">Decorators — call/apply se forwarding</a></li>
+          <li><a href="#bind">Function.prototype.bind</a></li>
+          <li><a href="#arrow">Arrow functions revisited</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="recursion">Recursion aur call stack</h2>
+      <p>
+        Recursion tab useful hai jab task "usi kaam ka chhota version" mein tod sakte ho. Har function
+        call ek naya <strong>execution context</strong> banata hai — jisme uske local variables aur
+        "abhi kahaan execute ho raha hoon" wala pointer store hota hai. Nested call hone par current
+        context ek internal <strong>execution context stack</strong> pe push ho jaata hai, naya context
+        top pe aata hai; jab wo call return karta hai, uska context pop hota hai aur pichla resume hota
+        hai — bilkul function calls ke <code>Array</code>-jaisa LIFO structure.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">pow(x, n) — loop vs recursion<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Iterative version — sirf EK execution context reuse hota hai, memory O(1)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">powLoop</span><span class="tok-punc">(</span>x<span class="tok-punc">,</span> n<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> result <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>            <span class="tok-com">// accumulator — abhi tak ka answer</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> n<span class="tok-punc">;</span> i<span class="tok-punc">++)</span> <span class="tok-punc">{</span>  <span class="tok-com">// n baar loop chalao</span>
+    result <span class="tok-punc">*=</span> x<span class="tok-punc">;</span>          <span class="tok-com">// result ko x se multiply karo, har iteration</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">return</span> result<span class="tok-punc">;</span>            <span class="tok-com">// final power return karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Recursive version — HAR call apna alag execution context banata hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">powRec</span><span class="tok-punc">(</span>x<span class="tok-punc">,</span> n<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>n <span class="tok-punc">==</span> <span class="tok-num">1</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// BASE CASE — yahin recursion rukta hai, warna infinite chalega</span>
+    <span class="tok-kw">return</span> x<span class="tok-punc">;</span>          <span class="tok-com">// x^1 = x, trivial answer seedha return</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">return</span> x <span class="tok-punc">*</span> <span class="tok-fn">powRec</span><span class="tok-punc">(</span>x<span class="tok-punc">,</span> n <span class="tok-punc">-</span> <span class="tok-num">1</span><span class="tok-punc">);</span> <span class="tok-com">// RECURSIVE STEP — x * (x ka n-1 power), problem chhota ho raha hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">powRec</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">);</span> <span class="tok-com">// 8 — internally: 2*powRec(2,2) -> 2*(2*powRec(2,1)) -> 2*(2*2)</span></code></pre>
+      </div>
+
+      <p>
+        <code>powRec(2, 3)</code> chalne pe stack literally aisa dikhta hai — <code>context: n=3</code> ke
+        andar <code>context: n=2</code> ke andar <code>context: n=1</code>. Jab <code>n==1</code> hit hota
+        hai, sabse andar wala context return karta hai, uske outer wala apna pending multiplication
+        complete karta hai, aur aise stack unwind hoti hai top-to-bottom. Iska matlab: recursion depth ke
+        proportional memory lagta hai — <code>n = 10000</code> ke around JS engines "Maximum call stack
+        size exceeded" de sakte hain, jabki loop version constant memory mein chalta rehta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Nested structure traversal — company departments<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> company <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  sales<span class="tok-punc">:</span> <span class="tok-punc">[{</span>salary<span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">},</span> <span class="tok-punc">{</span>salary<span class="tok-punc">:</span> <span class="tok-num">160</span><span class="tok-punc">}],</span>  <span class="tok-com">// leaf: employees ka array</span>
+  development<span class="tok-punc">:</span> <span class="tok-punc">{</span>                          <span class="tok-com">// non-leaf: aage subdepartments hain</span>
+    sites<span class="tok-punc">:</span> <span class="tok-punc">[{</span>salary<span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-punc">}],</span>
+    internals<span class="tok-punc">:</span> <span class="tok-punc">[{</span>salary<span class="tok-punc">:</span> <span class="tok-num">40</span><span class="tok-punc">}]</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">sumSalaries</span><span class="tok-punc">(</span>department<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">Array</span><span class="tok-punc">.</span><span class="tok-fn">isArray</span><span class="tok-punc">(</span>department<span class="tok-punc">))</span> <span class="tok-punc">{</span>       <span class="tok-com">// BASE CASE: array mila matlab leaf level, seedha sum karo</span>
+    <span class="tok-kw">return</span> department<span class="tok-punc">.</span><span class="tok-fn">reduce</span><span class="tok-punc">(</span>
+      <span class="tok-punc">(</span>prev<span class="tok-punc">,</span> curr<span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> prev <span class="tok-punc">+</span> curr<span class="tok-punc">.</span>salary<span class="tok-punc">,</span> <span class="tok-num">0</span> <span class="tok-com">// running total mein har employee ki salary jodo</span>
+    <span class="tok-punc">);</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">let</span> sum <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                       <span class="tok-com">// is level ka running total</span>
+    <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> subdep <span class="tok-kw">of</span> <span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">values</span><span class="tok-punc">(</span>department<span class="tok-punc">))</span> <span class="tok-punc">{</span> <span class="tok-com">// har subdepartment pe iterate</span>
+      sum <span class="tok-punc">+=</span> <span class="tok-fn">sumSalaries</span><span class="tok-punc">(</span>subdep<span class="tok-punc">);</span>       <span class="tok-com">// RECURSIVE STEP — subdep khud object ho sakta hai ya array</span>
+    <span class="tok-punc">}</span>
+    <span class="tok-kw">return</span> sum<span class="tok-punc">;</span>                       <span class="tok-com">// saare subdepartments ka combined total</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">sumSalaries</span><span class="tok-punc">(</span>company<span class="tok-punc">));</span> <span class="tok-com">// 400 — depth arbitrary ho sakti hai, recursion isliye natural fit hai</span></code></pre>
+      </div>
+
+      <p>
+        Linked list bhi conceptually recursive structure hai — har node <code>{ value, next }</code> hai
+        jahaan <code>next</code> khud ek chhota linked list (ya <code>null</code>) hai. Isliye reverse
+        order print karna ek-line recursion se ho jaata hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Linked list — reverse traversal<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> list <span class="tok-punc">=</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-punc">,</span> next<span class="tok-punc">:</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-num">2</span><span class="tok-punc">,</span> next<span class="tok-punc">:</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-num">3</span><span class="tok-punc">,</span> next<span class="tok-punc">:</span> <span class="tok-kw">null</span> <span class="tok-punc">}</span> <span class="tok-punc">}</span> <span class="tok-punc">};</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">printReverse</span><span class="tok-punc">(</span>node<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>node<span class="tok-punc">.</span>next<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// agar aage aur node hai...</span>
+    <span class="tok-fn">printReverse</span><span class="tok-punc">(</span>node<span class="tok-punc">.</span>next<span class="tok-punc">);</span>       <span class="tok-com">// ...pehle usko print karao (stack pe pending rehta hai ye call)</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>node<span class="tok-punc">.</span>value<span class="tok-punc">);</span>          <span class="tok-com">// stack unwind hote waqt print — isliye reverse order aata hai: 3,2,1</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">printReverse</span><span class="tok-punc">(</span>list<span class="tok-punc">);</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Recursion "free" nahi hai</div>
+        <p>
+          Har recursive call ek naya stack frame allocate karta hai. Deep recursion (bade array/tree pe)
+          memory-heavy ho sakti hai aur stack overflow de sakti hai. Rule of thumb: agar recursion depth
+          input-size ke saath unbounded grow kar sakti hai (jaise ek bade flat array ko process karna), to
+          loop use karo. Agar depth naturally bounded hai (tree height, jo generally <code>log(n)</code>
+          hoti hai — balanced structures mein), recursion safe aur zyada readable hai.
+        </p>
+      </div>
+
+      <h2 id="rest-spread">Rest parameters vs spread syntax</h2>
+      <p>
+        Dono same <code>...</code> syntax use karte hain lekin opposite direction mein kaam karte hain —
+        <strong>rest</strong> values ko ek array mein "gather/collect" karta hai (function parameters mein
+        use hota hai), <strong>spread</strong> ek iterable ko individual values mein "expand/spread" karta
+        hai (function calls / array-object literals mein use hota hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Rest parameters — gather karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">sumAll</span><span class="tok-punc">(...</span>args<span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// ...args: jitne bhi extra arguments aayein, ek Array mein collect ho jaayenge</span>
+  <span class="tok-kw">let</span> sum <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>                <span class="tok-com">// running total</span>
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> a <span class="tok-kw">of</span> args<span class="tok-punc">)</span> sum <span class="tok-punc">+=</span> a<span class="tok-punc">;</span> <span class="tok-com">// args real Array hai — for-of, map, reduce sab chalega</span>
+  <span class="tok-kw">return</span> sum<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">sumAll</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">);</span> <span class="tok-com">// 6</span>
+
+<span class="tok-com">// Named params ke saath rest — rest hamesha LAST hona chahiye, warna SyntaxError</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showName</span><span class="tok-punc">(</span>firstName<span class="tok-punc">,</span> lastName<span class="tok-punc">, ...</span>titles<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>firstName<span class="tok-punc">,</span> lastName<span class="tok-punc">);</span> <span class="tok-com">// pehle do named params normally bind honge</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>titles<span class="tok-punc">);</span>            <span class="tok-com">// baaki sab titles array mein — ["Consul", "Imperator"]</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">showName</span><span class="tok-punc">(</span><span class="tok-str">"Julius"</span><span class="tok-punc">,</span> <span class="tok-str">"Caesar"</span><span class="tok-punc">,</span> <span class="tok-str">"Consul"</span><span class="tok-punc">,</span> <span class="tok-str">"Imperator"</span><span class="tok-punc">);</span></code></pre>
+      </div>
+
+      <p>
+        Legacy <code>arguments</code> object bhi sabhi non-arrow functions ko available hai — array-like
+        hai (index + length) lekin real Array nahi (koi <code>.map()</code>/<code>.filter()</code> nahi
+        milega bina convert kiye), aur sabse important: <strong>arrow functions ka apna <code>arguments</code>
+        nahi hota</strong> — wo enclosing normal function se <code>arguments</code> inherit karte hain
+        (isi property ka use decorators section mein forwarding ke liye hoga).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Spread syntax — expand karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-num">1</span><span class="tok-punc">];</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Math</span><span class="tok-punc">.</span><span class="tok-fn">max</span><span class="tok-punc">(...</span>arr<span class="tok-punc">));</span>       <span class="tok-com">// 5 — arr ke elements individual arguments ban gaye</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Math</span><span class="tok-punc">.</span><span class="tok-fn">max</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">, ...</span>arr<span class="tok-punc">,</span> <span class="tok-num">25</span><span class="tok-punc">));</span> <span class="tok-com">// 25 — normal args ke saath bhi mix kar sakte ho</span>
+
+<span class="tok-kw">let</span> merged <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">, ...</span>arr<span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">];</span>    <span class="tok-com">// array literal ke andar bhi spread chalta hai — [0, 3, 5, 1, 2]</span>
+<span class="tok-kw">let</span> arrCopy <span class="tok-punc">=</span> <span class="tok-punc">[...</span>arr<span class="tok-punc">];</span>       <span class="tok-com">// SHALLOW copy — naya array, same top-level values</span>
+<span class="tok-kw">let</span> objCopy <span class="tok-punc">=</span> <span class="tok-punc">{ ...</span>arr<span class="tok-punc">};</span>       <span class="tok-com">// objects mein bhi spread — shallow merge/copy</span>
+
+<span class="tok-kw">let</span> str <span class="tok-punc">=</span> <span class="tok-str">"Hi"</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">([...</span>str<span class="tok-punc">]);</span>          <span class="tok-com">// ["H","i"] — string iterable hai, spread character-by-character todta hai</span></code></pre>
+      </div>
+
+      <p>
+        <code>Array.from</code> aur spread dono iterables ko array mein convert karte hain, lekin
+        <code>Array.from</code> array-likes (jaise <code>arguments</code>, ya <code>{0:'a',1:'b',length:2}</code>)
+        pe bhi kaam karta hai jinke paas <code>Symbol.iterator</code> nahi hota, jabki spread <strong>sirf
+        real iterables</strong> pe chalta hai — non-iterable array-like pe spread <code>TypeError</code>
+        dega.
+      </p>
+
+      <h2 id="closures">Closures — Lexical Environment se samjho (root-level)</h2>
+      <p>
+        "Function apna outer scope yaad rakhta hai" — ye statement technically sahi hai lekin agar isse
+        aage nahi socha to interview mein "why?" pe atak jaoge. Asli mechanism ek internal spec object hai
+        jise <strong>Lexical Environment</strong> kehte hain. Har running function, block, aur script ka
+        apna Lexical Environment hota hai, jisme do parts hote hain:
+      </p>
+      <ul>
+        <li><strong>Environment Record</strong> — ek internal object jisme us scope ke saare local variables <code>key: value</code> pairs ki tarah store hote hain (plus kuch metadata, jaise <code>this</code>).</li>
+        <li><strong>Outer reference</strong> — parent Lexical Environment ka pointer, jo ek chain banata hai upar tak, global environment tak.</li>
+      </ul>
+      <p>
+        Ek "variable" ka access actually is Environment Record ki property access hai. Jab code kisi
+        variable ko padhta hai, engine current environment ke Record mein dhoondta hai; nahi mila to
+        <code>outer</code> reference follow karke parent mein dhoondta hai, aur ye chain global tak chalti
+        hai — nahi mila to (strict mode mein) <code>ReferenceError</code>.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: [[Environment]] — asli closure mechanism</div>
+        <p>
+          Har function, banate hi (declaration/expression evaluate hote hi), ek hidden internal property
+          store karta hai: <code>[[Environment]]</code> — jo us Lexical Environment ki reference hai
+          <strong>jahaan function CREATE hua tha</strong>, na ki jahaan wo CALL hota hai. Ye reference
+          permanent hai, function ki poori life tak fixed rehta hai. Jab bhi function call hota hai, ek
+          naya (chhota) Lexical Environment banta hai us call ke local variables ke liye, aur uska
+          <code>outer</code> pointer <em>seedha</em> function ke <code>[[Environment]]</code> ki taraf set
+          ho jaata hai — call-site ke scope se koi lena-dena nahi. Isi wajah se JS <strong>lexical
+          (static) scoping</strong> language hai, dynamic scoping nahi — variable resolution function ke
+          <em>likhe jaane ki jagah</em> se decide hoti hai, uske <em>call hone ki jagah</em> se nahi.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Closure — step by step Lexical Environment chain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">makeCounter</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> count <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>          <span class="tok-com">// makeCounter() ke Lexical Environment ka Record: { count: 0 }</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>       <span class="tok-com">// ye inner function CREATE ho raha hai YAHIN — [[Environment]] = makeCounter ka LE</span>
+    <span class="tok-kw">return</span> count<span class="tok-punc">++;</span>        <span class="tok-com">// count is inner function ke local environment mein nahi mila</span>
+  <span class="tok-punc">};</span>                       <span class="tok-com">// ...so engine outer reference follow karta hai -> makeCounter LE -> count mil gaya</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> counter <span class="tok-punc">=</span> <span class="tok-fn">makeCounter</span><span class="tok-punc">();</span>   <span class="tok-com">// makeCounter() run ho chuka, RETURN ho chuka — lekin uska LE zinda hai</span>
+                              <span class="tok-com">// kyunki 'counter' variable us returned function ko reference karta hai,</span>
+                              <span class="tok-com">// aur us function ka [[Environment]] makeCounter LE ko reachable rakhta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">counter</span><span class="tok-punc">());</span>       <span class="tok-com">// 0 — count 0 se 1 hua</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">counter</span><span class="tok-punc">());</span>       <span class="tok-com">// 1 — SAME environment reuse ho raha, isliye state persist hui</span>
+
+<span class="tok-kw">let</span> counter2 <span class="tok-punc">=</span> <span class="tok-fn">makeCounter</span><span class="tok-punc">();</span>  <span class="tok-com">// EK NAYA makeCounter() call = EK NAYA, independent Lexical Environment</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">counter2</span><span class="tok-punc">());</span>      <span class="tok-com">// 0 — counter2 ka apna alag count hai, counter se koi connection nahi</span></code></pre>
+      </div>
+
+      <p>
+        Is definition se ek important corollary nikalta hai jo javascript.info bhi explicitly kehta hai:
+        <strong>"JS mein sabhi functions naturally closures hote hain"</strong> — kyunki har function ke
+        paas apne creation-site ke Lexical Environment ka <code>[[Environment]]</code> reference hota hi
+        hai, chahe wo outer variables actually use kare ya nahi. "Closure" koi special syntax nahi, ye
+        normal function creation ka hi side-effect hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Practical closure: filter ke saath range check</div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">inBetween</span><span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>x<span class="tok-punc">)</span> <span class="tok-punc">{</span>     <span class="tok-com">// returned function ka [[Environment]] = inBetween ka LE, jahaan a,b hain</span>
+    <span class="tok-kw">return</span> x <span class="tok-punc">&gt;=</span> a <span class="tok-punc">&amp;&amp;</span> x <span class="tok-punc">&lt;=</span> b<span class="tok-punc">;</span> <span class="tok-com">// a aur b yahaan bina explicitly pass kiye available hain — closure</span>
+  <span class="tok-punc">};</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">4</span><span class="tok-punc">,</span> <span class="tok-num">5</span><span class="tok-punc">,</span> <span class="tok-num">6</span><span class="tok-punc">,</span> <span class="tok-num">7</span><span class="tok-punc">];</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>arr<span class="tok-punc">.</span><span class="tok-fn">filter</span><span class="tok-punc">(</span><span class="tok-fn">inBetween</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">,</span> <span class="tok-num">6</span><span class="tok-punc">)));</span> <span class="tok-com">// [3,4,5,6] — har call apna a,b closure mein rakhta hai</span></code></pre>
+      </div>
+
+      <p>
+        <strong>Garbage collection:</strong> Lexical Environments normally function return hote hi memory
+        se hat jaate hain — jab tak koi unhe reachable na rakhe. Agar returned function (jaise upar
+        <code>counter</code>) usually ek variable mein store hoti hai, uska <code>[[Environment]]</code>
+        parent LE ko reachable rakhta hai, isliye GC use nahi hata sakta. Jab <code>counter = null</code>
+        kar do, aur koi aur reference bhi na bache, tabhi GC us environment ko clean karta hai.
+      </p>
+      <p>
+        V8 (Chrome ka engine) ek smart optimization karta hai — agar closure kisi outer variable ko
+        <em>use hi nahi karta</em>, engine use environment se drop kar sakta hai memory bachane ke liye,
+        chahe theoretically wo "accessible" ho. Practical implication: DevTools mein breakpoint laga ke
+        aisa variable inspect karo jo closure mein referenced nahi hai, to wo missing ya kisi outer scope
+        ki value dikha sakta hai — ye bug nahi, engine optimization hai jo debugging session ko thoda
+        confusing bana sakta hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Classic gotcha: loop + var + setTimeout ("army of functions")</div>
+        <p>
+          <code>var</code> function-scoped hai, matlab loop ke andar declare kiya <code>var i</code> loop
+          ke <em>baahar</em> ke scope mein reh jaata hai — saari iterations ek hi shared variable use
+          karti hain. Neeche wale example mein saare timeouts ek hi <code>i</code> ko closure mein pakadte
+          hain, aur jab tak wo actually run karte hain, loop already khatam ho chuka hota hai, so
+          <code>i</code> apni final value pe hoti hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">var vs let closure behavior<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// BUGGY: var — saare 3 setTimeouts SAME 'i' ko closure mein pakadte hain</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">var</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> i<span class="tok-punc">++)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>i<span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span> <span class="tok-com">// loop khatam hone ke baad chalte hain — sab 'i' ko 3 dekhte hain</span>
+<span class="tok-punc">}</span> <span class="tok-com">// output: 3, 3, 3 (kyunki loop ke baad var i = 3 pe reh gaya)</span>
+
+<span class="tok-com">// FIXED: let — har iteration apna ALAG lexical environment banata hai</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> j <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> j <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> j<span class="tok-punc">++)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>j<span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span> <span class="tok-com">// har closure apna independent 'j' pakadta hai</span>
+<span class="tok-punc">}</span> <span class="tok-com">// output: 0, 1, 2 — har iteration ka apna snapshot</span></code></pre>
+      </div>
+
+      <h2 id="var">var ka function-scoping aur hoisting</h2>
+      <p>
+        <code>var</code> aur <code>let</code>/<code>const</code> mein teen fundamental differences hain,
+        aur teeno "root cause" ek hi hai — <code>var</code> ES5-era ka hai, jab JS mein block scope hi
+        nahi tha, sirf function scope tha.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">var: no block scope, redeclare allowed, hoisting<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1) var block se leak karta hai — sirf function (ya global) scope respect karta hai</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">var</span> test <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>    <span class="tok-com">// 'if' block mein declare kiya</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>test<span class="tok-punc">);</span>          <span class="tok-com">// true — block khatam hone ke baad bhi visible hai! (let se ReferenceError aata)</span>
+
+<span class="tok-com">// 2) redeclaration silently ignore hota hai — koi error nahi</span>
+<span class="tok-kw">var</span> user <span class="tok-punc">=</span> <span class="tok-str">"John"</span><span class="tok-punc">;</span>
+<span class="tok-kw">var</span> user <span class="tok-punc">=</span> <span class="tok-str">"Pete"</span><span class="tok-punc">;</span>   <span class="tok-com">// let hota to SyntaxError, var mein ye bas ek reassignment hai</span>
+
+<span class="tok-com">// 3) hoisting: DECLARATION function ke top pe uth jaati hai, ASSIGNMENT apni jagah rehta hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>phrase<span class="tok-punc">);</span>      <span class="tok-com">// undefined — error NAHI aata, kyunki var phrase already declared ho chuka top pe</span>
+  <span class="tok-kw">var</span> phrase <span class="tok-punc">=</span> <span class="tok-str">"Hello"</span><span class="tok-punc">;</span> <span class="tok-com">// assignment yahin execute hoti hai, jahaan likhi hai</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">sayHi</span><span class="tok-punc">();</span></code></pre>
+      </div>
+
+      <p>
+        Engine ke andar jo actually hota hai: script/function chalne se pehle ek preparation pass mein
+        saari <code>var</code> declarations function ke top pe "hoist" ho jaati hain (value
+        <code>undefined</code> ke saath) — lekin assignment statement wahin rehta hai jahaan likha gaya
+        tha, aur wo assignment sirf execution ke us point pe chalta hai. Function declarations
+        (<code>function foo(){}</code>) is se ek level aage hoisted hoti hain — pura function body bhi
+        available hota hai, isliye unhe declaration se pehle call kar sakte ho; function EXPRESSIONS
+        (<code>var foo = function(){}</code>) sirf variable ki tarah hoist hoti hain, value nahi.
+      </p>
+      <p>
+        Historically, block scope na hone ki wajah se developers <strong>IIFE (Immediately Invoked
+        Function Expression)</strong> pattern use karte the artificial scope banane ke liye —
+        <code>(function() { var message = "Hello"; })();</code> — taaki <code>message</code> global scope
+        pollute na kare. <code>let</code>/<code>const</code> aane ke baad ye pattern mostly obsolete ho
+        gaya, lekin legacy codebases aur bundler-generated code mein aaj bhi dikhta hai.
+      </p>
+
+      <h2 id="global-object">Global object — window / globalThis</h2>
+      <p>
+        Har JS environment ka ek global object hota hai jo built-in aur environment-provided
+        functions/variables ko hold karta hai. Browser mein iska naam <code>window</code> hai, Node.js
+        mein <code>global</code>. Cross-environment consistency ke liye modern JS <code>globalThis</code>
+        deta hai — jo har jagah (browser, Node, workers) same object ko refer karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Global object — var/let farak, polyfill pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hi"</span><span class="tok-punc">);</span>          <span class="tok-com">// ye actually window.alert("Hi") hi hai — global functions window ki properties hain</span>
+
+<span class="tok-kw">var</span> gVar <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>window<span class="tok-punc">.</span>gVar<span class="tok-punc">);</span>  <span class="tok-com">// 5 — TOP-LEVEL var global object ki property BAN JAATA hai</span>
+
+<span class="tok-kw">let</span> gLet <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>window<span class="tok-punc">.</span>gLet<span class="tok-punc">);</span>  <span class="tok-com">// undefined — let/const kabhi window ki property nahi bante (deliberate spec choice)</span>
+
+<span class="tok-com">// feature-detection + polyfill pattern — real-world use case</span>
+<span class="tok-kw">if</span> <span class="tok-punc">(!</span>window<span class="tok-punc">.</span><span class="tok-fn">Promise</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// check: kya is environment mein Promise built-in available hai?</span>
+  window<span class="tok-punc">.</span><span class="tok-fn">Promise</span> <span class="tok-punc">=</span> <span class="tok-fn">MyPromisePolyfill</span><span class="tok-punc">;</span> <span class="tok-com">// nahi hai to apna implementation global object pe attach kar do</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Ye asymmetry (<code>var</code> global object property banta hai, <code>let</code>/<code>const</code>
+        nahi) ek common trivia interview question hai — root cause ye hai ki ES6 mein <code>let</code>/
+        <code>const</code> ke liye ek naya, separate "Script" record concept design kiya gaya taaki
+        modules/newer code global namespace ko unnecessarily pollute na kare, jabki <code>var</code>
+        backward compatibility ke liye purane behavior pe hi rehta hai.
+      </p>
+
+      <h2 id="function-object">Function objects, name/length, Named Function Expressions</h2>
+      <p>
+        JS mein functions "callable objects" hain — matlab wo invoke bhi ho sakte hain aur unpe normal
+        object ki tarah properties bhi set/read kar sakte ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Function ki built-in properties: name, length<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> sayHi <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hi"</span><span class="tok-punc">);</span> <span class="tok-punc">};</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>sayHi<span class="tok-punc">.</span>name<span class="tok-punc">);</span>   <span class="tok-com">// "sayHi" — anonymous function expression ko bhi variable name se "contextual name" mil gaya</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">f1</span><span class="tok-punc">(</span>a<span class="tok-punc">)</span> <span class="tok-punc">{}</span>
+<span class="tok-kw">function</span> <span class="tok-fn">many</span><span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">, ...</span>rest<span class="tok-punc">)</span> <span class="tok-punc">{}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>f1<span class="tok-punc">.</span>length<span class="tok-punc">);</span>    <span class="tok-com">// 1</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>many<span class="tok-punc">.</span>length<span class="tok-punc">);</span>  <span class="tok-com">// 2 — rest parameter COUNT nahi hota length mein</span>
+
+<span class="tok-com">// custom property directly function object pe — closure ka alternative (lekin externally mutable)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">sayHi2</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hi"</span><span class="tok-punc">);</span>
+  sayHi2<span class="tok-punc">.</span>counter<span class="tok-punc">++;</span>      <span class="tok-com">// function object ki apni property increment karo — local variable NAHI hai</span>
+<span class="tok-punc">}</span>
+sayHi2<span class="tok-punc">.</span>counter <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>      <span class="tok-com">// property function ke BAHAR se set ki, function object pe attach hoti hai</span></code></pre>
+      </div>
+
+      <p>
+        Ek subtle-but-senior topic: <strong>Named Function Expressions (NFE)</strong>. Normal function
+        expression ko internally ek naam do (<code>function func(){...}</code>), to us naam se do special
+        cheezein milti hain — (1) function apne aap ko reliably call kar sakta hai us naam se, chahe
+        outer variable overwrite ho jaaye; (2) wo naam sirf function ke <em>andar</em> visible hai, bahar
+        se nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">NFE — recursion safety jab outer variable badal jaaye<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// BUGGY: naam-less function expression, self-reference outer 'sayHi' pe depend karta hai</span>
+<span class="tok-kw">let</span> sayHi <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>who<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>who<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Hello, ${</span>who<span class="tok-str">}`</span><span class="tok-punc">);</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    sayHi<span class="tok-punc">(</span><span class="tok-str">"Guest"</span><span class="tok-punc">);</span>     <span class="tok-com">// closure se OUTER 'sayHi' variable dhoondta hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+<span class="tok-kw">let</span> welcome <span class="tok-punc">=</span> sayHi<span class="tok-punc">;</span>
+sayHi <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>            <span class="tok-com">// outer 'sayHi' ab null hai</span>
+welcome<span class="tok-punc">();</span>                <span class="tok-com">// TypeError: sayHi is not a function — internal call sayHi(null) pe fail hua</span>
+
+<span class="tok-com">// FIXED: NFE — internal name 'func' hamesha CURRENT function object ko point karta hai</span>
+<span class="tok-kw">let</span> sayHi2 <span class="tok-punc">=</span> <span class="tok-kw">function</span> <span class="tok-fn">func</span><span class="tok-punc">(</span>who<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// 'func' — internal name, sirf is function ke andar visible</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>who<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">`Hello, ${</span>who<span class="tok-str">}`</span><span class="tok-punc">);</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">func</span><span class="tok-punc">(</span><span class="tok-str">"Guest"</span><span class="tok-punc">);</span>     <span class="tok-com">// engine ne 'func' ke liye ek special extra Lexical Environment banaya jo NEVER external reassign se affect hota</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+<span class="tok-kw">let</span> welcome2 <span class="tok-punc">=</span> sayHi2<span class="tok-punc">;</span>
+sayHi2 <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>
+welcome2<span class="tok-punc">();</span>               <span class="tok-com">// "Hello, Guest" — kaam karta hai, kyunki func outer sayHi2 pe depend nahi karta</span></code></pre>
+      </div>
+
+      <h2 id="new-function">new Function — string se function banana</h2>
+      <p>
+        Rarely used, lekin exist karta hai un cases ke liye jab function ka source runtime pe kisi string
+        se aa raha ho (server-generated code, template compilation).
+      </p>
+      <div class="code-block">
+        <div class="code-title">new Function syntax + closure limitation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> sum <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Function</span><span class="tok-punc">(</span><span class="tok-str">'a'</span><span class="tok-punc">,</span> <span class="tok-str">'b'</span><span class="tok-punc">,</span> <span class="tok-str">'return a + b'</span><span class="tok-punc">);</span> <span class="tok-com">// args names + body, sab strings</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">sum</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">));</span>          <span class="tok-com">// 3</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">getFunc</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> value <span class="tok-punc">=</span> <span class="tok-str">"test"</span><span class="tok-punc">;</span>
+  <span class="tok-kw">let</span> func <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Function</span><span class="tok-punc">(</span><span class="tok-str">'alert(value)'</span><span class="tok-punc">);</span> <span class="tok-com">// [[Environment]] normal closure ki tarah NAHI banta</span>
+  <span class="tok-kw">return</span> func<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">getFunc</span><span class="tok-punc">()();</span>              <span class="tok-com">// ReferenceError: value is not defined — sirf GLOBAL lexical env se resolve karta hai</span></code></pre>
+      </div>
+      <p>
+        Ye special-case behavior <em>zaroori</em> hai, na ki bug — <code>new Function</code> se banaye gaye
+        function ka <code>[[Environment]]</code> hamesha global Lexical Environment ko point karta hai,
+        local scope ko nahi jahaan wo actually create hua. Isse minifiers safe rehte hain (agar local
+        variable renamed ho jaaye, string-based code us naye naam se match nahi karega, so spec ne isse
+        explicitly disallow kar diya) — aur developer ko explicit params pass karne pe force karta hai.
+      </p>
+
+      <h2 id="settimeout">setTimeout / setInterval, aur "zero delay" gotcha</h2>
+      <div class="code-block">
+        <div class="code-title">Basic scheduling API<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> timerId <span class="tok-punc">=</span> <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"once"</span><span class="tok-punc">),</span> <span class="tok-num">1000</span><span class="tok-punc">);</span> <span class="tok-com">// 1000ms baad ek baar chalega</span>
+<span class="tok-fn">clearTimeout</span><span class="tok-punc">(</span>timerId<span class="tok-punc">);</span>                            <span class="tok-com">// cancel — ab kabhi nahi chalega</span>
+
+<span class="tok-com">// setInterval: repeated, LEKIN precise gap guarantee nahi karta</span>
+<span class="tok-kw">let</span> intId <span class="tok-punc">=</span> <span class="tok-fn">setInterval</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"tick"</span><span class="tok-punc">),</span> <span class="tok-num">2000</span><span class="tok-punc">);</span>
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">clearInterval</span><span class="tok-punc">(</span>intId<span class="tok-punc">),</span> <span class="tok-num">10000</span><span class="tok-punc">);</span>   <span class="tok-com">// 10s baad interval band</span>
+
+<span class="tok-com">// Nested setTimeout — BETTER control: agli call, callback KHATAM hone ke baad schedule hoti</span>
+<span class="tok-kw">let</span> nestedId <span class="tok-punc">=</span> <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-kw">function</span> <span class="tok-fn">tick</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"tick"</span><span class="tok-punc">);</span>
+  nestedId <span class="tok-punc">=</span> <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span>tick<span class="tok-punc">,</span> <span class="tok-num">2000</span><span class="tok-punc">);</span>  <span class="tok-com">// callback execution ke BAAD hi agla schedule hota — actual gap kabhi 2000 se kam nahi</span>
+<span class="tok-punc">},</span> <span class="tok-num">2000</span><span class="tok-punc">);</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: setTimeout(fn, 0) turant kyun nahi chalta</div>
+        <p>
+          <code>delay = 0</code> (ya <code>delay</code> omit karna) ka matlab "abhi execute karo" nahi hai —
+          matlab hai "jaldi se jaldi, jab main thread free ho". <code>setTimeout</code> callback ek
+          <strong>macrotask</strong> hai. Scheduler use tabhi run karta hai jab: (1) current synchronously
+          executing script poora khatam ho chuka ho, AND (2) us point tak queue mein pending saare
+          <strong>microtasks</strong> (Promise callbacks, <code>queueMicrotask</code>) drain ho chuke hon.
+          Yani priority order hamesha hai: synchronous code → microtask queue → macrotask queue (jisme
+          setTimeout hai). Full event loop mechanics chapter 23 (Misc Browser) mein detail mein hai, lekin
+          ye ordering abhi samajhna zaroori hai kyunki ye ek bahut common "what does this log?" interview
+          question hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Ordering: sync → microtask → macrotask<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"1: sync"</span><span class="tok-punc">);</span>                       <span class="tok-com">// synchronous — turant chalta hai</span>
+
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"4: macrotask"</span><span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span> <span class="tok-com">// macrotask queue mein jaata hai, LAST run hoga</span>
+
+<span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">resolve</span><span class="tok-punc">().</span><span class="tok-fn">then</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"3: microtask"</span><span class="tok-punc">)</span>                <span class="tok-com">// microtask queue mein — macrotask se PEHLE chalega</span>
+<span class="tok-punc">);</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"2: sync"</span><span class="tok-punc">);</span>                       <span class="tok-com">// abhi bhi current script hi chal raha hai</span>
+
+<span class="tok-com">// ACTUAL OUTPUT ORDER: "1: sync", "2: sync", "3: microtask", "4: macrotask"</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ setTimeout function reference ko garbage collect nahi hone deta</div>
+        <p>
+          Scheduler internally callback function ko ek reference save karke rakhta hai, jab tak wo fire na
+          ho jaaye ya <code>clearTimeout</code>/<code>clearInterval</code> se cancel na ho. Iska matlab wo
+          callback function (aur uska pura closure chain — <code>[[Environment]]</code> ke through)
+          garbage-collected nahi hoga jab tak timer pending hai. <code>setInterval</code> ke saath ye risk
+          zyada real hai — agar clear nahi kiya, callback aur uska closure indefinitely memory mein reh
+          sakte hain, effectively ek memory leak.
+        </p>
+      </div>
+
+      <h2 id="decorators">Decorators — call/apply se call forwarding</h2>
+      <p>
+        Decorator ek function hai jo doosre function ko "wrap" karta hai — original function ka behavior
+        badle bina, naya feature add karta hai (jaise caching). Classic example: memoization.
+      </p>
+      <div class="code-block">
+        <div class="code-title">cachingDecorator — this-safe version<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">cachingDecorator</span><span class="tok-punc">(</span>func<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> cache <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Map</span><span class="tok-punc">();</span>       <span class="tok-com">// closure — 'cache' is decorator instance ke liye persist rehta hai</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>x<span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// wrapper function — bahar se yehi function call hoga original ki jagah</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>cache<span class="tok-punc">.</span><span class="tok-fn">has</span><span class="tok-punc">(</span>x<span class="tok-punc">))</span> <span class="tok-punc">{</span>    <span class="tok-com">// agar ye input pehle bhi aaya hai...</span>
+      <span class="tok-kw">return</span> cache<span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span>x<span class="tok-punc">);</span>    <span class="tok-com">// ...seedha cached result return karo, original function CALL hi nahi hota</span>
+    <span class="tok-punc">}</span>
+    <span class="tok-kw">let</span> result <span class="tok-punc">=</span> func<span class="tok-punc">.</span><span class="tok-fn">call</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> x<span class="tok-punc">);</span> <span class="tok-com">// ZAROORI: .call(this, x) — 'this' explicitly forward karo original func ko</span>
+    cache<span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span>x<span class="tok-punc">,</span> result<span class="tok-punc">);</span>    <span class="tok-com">// result ko cache mein store karo agli baar ke liye</span>
+    <span class="tok-kw">return</span> result<span class="tok-punc">;</span>
+  <span class="tok-punc">};</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> worker <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  someMethod<span class="tok-punc">()</span> <span class="tok-punc">{</span> <span class="tok-kw">return</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-punc">},</span>
+  slow<span class="tok-punc">(</span>x<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"expensive call"</span><span class="tok-punc">);</span>
+    <span class="tok-kw">return</span> x <span class="tok-punc">*</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">someMethod</span><span class="tok-punc">();</span> <span class="tok-com">// slow() ko apna 'this' (worker) chahiye kaam karne ke liye</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+
+worker<span class="tok-punc">.</span>slow <span class="tok-punc">=</span> <span class="tok-fn">cachingDecorator</span><span class="tok-punc">(</span>worker<span class="tok-punc">.</span>slow<span class="tok-punc">);</span> <span class="tok-com">// original slow ko wrapper se replace kar diya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>worker<span class="tok-punc">.</span><span class="tok-fn">slow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">));</span>       <span class="tok-com">// "expensive call" print hoke 2 — pehli baar, cache miss</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>worker<span class="tok-punc">.</span><span class="tok-fn">slow</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">));</span>       <span class="tok-com">// seedha 2 — cache hit, "expensive call" print NAHI hota</span></code></pre>
+      </div>
+
+      <p>
+        Agar <code>worker.slow = cachingDecorator(worker.slow)</code> ke baad wrapper ke andar
+        <code>func(x)</code> plain call karte (bina <code>.call</code> ke), to <code>slow</code> ke andar
+        <code>this</code> <code>undefined</code> ho jaata — kyunki wrapper function ab <code>worker</code>
+        object se detached hai, plain function ki tarah invoke ho raha hai. <code>func.call(this, x)</code>
+        explicitly bata deta hai: "wrapper jis <code>this</code> ke saath call hua, wahi original function
+        ko bhi do".
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">call vs apply — same kaam, different argument format<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// call: context + INDIVIDUAL arguments, comma-separated</span>
+func<span class="tok-punc">.</span><span class="tok-fn">call</span><span class="tok-punc">(</span>context<span class="tok-punc">,</span> arg1<span class="tok-punc">,</span> arg2<span class="tok-punc">);</span>
+
+<span class="tok-com">// apply: context + ARRAY (ya array-like) of arguments</span>
+func<span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span>context<span class="tok-punc">,</span> <span class="tok-punc">[</span>arg1<span class="tok-punc">,</span> arg2<span class="tok-punc">]);</span>
+
+<span class="tok-com">// method borrowing — Array.prototype.join ko array-like arguments pe "udhaar" liya</span>
+<span class="tok-kw">function</span> <span class="tok-fn">hash</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">[].</span><span class="tok-fn">join</span><span class="tok-punc">.</span><span class="tok-fn">call</span><span class="tok-punc">(</span>arguments<span class="tok-punc">);</span> <span class="tok-com">// arguments Array nahi hai, lekin join() sirf 'this' pe generically kaam karta hai</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">hash</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">));</span>          <span class="tok-com">// "1,2,3" — multi-arg caching key banane ke liye kaam aata hai</span></code></pre>
+      </div>
+
+      <h2 id="bind">Function.prototype.bind</h2>
+      <p>
+        Method ko object se alag karke pass karte hi (callback ki tarah) <code>this</code> kho jaata hai —
+        yehi sabse common real-world <code>this</code> bug hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">this loss aur bind se fix<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  firstName<span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>
+  sayHi<span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Hello, ${</span><span class="tok-kw">this</span><span class="tok-punc">.</span>firstName<span class="tok-str">}`</span><span class="tok-punc">);</span> <span class="tok-com">// 'this' method call site pe decide hota hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(</span>user<span class="tok-punc">.</span>sayHi<span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">);</span> <span class="tok-com">// BUG: "Hello, undefined" — sayHi user se detach hoke plain function ki tarah call hua</span>
+
+<span class="tok-kw">let</span> boundSayHi <span class="tok-punc">=</span> user<span class="tok-punc">.</span>sayHi<span class="tok-punc">.</span><span class="tok-fn">bind</span><span class="tok-punc">(</span>user<span class="tok-punc">);</span> <span class="tok-com">// bind() ek NAYA function return karta hai, 'this' PERMANENTLY user pe fix</span>
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(</span>boundSayHi<span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">);</span> <span class="tok-com">// FIXED: "Hello, John" — bound function ka this kabhi override nahi hota, .call() se bhi nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Partial application — kuch args bhi preset kar sakte ho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">mul</span><span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> a <span class="tok-punc">*</span> b<span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-kw">let</span> double <span class="tok-punc">=</span> mul<span class="tok-punc">.</span><span class="tok-fn">bind</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">);</span>  <span class="tok-com">// this=null (irrelevant here) + FIRST arg 'a' preset to 2</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">double</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">));</span>          <span class="tok-com">// 6 — double(3) internally mul(2, 3) call karta hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">double</span><span class="tok-punc">(</span><span class="tok-num">5</span><span class="tok-punc">));</span>          <span class="tok-com">// 10</span>
+
+<span class="tok-com">// bindAll pattern — jab poore object ke saare methods safe-pass karne hon</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> key <span class="tok-kw">in</span> user<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">typeof</span> user<span class="tok-punc">[</span>key<span class="tok-punc">]</span> <span class="tok-punc">==</span> <span class="tok-str">'function'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// sirf function properties pe kaam karo</span>
+    user<span class="tok-punc">[</span>key<span class="tok-punc">]</span> <span class="tok-punc">=</span> user<span class="tok-punc">[</span>key<span class="tok-punc">].</span><span class="tok-fn">bind</span><span class="tok-punc">(</span>user<span class="tok-punc">);</span> <span class="tok-com">// har method ko permanently 'user' se bind kar do, in-place replace</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Method callback pass karte waqt hamesha check karo: this kho to nahi raha</div>
+        <p>
+          <code>obj.method</code> ko kisi bhi jagah (event listener, <code>setTimeout</code>,
+          <code>.then()</code>, array callback) directly reference ki tarah pass karna hamesha
+          <code>this</code> loss ka risk carry karta hai — kyunki JS mein <code>this</code> call-site pe
+          decide hota hai, definition-site pe nahi. Fix: <code>.bind(obj)</code>, ya arrow function wrapper
+          <code>() =&gt; obj.method()</code>, ya class fields (<code>method = () =&gt; {...}</code>, jo
+          chapter 11 mein cover hoga).
+        </p>
+      </div>
+
+      <h2 id="arrow">Arrow functions revisited</h2>
+      <p>
+        Arrow functions sirf "chhota syntax" nahi hain — inki teen structural limitations hain jo unhe
+        specifically kuch use-cases ke liye designed banati hain:
+      </p>
+      <ul>
+        <li>Apna <strong><code>this</code> nahi hota</strong> — access karne pe lexically enclosing scope se liya jaata hai (bilkul kisi bhi normal variable ki tarah — outer Lexical Environment se resolve hota hai).</li>
+        <li>Apna <strong><code>arguments</code> nahi hota</strong> — enclosing normal function ka <code>arguments</code> use hota hai.</li>
+        <li><strong><code>new</code> ke saath use nahi ho sakti</strong> — constructor nahi ban sakti (no <code>[[Construct]]</code> internal method), aur <code>super</code> bhi nahi hota.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">Classic bug: regular function vs arrow function callback<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> group <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  title<span class="tok-punc">:</span> <span class="tok-str">"Our Group"</span><span class="tok-punc">,</span>
+  students<span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"John"</span><span class="tok-punc">,</span> <span class="tok-str">"Pete"</span><span class="tok-punc">,</span> <span class="tok-str">"Alice"</span><span class="tok-punc">],</span>
+
+  <span class="tok-com">// BUGGY version — regular function callback</span>
+  showListBug<span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>students<span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>student<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+      <span class="tok-com">// forEach is anonymous function ko PLAIN function ki tarah call karta hai — this = undefined (strict mode)</span>
+      <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>title <span class="tok-punc">+</span> <span class="tok-str">': '</span> <span class="tok-punc">+</span> student<span class="tok-punc">);</span> <span class="tok-com">// TypeError: Cannot read properties of undefined</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">},</span>
+
+  <span class="tok-com">// FIXED — arrow function callback</span>
+  showListFixed<span class="tok-punc">()</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>students<span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span>student <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+      <span class="tok-com">// arrow fn ka apna 'this' nahi — showListFixed() ke 'this' (= group) ko LEXICALLY use karta hai</span>
+      <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span>title <span class="tok-punc">+</span> <span class="tok-str">': '</span> <span class="tok-punc">+</span> student<span class="tok-punc">);</span> <span class="tok-com">// "Our Group: John" ...</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">};</span>
+
+group<span class="tok-punc">.</span><span class="tok-fn">showListFixed</span><span class="tok-punc">();</span></code></pre>
+      </div>
+
+      <p>
+        Root cause: arrow function ka koi <code>this</code>-binding step hota hi nahi jab wo invoke hoti
+        hai — engine ke liye <code>this</code> bilkul kisi normal free variable jaisa hai, jo scope chain
+        (Lexical Environment ke outer references) follow karke resolve hota hai. Isliye arrow function ka
+        <code>this</code> hamesha wahi hoga jo <em>us jagah</em> tha jahaan arrow function <strong>likhi
+        gayi</strong> thi — ye bhi ultimately closures wale <code>[[Environment]]</code> mechanism ka hi
+        extension hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Arrow function decorator — arguments forwarding<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">defer</span><span class="tok-punc">(</span>f<span class="tok-punc">,</span> ms<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(...</span>args<span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// outer wrapper NORMAL function hai — iska apna 'this'/'arguments' hoga</span>
+    <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> f<span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> args<span class="tok-punc">),</span> ms<span class="tok-punc">);</span> <span class="tok-com">// arrow fn: 'this' aur 'args' outer wrapper se lexically inherit</span>
+  <span class="tok-punc">};</span>                              <span class="tok-com">// agar ye normal function hota, apna alag 'this' hota — args bhi manually pass karna padta</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Isi wajah se arrow functions object <strong>methods</strong> ki tarah use nahi karni chahiye —
+        <code>obj = { count: 0, inc: () =&gt; this.count++ }</code> mein <code>this</code>
+        <code>obj</code> nahi hoga (jaisa expect kiya jaata hai), balki jahaan <code>obj</code> literal
+        khud define hua uska outer <code>this</code> hoga (aksar module/global scope, jo
+        <code>undefined</code> ya kuch aur hota hai). Arrow functions best hain short, lexically-scoped
+        callbacks ke liye — array methods, event handlers jinme outer <code>this</code> chahiye,
+        decorators.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Recursion depth ke proportional stack memory lagta hai — deep/unbounded recursion loop se convert karo.</li>
+        <li>Rest (<code>...args</code> params mein) gather karta hai, spread (<code>...arr</code> calls/literals mein) expand karta hai — dono same token, opposite direction.</li>
+        <li>Closures = har function apne <strong><code>[[Environment]]</code></strong> ke through apne creation-site Lexical Environment ko reference karta hai — permanent aur lexical, call-site se independent.</li>
+        <li><code>var</code> function-scoped hai (block se leak karta hai), redeclare-tolerant hai, aur "hoisted" hota hai (declaration top pe, assignment apni jagah).</li>
+        <li>Sirf top-level <code>var</code> (aur function declarations) global object (<code>window</code>) ki property bante hain — <code>let</code>/<code>const</code> nahi.</li>
+        <li>Functions objects hain — <code>name</code>, <code>length</code> built-in properties, custom properties bhi attach ho sakti hain; NFE internal self-reference guarantee deta hai.</li>
+        <li><code>new Function</code> ka closure sirf global environment tak hota hai, local scope tak nahi.</li>
+        <li><code>setTimeout(fn, 0)</code> "abhi" nahi, "sync code + microtasks ke baad jaldi se jaldi" chalta hai — macrotask queue mein jaata hai.</li>
+        <li><code>call</code>/<code>apply</code> ek-baar-ke-liye <code>this</code> forward karte hain (args syntax differ karta hai), <code>bind</code> permanently naya function banata hai fixed <code>this</code> (+ optional preset args) ke saath.</li>
+        <li>Arrow functions ka apna <code>this</code>/<code>arguments</code> nahi hota (lexical inherit), constructor nahi ban sakti — object methods ke liye unsuitable, short lexical callbacks ke liye ideal.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Closure kya hai — sirf "function apna scope yaad rakhta hai" se aage jaake explain karo.</strong><br>Hint: har function ka hidden <code>[[Environment]]</code> property hota hai jo uske creation-site Lexical Environment ko point karta hai; ye permanent reference hai, call-site independent — spec-level object model.</li>
+        <li><strong>Ye code kya print karega?</strong>
+          <div class="code-block" style="margin-top:8px;">
+            <pre><code><span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">var</span> i <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> i <span class="tok-punc">&lt;</span> <span class="tok-num">3</span><span class="tok-punc">;</span> i<span class="tok-punc">++)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>i<span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span>
+<span class="tok-punc">}</span></code></pre>
+          </div>
+          Hint: <code>3, 3, 3</code> — <code>var</code> function-scoped hai, saare closures ek hi shared <code>i</code> pakadte hain jo loop khatam hone tak <code>3</code> ho chuka hota hai; <code>let</code> use karte to <code>0,1,2</code> aata (har iteration apna environment).</li>
+        <li><strong>Ye code kya order mein print karega, aur kyun?</strong>
+          <div class="code-block" style="margin-top:8px;">
+            <pre><code><span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"A"</span><span class="tok-punc">);</span>
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"B"</span><span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span>
+<span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">resolve</span><span class="tok-punc">().</span><span class="tok-fn">then</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"C"</span><span class="tok-punc">));</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"D"</span><span class="tok-punc">);</span></code></pre>
+          </div>
+          Hint: <code>A, D, C, B</code> — sync code pehle (A, D), phir microtask queue (C — Promise), phir macrotask queue (B — setTimeout).</li>
+        <li><strong>Regular function callback ke bajaye arrow function <code>forEach</code> mein use karna kyun ek object method ko fix karta hai?</strong><br>Hint: arrow function ka apna <code>this</code> hota hi nahi — wo definition-site ke lexical scope se inherit karta hai, jo yahaan enclosing method ka <code>this</code> (asli object) hota hai; regular function callback ko forEach plain call karta hai, so uska <code>this = undefined</code>.</li>
+        <li><strong>call, apply, aur bind mein kya farak hai?</strong><br>Hint: <code>call</code>/<code>apply</code> immediately invoke karte hain custom <code>this</code> ke saath (args: comma-list vs array); <code>bind</code> invoke nahi karta, ek NAYA function return karta hai jiska <code>this</code> permanently fix ho chuka hai.</li>
+        <li><strong>Named Function Expression (NFE) mein internal function name kyun use karte hain, sirf outer variable pe recursion kyun risky hai?</strong><br>Hint: outer variable reassign/null ho sakta hai, jisse recursive call fail hoga; NFE ka internal naam ek separate, immutable binding hai jo hamesha current function object ko point karta hai.</li>
+        <li><strong>setTimeout(fn, 0) ka actual behavior kya hai — "immediately" kyun nahi chalta?</strong><br>Hint: macrotask hai — pehle poora current synchronous script khatam hota hai, phir saari pending microtasks drain hoti hain, tabhi jaake macrotask queue se ye callback uthta hai.</li>
+        <li><strong>Kya arrow function ko constructor (<code>new</code>) ki tarah use kar sakte ho? Kyun/kyun nahi?</strong><br>Hint: nahi — arrow functions ke paas internal <code>[[Construct]]</code> method hi nahi hota, spec-level restriction; <code>new ArrowFn()</code> seedha <code>TypeError</code> deta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="08-collections-destructuring.html">
+        <div class="label">← Previous</div>
+        <div class="title">Collections &amp; Destructuring</div>
+      </a>
+      <a class="next" href="10-property-config-prototypes.html">
+        <div class="label">Next →</div>
+        <div class="title">Property Config &amp; Prototypes</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

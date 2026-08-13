@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promises, Async/Await — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link active" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 13</div>
+      <div class="progress-pill">13 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Async JS · Promises · Microtasks · Async/Await</span>
+      <h1>Promises, Async/Await</h1>
+      <p class="subtitle">
+        Ye chapter async JavaScript ka core hai — interviews mein sabse zyada poocha jaane wala topic.
+        Hum callback hell se shuru karenge, phir Promise ka internal state machine root-level samjhenge,
+        chaining/error-propagation dekhenge, Promise API ke sab combinators (all/allSettled/race/any),
+        promisification, aur sabse important — <strong>microtask queue</strong> ka exact mechanism jo
+        decide karta hai ki async code kis order mein chalta hai. Aakhir mein async/await, jo in sab
+        promises ke upar syntactic sugar hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#callback-hell">Callback hell — problem jo Promises solve karti hain</a></li>
+          <li><a href="#promise-internals">Promise internals — state machine</a></li>
+          <li><a href="#then-catch-finally">.then/.catch/.finally chaining</a></li>
+          <li><a href="#error-propagation">Error propagation through chains</a></li>
+          <li><a href="#promise-api">Promise.all/allSettled/race/any</a></li>
+          <li><a href="#promisify">Promisification of callback APIs</a></li>
+          <li><a href="#microtask-queue">Microtask queue — root mechanism</a></li>
+          <li><a href="#async-await">async/await — sugar over promises</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="callback-hell">Callback hell — problem jo Promises solve karti hain</h2>
+      <p>
+        JavaScript single-threaded hai, lekin async operations (network request, timer, file read) ko
+        block-nahi-karte hue handle karna hai. Traditional tareeka tha <strong>callbacks</strong> —
+        ek function jo async operation complete hone par call hoga. Problem tab aati hai jab multiple
+        async operations ek-doosre par depend karte hain — nested callbacks ek "pyramid of doom" ban
+        jaate hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Callback hell example<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-str">'/step1.js'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>error1<span class="tok-punc">,</span> script1<span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// step1 load hone ka wait, callback fire hoga</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>error1<span class="tok-punc">)</span> <span class="tok-punc">{</span>                                     <span class="tok-com">// agar step1 fail hua</span>
+    <span class="tok-fn">handleError</span><span class="tok-punc">(</span>error1<span class="tok-punc">);</span>                             <span class="tok-com">// error handle karo aur ruk jaao</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>                                          <span class="tok-com">// step1 success hua to</span>
+    <span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-str">'/step2.js'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>error2<span class="tok-punc">,</span> script2<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// step2 shuru, phir se callback</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span>error2<span class="tok-punc">)</span> <span class="tok-punc">{</span>                                   <span class="tok-com">// agar step2 fail hua</span>
+        <span class="tok-fn">handleError</span><span class="tok-punc">(</span>error2<span class="tok-punc">);</span>                           <span class="tok-com">// error handle karo</span>
+      <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>                                        <span class="tok-com">// step2 success</span>
+        <span class="tok-fn">loadScript</span><span class="tok-punc">(</span><span class="tok-str">'/step3.js'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span>error3<span class="tok-punc">,</span> script3<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// step3, nesting aur badh gayi</span>
+          <span class="tok-kw">if</span> <span class="tok-punc">(</span>error3<span class="tok-punc">)</span> <span class="tok-punc">{</span>                                 <span class="tok-com">// error check phir se</span>
+            <span class="tok-fn">handleError</span><span class="tok-punc">(</span>error3<span class="tok-punc">);</span>                         <span class="tok-com">// error path</span>
+          <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>                                      <span class="tok-com">// finally sab load ho gaye</span>
+            <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'sab scripts load ho gaye'</span><span class="tok-punc">);</span>  <span class="tok-com">// yahaan tak pahunchne mein 3 levels nesting</span>
+          <span class="tok-punc">}</span>
+        <span class="tok-punc">});</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">});</span></code></pre>
+      </div>
+      <p>
+        Har naya async step ek naya nesting level add karta hai — error handling repeat hoti hai, code
+        right-ward "drift" karta hai, aur control-flow (loop/try-catch) likhna almost impossible ho jaata
+        hai. Promises isi structural problem ko solve karte hain — nesting ki jagah <strong>flat
+        chaining</strong> deke.
+      </p>
+
+      <h2 id="promise-internals">Promise internals — state machine root-level</h2>
+      <p>
+        Ek <code>Promise</code> object internally ek <strong>state machine</strong> hai jiske paas do
+        internal (spec-internal, JS code se directly access nahi ho sakti) slots hote hain:
+        <code>[[PromiseState]]</code> aur <code>[[PromiseResult]]</code>. State teen values le sakta hai:
+      </p>
+      <ul>
+        <li><strong>pending</strong> — initial state, result abhi pata nahi.</li>
+        <li><strong>fulfilled</strong> — operation successfully complete, ek value ke saath.</li>
+        <li><strong>rejected</strong> — operation fail hua, ek error/reason ke saath.</li>
+      </ul>
+      <p>
+        <code>pending</code> se <code>fulfilled</code> ya <code>rejected</code> mein transition ko
+        <strong>"settling"</strong> kehte hain. Ye transition <code>executor</code> function karta hai —
+        wo function jo tum <code>new Promise((resolve, reject) => {...})</code> mein pass karte ho.
+        Constructor call hote hi executor <strong>synchronously, turant</strong> chal jaata hai (Promise
+        object ka creation wait nahi karta).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Promise state machine — basic anatomy<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> promise <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>resolve<span class="tok-punc">,</span> reject<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// executor: constructor ke andar hi turant chalta hai</span>
+  <span class="tok-com">// resolve aur reject dono JS engine ke diye hue functions hain — hum inhe khud nahi banate</span>
+  <span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">()</span> <span class="tok-punc">{</span>                          <span class="tok-com">// async operation simulate: 1 second baad</span>
+    <span class="tok-kw">const</span> success <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>                        <span class="tok-com">// dummy condition — kya operation successful raha</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>success<span class="tok-punc">)</span> <span class="tok-punc">{</span>                             <span class="tok-com">// success case</span>
+      <span class="tok-fn">resolve</span><span class="tok-punc">(</span><span class="tok-str">"done!"</span><span class="tok-punc">);</span>                       <span class="tok-com">// state: pending -&gt; fulfilled, result = "done!"</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>                                   <span class="tok-com">// failure case</span>
+      <span class="tok-fn">reject</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">"kuch galat ho gaya"</span><span class="tok-punc">));</span> <span class="tok-com">// state: pending -&gt; rejected, result = Error object</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">},</span> <span class="tok-num">1000</span><span class="tok-punc">);</span>                                     <span class="tok-com">// 1000ms delay — asynchronous, executor turant return ho jaata hai</span>
+<span class="tok-punc">});</span>
+
+<span class="tok-com">// promise.[[PromiseState]] abhi "pending" hai (executor ke andar setTimeout abhi fire nahi hua)</span>
+<span class="tok-com">// 1 second baad ye "fulfilled" ho jaayega, result "done!" ke saath</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Root rule: Promise sirf EK BAAR settle ho sakta hai</div>
+        <p>
+          Ye state machine ka sabse important invariant hai — ek baar <code>pending</code> se
+          <code>fulfilled</code> ya <code>rejected</code> mein transition ho gaya, to state
+          <strong>permanently fix</strong> ho jaata hai. Agar executor <code>resolve()</code> call
+          karne ke baad phir <code>reject()</code> ya dobaara <code>resolve()</code> call kare, to wo
+          calls silently ignore ho jaati hain — koi error nahi throw hota, bas kuch nahi hota. Ye
+          intentional spec design hai: ek baar result decide ho gaya (chahe success ho ya failure), wo
+          result immutable hai. Isi wajah se Promises "future value ka reliable, tamper-proof container"
+          hote hain — koi bhi consumer jo <code>.then()</code> attach karta hai, guaranteed hai ki result
+          sirf ek baar milega, aur badlega nahi.
+        </p>
+      </div>
+
+      <p>
+        <code>resolve(value)</code> ka ek subtlety hai — agar <code>value</code> khud ek "thenable"
+        (yaani jiske paas <code>.then</code> method hai) ho, to outer promise turant settle nahi hota;
+        wo us inner thenable ke settle hone ka wait karta hai aur uska result adopt kar leta hai. Ye
+        promise chains ko "flatten" karta hai — nested promises kabhi bhi promise-of-a-promise nahi
+        bante.
+      </p>
+
+      <h2 id="then-catch-finally">.then/.catch/.finally — chaining ka root mechanism</h2>
+      <p>
+        <code>.then(onFulfilled, onRejected)</code> ek settled ya pending promise pe handlers register
+        karta hai. Sabse important root-level fact: <strong><code>.then()</code> hamesha ek NAYA promise
+        return karta hai</strong> — original promise ko modify nahi karta. Ye naya promise settle hota
+        hai handler ke <em>return value</em> ke basis pe:
+      </p>
+      <ul>
+        <li>Agar handler ek normal value return kare → naya promise usi value se <code>fulfilled</code>.</li>
+        <li>Agar handler koi error <code>throw</code> kare → naya promise us error se <code>rejected</code>.</li>
+        <li>Agar handler khud ek promise return kare → naya promise us returned promise ke settle hone tak wait karta hai aur uska state/result adopt karta hai.</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">.then returns a NEW promise — chaining works because of this<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">resolve</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span>                          <span class="tok-com">// ek turant-fulfilled promise, result = 1</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>result<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// result = 1 yahaan aata hai</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>result<span class="tok-punc">);</span>                   <span class="tok-com">// prints 1</span>
+    <span class="tok-kw">return</span> result <span class="tok-punc">*</span> <span class="tok-num">2</span><span class="tok-punc">;</span>                    <span class="tok-com">// return value = 2 -&gt; naya promise fulfilled(2) banega</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>result<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// ye handler pichle .then() ke NAYE promise pe attached hai</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>result<span class="tok-punc">);</span>                   <span class="tok-com">// prints 2</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>resolve<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// ek naya promise return kiya (async chain ke liye)</span>
+      <span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">resolve</span><span class="tok-punc">(</span>result <span class="tok-punc">*</span> <span class="tok-num">10</span><span class="tok-punc">),</span> <span class="tok-num">500</span><span class="tok-punc">);</span> <span class="tok-com">// 500ms baad resolve(20)</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>result<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// ye chain outer promise ke settle hone ka wait karta hai</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>result<span class="tok-punc">);</span>                   <span class="tok-com">// 500ms baad prints 20</span>
+  <span class="tok-punc">});</span></code></pre>
+      </div>
+      <p>
+        <code>.catch(onRejected)</code> ek syntactic shortcut hai <code>.then(null, onRejected)</code>
+        ka — sirf rejection handle karta hai. <code>.finally(fn)</code> ek callback register karta hai jo
+        chahe fulfill ho ya reject, hamesha chalta hai (fn ko result/error nahi milta — ye sirf cleanup
+        ke liye hai, jaise loading spinner hide karna) — aur ye original result/error ko unchanged aage
+        pass kar deta hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Forgetting to `return` inside a .then — sabse common production bug</div>
+        <p>
+          Agar tum ek <code>.then()</code> handler ke andar koi async operation start karte ho lekin
+          uska returned promise <strong>return nahi karte</strong>, to chain us operation ka wait nahi
+          karega — agla <code>.then()</code> turant chal jaayega, us operation ke complete hone se pehle:
+        </p>
+        <div class="code-block" style="margin-top:12px;">
+          <div class="code-title">BUG: missing return breaks the chain<button class="copy-btn">Copy</button></div>
+          <pre><code><span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/api/user'</span><span class="tok-punc">)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>response <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">();</span>              <span class="tok-com">// BUG: return missing! ye promise chain se disconnect ho gaya</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>data <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>data<span class="tok-punc">);</span>              <span class="tok-com">// data yahaan "undefined" hoga — .json() ka result kabhi wire nahi hua</span>
+  <span class="tok-punc">});</span></code></pre>
+        </div>
+        <p style="margin-top:10px;">
+          Root cause: <code>.then()</code> ke handler ka return value hi next promise ka fulfillment
+          value/adoption-target decide karta hai. Return nahi kiya matlab implicit
+          <code>return undefined</code>, aur agla handler <code>undefined</code> ke saath chalta hai —
+          chahe andar koi promise pending ho ya ho hi rahi ho. Fix seedha hai:
+          <code>return response.json();</code>
+        </p>
+      </div>
+
+      <h2 id="error-propagation">Error propagation through chains</h2>
+      <p>
+        Promise chains mein error handling ka model try/catch jaisa hi hai, bas async version. Jab kisi
+        bhi <code>.then()</code> handler mein error <code>throw</code> hoti hai (ya promise
+        <code>reject</code> hoti hai), control turant chain mein <strong>aage ke sab .then() ko skip
+        karke</strong> agle <code>.catch()</code> tak "jump" karta hai — bilkul waise jaise synchronous
+        try/catch mein exception nearest catch tak bubble karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Error propagation — skip karta hua nearest .catch tak<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">'/api/data'</span><span class="tok-punc">)</span>                          <span class="tok-com">// step 1: network request</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>response <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(!</span>response<span class="tok-punc">.</span>ok<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// fetch khud 404/500 pe reject NAHI karta — manually check</span>
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">`HTTP </span><span class="tok-punc">${</span>response<span class="tok-punc">.</span>status<span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span> <span class="tok-com">// throw yahaan chain ko reject state mein daal deta hai</span>
+    <span class="tok-punc">}</span>
+    <span class="tok-kw">return</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">();</span>              <span class="tok-com">// success path: JSON parse karke aage return</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>data <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">processData</span><span class="tok-punc">(</span>data<span class="tok-punc">);</span>                  <span class="tok-com">// agar upar throw hua tha, ye handler SKIP ho jaata hai</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>() <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'done'</span><span class="tok-punc">);</span>              <span class="tok-com">// ye bhi skip ho jaata hai agar error hua tha</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">catch</span><span class="tok-punc">(</span>error <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>                    <span class="tok-com">// error yahaan "land" karta hai — network fail YA HTTP error YA processData ka koi bug</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>error</span><span class="tok-punc">(</span><span class="tok-str">'Failed:'</span><span class="tok-punc">,</span> error<span class="tok-punc">.</span>message<span class="tok-punc">);</span> <span class="tok-com">// single catch, chain mein kahin bhi hua error yahaan aayega</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">finally</span><span class="tok-punc">(</span>() <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">hideLoader</span><span class="tok-punc">();</span>                    <span class="tok-com">// chahe success ho ya fail, ye hamesha chalega</span>
+  <span class="tok-punc">});</span></code></pre>
+      </div>
+      <p>
+        Ye ek bahut important benefit hai callback-hell ke muqaable — <strong>ek hi centralised
+        <code>.catch()</code></strong> chain ke kisi bhi step mein hui error ko pakad leta hai, chahe wo
+        network failure ho, manual <code>throw</code>, ya koi unrelated bug processing logic mein.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Unhandled rejections</div>
+        <p>
+          Agar ek promise <code>reject</code> hoti hai aur chain mein <strong>koi</strong>
+          <code>.catch()</code> nahi hai jo use handle kare, to JS engine ise "unhandled rejection"
+          maanta hai. Browser mein <code>window</code> pe <code>unhandledrejection</code> event fire
+          hota hai (console mein warning dikhti hai), Node.js mein bhi similar event hota hai aur newer
+          versions process ko crash bhi kar sakte hain. Engine ye detect karne ke liye microtask queue
+          poori tarah drain hone ka wait karta hai (taaki late-attached <code>.catch()</code> ko bhi
+          chance mile) — isliye ye detection turant nahi, thodi der baad hoti hai.
+        </p>
+      </div>
+
+      <h2 id="promise-api">Promise.all / allSettled / race / any</h2>
+      <p>
+        Jab multiple promises parallel mein chalani hon (sequential await ki jagah), Promise API ke
+        static combinator methods use hote hain. In sabka behavior <strong>settle hone ke conditions</strong>
+        mein differ karta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Promise.all vs allSettled — Q&amp;A style comparison<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Q: 3 API calls parallel mein chalani hain, sabka result chahiye — agar EK bhi fail ho to poora operation fail treat karna hai</span>
+<span class="tok-kw">const</span> urls <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-str">'/api/user'</span><span class="tok-punc">,</span> <span class="tok-str">'/api/posts'</span><span class="tok-punc">,</span> <span class="tok-str">'/api/comments'</span><span class="tok-punc">];</span> <span class="tok-com">// teen endpoints</span>
+
+<span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">all</span><span class="tok-punc">(</span>urls<span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span>url <span class="tok-punc">=&gt;</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span>url<span class="tok-punc">)))</span>  <span class="tok-com">// har url ke liye fetch, array of promises banaya</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>responses <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// A: sab 3 successful hue TABHI yahaan aayega — responses array SAME ORDER mein hai jo input tha</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'sab successful:'</span><span class="tok-punc">,</span> responses<span class="tok-punc">);</span>
+  <span class="tok-punc">})</span>
+  <span class="tok-punc">.</span><span class="tok-fn">catch</span><span class="tok-punc">(</span>error <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// A: FAIL-FAST behavior — jaise hi PEHLA promise reject hota hai, .all() TURANT reject ho jaata hai</span>
+    <span class="tok-com">// baaki abhi-bhi-pending promises ka result IGNORE ho jaata hai (wo silently background mein chalte rehte hain)</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>error</span><span class="tok-punc">(</span><span class="tok-str">'kam se kam ek fail hua:'</span><span class="tok-punc">,</span> error<span class="tok-punc">);</span>
+  <span class="tok-punc">});</span>
+
+<span class="tok-com">// Q: mujhe HAR request ka result chahiye — chahe kuch fail bhi ho jaayein, poora operation abort nahi karna</span>
+<span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">allSettled</span><span class="tok-punc">(</span>urls<span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span>url <span class="tok-punc">=&gt;</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span>url<span class="tok-punc">)))</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>results <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+    <span class="tok-com">// A: allSettled KABHI reject nahi hota — sab promises settle (fulfill YA reject) hone ka WAIT karta hai</span>
+    results<span class="tok-punc">.</span><span class="tok-fn">forEach</span><span class="tok-punc">(</span>result <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span>result<span class="tok-punc">.</span>status <span class="tok-punc">===</span> <span class="tok-str">'fulfilled'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// har result object mein status field hoti hai</span>
+        <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'ok:'</span><span class="tok-punc">,</span> result<span class="tok-punc">.</span>value<span class="tok-punc">);</span>     <span class="tok-com">// fulfilled -&gt; .value mein result</span>
+      <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+        <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'fail:'</span><span class="tok-punc">,</span> result<span class="tok-punc">.</span>reason<span class="tok-punc">);</span>    <span class="tok-com">// rejected -&gt; .reason mein error</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">});</span></code></pre>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Settle kab hota hai</th><th>Fail behavior</th><th>Use-case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Promise.all</code></td><td>Sab fulfilled → fulfilled(array)</td><td>Fail-fast: pehla reject turant poore ko reject kar deta hai</td><td>Sab results zaroori hain, ek bhi fail = poora invalid</td></tr>
+          <tr><td><code>Promise.allSettled</code></td><td>Sab settle (kisi bhi status) → hamesha fulfilled</td><td>Kabhi reject nahi hota</td><td>Har result chahiye, partial failure OK hai</td></tr>
+          <tr><td><code>Promise.race</code></td><td>Jo bhi PEHLE settle ho (fulfill ya reject)</td><td>Pehle settled promise ka outcome adopt karta hai</td><td>Timeout pattern — jo pehle aaye: data ya timeout error</td></tr>
+          <tr><td><code>Promise.any</code></td><td>Jo bhi PEHLE fulfill ho</td><td>Sab reject ho jaayein tabhi reject (AggregateError ke saath)</td><td>Multiple mirrors/fallback sources — pehla success chahiye</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="promisify">Promisification of callback-based APIs</h2>
+      <p>
+        Purane Node.js-style APIs error-first callback pattern use karte hain:
+        <code>fn(args..., (err, result) => {})</code>. "Promisify" karna matlab ek wrapper banana jo
+        isi function ko Promise-returning banaye — taaki modern <code>.then()</code>/<code>await</code>
+        ke saath use ho sake.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Generic promisify wrapper<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">promisify</span><span class="tok-punc">(</span>fn<span class="tok-punc">)</span> <span class="tok-punc">{</span>                        <span class="tok-com">// fn: error-first callback style function</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(...</span>args<span class="tok-punc">)</span> <span class="tok-punc">{</span>                  <span class="tok-com">// naya function return — jitne bhi args aayein, capture karo</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span><span class="tok-punc">(</span><span class="tok-kw">function</span><span class="tok-punc">(</span>resolve<span class="tok-punc">,</span> reject<span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// Promise mein wrap karke return</span>
+      <span class="tok-kw">function</span> <span class="tok-fn">callback</span><span class="tok-punc">(</span>err<span class="tok-punc">,</span> result<span class="tok-punc">)</span> <span class="tok-punc">{</span>      <span class="tok-com">// original API ko diya jaane wala callback</span>
+        <span class="tok-kw">if</span> <span class="tok-punc">(</span>err<span class="tok-punc">)</span> <span class="tok-punc">{</span>                          <span class="tok-com">// error-first convention: pehla arg error hota hai</span>
+          <span class="tok-fn">reject</span><span class="tok-punc">(</span>err<span class="tok-punc">);</span>                     <span class="tok-com">// error mila to Promise reject karo</span>
+        <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+          <span class="tok-fn">resolve</span><span class="tok-punc">(</span>result<span class="tok-punc">);</span>                  <span class="tok-com">// success to Promise resolve karo result ke saath</span>
+        <span class="tok-punc">}</span>
+      <span class="tok-punc">}</span>
+
+      args<span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span>callback<span class="tok-punc">);</span>                <span class="tok-com">// callback ko args list ke aakhir mein add karo (convention)</span>
+      fn<span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> args<span class="tok-punc">);</span>              <span class="tok-com">// original function ko sahi `this` ke saath call karo</span>
+    <span class="tok-punc">});</span>
+  <span class="tok-punc">};</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Usage: Node.js ka fs.readFile ko promisify karna</span>
+<span class="tok-kw">const</span> readFilePromise <span class="tok-punc">=</span> <span class="tok-fn">promisify</span><span class="tok-punc">(</span>fs<span class="tok-punc">.</span>readFile<span class="tok-punc">);</span>  <span class="tok-com">// naya promise-returning version</span>
+<span class="tok-fn">readFilePromise</span><span class="tok-punc">(</span><span class="tok-str">'/etc/hosts'</span><span class="tok-punc">)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>data <span class="tok-punc">=&gt;</span> <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>data<span class="tok-punc">));</span>       <span class="tok-com">// ab .then() chain use kar sakte hain</span></code></pre>
+      </div>
+      <p>
+        Production mein khud likhne ki bajaye Node.js ka built-in <code>util.promisify</code> use hota
+        hai, jo yahi pattern implement karta hai (plus multi-value callback support via
+        <code>util.promisify.custom</code>).
+      </p>
+
+      <h2 id="microtask-queue">Microtask queue — sabse important root mechanism</h2>
+      <p>
+        Ye JS event loop ka wo hissa hai jo directly decide karta hai promise callbacks kab chalte hain.
+        JS engine ke paas do alag internal queues hain:
+      </p>
+      <ul>
+        <li><strong>Macrotask queue (task queue)</strong> — <code>setTimeout</code>, <code>setInterval</code>, UI events, I/O callbacks yahaan jaate hain.</li>
+        <li><strong>Microtask queue</strong> — Promise <code>.then/.catch/.finally</code> handlers, <code>queueMicrotask()</code>, aur <code>MutationObserver</code> callbacks yahaan jaate hain.</li>
+      </ul>
+      <p>
+        Event loop ka rule simple lekin critical hai: <strong>har macrotask complete hone ke baad, agla
+        macrotask uthaane se PEHLE, poori microtask queue empty hone tak drain ki jaati hai</strong>
+        (agar koi microtask khud naye microtasks queue kare, wo bhi isi drain cycle mein chalte hain).
+        Sirf jab microtask queue poori tarah khaali ho jaaye, tab engine agle macrotask ki taraf badhta
+        hai (jisme rendering bhi ho sakta hai, browser mein).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Classic execution-order trace — A, D, C, B<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'A'</span><span class="tok-punc">);</span>                                    <span class="tok-com">// (1) sync code — turant chalta hai, call stack pe</span>
+
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'B'</span><span class="tok-punc">),</span> <span class="tok-num">0</span><span class="tok-punc">);</span>          <span class="tok-com">// (2) callback MACROTASK queue mein jaata hai — abhi hi nahi chalta, 0ms bhi guaranteed nahi</span>
+
+<span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">resolve</span><span class="tok-punc">()</span>                                 <span class="tok-com">// (3) already-resolved promise banaya (sync)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(()</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'C'</span><span class="tok-punc">));</span>            <span class="tok-com">// (4) .then callback MICROTASK queue mein jaata hai — sync execution turant nahi hota</span>
+
+<span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span><span class="tok-str">'D'</span><span class="tok-punc">);</span>                                    <span class="tok-com">// (5) sync code — call stack abhi khaali nahi hua tha, ye turant chalta hai</span>
+
+<span class="tok-com">// STEP-BY-STEP kya hota hai:</span>
+<span class="tok-com">// i.   'A' print hota hai — synchronous, call stack pe direct execution</span>
+<span class="tok-com">// ii.  setTimeout callback MACROTASK queue mein daala jaata hai (abhi execute NAHI hota)</span>
+<span class="tok-com">// iii. Promise.resolve().then() ka callback MICROTASK queue mein daala jaata hai</span>
+<span class="tok-com">// iv.  'D' print hota hai — abhi bhi call stack khaali nahi hua tha (sync code chal raha hai top-to-bottom)</span>
+<span class="tok-com">// v.   ab call stack KHAALI ho gaya (poora sync script chal chuka) — event loop check karta hai: microtask queue mein kuch hai?</span>
+<span class="tok-com">// vi.  HAAN — 'C' wala callback hai. Macrotask (setTimeout) ka wait NAHI kiya jaata, microtask ko priority milti hai</span>
+<span class="tok-com">// vii. 'C' print hota hai, microtask queue ab khaali</span>
+<span class="tok-com">// viii.ab engine agla MACROTASK uthata hai — setTimeout ka callback</span>
+<span class="tok-com">// ix.  'B' print hota hai</span>
+<span class="tok-com">//</span>
+<span class="tok-com">// FINAL OUTPUT ORDER: A, D, C, B</span></code></pre>
+      </div>
+
+      <p>
+        Root reasoning: <code>setTimeout(fn, 0)</code> ka matlab "0ms baad chalao" nahi hai — matlab
+        hai "sync code aur SAARI microtasks khatam hone ke baad, jab bhi agla macrotask cycle aaye,
+        tab chalao". Isi liye microtasks (Promises) hamesha macrotasks (setTimeout) se pehle chalti
+        hain, chahe donon "same time pe queue" hue lagte hon.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: microtask starvation</div>
+        <p>
+          Agar ek microtask apne andar hi naya microtask queue karta rahe (jaise ek <code>.then()</code>
+          chain jo recursively khud ko phir se <code>.then()</code> karta rahe), to event loop kabhi
+          bhi agle macrotask (rendering included!) tak nahi pahunch payega — microtask queue kabhi khaali
+          hi nahi hoti. Ye "microtask starvation" kehte hain, aur real production bug ban sakta hai jahan
+          UI freeze ho jaata hai jabki call stack technically khaali hai (koi long-running sync loop
+          nahi). Isliye recursive `.then()` chains ya recursive `queueMicrotask()` calls likhte waqt
+          hamesha ek termination condition zaroor rakho.
+        </p>
+      </div>
+
+      <h2 id="async-await">async/await — sugar over promises</h2>
+      <p>
+        <code>async function</code> declare karne se do cheezein guarantee hoti hain: (1) function
+        <strong>hamesha</strong> ek Promise return karta hai (agar tum ek plain value return karo, JS
+        use automatically <code>Promise.resolve(value)</code> mein wrap kar deta hai); (2) uske andar
+        <code>await</code> keyword use kar sakte ho.
+      </p>
+      <p>
+        <code>await promise</code> ka mechanism: function ka execution us line pe <strong>pause</strong>
+        ho jaata hai (call stack se function nikal jaata hai — thread block NAHI hoti, baaki JS engine
+        free rehta hai aur doosra kaam kar sakta hai), aur jab <code>promise</code> settle hoti hai
+        (fulfilled ya rejected), execution resume hota hai — value ke saath (fulfilled) ya throw ke
+        saath (rejected). Internally ye almost exactly waisa hi kaam karta hai jaise ek generator function
+        promises ke saath drive ki jaaye — <code>await</code> ek "yield point" hai jahan control engine
+        ko wapas mil jaata hai, aur jab promise settle hoti hai, engine us point se function ko resume
+        karta hai (jo internally ek microtask ke through hi hota hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">async/await — same logic, promise chain ke bina<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">loadUserData</span><span class="tok-punc">(</span>userId<span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// async keyword: ye function hamesha Promise return karega</span>
+  <span class="tok-kw">try</span> <span class="tok-punc">{</span>                                            <span class="tok-com">// try/catch normal sync code jaisa hi kaam karta hai yahaan</span>
+    <span class="tok-kw">const</span> response <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetch</span><span class="tok-punc">(</span><span class="tok-str">`/api/users/</span><span class="tok-punc">${</span>userId<span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span>
+                                                    <span class="tok-com">// await: function yahaan PAUSE hoti hai jab tak fetch ka promise settle na ho</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(!</span>response<span class="tok-punc">.</span>ok<span class="tok-punc">)</span> <span class="tok-punc">{</span>                        <span class="tok-com">// resume hone ke baad normal sync-jaisa code</span>
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span><span class="tok-punc">(</span><span class="tok-str">`HTTP </span><span class="tok-punc">${</span>response<span class="tok-punc">.</span>status<span class="tok-punc">}</span><span class="tok-str">`</span><span class="tok-punc">);</span>       <span class="tok-com">// throw yahaan — catch block ise pakdega (jaise sync throw)</span>
+    <span class="tok-punc">}</span>
+
+    <span class="tok-kw">const</span> user <span class="tok-punc">=</span> <span class="tok-kw">await</span> response<span class="tok-punc">.</span><span class="tok-fn">json</span><span class="tok-punc">();</span>          <span class="tok-com">// ek aur await — dusra pause point, JSON parse hone tak</span>
+    <span class="tok-kw">const</span> posts <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetchPosts</span><span class="tok-punc">(</span>user<span class="tok-punc">.</span>id<span class="tok-punc">);</span> <span class="tok-com">// teesra await — user data ke baad related posts</span>
+
+    <span class="tok-kw">return</span> <span class="tok-punc">{</span> user<span class="tok-punc">,</span> posts <span class="tok-punc">};</span>                    <span class="tok-com">// return value automatically Promise.resolve({user, posts}) ban jaata hai</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span>error<span class="tok-punc">)</span> <span class="tok-punc">{</span>                              <span class="tok-com">// koi bhi awaited promise reject ho, ya koi throw ho — yahaan aayega</span>
+    <span class="tok-fn">console<span class="tok-punc">.</span>error</span><span class="tok-punc">(</span><span class="tok-str">'load failed:'</span><span class="tok-punc">,</span> error<span class="tok-punc">);</span>          <span class="tok-com">// centralized error handling, promise chain ke .catch() jaisa</span>
+    <span class="tok-kw">throw</span> error<span class="tok-punc">;</span>                                    <span class="tok-com">// re-throw: caller ko bhi pata chale ki fail hua (Promise reject hoga)</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Caller side — async function bhi ek Promise hi hai, isliye .then/.catch YA await dono use ho sakte hain</span>
+<span class="tok-fn">loadUserData</span><span class="tok-punc">(</span><span class="tok-num">42</span><span class="tok-punc">)</span>
+  <span class="tok-punc">.</span><span class="tok-fn">then</span><span class="tok-punc">(</span>result <span class="tok-punc">=&gt;</span> <span class="tok-fn">console<span class="tok-punc">.</span>log</span><span class="tok-punc">(</span>result<span class="tok-punc">))</span>       <span class="tok-com">// normal promise consumption bhi kaam karega</span>
+  <span class="tok-punc">.</span><span class="tok-fn">catch</span><span class="tok-punc">(</span>err <span class="tok-punc">=&gt;</span> <span class="tok-fn">console<span class="tok-punc">.</span>error</span><span class="tok-punc">(</span>err<span class="tok-punc">));</span></code></pre>
+      </div>
+
+      <p>
+        Sequential <code>await</code> calls automatically <strong>serial</strong> ho jaate hain — agar
+        operations independent hain aur parallel chal sakti hain, unhe alag-alag start karke
+        <code>Promise.all</code> ke saath await karna chahiye, warna galti se poora waterfall bana
+        doge:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Serial (slow) vs Parallel (fast) await pattern<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// SLOW: har await agla start hone se PEHLE poora complete hone ka wait karta hai — total time = sum of all</span>
+<span class="tok-kw">const</span> user <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetchUser</span><span class="tok-punc">();</span>                <span class="tok-com">// 200ms — poora wait ho ke tabhi agli line chalti hai</span>
+<span class="tok-kw">const</span> posts <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetchPosts</span><span class="tok-punc">();</span>              <span class="tok-com">// 300ms — independent hai user se, phir bhi sequential chal raha hai</span>
+<span class="tok-kw">const</span> comments <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">fetchComments</span><span class="tok-punc">();</span>       <span class="tok-com">// 150ms — total = 200+300+150 = 650ms</span>
+
+<span class="tok-com">// FAST: teeno ek saath start karo (promises turant fire ho jaate hain, await sirf result ke liye)</span>
+<span class="tok-kw">const</span> userPromise <span class="tok-punc">=</span> <span class="tok-fn">fetchUser</span><span class="tok-punc">();</span>              <span class="tok-com">// call turant hota hai, promise object milta hai — await NAHI kiya abhi</span>
+<span class="tok-kw">const</span> postsPromise <span class="tok-punc">=</span> <span class="tok-fn">fetchPosts</span><span class="tok-punc">();</span>            <span class="tok-com">// ye bhi turant fire ho gaya, pehle wale ka wait nahi kiya</span>
+<span class="tok-kw">const</span> commentsPromise <span class="tok-punc">=</span> <span class="tok-fn">fetchComments</span><span class="tok-punc">();</span>      <span class="tok-com">// teeno ab parallel chal rahe hain</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">[</span>user<span class="tok-punc">,</span> posts<span class="tok-punc">,</span> comments<span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-kw">await</span> <span class="tok-fn">Promise</span><span class="tok-punc">.</span><span class="tok-fn">all</span><span class="tok-punc">(</span>
+  <span class="tok-punc">[</span>userPromise<span class="tok-punc">,</span> postsPromise<span class="tok-punc">,</span> commentsPromise<span class="tok-punc">]</span>  <span class="tok-com">// sab results ka ek saath wait — total = max(200,300,150) = 300ms</span>
+<span class="tok-punc">);</span></code></pre>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Promise ek state machine hai — <code>pending → fulfilled/rejected</code>, aur ye transition <strong>sirf ek baar</strong> ho sakti hai (baad ke resolve/reject calls silently ignore hoti hain).</li>
+        <li><code>.then()</code> hamesha ek <strong>naya promise</strong> return karta hai — chaining isi wajah se possible hai. Andar se return na kiya to chain "disconnect" ho jaata hai (sabse common production bug).</li>
+        <li>Error kisi bhi step pe throw/reject ho, wo aage ke <code>.then()</code> skip karke nearest <code>.catch()</code> tak jump karti hai.</li>
+        <li><code>Promise.all</code> = fail-fast, sab chahiye; <code>allSettled</code> = kabhi reject nahi, har result chahiye; <code>race</code> = jo pehle settle ho; <code>any</code> = jo pehle fulfill ho.</li>
+        <li>Promisification purane error-first callback APIs ko modern promise-based interface deta hai.</li>
+        <li><strong>Microtask queue (Promises) hamesha macrotask queue (setTimeout) se pehle drain hoti hai</strong> — har macrotask ke baad, agle macrotask se pehle poori microtask queue khaali ki jaati hai.</li>
+        <li><code>async/await</code> promises ke upar syntactic sugar hai — <code>await</code> function ko pause karta hai (thread block kiye bina), aur try/catch normal sync errors jaisa hi async errors handle kar leta hai.</li>
+        <li>Independent async operations ko sequential <code>await</code> se serial mat banao — pehle sab start karo, phir <code>Promise.all</code> se ek saath await karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Promise sirf ek baar kyun settle ho sakta hai — is design decision ka kya benefit hai?</strong><br>Hint: immutability guarantee — jo bhi consumer <code>.then()</code> attach kare, use hamesha ek hi reliable, tamper-proof result milega, race conditions se bacha jaata hai.</li>
+        <li><strong>Ye code trace karo aur exact console output order batao: <code>console.log('A'); setTimeout(()=&gt;console.log('B'),0); Promise.resolve().then(()=&gt;console.log('C')); console.log('D')</code></strong><br>Hint: sync code (A, D) pehle poora chalta hai, phir microtask queue (C) poori tarah drain hoti hai, tab jaake macrotask queue (B) uthai jaati hai. Answer: A, D, C, B.</li>
+        <li><strong>.then() se naya promise kaise banta hai — agar handler ek value return kare vs error throw kare vs promise return kare, teeno cases mein kya hota hai?</strong><br>Hint: value → naya promise usi value se fulfilled; throw → rejected us error se; promise return → outer naya promise us returned promise ke settle hone tak wait karke uska state adopt karta hai.</li>
+        <li><strong>Promise.all aur Promise.allSettled ka fail behavior kaise differ karta hai, aur kab kaunsa use karoge?</strong><br>Hint: all = fail-fast (ek reject = poora reject, baaki results discard); allSettled = har status ke saath wait karta hai, kabhi reject nahi hota — partial failures OK hon to allSettled.</li>
+        <li><strong>async function ka return type kya hota hai agar tum ek plain non-promise value return karo?</strong><br>Hint: JS engine automatically use <code>Promise.resolve(value)</code> mein wrap kar deta hai — async function hamesha Promise return karta hai, chahe andar await ho ya na ho.</li>
+        <li><strong>await ke time pe actual thread kya karti hai — kya JS engine block ho jaata hai?</strong><br>Hint: nahi, thread block nahi hoti. Function execution ek "pause point" pe suspend hota hai, call stack se hat jaata hai, aur engine baaki kaam (dusre callbacks, rendering) continue karta hai; jab promise settle hoti hai, function resume hota hai microtask ke through.</li>
+        <li><strong>Unhandled promise rejection kya hota hai, aur engine ise "unhandled" kaise decide karta hai jab immediately hi conclusion nahi nikal sakta?</strong><br>Hint: engine microtask queue poora drain hone tak wait karta hai (taaki late .catch() attach hone ka chance mile), tab bhi agar koi handler nahi mila to unhandledrejection event fire hota hai.</li>
+        <li><strong>Sequential await calls ko parallel kaise banaoge jab operations independent hon, aur kyun ye zaroori hai?</strong><br>Hint: pehle sab async calls ko bina await kiye start karo (promises variable mein store karo), phir Promise.all se ek saath await karo — total time serial-sum ki jagah max() ban jaata hai.</li>
+        <li><strong>Microtask starvation kya hai aur ye production mein kaise problem create kar sakta hai?</strong><br>Hint: agar microtasks recursively naye microtasks queue karte rahen, event loop kabhi macrotask queue (jisme rendering bhi shamil hai) tak nahi pahunch payega — UI freeze ho sakti hai chahe call stack khaali ho.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="12-error-handling.html">
+        <div class="label">← Previous</div>
+        <div class="title">Error Handling</div>
+      </a>
+      <a class="next" href="14-generators-modules.html">
+        <div class="label">Next →</div>
+        <div class="title">Generators &amp; Modules</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

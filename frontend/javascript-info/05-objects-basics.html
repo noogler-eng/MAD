@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Objects: The Basics — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link active" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 5</div>
+      <div class="progress-pill">5 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Objects · Memory Model · this</span>
+      <h1>Objects: The Basics</h1>
+      <p class="subtitle">
+        Objects JavaScript ka sabse fundamental data structure hai — primitives ke alawa jo kuch bhi hai
+        (arrays, functions, dates, sab), wo internally object hi hai. Is chapter mein hum root-level dekhenge:
+        objects memory mein kaise store hote hain (reference type), garbage collector unhe kab free karta hai
+        (mark-and-sweep), <code>this</code> keyword call-time pe kaise resolve hota hai, <code>new</code>
+        operator internally kya karta hai, optional chaining ka short-circuit mechanism, Symbol ki uniqueness
+        guarantee, aur object-to-primitive conversion ka exact algorithm.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#literals">Object literals &amp; property access</a></li>
+          <li><a href="#reference-type">Objects reference type hain (memory model)</a></li>
+          <li><a href="#cloning">Cloning: shallow vs deep, structuredClone</a></li>
+          <li><a href="#gc">Garbage collection &amp; mark-and-sweep</a></li>
+          <li><a href="#methods-this">Methods aur <code>this</code> keyword</a></li>
+          <li><a href="#constructor-new">Constructor functions aur <code>new</code></a></li>
+          <li><a href="#optional-chaining">Optional chaining <code>?.</code></a></li>
+          <li><a href="#symbol">Symbol type &amp; uniqueness</a></li>
+          <li><a href="#toprimitive">Object-to-primitive conversion</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="literals">Object literals &amp; property access</h2>
+      <p>
+        Object <code>{}</code> curly-brace syntax se banta hai — key-value pairs ka collection, jahan key
+        hamesha string (ya Symbol) hoti hai aur value kuch bhi ho sakti hai. Property access do tareeke se
+        hota hai: dot notation (<code>obj.key</code>) jo sirf valid identifier keys ke liye kaam karta hai,
+        aur square bracket notation (<code>obj["key"]</code>) jo runtime pe kisi bhi string expression se
+        access de deta hai — including computed property names.
+      </p>
+      <div class="code-block">
+        <div class="code-title">object literal, dot vs bracket access<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>          <span class="tok-com">// object literal syntax — curly braces mein key: value pairs</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>     <span class="tok-com">// "name" key, string value — string key hone ke bawajood quotes optional hain (valid identifier hai)</span>
+  <span class="tok-punc">age</span><span class="tok-punc">:</span> <span class="tok-num">30</span>            <span class="tok-com">// "age" key, number value</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// dot notation — sirf tab kaam karta hai jab key valid JS identifier ho (koi space/hyphen na ho)</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">[</span><span class="tok-str">"likes birds"</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>  <span class="tok-com">// bracket notation — key mein space hai, dot notation yahan syntax error dega</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">[</span><span class="tok-str">"likes birds"</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — bracket se dobara read</span>
+
+<span class="tok-kw">delete</span> <span class="tok-punc">user</span><span class="tok-punc">[</span><span class="tok-str">"likes birds"</span><span class="tok-punc">]</span><span class="tok-punc">;</span> <span class="tok-com">// delete operator — property ko object se hi hata deta hai (value undefined set karne se alag hai)</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">key</span> <span class="tok-punc">=</span> <span class="tok-str">"age"</span><span class="tok-punc">;</span>       <span class="tok-com">// key ek variable mein hai — dot notation se ye access nahi kar sakte (user.key galat hoga)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// 30 — bracket ke andar variable expression evaluate hoke key ban jaata hai</span></code></pre>
+      </div>
+
+      <p>
+        Object literal ke andar bhi computed property names bracket syntax se ban sakte hain, aur agar
+        property naam ek existing variable ke naam se match kare, to <strong>property value shorthand</strong>
+        use karke <code>key: key</code> ki jagah sirf <code>key</code> likh sakte ho.
+      </p>
+      <div class="code-block">
+        <div class="code-title">computed properties + shorthand<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">makeUser</span><span class="tok-punc">(</span><span class="tok-punc">name</span><span class="tok-punc">,</span> <span class="tok-punc">age</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// factory function jo do parameters leta hai</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">{</span>                       <span class="tok-com">// naya object literal return kar rahe hain</span>
+    <span class="tok-punc">name</span><span class="tok-punc">,</span>                     <span class="tok-com">// shorthand: parameter "name" ka naam hi key ban gaya — name: name ke barabar</span>
+    <span class="tok-punc">age</span>                       <span class="tok-com">// shorthand: age: age ke barabar</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">fruit</span> <span class="tok-punc">=</span> <span class="tok-str">"apple"</span><span class="tok-punc">;</span>     <span class="tok-com">// runtime pe pata chalne wali key ka naam</span>
+<span class="tok-kw">let</span> <span class="tok-punc">bag</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">[</span><span class="tok-punc">fruit</span><span class="tok-punc">]</span><span class="tok-punc">:</span> <span class="tok-num">5</span>                 <span class="tok-com">// computed property name — [fruit] evaluate hoke "apple" key ban jaata hai literal ke andar hi</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">bag</span><span class="tok-punc">.</span><span class="tok-punc">apple</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 5 — bag ke andar actual key "apple" bani, "fruit" nahi</span></code></pre>
+      </div>
+
+      <p>
+        Property naam ke liye koi restriction nahi hai — reserved words (<code>for</code>, <code>let</code>,
+        <code>class</code>) bhi valid keys hain, aur non-string keys automatically <code>ToString</code>
+        convert ho jaate hain (<code>0</code> key internally <code>"0"</code> ban jaati hai). Ek exception:
+        <code>__proto__</code> special hai kyunki wo prototype chain ka legacy accessor hai — usmein
+        non-object value store karne se silently ignore ho jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">"in" operator vs undefined check<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span> <span class="tok-punc">age</span><span class="tok-punc">:</span> <span class="tok-kw">undefined</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// age property EXISTS, value undefined hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">age</span> <span class="tok-punc">===</span> <span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — is check se pata nahi chalta ki key exist karti hai ya nahi</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"age"</span> <span class="tok-kw">in</span> <span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// true — "in" operator explicitly key ke existence ko check karta hai, value se independent</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"salary"</span> <span class="tok-kw">in</span> <span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// false — "salary" key hi object mein nahi hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ for...in ordering — integer keys sort hoti hain</div>
+        <p>
+          Har key ka type (integer-like string ya nahi) iteration order decide karta hai.
+          <strong>Integer keys</strong> (jaise <code>"1"</code>, <code>"49"</code> — koi string jo bina
+          leading zero/sign ke wapas number mein convert ho sakti hai) hamesha <strong>ascending numeric
+          order</strong> mein pehle aati hain, chahe insert order kuch bhi ho. Baaki (non-integer) keys
+          apne <strong>insertion/creation order</strong> mein aati hain. Ye ek engine-level spec rule hai
+          (ECMA-262 OrdinaryOwnPropertyKeys), na ki koincidence. Fix: numeric-looking key ko non-integer
+          banane ke liye ek prefix jod do (jaise <code>"+49"</code>), phir wo insertion order follow
+          karegi.
+        </p>
+      </div>
+
+      <h2 id="reference-type">Objects reference type hain — memory model</h2>
+      <p>
+        Ye is poore chapter ka sabse root-level concept hai. Primitives (<code>number</code>,
+        <code>string</code>, <code>boolean</code> etc.) <strong>"by value"</strong> store hote hain — jab
+        tum ek variable ko copy karte ho, poori value literally duplicate ho jaati hai, aur dono variables
+        independent ho jaate hain. Objects <strong>alag tarah</strong> kaam karte hain: variable object ka
+        actual data apne andar nahi rakhta — wo sirf ek <strong>reference (memory address ka pointer)</strong>
+        rakhta hai jo heap mein kahin store hue actual object data ki taraf point karta hai.
+      </p>
+      <p>
+        Jab tum <code>let admin = user</code> likhte ho, koi naya object nahi banta — sirf reference ki
+        <strong>value (pointer)</strong> copy hoti hai. Ab <code>user</code> aur <code>admin</code> dono
+        variables heap mein <strong>same</strong> memory location ki taraf point kar rahe hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">reference copy — dono variables same object share karte hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>  <span class="tok-com">// heap mein naya object banta hai, "user" variable uska reference (pointer) hold karta hai</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">admin</span> <span class="tok-punc">=</span> <span class="tok-punc">user</span><span class="tok-punc">;</span>          <span class="tok-com">// COPY: naya object nahi bana — sirf reference (pointer value) copy hui, heap object same hai</span>
+
+<span class="tok-punc">admin</span><span class="tok-punc">.</span><span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-str">"Pete"</span><span class="tok-punc">;</span>    <span class="tok-com">// "admin" ke through mutate kiya, lekin ye wahi heap object hai jo "user" bhi point karta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "Pete" — "user" bhi change dikhta hai kyunki dono ek hi object ko point karte hain</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>              <span class="tok-com">// naya object #1, heap address X pe</span>
+<span class="tok-kw">let</span> <span class="tok-punc">b</span> <span class="tok-punc">=</span> <span class="tok-punc">a</span><span class="tok-punc">;</span>               <span class="tok-com">// b bhi X ko point karta hai — reference copy</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">a</span> <span class="tok-punc">==</span> <span class="tok-punc">b</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — "==" objects ke liye reference (address) compare karta hai, content nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">c</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>              <span class="tok-com">// naya object #2, heap address Y pe — content same hai lekin address alag</span>
+<span class="tok-kw">let</span> <span class="tok-punc">d</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>              <span class="tok-com">// naya object #3, heap address Z pe</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">c</span> <span class="tok-punc">==</span> <span class="tok-punc">d</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// false — do alag address (Y != Z), content identical hone se koi farak nahi padta</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: <code>const</code> object mutate ho sakta hai</div>
+        <p>
+          <code>const</code> sirf <strong>binding (variable name → reference)</strong> ko freeze karta hai,
+          heap mein baithe actual object ko nahi. <code>const user = {}</code> ka matlab hai "<code>user</code>
+          naam ab kisi doosri jagah point nahi kar sakta" — lekin jis object ko wo point kar raha hai,
+          uski properties bilkul mutable hain (<code>user.name = "Pete"</code> valid hai). Sirf
+          <code>user = {}</code> (poori reference reassign karna) error dega. Ye JS interviews mein
+          bahut common confusion hai — <code>const</code> immutability guarantee <strong>nahi</strong> deta,
+          sirf reference-reassignment protection deta hai. Real immutability ke liye <code>Object.freeze()</code>
+          chahiye (shallow) — jo alag chapter mein cover hota hai.
+        </p>
+      </div>
+
+      <h2 id="cloning">Cloning: shallow vs deep, structuredClone</h2>
+      <p>
+        Kyunki assignment sirf reference copy karta hai, agar tumhe genuinely ek <strong>independent
+        duplicate</strong> chahiye (jisme changes original ko affect na karein), to explicit cloning
+        chahiye. <code>Object.assign(target, ...sources)</code> sabse common shallow-clone tareeka hai —
+        ye sources ke <strong>enumerable own properties</strong> ko target mein copy karta hai (existing
+        keys overwrite ho jaati hain).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Object.assign — shallow clone, nested objects break ho jaate hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>              <span class="tok-com">// top-level primitive property</span>
+  <span class="tok-punc">sizes</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-punc">height</span><span class="tok-punc">:</span> <span class="tok-num">182</span> <span class="tok-punc">}</span> <span class="tok-com">// NESTED object — ye khud bhi ek heap reference hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">clone</span> <span class="tok-punc">=</span> <span class="tok-fn">Object</span><span class="tok-punc">.</span><span class="tok-fn">assign</span><span class="tok-punc">(</span><span class="tok-punc">{}</span><span class="tok-punc">,</span> <span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// {} target hai, user ki saari own enumerable keys usmein copy hoti hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clone</span> <span class="tok-punc">===</span> <span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// false — top-level object naya hai, independent</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clone</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span> <span class="tok-punc">===</span> <span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true! — sirf reference copy hui, sizes wahi heap object hai — SHALLOW copy ka side-effect</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">.</span><span class="tok-punc">height</span> <span class="tok-punc">=</span> <span class="tok-num">200</span><span class="tok-punc">;</span>  <span class="tok-com">// original ke nested object ko mutate kiya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clone</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">.</span><span class="tok-punc">height</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 200 — clone bhi change dikha raha hai, kyunki dono same nested object share karte hain</span></code></pre>
+      </div>
+
+      <p>
+        Is problem ka fix <strong>deep clone</strong> hai — recursively har nested object ka bhi naya copy
+        banana. Manual recursion likhne ki jagah, modern JS engines mein built-in
+        <code>structuredClone(value)</code> function hai jo deep clone karta hai, circular references bhi
+        handle karta hai (structured clone algorithm — wahi jo <code>postMessage</code>/IndexedDB internally
+        use karte hain).
+      </p>
+      <div class="code-block">
+        <div class="code-title">structuredClone — true deep clone<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>
+  <span class="tok-punc">sizes</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-punc">height</span><span class="tok-punc">:</span> <span class="tok-num">182</span> <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">clone</span> <span class="tok-punc">=</span> <span class="tok-fn">structuredClone</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// engine-level recursive clone — nested objects bhi fresh heap allocations paate hain</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clone</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span> <span class="tok-punc">===</span> <span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — ab sizes ka bhi independent naya object hai</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">.</span><span class="tok-punc">width</span> <span class="tok-punc">=</span> <span class="tok-num">60</span><span class="tok-punc">;</span>   <span class="tok-com">// original ko mutate karo</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clone</span><span class="tok-punc">.</span><span class="tok-punc">sizes</span><span class="tok-punc">.</span><span class="tok-punc">width</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// undefined — clone bilkul unaffected hai, true isolation</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">circular</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>
+<span class="tok-punc">circular</span><span class="tok-punc">.</span><span class="tok-punc">self</span> <span class="tok-punc">=</span> <span class="tok-punc">circular</span><span class="tok-punc">;</span>  <span class="tok-com">// object khud ko hi reference kar raha hai — circular reference</span>
+<span class="tok-kw">let</span> <span class="tok-punc">clonedCircular</span> <span class="tok-punc">=</span> <span class="tok-fn">structuredClone</span><span class="tok-punc">(</span><span class="tok-punc">circular</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// structuredClone circular refs correctly handle karta hai (JSON.stringify yahan crash karta)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">clonedCircular</span><span class="tok-punc">.</span><span class="tok-punc">self</span> <span class="tok-punc">===</span> <span class="tok-punc">clonedCircular</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — clone ke andar bhi wahi circular structure preserve hui</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ structuredClone functions clone nahi kar sakta</div>
+        <p>
+          <code>structuredClone</code> function values, DOM nodes, aur kuch host objects (jaise
+          <code>window</code>) pe <code>DataCloneError</code> throw karta hai — kyunki functions closures
+          hold karte hain jo memory-address-specific hain, unhe serialize karna well-defined nahi hai. Agar
+          object mein methods hain jo clone karne hain, ya bahut fine-grained control chahiye (specific
+          keys skip karna, custom merge logic), to <code>lodash</code> ka <code>_.cloneDeep()</code> ya
+          manual recursive clone function likhna padega.
+        </p>
+      </div>
+
+      <h2 id="gc">Garbage collection &amp; mark-and-sweep</h2>
+      <p>
+        JS engine memory management manually nahi karwata — ek <strong>garbage collector (GC)</strong>
+        background mein chalta hai jo automatically wo memory free karta hai jo ab use nahi ho rahi. Core
+        concept hai <strong>reachability</strong>: koi value tab tak memory mein rehti hai jab tak wo kisi
+        "root" se — directly ya chain of references se — reach ki ja sake.
+      </p>
+      <p><strong>Roots</strong> hamesha reachable maane jaate hain:</p>
+      <ul>
+        <li>Currently executing function ke local variables aur parameters</li>
+        <li>Call stack mein baaki nested calls ke variables/parameters</li>
+        <li>Global variables</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">reference lost → object unreachable → GC eligible<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// heap object banta hai; "user" (root/global) ek reference hold kar raha hai — object REACHABLE hai</span>
+
+<span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>          <span class="tok-com">// "user" ab kisi aur cheez ko point kar raha hai (null) — heap object ka koi reference nahi bacha</span>
+                            <span class="tok-com">// object ab UNREACHABLE hai → GC agli sweep mein ye memory free kar dega</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">b</span> <span class="tok-punc">=</span> <span class="tok-punc">a</span><span class="tok-punc">;</span>              <span class="tok-com">// dusra reference bana — same heap object ab 2 roots se reachable hai</span>
+<span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>             <span class="tok-com">// ek reference gaya, lekin "b" abhi bhi point kar raha hai</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">b</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "John" — object abhi bhi ALIVE hai kyunki kam se kam ek reference bacha hua hai</span></code></pre>
+      </div>
+
+      <p>
+        Ek subtle case: interlinked objects collectively unreachable ban sakte hain, chahe wo ek-doosre ko
+        reference kar rahe hon (unke aapas ke references count nahi hote agar koi root path unhe reach na
+        kare):
+      </p>
+      <div class="code-block">
+        <div class="code-title">unreachable island — aapas mein linked lekin koi root path nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">marry</span><span class="tok-punc">(</span><span class="tok-punc">man</span><span class="tok-punc">,</span> <span class="tok-punc">woman</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">woman</span><span class="tok-punc">.</span><span class="tok-punc">husband</span> <span class="tok-punc">=</span> <span class="tok-punc">man</span><span class="tok-punc">;</span>   <span class="tok-com">// woman object se man object ki taraf reference</span>
+  <span class="tok-punc">man</span><span class="tok-punc">.</span><span class="tok-punc">wife</span> <span class="tok-punc">=</span> <span class="tok-punc">woman</span><span class="tok-punc">;</span>      <span class="tok-com">// man object se woman object ki taraf reference — dono ek doosre ko point karte hain</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">{</span>
+    <span class="tok-punc">father</span><span class="tok-punc">:</span> <span class="tok-punc">man</span><span class="tok-punc">,</span>          <span class="tok-com">// wrapper object dono ko reference karta hai</span>
+    <span class="tok-punc">mother</span><span class="tok-punc">:</span> <span class="tok-punc">woman</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">family</span> <span class="tok-punc">=</span> <span class="tok-fn">marry</span><span class="tok-punc">(</span><span class="tok-punc">{</span><span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-punc">{</span><span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Ann"</span><span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "family" (root) se man aur woman dono reachable hain</span>
+
+<span class="tok-punc">family</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>          <span class="tok-com">// root reference tod diya — ab family/man/woman teeno "island" ban gaye</span>
+                          <span class="tok-com">// man aur woman abhi bhi ek-doosre ko reference karte hain, lekin koi ROOT unhe reach nahi kar sakta</span>
+                          <span class="tok-com">// isliye poora cluster ek saath unreachable → mark-and-sweep dono ko collect kar dega</span></code></pre>
+      </div>
+
+      <p>
+        Naive approach — <strong>reference counting</strong> (har object pe uske references ka count rakho,
+        0 hote hi delete karo) — is circular case mein fail ho jaata hai, kyunki man aur woman ek-doosre ko
+        count karte reh jaate hain (count kabhi 0 nahi hota) chahe wo poori tarah unreachable hon. Isi
+        limitation ki wajah se modern engines <strong>mark-and-sweep</strong> algorithm use karte hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Mark-and-sweep — step by step</div>
+        <p>
+          Algorithm periodically ye steps chalata hai: <strong>(1) Mark roots</strong> — sab root objects
+          (global variables, active call stack ke locals) ko "reachable" mark karo.
+          <strong>(2) Traverse aur mark references</strong> — har marked object ke andar jitne bhi
+          references hain unhe follow karo aur unhe bhi mark karo (agar pehle se marked nahi hain).
+          <strong>(3) Recurse</strong> — step 2 tab tak repeat karo jab tak koi naya reachable object na
+          mile — effectively roots se "paint spill" hota hai poore reference graph mein.
+          <strong>(4) Sweep</strong> — jo objects is process mein mark nahi hue (kisi bhi root se
+          unreachable), unhe delete kar do aur memory free kar do. Man/woman jaise circular islands
+          automatically is process mein miss ho jaate hain kyunki koi root path unhe touch nahi karta —
+          isliye ye reference-counting se strictly better hai.
+        </p>
+      </div>
+
+      <p>Engines is base algorithm pe kai practical optimizations lagate hain:</p>
+      <ul>
+        <li><strong>Generational collection</strong> — objects ko "new" (short-lived) aur "old" (long-lived) generations mein split karte hain; naye objects ko zyada frequently scan karte hain kyunki zyadatar objects jaldi hi garbage ban jaate hain (weak generational hypothesis).</li>
+        <li><strong>Incremental collection</strong> — poore heap ko ek single "stop-the-world" pause mein scan karne ke bajaye, GC ko chhote-chhote chunks mein todte hain taaki UI/execution zyada der block na ho.</li>
+        <li><strong>Idle-time collection</strong> — GC ko CPU ke idle periods mein preferentially chalate hain, jab execution pe uska visible impact minimal ho.</li>
+      </ul>
+
+      <h2 id="methods-this">Methods aur <code>this</code> keyword</h2>
+      <p>
+        Object property mein stored function ko <strong>method</strong> kehte hain. Method ke andar object
+        ki apni properties access karne ke liye <code>this</code> keyword use hota hai — jo call-time pe us
+        object ki taraf point karta hai jispe method call hua.
+      </p>
+      <div class="code-block">
+        <div class="code-title">method shorthand + this<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// method shorthand — "sayHi: function() {...}" ka short form</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// this = "object jispe method call hua" — hardcoded "user" naam se better hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "John" — call syntax "user.sayHi()" mein "user" hi this ban jaata hai (dot se pehle wala object)</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 this "late binding" hai — definition-time nahi, call-time pe decide hota hai</div>
+        <p>
+          JS ke <code>this</code> ka behavior most OOP languages se fundamentally different hai. Function
+          jahan <em>define</em> hui hai wo matter nahi karta — <code>this</code> ki value poori tarah is
+          baat pe depend karti hai ki function ko <em>kaise call kiya gaya</em>. Yehi wajah hai ki ek hi
+          function reference alag-alag objects pe alag <code>this</code> resolve kar sakta hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">same function, different this — call site决定 karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ye function DEFINITION-time pe kisi object se linked nahi hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">admin</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Admin"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">f</span> <span class="tok-punc">=</span> <span class="tok-punc">sayHi</span><span class="tok-punc">;</span>   <span class="tok-com">// SAME function reference dono objects pe assign — koi copy nahi hui, sirf pointer</span>
+<span class="tok-punc">admin</span><span class="tok-punc">.</span><span class="tok-punc">f</span> <span class="tok-punc">=</span> <span class="tok-punc">sayHi</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-fn">f</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "John" — call site "user.f()" hai, isliye this = user</span>
+<span class="tok-punc">admin</span><span class="tok-punc">.</span><span class="tok-fn">f</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "Admin" — call site "admin.f()" hai, isliye this = admin — same function, different this!</span>
+
+<span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// koi object ke bina direct call — this = undefined (strict mode mein, jo modules/classes default hai)</span>
+              <span class="tok-com">// non-strict mode mein this = global object (window) ban jaata — accidental global leaks ka common source</span></code></pre>
+      </div>
+
+      <p>
+        Arrow functions is rule ka exception hain — unka apna <code>this</code> hota hi nahi, wo lexically
+        enclosing scope se <code>this</code> "inherit" karte hain (jahan wo <em>likhe</em> gaye hain, wahi
+        wale scope ka <code>this</code> use karte hain). Isliye arrow function ke andar <code>this</code>
+        call-site pe depend nahi karta.
+      </p>
+      <div class="code-block">
+        <div class="code-title">arrow function — apna this nahi hota, outer se uthata hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">firstName</span><span class="tok-punc">:</span> <span class="tok-str">"Ilya"</span><span class="tok-punc">,</span>
+  <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                    <span class="tok-com">// ye ek regular method hai — call ke waqt this = user milega</span>
+    <span class="tok-kw">let</span> <span class="tok-punc">arrow</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">firstName</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                    <span class="tok-com">// arrow function ke andar "this" khud resolve nahi hota —</span>
+                                    <span class="tok-com">// ye lexically enclosing "sayHi" method ka this use karta hai</span>
+    <span class="tok-punc">arrow</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// arrow() ko koi object ke through call nahi kiya, phir bhi this sahi milega</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Ilya" — arrow ne "sayHi" ke this (jo user tha) ko capture kiya, khud ka this nahi banaya</span></code></pre>
+      </div>
+
+      <h2 id="constructor-new">Constructor functions aur <code>new</code></h2>
+      <p>
+        Jab similar structure wale multiple objects banane hon, repeat-repeat likhna avoid karne ke liye
+        <strong>constructor functions</strong> use hote hain. Convention: naam Capital letter se shuru hota
+        hai, aur ise sirf <code>new</code> ke saath call kiya jaata hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">constructor function basic usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">User</span><span class="tok-punc">(</span><span class="tok-punc">name</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>     <span class="tok-com">// capital "U" — convention batata hai ye new ke saath call hona chahiye</span>
+  <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-punc">name</span><span class="tok-punc">;</span>   <span class="tok-com">// naye object (this) pe name property set</span>
+  <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">isAdmin</span> <span class="tok-punc">=</span> <span class="tok-kw">false</span><span class="tok-punc">;</span> <span class="tok-com">// default property naye object pe</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">User</span><span class="tok-punc">(</span><span class="tok-str">"Jack"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "new" keyword function call ka behavior fundamentally badal deta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "Jack"</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">isAdmin</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 <code>new</code> internally exactly 4 steps karta hai</div>
+        <p>
+          Jab tum <code>new Fn(args)</code> likhte ho, engine ye sequence follow karta hai:
+          <strong>(1) Ek naya empty object banao</strong> aur usse implicitly <code>this</code> assign kar
+          do. <strong>(2) Us naye object ka internal <code>[[Prototype]]</code></strong>
+          <code>Fn.prototype</code> pe set karo (isliye baad mein <code>Fn.prototype</code> pe defined
+          methods bhi is object se accessible hote hain — prototype chapter mein detail). <strong>(3)
+          Function body execute karo</strong> — jo bhi <code>this.xxx = ...</code> statements hain wo
+          usi naye object ko mutate karte hain. <strong>(4) Agar function explicitly koi object return
+          karta hai to wahi return hota hai, warna implicitly <code>this</code> (wahi naya banaya object)
+          return ho jaata hai</strong> — bina explicit <code>return</code> likhe bhi.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">return rules — object override karta hai, primitive ignore hota hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">BigUser</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-str">"John"</span><span class="tok-punc">;</span>       <span class="tok-com">// naye this object pe property set</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Godzilla"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// EXPLICIT object return — rule: object return hua to wahi jeetega, this discard ho jaata hai</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">BigUser</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Godzilla" — this ({name:"John"}) discard hua, returned object mila</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">SmallUser</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-str">"John"</span><span class="tok-punc">;</span>
+  <span class="tok-kw">return</span><span class="tok-punc">;</span>                       <span class="tok-com">// PRIMITIVE (undefined) return — rule: primitive returns IGNORE hote hain</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">SmallUser</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "John" — implicit this hi wapas milta hai, "return;" ka koi effect nahi</span></code></pre>
+      </div>
+
+      <p>
+        Constructor ke andar <code>new.target</code> check karke pata chal sakta hai ki function
+        <code>new</code> ke saath call hua ya normal function ki tarah — regular call mein ye
+        <code>undefined</code> hota hai, <code>new</code> ke saath ye khud function ko point karta hai. Isse
+        constructor "self-correct" ho sakta hai agar koi galti se <code>new</code> bhool jaaye. Arguments
+        ke saath parentheses omit bhi ki ja sakti hain (<code>new User</code>), lekin ye readability ke
+        liye avoid karna chahiye.
+      </p>
+
+      <h2 id="optional-chaining">Optional chaining <code>?.</code></h2>
+      <p>
+        Deeply nested properties access karte waqt agar beech ka koi property missing (<code>null</code>/
+        <code>undefined</code>) hua to error aata hai. Optional chaining is problem ko elegantly solve
+        karta hai: <strong><code>?.</code> evaluation ko turant stop kar deta hai aur <code>undefined</code>
+        return kar deta hai agar bayan taraf ki value <code>null</code> ya <code>undefined</code> ho</strong>
+        — warna normal property access ki tarah continue karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">?. property access — traditional check ka replacement<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>            <span class="tok-com">// user ke paas "address" property hi nahi hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">address</span><span class="tok-punc">.</span><span class="tok-punc">street</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// TypeError — user.address undefined hai, uski .street access karna crash karta hai</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">?.</span><span class="tok-punc">address</span><span class="tok-punc">?.</span><span class="tok-punc">street</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// undefined, koi error nahi —</span>
+                                    <span class="tok-com">// "user?." check karta hai user null/undefined to nahi, phir "address?." check karta hai wo bhi</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Short-circuit sirf beech ke expression ko rokta hai — poore chain ko nahi</div>
+        <p>
+          <code>?.</code> ek chain ke ek hi point pe short-circuit karta hai, lekin uska effect us <em>puri
+          expression</em> tak fail hota hai jiska wo hissa hai — right-hand side ka koi bhi function call
+          bhi evaluate hi <strong>nahi</strong> hota agar left side missing ho. Ye side-effects (jaise
+          <code>x++</code>) ke liye critical hai.
+        </p>
+      </div>
+      <div class="code-block">
+        <div class="code-title">short-circuit — right side bilkul evaluate hi nahi hota<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">x</span> <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">?.</span><span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">x</span><span class="tok-punc">++</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// "user" null hai, isliye poori expression turant undefined ho jaati hai —</span>
+                        <span class="tok-com">// x++ ARGUMENT hai jo function call ke andar hai, aur wo call kabhi hota hi nahi</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">x</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// 0 — x++ execute hi nahi hua, ye proof hai ki short-circuit sach mein evaluation rokta hai</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">key</span> <span class="tok-punc">=</span> <span class="tok-str">"firstName"</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">u1</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">firstName</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">u1</span><span class="tok-punc">?.</span><span class="tok-punc">[</span><span class="tok-punc">key</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "John" — ?.[...] variant, dynamic key ke saath safe bracket access</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">userGuest</span> <span class="tok-punc">=</span> <span class="tok-punc">{}</span><span class="tok-punc">;</span>       <span class="tok-com">// "admin" method exist hi nahi karta</span>
+<span class="tok-punc">userGuest</span><span class="tok-punc">.</span><span class="tok-punc">admin</span><span class="tok-punc">?.</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// ?.() variant — method exist karta hai to hi call hota hai, warna silently kuch nahi hota</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Overuse mat karo — ye assignment ke liye bhi nahi chalta</div>
+        <p>
+          <code>?.</code> sirf <strong>reading</strong> (aur <code>delete</code>) ke liye hai —
+          <code>user?.name = "John"</code> jaisa assignment syntactically invalid hai, kyunki agar left
+          side undefined nikla to assign kise karoge? Aur <code>?.</code> ko har jagah lagana ek anti-pattern
+          hai: jahan tumhare business logic ke hisaab se koi property <em>hamesha</em> honi chahiye, wahan
+          normal dot access hi use karo — taaki agar wo missing ho to turant loud error mile (silent
+          <code>undefined</code> propagation se debugging harder ho jaati hai). Technically ye ek operator
+          nahi, ek "special syntax construct" hai, aur agar undeclared variable pe use kiya (jaise
+          <code>someUndeclaredVar?.prop</code>) to bhi <code>ReferenceError</code> aayega — variable ka
+          declared hona zaroori hai, sirf uski value null/undefined ho sakti hai.
+        </p>
+      </div>
+
+      <h2 id="symbol">Symbol type &amp; uniqueness</h2>
+      <p>
+        <code>Symbol</code> JS ka ek primitive type hai jiski har instance guaranteed unique hoti hai —
+        chahe do symbols ka description bilkul identical kyun na ho, wo kabhi equal nahi honge. Object keys
+        ke liye sirf do primitive types allowed hain: <code>string</code> aur <code>Symbol</code>.
+      </p>
+      <div class="code-block">
+        <div class="code-title">symbol uniqueness + hidden property use-case<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">id1</span> <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// naya unique symbol, "id" sirf description/label hai (debugging ke liye), koi identity nahi deta</span>
+<span class="tok-kw">let</span> <span class="tok-punc">id2</span> <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// dusra symbol, bilkul same description ke saath</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">id1</span> <span class="tok-punc">==</span> <span class="tok-punc">id2</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — engine har Symbol() call pe ek naya, bilkul unique primitive banata hai</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>  <span class="tok-com">// third-party code ka object socho — hum uski normal properties se collide nahi karna chahte</span>
+<span class="tok-kw">let</span> <span class="tok-punc">id</span> <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// hum apni khud ki "hidden" key banate hain</span>
+<span class="tok-punc">user</span><span class="tok-punc">[</span><span class="tok-punc">id</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span>          <span class="tok-com">// bracket syntax zaroori hai — symbol ko computed key ki tarah use karna padta hai</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">key</span> <span class="tok-kw">in</span> <span class="tok-punc">user</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// for...in symbolic keys ko DELIBERATELY skip karta hai</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">key</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// sirf "name" print hoga, hamara symbol id kabhi nahi dikhega</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        Ye "hidden property" pattern ka classic use-case hai — kisi third-party/library object pe apna
+        metadata attach karna without collision risk, kyunki wo library ka code sirf string keys ke saath
+        kaam karta hai aur tumhare symbol ke baare mein "jaanta" hi nahi. Global sharing chahiye ho (same
+        symbol multiple files mein consistently milna chahiye) to <code>Symbol.for(key)</code> registry use
+        karo — same string key ke saath call karne pe hamesha wahi symbol wapas milta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Symbol.for — global registry<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">id</span> <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-fn">for</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// registry mein "id" naam ka symbol dhoondo, agar na mile to naya banao aur store karo</span>
+<span class="tok-kw">let</span> <span class="tok-punc">idAgain</span> <span class="tok-punc">=</span> <span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-fn">for</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "id" registry mein pehle se hai, so registered same symbol return hota hai — naya nahi banta</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">id</span> <span class="tok-punc">===</span> <span class="tok-punc">idAgain</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — normal Symbol("id") ke bilkul opposite behavior</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-fn">keyFor</span><span class="tok-punc">(</span><span class="tok-punc">id</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "id" — reverse lookup, sirf registry symbols ke liye kaam karta hai (local Symbol() pe undefined)</span></code></pre>
+      </div>
+
+      <h2 id="toprimitive">Object-to-primitive conversion</h2>
+      <p>
+        Jab kisi object ko math operation, string context, ya comparison mein use kiya jaata hai (jaise
+        <code>alert(obj)</code>, <code>obj + 1</code>, <code>+obj</code>), engine ko usse ek primitive value
+        mein convert karna padta hai — kyunki koi bhi operator "object" return nahi kar sakta. Is process ko
+        <strong>ToPrimitive</strong> algorithm control karta hai, jo teen "hints" mein se ek use karta hai:
+      </p>
+      <ul>
+        <li><strong>"string"</strong> — jab object ko explicitly string chahiye (jaise property key ki tarah use ho raha ho, ya <code>alert(obj)</code>).</li>
+        <li><strong>"number"</strong> — math operations mein (<code>+obj</code>, subtraction, <code>Number(obj)</code>).</li>
+        <li><strong>"default"</strong> — ambiguous cases mein, jaise binary <code>+</code> (jo string concat ya numeric add dono ho sakta hai) ya <code>==</code> comparisons.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 ToPrimitive lookup order — 3-step fallback chain</div>
+        <p>
+          Engine ye order follow karta hai: <strong>(1)</strong> agar object pe
+          <code>obj[Symbol.toPrimitive](hint)</code> method exist karta hai, to <strong>use hi</strong>
+          call karo — ye sabse high-priority override hai, aur ek hi method teeno hints handle kar sakta hai.
+          <strong>(2)</strong> agar wo nahi hai, to hint ke hisaab se order badalta hai: <code>"string"</code>
+          hint ke liye pehle <code>toString()</code> try hota hai, phir fallback <code>valueOf()</code>.
+          <strong>(3)</strong> <code>"number"</code> aur <code>"default"</code> hints ke liye ulta order —
+          pehle <code>valueOf()</code>, phir fallback <code>toString()</code>. In dono methods ko
+          <strong>primitive hi return karna hoga</strong> — agar object return kiya, to wo result silently
+          ignore ho jaata hai aur chain ka agla method try hota hai.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Symbol.toPrimitive — single method, saare hints handle<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>
+  <span class="tok-punc">money</span><span class="tok-punc">:</span> <span class="tok-num">1000</span><span class="tok-punc">,</span>
+
+  <span class="tok-punc">[</span><span class="tok-fn">Symbol</span><span class="tok-punc">.</span><span class="tok-punc">toPrimitive</span><span class="tok-punc">]</span><span class="tok-punc">(</span><span class="tok-punc">hint</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// well-known symbol ko computed key ki tarah method-define karna</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">`hint: </span><span class="tok-punc">${</span><span class="tok-punc">hint</span><span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// engine ne kaunsa hint bheja, debug ke liye print</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">hint</span> <span class="tok-punc">==</span> <span class="tok-str">"string"</span>
+      <span class="tok-punc">?</span> <span class="tok-punc">`{name: "</span><span class="tok-punc">${</span><span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">}</span><span class="tok-punc">"}`</span>   <span class="tok-com">// "string" hint ke liye readable string return</span>
+      <span class="tok-punc">:</span> <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">money</span><span class="tok-punc">;</span>              <span class="tok-com">// "number"/"default" dono ke liye numeric value return</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">`</span><span class="tok-punc">${</span><span class="tok-punc">user</span><span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// hint: string -&gt; {name: "John"}</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">+</span><span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// hint: number -&gt; 1000 (unary plus number hint bhejta hai)</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span> <span class="tok-punc">+</span> <span class="tok-num">500</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// hint: default -&gt; 1500 (binary + ambiguous, default hint use karta hai)</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">toString/valueOf fallback — zyada common, without Symbol.toPrimitive<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>
+  <span class="tok-punc">money</span><span class="tok-punc">:</span> <span class="tok-num">1000</span><span class="tok-punc">,</span>
+
+  <span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                      <span class="tok-com">// "string" hint ke liye primary; "number"/"default" ke liye fallback (agar valueOf na ho)</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">`{name: "</span><span class="tok-punc">${</span><span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">}</span><span class="tok-punc">"}`</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-fn">valueOf</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                      <span class="tok-com">// "number"/"default" hint ke liye primary — pehle try hota hai in dono cases mein</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">this</span><span class="tok-punc">.</span><span class="tok-punc">money</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">`</span><span class="tok-punc">${</span><span class="tok-punc">user</span><span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// {name: "John"} — toString() se aaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">+</span><span class="tok-punc">user</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// 1000 — valueOf() se aaya</span>
+<span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">user</span> <span class="tok-punc">+</span> <span class="tok-num">500</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// 1500 — default hint mein bhi valueOf() pehle try hua</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ ToPrimitive ke baad bhi ek aur conversion round ho sakta hai</div>
+        <p>
+          ToPrimitive sirf object ko primitive banata hai — final result guaranteed number ya string nahi
+          hota (kyunki JS mein "default"/"number" hint ka matlab "koi bhi primitive" hai, zaroori nahi
+          number hi ho). Agar tumhara <code>valueOf()</code> koi string return kare aur wo context math
+          operation mein use ho raha ho, to us primitive pe ek <em>alag, standard</em> <code>ToNumber</code>
+          ya <code>ToString</code> conversion apply hoti hai — jaisa normal primitive-to-primitive coercion
+          (chapter 2 wale rules) mein hota hai. Practical rule of thumb: zyaadatar cases mein sirf ek
+          <code>toString()</code> define kar dena kaafi hota hai, kyunki wo "string" ke saath-saath
+          "number"/"default" ka bhi fallback ban jaata hai jab <code>valueOf()</code> missing ho.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Objects <strong>reference type</strong> hain — variable heap object ka data nahi, sirf reference (pointer) hold karta hai; assignment reference copy karta hai, deep data nahi.</li>
+        <li><code>==</code> objects ke liye reference (identity) compare karta hai, content nahi — do structurally-identical objects <code>==</code> false denge agar alag heap addresses hon.</li>
+        <li><code>const</code> sirf reference-reassignment block karta hai, object ki properties mutable rehti hain.</li>
+        <li>Shallow clone (<code>Object.assign</code>) nested objects ke references share karta hai; deep clone (<code>structuredClone</code>) sab levels pe independent copies banata hai, circular refs bhi handle karta hai, functions/DOM nodes clone nahi kar sakta.</li>
+        <li>Garbage collection <strong>reachability</strong> pe based hai; roots se traverse na ho paane wale objects — chahe wo aapas mein linked hon — mark-and-sweep unhe collect kar deta hai.</li>
+        <li><code>this</code> ki value <strong>call-time</strong> pe decide hoti hai (dot se pehle wala object), definition-time pe nahi; arrow functions apna <code>this</code> nahi banate, lexical scope se inherit karte hain.</li>
+        <li><code>new</code> 4 steps karta hai: naya object banao → this assign karo → function body run karo → object return hua to wahi, warna implicit this return hota hai.</li>
+        <li><code>?.</code> reading/deleting ke liye hai, short-circuit poori right-side expression ko skip kar deta hai (side-effects included); assignment ke liye use nahi hota.</li>
+        <li>Symbols guaranteed unique hain (collision-proof hidden keys); <code>Symbol.for()</code> global registry se explicit sharing milta hai.</li>
+        <li>ToPrimitive order: <code>Symbol.toPrimitive</code> > (hint ke hisaab se) <code>toString</code>/<code>valueOf</code> fallback chain — dono ko strictly primitive return karna hota hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Objects "reference type" hain — iska memory model pe exact matlab kya hai, aur ye <code>==</code> comparison ko kaise affect karta hai?</strong><br>Hint: variable heap object ka pointer hold karta hai; assignment reference copy karta hai; <code>==</code> reference/address compare karta hai, deep-equality nahi.</li>
+        <li><strong>const object ko mutate kyun kiya ja sakta hai?</strong><br>Hint: const sirf binding (variable→reference) freeze karta hai, heap object ki properties immutable nahi banata — sirf reference-reassignment error deta hai.</li>
+        <li><strong>Object.assign se shallow clone lene ke baad nested object mutate karne pe original bhi kyun change hota hai?</strong><br>Hint: shallow clone sirf top-level properties copy karta hai; nested object property ki value bhi ek reference hi hai, jo as-is copy ho jaati hai — dono clone/original same nested heap object share karte hain.</li>
+        <li><strong>Reference counting garbage collection circular references ke saath kyun fail hota hai, aur mark-and-sweep ise kaise solve karta hai?</strong><br>Hint: circular refs mein count kabhi 0 nahi hota chahe unreachable ho; mark-and-sweep root se traverse karke sirf reachable objects mark karta hai, jo bhi root-path se disconnect hai wo collect ho jaata hai chahe uske apne internal references hon.</li>
+        <li><strong>Ek hi function ko do alag objects pe assign karke call karne se different "this" kyun milta hai?</strong><br>Hint: this call-time pe "call syntax se pehle wala object" resolve karta hai (late binding), function definition se independent — same function reference, different call site, different this.</li>
+        <li><strong>Arrow function methods object literals ke andar avoid kyun kiye jaate hain?</strong><br>Hint: arrow function apna this nahi banata, lexical (surrounding) scope se this uthata hai — object literal ke andar directly define kiya arrow ka this object nahi, balki outer scope (usually global/undefined) hoga.</li>
+        <li><strong>"new" operator internally kya 4 steps execute karta hai, aur agar constructor explicitly ek object return kare to kya hota hai?</strong><br>Hint: naya object banao, this assign karo, body run karo, phir agar explicit return object hai to wo jeetega (this discard), primitive return ignore hoke implicit this hi return hota hai.</li>
+        <li><strong>Optional chaining <code>user?.getData()</code> mein agar user null hai to kya getData() ka argument evaluate hota hai?</strong><br>Hint: nahi — short-circuit poori expression ko turant undefined bana deta hai, arguments ke andar ke side-effects (jaise x++) execute hi nahi hote.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="04-code-quality.html">
+        <div class="label">← Previous</div>
+        <div class="title">Code Quality</div>
+      </a>
+      <a class="next" href="06-numbers-strings.html">
+        <div class="label">Next →</div>
+        <div class="title">Numbers &amp; Strings</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

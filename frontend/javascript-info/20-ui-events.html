@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Events — javascript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link active" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 20</div>
+      <div class="progress-pill">20 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Browser · Events · Input Handling</span>
+      <h1>UI Events</h1>
+      <p class="subtitle">
+        Events fundamentals (bubbling, capturing, delegation) part 19 mein cover ho chuke hain — ab hum
+        actual <strong>UI event families</strong> mein utrenge: mouse, pointer, keyboard, aur scroll. Ye
+        wo events hain jo real interactive UI banane mein use hote hain — drag'n'drop, custom sliders,
+        game controls, infinite scroll. Root-level pe samjhenge ki browser internally in events ko kaise
+        fire karta hai, aur kahan classic gotchas chhupe hain (mouseover bubbling, keypress deprecation,
+        scroll preventDefault fail hona).
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#mouse-basics">Mouse Events — basics</a></li>
+          <li><a href="#mouseover-vs-enter">mouseover/mouseout vs mouseenter/mouseleave</a></li>
+          <li><a href="#drag-drop">Mouse events se Drag'n'Drop banana</a></li>
+          <li><a href="#pointer-events">Pointer Events — unified API</a></li>
+          <li><a href="#keyboard-events">Keyboard Events</a></li>
+          <li><a href="#scroll-events">Scroll Events + throttling</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="mouse-basics">Mouse Events — basics</h2>
+      <p>
+        Mouse events ka ek pura family hai — sab alag-alag moment pe fire hote hain. Click ek single event
+        nahi hai — wo <strong>teen niche-level events ka composite result</strong> hai:
+      </p>
+      <ul>
+        <li><code>mousedown</code> / <code>mouseup</code> — button press/release hone par, kisi bhi button (left/middle/right) ke liye.</li>
+        <li><code>click</code> — sirf tab fire hota hai jab <strong>left button</strong> se mousedown+mouseup same element pe complete ho.</li>
+        <li><code>dblclick</code> — do rapid clicks (aaj-kal rarely used, kyunki UX conventions badal gaye hain).</li>
+        <li><code>contextmenu</code> — right button press par (browser ka context menu trigger karta hai).</li>
+        <li><code>mousemove</code> — pointer move hote waqt continuously fire hota hai.</li>
+      </ul>
+      <p>
+        Sequence hamesha ye hoti hai: <code>mousedown → mouseup → click</code>. Agar <code>mousedown</code>
+        aur <code>mouseup</code> alag-alag elements pe hue (user ne button dabaya, drag kiya, kisi aur jagah
+        release kiya), to <code>click</code> bilkul fire hi nahi hoga — ye ek common confusion point hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">event.button — kaunsa button dabaya gaya<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">button</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'mousedown'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// mousedown listener — button press ke exact moment pe fire hota hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">button</span> <span class="tok-punc">===</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// 0 = left/primary button — most common case</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Left button pressed'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// left-click specific logic yahan</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">button</span> <span class="tok-punc">===</span> <span class="tok-num">1</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// 1 = middle/auxiliary button — scroll-wheel click</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Middle button pressed'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// e.g. "open link in new tab" gesture ka source</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">button</span> <span class="tok-punc">===</span> <span class="tok-num">2</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// 2 = right/secondary button — normally contextmenu event bhi saath fire hota hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Right button pressed'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 3 = back (X1), 4 = forward (X2) — extra mouse buttons wale mice ke liye</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Modifier keys — kaunsi keyboard key saath dabi thi</span>
+<span class="tok-fn">button</span><span class="tok-punc">.</span><span class="tok-fn">onclick</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// onclick property assignment — sirf ek handler allow karta hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">altKey</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">shiftKey</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// altKey aur shiftKey dono boolean properties — pressed the?</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'Hooray!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                          <span class="tok-com">// custom keyboard-shortcut-like click behavior</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-com">// Cross-platform Ctrl/Cmd check ka pattern — Mac pe metaKey (Cmd), Windows/Linux pe ctrlKey</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">metaKey</span> <span class="tok-punc">||</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">ctrlKey</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// dono check karna zaroori hai — single platform-check bug hai</span>
+    <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Cmd/Ctrl + click'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// e.g. multi-select ya "open in new tab" jaisa custom intent</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Coordinates do flavor mein aate hain, aur inko confuse karna production bugs ka common source hai:
+      </p>
+      <table>
+        <thead><tr><th>Property</th><th>Reference frame</th><th>Scroll ka effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>clientX / clientY</code></td><td>Viewport (visible window)</td><td>Scroll se change NAHI hota — window ke top-left se fixed distance</td></tr>
+          <tr><td><code>pageX / pageY</code></td><td>Poora document</td><td>Scroll ke saath grow hota hai — document ke top-left se absolute distance</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Galat coordinate use karna = positioning bug</div>
+        <p>
+          Agar tum <code>position: fixed</code> wale element ko position kar rahe ho (jo viewport-relative
+          hota hai), to <code>clientX/clientY</code> use karo. Agar <code>position: absolute</code> wale
+          element ko document ke andar position kar rahe ho, to <code>pageX/pageY</code> chahiye. In dono
+          ko swap karna scroll hone par element ko galat jagah "jump" karwa deta hai — chapter 18 mein
+          humne document vs viewport coordinates detail mein dekhe the, yahi concept mouse events pe apply
+          hota hai.
+        </p>
+      </div>
+
+      <h2 id="mouseover-vs-enter">mouseover/mouseout vs mouseenter/mouseleave — classic gotcha</h2>
+      <p>
+        Ye do event-pairs superficially same lagte hain (dono "enter/leave" detect karte hain) lekin
+        internally bilkul alag mechanism follow karte hain — aur interview mein ye ek favorite trick
+        question hai.
+      </p>
+      <ul>
+        <li><code>mouseover</code> / <code>mouseout</code> — <strong>bubble karte hain</strong>, aur har descendant boundary crossing pe fire hote hain.</li>
+        <li><code>mouseenter</code> / <code>mouseleave</code> — <strong>bubble nahi karte</strong>, sirf tab fire hote hain jab pointer poore element (uske saare children samet) ke andar/bahar jaata hai — exactly ek baar.</li>
+      </ul>
+      <p>
+        Root cause samjho: jab pointer ek parent se uske child element ke andar move karta hai, browser ye
+        maanta hai ki pointer pehle parent se "out" hua (child boundary cross karte hi) aur phir child mein
+        "over" hua. <code>mouseout</code> event child ke <code>mouseover</code> event ki tarah hi
+        <strong>bubble karke parent tak pahunchta hai</strong> — matlab agar tumne naively parent pe
+        <code>mouseout</code> listener laga rakha hai, wo child boundary cross karte hi bhi fire ho jaayega,
+        jaise pointer poore parent se bahar chala gaya ho — jabki actually wo sirf ek child ke andar gaya hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">relatedTarget se real "left the parent" detect karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">onmouseout</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// parent pe mouseout — child transitions ke liye bhi fire hoga</span>
+  <span class="tok-com">// relatedTarget = jahan pointer JAA raha hai (mouseout ke liye "destination")</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">related</span> <span class="tok-punc">=</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">relatedTarget</span><span class="tok-punc">;</span>          <span class="tok-com">// null bhi ho sakta hai agar pointer window se hi bahar chala gaya</span>
+
+  <span class="tok-com">// Check: kya related target abhi bhi parent ke andar (ya khud parent) hai?</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">related</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">contains</span><span class="tok-punc">(</span><span class="tok-fn">related</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// contains() — DOM tree traversal se ancestor-check</span>
+    <span class="tok-kw">return</span><span class="tok-punc">;</span>  <span class="tok-com">// pointer sirf child mein gaya hai, parent se "actually" nahi nikla — ignore karo</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-com">// Yahan tak pahunche matlab pointer genuinely parent (aur uske saare children) se bahar gaya</span>
+  <span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'highlighted'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// highlight hataao — real "leave" hua</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// mouseenter/mouseleave se yehi kaam bina manual filtering ke ho jaata:</span>
+<span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">onmouseenter</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'highlighted'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// sirf ek baar fire, children ignore</span>
+<span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">onmouseleave</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">parent</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'highlighted'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// sirf ek baar fire, children ignore</span></code></pre>
+      </div>
+
+      <p>
+        Toh <code>mouseenter/mouseleave</code> hamesha better hai? Nahi — kyunki wo <strong>bubble nahi
+        karte</strong>, event delegation (chapter 19 wala pattern — ek listener document/parent pe, sab
+        children ke liye) inke saath kaam nahi karta. Agar tumhe 500 table cells pe delegated hover-detection
+        chahiye, to <code>mouseover/mouseout</code> hi option hai — <code>relatedTarget</code> filtering ke
+        saath, jaise upar dikhaya.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Fast mouse movement — elements skip ho sakte hain</div>
+        <p>
+          Browser har pixel ke liye event fire nahi karta — periodically mouse position check karta hai
+          (performance ke liye). Agar pointer bahut fast move kare, to beech ke koi child elements ka
+          <code>mouseover/mouseout</code> bilkul fire hi nahi hoga — pointer directly ek distant descendant
+          pe "land" kar sakta hai. Isliye kabhi assume mat karo ki path mein har element ko event milega.
+        </p>
+      </div>
+
+      <h2 id="drag-drop">Mouse events se Drag'n'Drop banana</h2>
+      <p>
+        Native HTML5 <code>dragstart/dragover/drop</code> API exist karta hai, lekin uski limitations
+        significant hain — tum dragging ko kisi specific area tak restrict nahi kar sakte, horizontal/vertical-only
+        drag nahi bana sakte, aur mobile support historically weak raha hai. Isliye production drag'n'drop
+        UIs (Trello-style boards, sliders, sortable lists) zyada tar <strong>manually mousedown + mousemove +
+        mouseup</strong> se implement hote hain — full control milta hai.
+      </p>
+      <p>Algorithm teen steps mein:</p>
+      <ol>
+        <li><strong>mousedown</strong> — element ko <code>position: fixed</code> banao, z-index se top pe le aao, shift calculate karo.</li>
+        <li><strong>mousemove</strong> (document pe) — element ko pointer ke saath move karo, shift maintain karte hue.</li>
+        <li><strong>mouseup</strong> — handlers hata do, drop-target detect karke finalize karo.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title">Manual drag'n'drop — position:fixed + shift technique<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">ondragstart</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// browser ka NATIVE drag'n'drop disable karo</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>                                    <span class="tok-com">// warna image-ghost-drag ka default visual artifact aayega</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">onmousedown</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// Step 1: press hote hi drag session start</span>
+
+  <span class="tok-com">// shiftX/shiftY = pointer aur element ke top-left corner ke beech ka offset</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">shiftX</span> <span class="tok-punc">=</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">clientX</span> <span class="tok-punc">-</span> <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">left</span><span class="tok-punc">;</span>  <span class="tok-com">// horizontal offset — ye maintain rakhna hai warna ball center-jump karega</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">shiftY</span> <span class="tok-punc">=</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">clientY</span> <span class="tok-punc">-</span> <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">top</span><span class="tok-punc">;</span>   <span class="tok-com">// vertical offset — same reason</span>
+
+  <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">position</span> <span class="tok-punc">=</span> <span class="tok-str">'fixed'</span><span class="tok-punc">;</span>            <span class="tok-com">// fixed positioning — viewport-relative, so clientX/Y directly use kar sakte hain</span>
+  <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">zIndex</span> <span class="tok-punc">=</span> <span class="tok-num">1000</span><span class="tok-punc">;</span>               <span class="tok-com">// baaki sab content ke upar render ho</span>
+  <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">ball</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// body ka direct child bana do — parent ke overflow:hidden se bachne ke liye</span>
+
+  <span class="tok-kw">function</span> <span class="tok-fn">moveAt</span><span class="tok-punc">(</span><span class="tok-fn">pageX</span><span class="tok-punc">,</span> <span class="tok-fn">pageY</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// helper: ball ko diye gaye coordinates pe (shift adjust karke) rakho</span>
+    <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">left</span> <span class="tok-punc">=</span> <span class="tok-fn">pageX</span> <span class="tok-punc">-</span> <span class="tok-fn">shiftX</span> <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span>  <span class="tok-com">// shift subtract karke — pointer wahi grab-point pe rahega jahan pehle tha</span>
+    <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">top</span> <span class="tok-punc">=</span> <span class="tok-fn">pageY</span> <span class="tok-punc">-</span> <span class="tok-fn">shiftY</span> <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-fn">moveAt</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">pageX</span><span class="tok-punc">,</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">pageY</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// initial position turant set — warna pehla mousemove tak ball old jagah dikhega</span>
+
+  <span class="tok-kw">let</span> <span class="tok-fn">currentDroppable</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>          <span class="tok-com">// track karo ki currently kis droppable ke upar hover kar rahe hain</span>
+
+  <span class="tok-kw">function</span> <span class="tok-fn">onMouseMove</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// Step 2: har move pe ball follow kare</span>
+    <span class="tok-fn">moveAt</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">pageX</span><span class="tok-punc">,</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">pageY</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// naya position set karo</span>
+
+    <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">hidden</span> <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>              <span class="tok-com">// ball ko temporarily chhupao — warna elementFromPoint ball ko hi detect karega</span>
+    <span class="tok-kw">let</span> <span class="tok-fn">elemBelow</span> <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">elementFromPoint</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">clientX</span><span class="tok-punc">,</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">clientY</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ball ke NEECHE actual element kaunsa hai (clientX/Y — viewport-relative API hai)</span>
+    <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">hidden</span> <span class="tok-punc">=</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>             <span class="tok-com">// ball wapis dikhao</span>
+
+    <span class="tok-kw">let</span> <span class="tok-fn">droppableBelow</span> <span class="tok-punc">=</span> <span class="tok-fn">elemBelow</span><span class="tok-punc">?.</span><span class="tok-fn">closest</span><span class="tok-punc">(</span><span class="tok-str">'.droppable'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// closest ancestor jo ".droppable" class rakhta ho (ya khud element)</span>
+
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">currentDroppable</span> <span class="tok-punc">!=</span> <span class="tok-fn">droppableBelow</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// target change hua hai kya (naya droppable ya null)</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">currentDroppable</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// agar pehle koi droppable highlighted tha</span>
+        <span class="tok-fn">currentDroppable</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'hovered'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// uska highlight hatao — ball wahan se nikal gaya</span>
+      <span class="tok-punc">}</span>
+      <span class="tok-fn">currentDroppable</span> <span class="tok-punc">=</span> <span class="tok-fn">droppableBelow</span><span class="tok-punc">;</span>     <span class="tok-com">// naya current target set karo (ho sakta hai null ho)</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">currentDroppable</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// agar naya target valid droppable hai</span>
+        <span class="tok-fn">currentDroppable</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'hovered'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// highlight karo — visual feedback user ko</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'mousemove'</span><span class="tok-punc">,</span> <span class="tok-fn">onMouseMove</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// DOCUMENT pe listen karo — sirf ball pe nahi, kyunki pointer ball se bahar bhi nikal sakta hai</span>
+
+  <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">onmouseup</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// Step 3: release hote hi drag session end</span>
+    <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">removeEventListener</span><span class="tok-punc">(</span><span class="tok-str">'mousemove'</span><span class="tok-punc">,</span> <span class="tok-fn">onMouseMove</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ZAROORI cleanup — warna listener leak hoke agli drag ko bhi affect karega</span>
+    <span class="tok-fn">ball</span><span class="tok-punc">.</span><span class="tok-fn">onmouseup</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>              <span class="tok-com">// khud ko bhi hata do</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">currentDroppable</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                <span class="tok-com">// agar drop kisi valid target pe hua</span>
+      <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'Dropped into:'</span><span class="tok-punc">,</span> <span class="tok-fn">currentDroppable</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// yahan actual drop-logic likho — e.g. DOM move, API call</span>
+      <span class="tok-fn">currentDroppable</span><span class="tok-punc">.</span><span class="tok-fn">classList</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">'hovered'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// highlight hatao, drag session finish</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: document pe listen karna hi kyun</div>
+        <p>
+          <code>mousemove</code> listener <code>ball</code> pe nahi, <code>document</code> pe lagaya gaya hai
+          — ye intentional hai. Fast dragging mein pointer easily ball ke bounding box se bahar nikal sakta
+          hai (ball follow karne mein hamesha ek frame ka lag hota hai), aur agar listener sirf ball pe hota,
+          to jaise hi pointer ball se bahar gaya, drag "atak" jaata. Document-level listening ensure karta hai
+          ki pointer window ke andar kahin bhi ho, drag continue rahe. Yahi reason hai ki Pointer Events wale
+          <code>setPointerCapture</code> approach isse zyada elegant hai — niche dekhenge.
+        </p>
+      </div>
+
+      <h2 id="pointer-events">Pointer Events — modern unified API</h2>
+      <p>
+        Historically web ke paas sirf mouse events the. Phir touchscreens aaye, aur alag
+        <code>touchstart/touchmove/touchend</code> family add hui. Result: ek hi interaction (jaise
+        drag'n'drop) ko support karne ke liye developers ko <strong>do parallel event systems</strong> likhne
+        padte — mouse ke liye aur touch ke liye — plus stylus/pen devices apni khud ki quirks laate. Pointer
+        Events spec ne ye fragmentation solve kiya: <strong>ek hi event family, sab input devices ke liye</strong>
+        (mouse, touch, pen) — <code>pointerdown</code>, <code>pointerup</code>, <code>pointermove</code>,
+        <code>pointerover</code>, <code>pointerout</code>, <code>pointerenter</code>, <code>pointerleave</code>
+        — mouse events ke naam-mapping equivalent, lekin device-agnostic.
+      </p>
+      <p>
+        Extra properties jo mouse events mein nahi hote: <code>pointerId</code> (multi-touch mein har finger
+        ki unique ID), <code>pointerType</code> (<code>"mouse"</code>/<code>"touch"</code>/<code>"pen"</code>),
+        <code>isPrimary</code> (multi-touch mein first pointer), aur <code>pressure</code> (pen devices ke
+        liye force).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Pointer capture — slider drag bina document listener ke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">onpointerdown</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>   <span class="tok-com">// pointerdown — mouse click ho ya touch tap ho, DONO ke liye same handler</span>
+
+  <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">setPointerCapture</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">pointerId</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ROOT MECHANISM: is pointerId ke saare future events ab thumb ko hi milenge</span>
+  <span class="tok-com">// matlab agar pointer thumb ki boundary se bahar bhi nikal jaaye, events yahin aate rahenge — document listener ki zaroorat khatam</span>
+
+  <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">onpointermove</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// capture ke baad, ye directly thumb pe hi fire hoga chahe pointer kahin bhi ho</span>
+    <span class="tok-kw">let</span> <span class="tok-fn">newLeft</span> <span class="tok-punc">=</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">clientX</span> <span class="tok-punc">-</span> <span class="tok-fn">slider</span><span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">left</span><span class="tok-punc">;</span>  <span class="tok-com">// slider ke andar relative position calculate karo</span>
+    <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">style</span><span class="tok-punc">.</span><span class="tok-fn">left</span> <span class="tok-punc">=</span> <span class="tok-fn">newLeft</span> <span class="tok-punc">+</span> <span class="tok-str">'px'</span><span class="tok-punc">;</span>  <span class="tok-com">// thumb ko naye position pe move karo</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+  <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">onpointerup</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// release — capture automatically release ho jaata hai pointerup pe</span>
+    <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">onpointermove</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>       <span class="tok-com">// handler cleanup — memory leak se bachne ke liye</span>
+    <span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">onpointerup</span> <span class="tok-punc">=</span> <span class="tok-kw">null</span><span class="tok-punc">;</span>         <span class="tok-com">// khud ko bhi hata do</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Native drag interference se bachne ke liye — dono zaroori hain touch devices pe</span>
+<span class="tok-fn">thumb</span><span class="tok-punc">.</span><span class="tok-fn">ondragstart</span> <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>       <span class="tok-com">// native HTML drag disable karo</span></code></pre>
+      </div>
+      <p>
+        <code>setPointerCapture</code> ka use isliye better hai upar wale manual drag'n'drop example se —
+        wahan humein <code>document</code> pe listener lagana pada tha aur manually cleanup karna pada tha.
+        Pointer capture ke saath, saare events directly target element pe hi retarget ho jaate hain, code
+        cleaner ho jaata hai, aur accidental trigger doosre elements ke pointer handlers pe nahi hota.
+      </p>
+      <div class="callout info">
+        <div class="callout-title">📌 pointercancel — jab browser interaction cheen leta hai</div>
+        <p>
+          Ye event fire hota hai jab ongoing pointer interaction browser khud abort kar deta hai — jaise
+          device orientation change (tablet rotate), ya browser ka apna native drag-and-drop/zoom-pan gesture
+          activate ho jaana. Isse bachne ke liye <code>ondragstart = () =&gt; false</code> aur CSS
+          <code>touch-action: none</code> element pe lagana chahiye.
+        </p>
+      </div>
+
+      <h2 id="keyboard-events">Keyboard Events</h2>
+      <p>
+        Sirf do events yaad rakhne zaroori hain: <code>keydown</code> (key press hote hi) aur
+        <code>keyup</code> (release hote hi). <code>keypress</code> event, aur uske saath
+        <code>keyCode</code>/<code>charCode</code>/<code>which</code> properties, spec se deprecated hain —
+        cross-browser inconsistencies itni thi ki spec authors ne inhe replace karna hi better samjha
+        modern <code>key</code>/<code>code</code> properties se.
+      </p>
+      <p>
+        <code>event.key</code> vs <code>event.code</code> ka farak samajhna critical hai:
+      </p>
+      <ul>
+        <li><code>event.key</code> — <strong>human-readable character</strong> jo actually produce hua, layout-dependent. Z key US layout pe <code>"z"</code>/<code>"Z"</code> deta hai, German QWERTZ layout pe wahi physical key <code>"y"</code> deta hai.</li>
+        <li><code>event.code</code> — <strong>physical key ka location</strong>, layout-independent. Wahi Z-position wali key hamesha <code>"KeyZ"</code> deti hai, chahe layout kuch bhi ho.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">WASD game controls — event.code kyun zaroori hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-fn">pressedKeys</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Set</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// currently-held keys ka set — game loop isse read karega</span>
+
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'keydown'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// key press hote hi</span>
+  <span class="tok-com">// event.code use kiya — event.key NAHI, kyunki code physical position deta hai</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-str">'KeyW'</span><span class="tok-punc">,</span> <span class="tok-str">'KeyA'</span><span class="tok-punc">,</span> <span class="tok-str">'KeyS'</span><span class="tok-punc">,</span> <span class="tok-str">'KeyD'</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">includes</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">code</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// physical WASD position check</span>
+    <span class="tok-com">// AZERTY (French) keyboard pe yehi physical keys ZQSD "type" karte hain,</span>
+    <span class="tok-com">// lekin event.code hamesha 'KeyW'/'KeyA'/'KeyS'/'KeyD' hi rahega — layout kuch bhi ho</span>
+    <span class="tok-fn">pressedKeys</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">code</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// set mein add karo — game loop movement direction yahan se derive karega</span>
+    <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">preventDefault</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// browser ke default scroll/behavior ko rokna (e.g. space-bar page-scroll)</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-com">// Agar hum event.key use karte, to AZERTY user ke liye "W" physical key ka key value 'z' hota — bug!</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">repeat</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// repeat property — key ko dabaye rakhne se browser auto-fire karta hai keydown</span>
+    <span class="tok-kw">return</span><span class="tok-punc">;</span>  <span class="tok-com">// game loop already Set se continuous movement handle kar raha, duplicate work skip karo</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'keyup'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>    <span class="tok-com">// key release hote hi</span>
+  <span class="tok-fn">pressedKeys</span><span class="tok-punc">.</span><span class="tok-fn">delete</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">code</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// set se hatao — ab wo direction move nahi karegi</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Hotkey pattern — Ctrl/Cmd+Z (undo). Yahan bhi code use kiya kyunki hotkeys layout-independent hone chahiye</span>
+<span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'keydown'</span><span class="tok-punc">,</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">code</span> <span class="tok-punc">==</span> <span class="tok-str">'KeyZ'</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-punc">(</span><span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">ctrlKey</span> <span class="tok-punc">||</span> <span class="tok-fn">event</span><span class="tok-punc">.</span><span class="tok-fn">metaKey</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>  <span class="tok-com">// physical Z key + Ctrl(Win)/Cmd(Mac)</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">'Undo!'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// undo logic yahan trigger hoga</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ event.key ya event.code — kab kaunsa</div>
+        <p>
+          Rule of thumb: <strong>text input ke liye <code>event.key</code></strong> (jo character user
+          actually type kar raha hai wahi chahiye, chahe layout kuch bhi ho), aur
+          <strong>physical shortcuts/game-controls ke liye <code>event.code</code></strong> (WASD, hotkeys —
+          jahan physical key position matter karta hai, produced character nahi). Special keys jaise
+          <code>Shift</code>, <code>Enter</code>, <code>F1</code> ke liye <code>event.key</code> aur
+          <code>event.code</code> almost same hote hain (koi printable character produce nahi hota).
+        </p>
+      </div>
+
+      <h2 id="scroll-events">Scroll Events + throttling</h2>
+      <p>
+        <code>scroll</code> event tab fire hota hai jab page (ya koi scrollable element) scroll hota hai —
+        do main use-cases: (1) scroll position ke hisaab se UI elements show/hide karna (jaise "back to top"
+        button, sticky header), aur (2) infinite scrolling — bottom ke paas pahunchte hi zyada content load
+        karna.
+      </p>
+      <div class="callout danger">
+        <div class="callout-title">⚠️ scroll pe preventDefault() kaam nahi karta</div>
+        <p>
+          <code>scroll</code> event <strong>scroll ho chuke hone ke baad</strong> fire hota hai — isliye
+          <code>event.preventDefault()</code> yahan koi effect nahi karta, scroll already ho chuka hota hai.
+          Agar scrolling actually rokni hai (jaise Page-Down key se), to scroll ko cause karne wale event
+          (e.g. <code>keydown</code>) pe hi <code>preventDefault()</code> lagana padega — ya CSS
+          <code>overflow: hidden</code> use karo.
+        </p>
+      </div>
+
+      <p>
+        Scroll bahut high-frequency fire hota hai — ek continuous scroll gesture mein <strong>dozens of
+        events per second</strong>. Agar tumhara handler har baar heavy DOM reads/writes karta hai (jaise
+        <code>getBoundingClientRect</code>, layout recalculation trigger karne wali cheezein), to ye
+        janky scrolling aur frame drops ka direct cause banta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">requestAnimationFrame-based scroll throttle<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">throttleWithRAF</span><span class="tok-punc">(</span><span class="tok-fn">callback</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>          <span class="tok-com">// higher-order function — koi bhi callback wrap kar sakta hai</span>
+  <span class="tok-kw">let</span> <span class="tok-fn">scheduled</span> <span class="tok-punc">=</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>                     <span class="tok-com">// flag: kya ek frame already schedule ho chuka hai</span>
+
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">...</span><span class="tok-fn">args</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// wrapped function jo actual event listener banega</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">scheduled</span><span class="tok-punc">)</span> <span class="tok-kw">return</span><span class="tok-punc">;</span>          <span class="tok-com">// agar already ek frame pending hai, naya schedule mat karo — ye hi throttle ka core hai</span>
+    <span class="tok-fn">scheduled</span> <span class="tok-punc">=</span> <span class="tok-kw">true</span><span class="tok-punc">;</span>                    <span class="tok-com">// flag set — agla event isse skip karega jab tak ye frame process na ho</span>
+
+    <span class="tok-fn">requestAnimationFrame</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>       <span class="tok-com">// browser ke next paint cycle se pehle callback run karo — max 1 baar per frame (~60fps)</span>
+      <span class="tok-fn">callback</span><span class="tok-punc">(</span><span class="tok-punc">...</span><span class="tok-fn">args</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// asli kaam yahan — latest args ke saath (purane intermediate scroll events discard ho gaye)</span>
+      <span class="tok-fn">scheduled</span> <span class="tok-punc">=</span> <span class="tok-kw">false</span><span class="tok-punc">;</span>                <span class="tok-com">// flag reset — agla scroll event ab naya frame schedule kar sakta hai</span>
+    <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">checkInfiniteScroll</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// actual scroll-handling logic (heavy — layout read karta hai)</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">rect</span> <span class="tok-punc">=</span> <span class="tok-fn">document</span><span class="tok-punc">.</span><span class="tok-fn">documentElement</span><span class="tok-punc">.</span><span class="tok-fn">getBoundingClientRect</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// poore document ka viewport-relative bounding box</span>
+  <span class="tok-kw">const</span> <span class="tok-fn">distanceFromBottom</span> <span class="tok-punc">=</span> <span class="tok-fn">rect</span><span class="tok-punc">.</span><span class="tok-fn">bottom</span> <span class="tok-punc">-</span> <span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">innerHeight</span><span class="tok-punc">;</span>  <span class="tok-com">// document ka bottom edge, viewport bottom se kitna door hai</span>
+
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">distanceFromBottom</span> <span class="tok-punc">&lt;</span> <span class="tok-num">300</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>       <span class="tok-com">// 300px threshold — bottom ke paas pahunchte hi trigger karo, exact bottom pe nahi</span>
+    <span class="tok-fn">loadMoreContent</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                <span class="tok-com">// naya content fetch/append karo (API call ya DOM insert)</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// Naked handler ki jagah throttled version register karo</span>
+<span class="tok-fn">window</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'scroll'</span><span class="tok-punc">,</span> <span class="tok-fn">throttleWithRAF</span><span class="tok-punc">(</span><span class="tok-fn">checkInfiniteScroll</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ab heavy logic max 60 baar/sec chalega, chahe scroll event 200+ baar fire ho</span></code></pre>
+      </div>
+
+      <p>
+        Ye <code>requestAnimationFrame</code>-based throttle isliye better hai plain <code>setTimeout</code>
+        throttle se — kyunki ye browser ke actual paint cycle ke saath sync hota hai. Agar tum
+        <code>setTimeout(fn, 100)</code> use karte, to fixed 100ms interval hota hai jo device ki refresh
+        rate se independent hai (kabhi extra work, kabhi janky). rAF ensures ki callback exactly utni baar
+        chale jitni baar browser actually naya frame paint kar raha hai — na zyada, na kam.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: passive listeners aur scroll performance</div>
+        <p>
+          Scroll (aur touchmove) listeners ke liye <code>{ passive: true }</code> option pass karna production
+          mein important hai: <code>window.addEventListener('scroll', handler, { passive: true })</code>.
+          Ye browser ko batata hai ki handler kabhi <code>preventDefault()</code> call nahi karega, isliye
+          browser scroll ko <strong>turant</strong> process kar sakta hai, handler ke complete hone ka wait
+          kiye bina. Bina passive flag ke, browser ko har scroll frame se pehle handler complete hone ka
+          wait karna padta hai (kyunki wo preventDefault call kar sakta hai) — jo scroll ko janky bana deta
+          hai, especially mobile devices pe. Chrome jaise browsers touch listeners ke liye passive ko default
+          bhi bana chuke hain, but scroll listeners pe explicit karna best practice hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Click sequence hamesha: <code>mousedown → mouseup → click</code> — agar dono alag elements pe hue, <code>click</code> fire nahi hoga.</li>
+        <li><code>clientX/Y</code> = viewport-relative (scroll-independent), <code>pageX/Y</code> = document-relative (scroll ke saath badhta hai).</li>
+        <li><code>mouseover/mouseout</code> bubble karte hain aur child-boundary crossings pe bhi fire hote hain — <code>relatedTarget</code> se filter karo. <code>mouseenter/mouseleave</code> bubble nahi karte, sirf ek baar fire hote hain, but delegation ke saath incompatible hain.</li>
+        <li>Manual drag'n'drop = <code>mousedown</code> (position:fixed + shift calculate) → <code>mousemove</code> on <code>document</code> (element move + <code>elementFromPoint</code> se droppable detect) → <code>mouseup</code> (cleanup + finalize).</li>
+        <li>Pointer Events ek hi API se mouse/touch/pen sab handle karte hain — <code>setPointerCapture</code> events ko ek element pe "pin" kar deta hai, document-level listeners ki zaroorat khatam kar deta hai.</li>
+        <li><code>event.key</code> = human-readable character (text input ke liye), <code>event.code</code> = physical key position, layout-independent (hotkeys/game-controls ke liye).</li>
+        <li><code>keypress</code>, <code>keyCode</code>, <code>charCode</code>, <code>which</code> deprecated hain — <code>keydown</code>/<code>keyup</code> + <code>key</code>/<code>code</code> use karo.</li>
+        <li><code>scroll</code> event pe <code>preventDefault()</code> kaam nahi karta (scroll already ho chuka hota hai) — causing event pe rokna padta hai. High-frequency handlers ko <code>requestAnimationFrame</code> se throttle karo, aur <code>{ passive: true }</code> lagao.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>click event kab fire NAHI hoga, bawajood mousedown aur mouseup dono ke fire hone ke?</strong><br>Hint: jab mousedown aur mouseup alag-alag elements pe complete hue ho (drag karke button se bahar release karna) — click sirf same-element completion pe fire hota hai.</li>
+        <li><strong>mouseover parent element pe unexpectedly kyun fire hota hai jab pointer sirf ek child ke andar jaata hai?</strong><br>Hint: child ka mouseover event bubble karke parent tak pahunchta hai — event.target check karke ya relatedTarget se parent.contains() filter karke asli "enter" detect karna padta hai.</li>
+        <li><strong>mouseenter/mouseleave se event delegation kyun kaam nahi karta?</strong><br>Hint: ye events bubble hi nahi karte, isliye ek parent-level listener child elements ke enter/leave events kabhi receive hi nahi karega — delegation ka pura mechanism bubbling pe depend karta hai.</li>
+        <li><strong>Manual drag'n'drop implementation mein mousemove listener document pe kyun lagate hain, dragged element pe kyun nahi?</strong><br>Hint: fast dragging mein pointer easily element ke bounding box se aage nikal jaata hai (element hamesha ek-frame-lag se follow karta hai) — element-level listener se drag beech mein atak jaata.</li>
+        <li><strong>Pointer Events ne separate mouse aur touch event handling ki problem kaise solve ki, aur setPointerCapture kya fayda deta hai?</strong><br>Hint: ek hi event family (pointerdown/move/up) sab input types ke liye; setPointerCapture events ko specific element pe retarget kar deta hai, chahe pointer element se bahar chala jaaye — document-level listeners ki zaroorat khatam.</li>
+        <li><strong>event.key aur event.code mein farak batao ek concrete example ke saath.</strong><br>Hint: event.key = produced character, layout-dependent (German layout pe Z-position 'y' deta hai); event.code = physical position, hamesha same (us position ka code hamesha "KeyZ" hi rahega).</li>
+        <li><strong>keypress event kyun deprecated hai?</strong><br>Hint: keypress aur uske saath aane wali properties (keyCode, charCode, which) mein cross-browser inconsistencies itni thi ki spec ne unhe replace kar diya modern key/code se.</li>
+        <li><strong>scroll event pe preventDefault() call karne se scroll kyun nahi rukta?</strong><br>Hint: scroll event scroll ho chuke hone KE BAAD fire hota hai (post-facto notification), isliye us point tak preventDefault ka koi effect nahi — scrolling ko cause karne wale original event (jaise keydown) pe hi rokna padta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="19-events-fundamentals.html">
+        <div class="label">← Previous</div>
+        <div class="title">Events Fundamentals</div>
+      </a>
+      <a class="next" href="21-forms-controls.html">
+        <div class="label">Next →</div>
+        <div class="title">Forms &amp; Controls</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

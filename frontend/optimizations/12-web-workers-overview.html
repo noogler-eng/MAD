@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Workers — Overview | Web Performance Handbook</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link active" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Web Workers <span>›</span> Overview</div>
+      <div class="progress-pill">Chapter 12 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Main Thread · Web Worker API · postMessage</span>
+      <h1>An Overview of Web Workers</h1>
+      <p class="subtitle">
+        JavaScript by default sirf <strong>ek</strong> thread pe chalti hai — main thread. Us thread pe scripting,
+        layout, paint, aur user input sab compete karte hain. Jab koi heavy computation is thread ko block karti hai,
+        page "jam" ho jaata hai — clicks late respond karte hain, scroll jank hota hai, INP (Interaction to Next Paint)
+        kharab ho jaata hai. Web Workers is bottleneck ka escape hatch hain: JS ka ek alag OS-level thread jahan
+        heavy kaam chal sakta hai, bina main thread ko touch kiye.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#bottleneck">Main thread bottleneck kyun hai</a></li>
+          <li><a href="#what-is-worker">Web Worker kya hai</a></li>
+          <li><a href="#communication">postMessage aur structured clone</a></li>
+          <li><a href="#basic-example">Basic worker example (line-by-line)</a></li>
+          <li><a href="#transferable">Transferable objects</a></li>
+          <li><a href="#access-table">Worker access table</a></li>
+          <li><a href="#use-cases">Typical use cases</a></li>
+          <li><a href="#comlink">Senior note: Comlink aur kab overkill hai</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="bottleneck">Main thread bottleneck kyun hai</h2>
+      <p>
+        Browser ke andar ek renderer process hota hai, aur us process ke andar <strong>main thread</strong> woh
+        jagah hai jahan bahut saara kaam sequentially (ek ke baad ek) chalta hai:
+      </p>
+      <ul>
+        <li><strong>JS execution</strong> — tumhara application code, event handlers, timers, promises.</li>
+        <li><strong>HTML parsing</strong> — DOM construction jab document stream ho raha hota hai.</li>
+        <li><strong>CSS parsing aur style calculation</strong> — CSSOM banana, matching selectors.</li>
+        <li><strong>Layout (reflow)</strong> — element ke exact position/size calculate karna.</li>
+        <li><strong>Paint aur compositing</strong> — pixels ko screen pe draw karna.</li>
+        <li><strong>User input handling</strong> — click, tap, keypress, scroll events ko process karna.</li>
+      </ul>
+      <p>
+        Ye sab ek hi thread pe, ek hi call stack pe, cooperative-scheduling se chalte hain — matlab jab tak
+        JavaScript ka ek task chal raha hai, browser <em>kuch aur nahi kar sakta</em>. Agar tumhara task 50ms se
+        zyada le raha hai, wo ek "long task" ban jaata hai, aur us duration mein koi bhi user input queue mein
+        atka rehta hai. Yehi directly <strong>INP</strong> (Interaction to Next Paint) ko kharab karta hai — jitna
+        zyada main thread busy, utna zyada delay click se visual response tak.
+      </p>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Root-level insight</div>
+        <p>
+          JS single-threaded hai iska matlab hai — heavy computation (JSON parse of 10MB file, image processing,
+          complex sorting/filtering, crypto operations) agar main thread pe chalayi, toh chahe woh "async" code ho
+          bhi (jaise <code>fetch().then()</code>), <code>.then()</code> ke andar ka synchronous compute abhi bhi
+          main thread ko block karega. Async sirf I/O wait ko non-blocking banata hai, CPU-bound work ko nahi.
+          Isiliye heavy CPU work ke liye Promise kaafi nahi, actual dusra thread chahiye — Web Worker.
+        </p>
+      </div>
+
+      <h2 id="what-is-worker">Web Worker kya hai</h2>
+      <p>
+        Web Worker ek JavaScript file hai jo browser ek <strong>alag OS thread</strong> pe run karta hai, apne
+        khud ke global execution context ke saath. Kuch key architectural points:
+      </p>
+      <ul>
+        <li>
+          Worker ka global scope <code>self</code> hota hai — <code>window</code> nahi. Isliye worker ke andar
+          <code>window.document</code>, <code>window.location</code> jaisi DOM-related cheezein exist nahi karti.
+        </li>
+        <li>
+          Worker <strong>DOM ko directly access ya manipulate nahi kar sakta</strong> — DOM single-threaded design
+          hai (thread-safety issues avoid karne ke liye), toh sirf main thread hi DOM ko touch kar sakta hai.
+        </li>
+        <li>
+          Worker ke paas apni khud ki memory heap hoti hai, alag se garbage collected. Main thread se koi variable
+          share nahi hota — sab kuch message ke through jaata hai (details neeche).
+        </li>
+        <li>
+          Worker ke paas access hai: JS primitives (Array, Map, Promise, etc.), <code>fetch</code>/XHR,
+          <code>IndexedDB</code>, <code>WebSocket</code>, timers (<code>setTimeout</code>), crypto API, aur
+          <code>importScripts()</code> se dusre scripts load karna.
+        </li>
+        <li>
+          Worker ko instantiate karte waqt browser ek naya thread spawn karta hai — ye zero-cost nahi hai
+          (thread creation ka apna overhead hai), isliye workers ko dispose/reuse karna matter karta hai.
+        </li>
+      </ul>
+
+      <h2 id="communication">postMessage aur Structured Clone Algorithm</h2>
+      <p>
+        Chunki worker aur main thread alag memory spaces mein rehte hain, wo variables directly share nahi kar
+        sakte. Communication ek <strong>message-passing pipeline</strong> se hoti hai:
+      </p>
+      <ul>
+        <li><code>worker.postMessage(data)</code> — main thread se worker ko (ya worker se main thread ko) data bhejna.</li>
+        <li><code>worker.addEventListener('message', handler)</code> ya <code>onmessage</code> — dusri taraf se aaya hua data receive karna.</li>
+      </ul>
+      <p>
+        Jab tum <code>postMessage</code> call karte ho, browser <code>data</code> ko <strong>structured clone
+        algorithm</strong> se serialize karta hai — ye JSON.stringify se zyada powerful hai (Date, Map, Set,
+        ArrayBuffer, Blob, RegExp support karta hai; functions aur DOM nodes support nahi karta). Important root
+        detail: <strong>ye data COPY hota hai, share nahi</strong>. Matlab agar tum ek 50MB ka array bhejte ho,
+        browser uski poori copy banayega aur worker thread ko bhejega — jo bade payloads ke liye slow aur
+        memory-expensive ho sakta hai.
+      </p>
+      <div class="callout info">
+        <div class="callout-title">📌 Structured clone vs Transferable vs SharedArrayBuffer</div>
+        <p>
+          Teen tareeke hain data cross-thread bhejne ke: <strong>(1) Structured clone (default)</strong> — copy
+          banti hai, safe hai par bade data ke liye slow. <strong>(2) Transferable objects</strong> — ownership
+          transfer hoti hai (copy nahi), original thread us object ko access nahi kar sakta uske baad — bahut
+          fast, zero-copy. <strong>(3) SharedArrayBuffer</strong> — actual memory dono threads ke beech shared
+          hoti hai (real shared memory, atomics ke saath) — sabse powerful par sabse zyada careful handling
+          maangta hai (race conditions possible), aur cross-origin isolation headers chahiye hote hain.
+        </p>
+      </div>
+
+      <h2 id="basic-example">Basic Example — Worker Create karna, Data Bhejna, Result Lena</h2>
+      <p>
+        Neeche do files hain — main thread ka script jo worker create karke usse kaam saumpta hai, aur worker.js
+        jo actual heavy computation karta hai (yahan example ke liye ek simple "sum of large array" — real
+        duniya mein ye JSON parsing, image processing, ya encryption jaisa kuch bhi ho sakta hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">main.js — main thread se worker banana aur use karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// main.js — ye code browser ke MAIN THREAD pe chalta hai (jahan DOM/UI hai)</span>
+
+<span class="tok-com">// 'new Worker()' browser ko batata hai: ek naya OS thread spawn karo,</span>
+<span class="tok-com">// aur usme 'worker.js' file ko load karke run karo. Path relative hota hai</span>
+<span class="tok-com">// current HTML document se, ya module-based bundlers mein import.meta.url se.</span>
+<span class="tok-kw">const</span> worker = <span class="tok-kw">new</span> <span class="tok-fn">Worker</span>(<span class="tok-str">'worker.js'</span>);
+
+<span class="tok-com">// Worker se print/PROGRESS ya FINAL result wapas aane pe ye listener trigger hoga.</span>
+<span class="tok-com">// 'message' event ka payload 'event.data' mein hota hai — jo worker ne postMessage() kiya tha.</span>
+<span class="tok-fn">worker.addEventListener</span>(<span class="tok-str">'message'</span>, (event) => {
+  <span class="tok-com">// event.data woh object hai jo worker ne bheja — structured-clone se copy hoke aaya hai.</span>
+  <span class="tok-kw">const</span> { type, payload } = event.data;
+
+  <span class="tok-com">// Hum apne khud ke protocol se 'type' field use kar rahe hain taaki</span>
+  <span class="tok-com">// ek hi worker se multiple kisam ke messages differentiate ho sakein.</span>
+  <span class="tok-kw">if</span> (type === <span class="tok-str">'RESULT'</span>) {
+    <span class="tok-com">// Result mil gaya — ab ye DOM update main thread pe safely kar sakte hain,</span>
+    <span class="tok-com">// kyunki worker khud DOM ko touch nahi kar sakta tha.</span>
+    <span class="tok-fn">console.log</span>(<span class="tok-str">'Sum from worker:'</span>, payload.sum);
+    <span class="tok-fn">document.querySelector</span>(<span class="tok-str">'#result'</span>).textContent = payload.sum;
+  }
+
+  <span class="tok-kw">if</span> (type === <span class="tok-str">'ERROR'</span>) {
+    <span class="tok-com">// Worker ke andar agar koi custom error condition hui, hum use bhi</span>
+    <span class="tok-com">// message ke through wapas bhej sakte hain (worker crash se alag).</span>
+    <span class="tok-fn">console.error</span>(<span class="tok-str">'Worker reported an error:'</span>, payload.message);
+  }
+});
+
+<span class="tok-com">// Worker ke andar agar koi UNCAUGHT exception throw hoti hai (jaise</span>
+<span class="tok-com">// syntax error ya runtime error), 'error' event yahan fire hota hai.</span>
+<span class="tok-fn">worker.addEventListener</span>(<span class="tok-str">'error'</span>, (event) => {
+  <span class="tok-com">// event.message, event.filename, event.lineno debug info dete hain.</span>
+  <span class="tok-fn">console.error</span>(<span class="tok-str">'Worker crashed:'</span>, event.message, <span class="tok-str">'at'</span>, event.filename, <span class="tok-str">':'</span>, event.lineno);
+});
+
+<span class="tok-com">// Ek bada array generate karte hain jise worker ko sum karne ke liye bhejenge.</span>
+<span class="tok-com">// Ye array MAIN thread pe hi bana hai — jab postMessage() karenge, iski COPY</span>
+<span class="tok-com">// worker thread ko jaayegi (structured clone algorithm ke through).</span>
+<span class="tok-kw">const</span> bigArray = <span class="tok-fn">Array.from</span>({ length: <span class="tok-num">10_000_000</span> }, (_, i) => i);
+
+<span class="tok-com">// postMessage() se worker ko data bhejte hain. Hum bhi apna 'type' protocol</span>
+<span class="tok-com">// follow kar rahe hain taaki worker ko pata chale kya karna hai.</span>
+<span class="tok-fn">worker.postMessage</span>({ type: <span class="tok-str">'SUM_ARRAY'</span>, payload: { numbers: bigArray } });
+
+<span class="tok-com">// IMPORTANT: postMessage() call ke turant baad bhi main thread AAGE chal</span>
+<span class="tok-com">// sakta hai — ye call asynchronous hai, worker ka result aane tak main</span>
+<span class="tok-com">// thread block NAHI hota. Yehi poore pattern ka core benefit hai.</span>
+<span class="tok-fn">console.log</span>(<span class="tok-str">'Worker ko kaam de diya, main thread ab FREE hai aur UI responsive rahega.'</span>);</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">worker.js — worker thread pe chalne wala code<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// worker.js — ye file browser ek ALAG OS THREAD pe run karta hai.</span>
+<span class="tok-com">// Yahan 'window' object EXIST nahi karta — DOM ko touch karne ki</span>
+<span class="tok-com">// koshish (jaise document.querySelector) yahan turant error dega.</span>
+
+<span class="tok-com">// Worker ke andar global scope ka naam 'self' hota hai (ya use omit bhi</span>
+<span class="tok-com">// kar sakte ho kyunki worker scope mein ye implicit hai).</span>
+<span class="tok-fn">self.addEventListener</span>(<span class="tok-str">'message'</span>, (event) => {
+  <span class="tok-com">// Main thread se jo bheja gaya woh event.data mein milta hai —</span>
+  <span class="tok-com">// ye already structured-clone se COPY hoke is thread mein aa chuka hai.</span>
+  <span class="tok-kw">const</span> { type, payload } = event.data;
+
+  <span class="tok-com">// Apna simple message-type protocol check kar rahe hain.</span>
+  <span class="tok-kw">if</span> (type === <span class="tok-str">'SUM_ARRAY'</span>) {
+    <span class="tok-kw">try</span> {
+      <span class="tok-com">// Yahan se heavy computation shuru — ye loop MAIN THREAD ko</span>
+      <span class="tok-com">// bilkul BLOCK nahi karega, kyunki hum worker thread pe hain.</span>
+      <span class="tok-kw">let</span> sum = <span class="tok-num">0</span>;
+
+      <span class="tok-com">// 10 million numbers ka sum — CPU-intensive kaam, jo agar main</span>
+      <span class="tok-com">// thread pe hota toh UI ko seconds ke liye freeze kar deta.</span>
+      <span class="tok-kw">for</span> (<span class="tok-kw">let</span> i = <span class="tok-num">0</span>; i < payload.numbers.length; i++) {
+        sum += payload.numbers[i];
+      }
+
+      <span class="tok-com">// Result wapas main thread ko bhej rahe hain — apna protocol follow karte hue.</span>
+      <span class="tok-com">// Ye bhi structured-clone se copy hoke wapas jaayega.</span>
+      <span class="tok-fn">self.postMessage</span>({ type: <span class="tok-str">'RESULT'</span>, payload: { sum } });
+    } <span class="tok-kw">catch</span> (err) {
+      <span class="tok-com">// Agar computation ke beech koi error aayi, use bhi gracefully</span>
+      <span class="tok-com">// message ke through report karte hain (crash hone ke bajaye).</span>
+      <span class="tok-fn">self.postMessage</span>({ type: <span class="tok-str">'ERROR'</span>, payload: { message: err.message } });
+    }
+  }
+});</code></pre>
+      </div>
+
+      <p>
+        Notice karo — is example mein main thread aur worker ke beech koi shared variable nahi hai. Sab kuch
+        explicit <code>postMessage</code> calls ke through, ek defined "protocol" (<code>type</code>/<code>payload</code>
+        shape) follow karte hue ho raha hai. Ye pattern production code mein bahut common hai kyunki debug karna
+        aasan rehta hai.
+      </p>
+
+      <h2 id="transferable">Transferable Objects — Copy ka Cost Avoid Karna</h2>
+      <p>
+        Upar wale example mein <code>bigArray</code> ek plain JS array tha — uski poori copy worker ko bhejni
+        padi. Agar data bahut bada hai (jaise raw binary image data, audio buffers), copy karna expensive hai —
+        dono CPU time aur double memory. <code>ArrayBuffer</code> jaisi binary types ko <strong>Transferable</strong>
+        ke roop mein bheja ja sakta hai — jisme ownership transfer hoti hai, copy nahi banti.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">transfer-example.js — ArrayBuffer ko zero-copy transfer karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// main.js (relevant part) — ArrayBuffer ko TRANSFER karke bhejna, copy nahi.</span>
+
+<span class="tok-com">// Ek 100MB ka raw binary buffer bana rahe hain (jaise image ya audio data).</span>
+<span class="tok-kw">const</span> buffer = <span class="tok-kw">new</span> <span class="tok-fn">ArrayBuffer</span>(<span class="tok-num">100</span> * <span class="tok-num">1024</span> * <span class="tok-num">1024</span>); <span class="tok-com">// 100 MB</span>
+
+<span class="tok-com">// postMessage() ka DOOSRA argument ek array hai jisme woh objects list</span>
+<span class="tok-com">// karte hain jinhe TRANSFER karna hai (copy nahi karna). Browser ab</span>
+<span class="tok-com">// 'buffer' ki memory ko literally worker thread ko HAND OVER kar dega —</span>
+<span class="tok-com">// koi duplicate memory allocate nahi hogi, isliye ye operation ~instant hai</span>
+<span class="tok-com">// chahe buffer kitna bhi bada ho.</span>
+<span class="tok-fn">worker.postMessage</span>({ type: <span class="tok-str">'PROCESS_BUFFER'</span>, payload: { buffer } }, [buffer]);
+
+<span class="tok-com">// CRITICAL GOTCHA: transfer ke baad, 'buffer' is (main) thread pe</span>
+<span class="tok-com">// USELESS ho jaata hai — uski byteLength 0 ho jaati hai. Ownership</span>
+<span class="tok-com">// worker ko chali gayi. Agar tum yahan buffer ko access karne ki</span>
+<span class="tok-com">// koshish karoge, tumhe empty/detached buffer milega.</span>
+<span class="tok-fn">console.log</span>(buffer.byteLength); <span class="tok-com">// 0 — buffer 'neutered'/detached ho chuka hai</span>
+
+<span class="tok-com">// Worker se wapas processed buffer chahiye toh worker ko bhi</span>
+<span class="tok-com">// self.postMessage(result, [result.buffer]) se transfer karna hoga.</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Transfer vs Clone — kab kya use karo</div>
+        <p>
+          Agar sender ko data ke baad zaroorat nahi hai (one-way handoff, jaise "yeh buffer process karo aur
+          bhool jao"), Transferable use karo — bahut fast. Agar sender ko apni copy bhi chahiye (dono taraf data
+          use hoga), normal structured clone use karo, ya explicitly buffer ko <code>.slice()</code> karke ek
+          copy transfer karo taaki original safe rahe.
+        </p>
+      </div>
+
+      <h2 id="access-table">Worker Kya Access Kar Sakta Hai, Kya Nahi</h2>
+      <div class="callout info">
+        <div class="callout-title">📌 CAN vs CANNOT — quick reference</div>
+        <table>
+          <thead>
+            <tr><th>Category</th><th>Worker access?</th><th>Detail</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>DOM (document, elements)</td><td>❌ Nahi</td><td>DOM single-threaded design hai, sirf main thread touch kar sakta hai</td></tr>
+            <tr><td><code>window</code> object</td><td>❌ Nahi</td><td>Worker ka global scope <code>self</code> hai, <code>window</code> nahi</td></tr>
+            <tr><td>Parent object variables</td><td>❌ Nahi</td><td>Alag memory space — sirf postMessage se copy/transfer</td></tr>
+            <tr><td><code>fetch</code> / XMLHttpRequest</td><td>✅ Haan</td><td>Network requests worker se directly kiye ja sakte hain</td></tr>
+            <tr><td><code>IndexedDB</code></td><td>✅ Haan</td><td>Client-side storage worker ke andar accessible hai</td></tr>
+            <tr><td>Timers (<code>setTimeout</code>/<code>setInterval</code>)</td><td>✅ Haan</td><td>Fully supported</td></tr>
+            <tr><td><code>WebSocket</code></td><td>✅ Haan</td><td>Realtime connections worker se maintain ho sakti hain</td></tr>
+            <tr><td>Crypto API (<code>crypto.subtle</code>)</td><td>✅ Haan</td><td>Encryption/hashing jaise CPU-heavy kaam ke liye ideal</td></tr>
+            <tr><td>Nested Web Workers</td><td>✅ Haan</td><td>Worker khud aur workers spawn kar sakta hai</td></tr>
+            <tr><td><code>localStorage</code></td><td>❌ Nahi</td><td>Synchronous aur window-scoped API hai, worker mein available nahi</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="use-cases">Typical Use Cases</h2>
+      <ul>
+        <li><strong>Heavy computation</strong> — complex math, physics simulations, ya large-dataset sorting/filtering jo main thread pe janky feel hoti.</li>
+        <li><strong>Large JSON/CSV parsing</strong> — API se MB-scale response aaya, aur usse parse+transform karna hai bina scroll jank ke.</li>
+        <li><strong>Image/video processing</strong> — pixel manipulation, filters, thumbnail generation, EXIF metadata extraction (agla chapter isi pe hai).</li>
+        <li><strong>Encryption/hashing</strong> — client-side crypto operations jo CPU-intensive hote hain (password hashing, data encryption before upload).</li>
+        <li><strong>Real-time data processing</strong> — WebSocket se aane wale high-frequency updates ko process karna bina UI ko block kiye.</li>
+      </ul>
+
+      <div class="callout senior" id="comlink">
+        <div class="callout-title">🧠 Senior Dev Note — Comlink aur "kab worker overkill hai"</div>
+        <p>
+          Raw <code>postMessage</code>/<code>onmessage</code> protocol likhna quickly boilerplate-heavy ho jaata
+          hai — message types define karna, request/response ko correlate karna, error handling — sab manually.
+          <strong>Comlink</strong> (Google Chrome team ka hi ek chhota library, ~1.1KB) is boilerplate ko hata
+          deta hai — worker ke exposed functions ko normal <code>async</code> function calls jaisa feel karata
+          hai, RPC-style, under the hood postMessage use karke:
+        </p>
+        <p>
+          <code>const api = Comlink.wrap(worker); const sum = await api.sumArray(bigArray);</code> — bas, no
+          manual message-type juggling.
+        </p>
+        <p>
+          Par yahan ek important senior judgment call hai: <strong>worker reach for karna premature optimization
+          ban sakta hai</strong>. Worker spawn karna thread-creation overhead rakhta hai, aur message-passing ka
+          bhi apna serialization cost hota hai — chhote/fast operations ke liye worker add karna performance ko
+          <em>better nahi, worse</em> bana sakta hai. Sahi approach: pehle Chrome DevTools Performance panel ya
+          <code>PerformanceObserver</code> se actual long tasks profile karo, INP data dekho — agar koi specific
+          function repeatedly 50ms+ ka block create kar raha hai, <em>tab</em> worker justified hai. Sirf "ye heavy
+          lagta hai" ke assumption pe worker mat daalo.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Main thread pe JS execution, layout, paint, aur user input — sab compete karte hain; long tasks INP kharab karte hain.</li>
+        <li>Web Worker ek alag OS thread hai apne khud ke global scope (<code>self</code>) ke saath, jise DOM access nahi milta.</li>
+        <li>Communication <code>postMessage</code>/<code>onmessage</code> se hoti hai; data <strong>copy</strong> hota hai (structured clone algorithm se), share nahi — jab tak Transferable objects ya SharedArrayBuffer use na karo.</li>
+        <li>Transferable objects (jaise ArrayBuffer) ownership transfer karte hain — zero-copy, bahut fast, par original reference detached ho jaata hai.</li>
+        <li>Workers ke paas fetch, IndexedDB, crypto, WebSocket, timers hain — par DOM aur <code>window</code> nahi.</li>
+        <li>Comlink jaisi libraries postMessage boilerplate ko async function-call syntax mein convert kar deti hain.</li>
+        <li>Worker sirf tabhi use karo jab profiling se real long-task bottleneck confirm ho — premature optimization avoid karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: Web Worker aur main thread memory share karte hain kya?</strong><br>Hint: Nahi by default — structured clone se copy hoti hai. SharedArrayBuffer real shared memory deta hai, par cross-origin isolation headers (COOP/COEP) chahiye.</li>
+        <li><strong>Q: Worker DOM access kyun nahi kar sakta?</strong><br>Hint: DOM thread-safe nahi hai; multi-thread access se race conditions/corruption ho sakti hai, isliye browser design se hi restrict karta hai.</li>
+        <li><strong>Q: async/await CPU-bound work ko main thread block hone se kyun nahi bachaata?</strong><br>Hint: async sirf I/O wait ko non-blocking banata hai (event loop mein yield karta hai); synchronous CPU-heavy code (loop, parsing) chahe Promise ke andar ho, execute hote waqt abhi bhi call stack occupy karta hai.</li>
+        <li><strong>Q: Transferable object use karne ke baad original reference ka kya hota hai?</strong><br>Hint: Detached/neutered ho jaata hai (byteLength 0) — sender ke paas ab access nahi rehta, ownership receiver ko chali gayi.</li>
+        <li><strong>Q: Worker kab use nahi karna chahiye, chahe operation "heavy" lage?</strong><br>Hint: Jab actual profiling (DevTools Performance / INP metrics) long task confirm na kare — worker spawn + message serialization ka apna overhead hai jo chhoti operations ke liye net-negative ho sakta hai.</li>
+        <li><strong>Q: Comlink kya problem solve karta hai?</strong><br>Hint: Raw postMessage/onmessage boilerplate (message types, correlation, error propagation) ko hata ke worker functions ko normal async function calls jaisa expose karta hai, RPC-style, using Proxy under the hood.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="11-prefetch-prerender-precache.html">
+          <div class="label">← Previous</div>
+          <div class="title">Prefetch/Prerender/Precache</div>
+        </a>
+        <a class="next" href="13-web-workers-demo.html">
+          <div class="label">Next →</div>
+          <div class="title">Web Workers — Real Use Case</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

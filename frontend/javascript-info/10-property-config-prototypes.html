@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Config &amp; Prototypes — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link active" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 10</div>
+      <div class="progress-pill">10 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Objects · Prototypes</span>
+      <h1>Property Config &amp; Prototypes</h1>
+      <p class="subtitle">
+        Ab tak humne objects ko surface level pe use kiya — <code>obj.key = value</code>. Is chapter mein
+        hum andar jaake dekhenge ki ek property sirf ek "value" nahi hoti, balki uske saath 3 hidden flags
+        (writable/enumerable/configurable) attach hote hain jo control karte hain ki property kaise behave
+        karegi. Phir hum inheritance ke asli internal engine — <code>[[Prototype]]</code> chain — ko step
+        by step walk karenge, samjhenge <code>F.prototype</code> vs instance ka <code>[[Prototype]]</code>
+        wala classic confusion, aur dekhenge ki <code>Array.prototype</code> jaisi native prototypes ko
+        modify karna production mein danger kyun hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#flags">Property flags: writable/enumerable/configurable</a></li>
+          <li><a href="#define-property">Object.defineProperty aur descriptors</a></li>
+          <li><a href="#sealing">Object sealing: preventExtensions/seal/freeze</a></li>
+          <li><a href="#accessors">Getters/setters — accessor properties</a></li>
+          <li><a href="#prototype-chain">[[Prototype]] chain — internal lookup mechanism</a></li>
+          <li><a href="#for-in">for...in vs Object.keys — enumerable inheritance</a></li>
+          <li><a href="#f-prototype">F.prototype vs instance ka [[Prototype]]</a></li>
+          <li><a href="#native-prototypes">Native prototypes — Array.prototype, Object.prototype</a></li>
+          <li><a href="#prototype-methods">Object.create / getPrototypeOf / setPrototypeOf vs __proto__</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="flags">Property flags — har property ke 3 hidden switches</h2>
+      <p>
+        Jab tum <code>obj.name = "John"</code> likhte ho, JS engine sirf ek value store nahi karta — wo
+        <strong>property descriptor</strong> banata hai jisme value ke saath 3 boolean flags hote hain:
+        <code>writable</code> (value change ho sakti hai?), <code>enumerable</code> (loops mein dikhegi?),
+        <code>configurable</code> (flags change/delete ho sakte hain?). Normal object-literal syntax se
+        banayi gayi property mein teeno flags default <code>true</code> hote hain — isliye ye internals
+        normally invisible rehte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Object.getOwnPropertyDescriptor — flags dekhna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span>              <span class="tok-com">// simple object, normal property creation</span>
+  name<span class="tok-punc">:</span> <span class="tok-str">"John"</span>            <span class="tok-com">// name property, literal syntax se — flags sab default true honge</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> descriptor <span class="tok-punc">=</span> <span class="tok-fn">Object.getOwnPropertyDescriptor</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-str">'name'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                       <span class="tok-com">// (obj, propName) — sirf OWN property ka descriptor deta hai, inherited nahi</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-fn">JSON.stringify</span><span class="tok-punc">(</span>descriptor<span class="tok-punc">,</span> <span class="tok-kw">null</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">/* output:</span>
+<span class="tok-com">{</span>
+<span class="tok-com">  "value": "John",       // actual stored value</span>
+<span class="tok-com">  "writable": true,      // value reassign ho sakti hai</span>
+<span class="tok-com">  "enumerable": true,    // for..in / Object.keys mein dikhegi</span>
+<span class="tok-com">  "configurable": true   // delete ho sakti hai, flags change ho sakte hain</span>
+<span class="tok-com">}</span>
+<span class="tok-com">*/</span></code></pre>
+      </div>
+
+      <h2 id="define-property">Object.defineProperty — flags manually control karna</h2>
+      <p>
+        <code>Object.defineProperty(obj, propName, descriptor)</code> ek property create/update karta hai
+        jisme tum har flag explicitly control kar sakte ho. <strong>Root gotcha</strong>: is method se
+        <em>naya</em> property banane par, jo flags tum descriptor mein nahi dete, wo sab default
+        <code>false</code> ho jaate hain — literal syntax ke opposite.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">writable: false — read-only property</div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span> name<span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>  <span class="tok-com">// mutable property se shuru karte hain</span>
+
+<span class="tok-fn">Object.defineProperty</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-str">"name"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  writable<span class="tok-punc">:</span> <span class="tok-kw">false</span>            <span class="tok-com">// sirf writable flag update kar rahe hain — baaki flags jo already the wahi rahenge (existing property update case)</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-str">"use strict"</span><span class="tok-punc">;</span>            <span class="tok-com">// strict mode zaroori hai taaki violation par actual error throw ho</span>
+user<span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"Pete"</span><span class="tok-punc">;</span>       <span class="tok-com">// TypeError: Cannot assign to read only property — non-strict mode mein ye SILENTLY fail hota, koi error nahi</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">enumerable: false — loops se hide karna</div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  name<span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>              <span class="tok-com">// normal enumerable property</span>
+  <span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// custom toString method, object literal ke andar shorthand syntax</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">;</span>        <span class="tok-com">// this = user (jo bhi is method ko call karega dot ke pehle)</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">Object.defineProperty</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-str">"toString"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  enumerable<span class="tok-punc">:</span> <span class="tok-kw">false</span>           <span class="tok-com">// ab ye property for..in aur Object.keys se GAAYAB ho jaayegi</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> key <span class="tok-kw">in</span> user<span class="tok-punc">)</span> <span class="tok-fn">console.log</span><span class="tok-punc">(</span>key<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// sirf "name" print hota hai — toString hidden</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-fn">Object.keys</span><span class="tok-punc">(</span>user<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// ["name"] — ye bhi enumerable flag hi check karta hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">configurable: false — flags aur delete lock, VALUE change nahi</div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span> name<span class="tok-punc">:</span> <span class="tok-str">"John"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">Object.defineProperty</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-str">"name"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  configurable<span class="tok-punc">:</span> <span class="tok-kw">false</span>         <span class="tok-com">// SIRF configurable false kiya, writable abhi bhi true hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+user<span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"Pete"</span><span class="tok-punc">;</span>       <span class="tok-com">// KAAM KARTA HAI — configurable value-change ko block nahi karta, sirf structural changes ko</span>
+<span class="tok-kw">delete</span> user<span class="tok-punc">.</span>name<span class="tok-punc">;</span>        <span class="tok-com">// FAIL — configurable:false hone se delete allowed nahi</span>
+<span class="tok-fn">Object.defineProperty</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-str">"name"</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> enumerable<span class="tok-punc">:</span> <span class="tok-kw">false</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                <span class="tok-com">// FAIL — enumerable flag bhi change nahi ho sakta jab configurable false ho</span>
+
+<span class="tok-com">// EXCEPTION: ek hi one-way transition allowed hai — writable ko true se false karna,</span>
+<span class="tok-com">// tab bhi jab configurable false ho (extra "downgrade only" safety valve)</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ writable vs configurable: dono alag cheez lock karte hain</div>
+        <p>
+          Yahi sabse common confusion hai. <code>writable: false</code> sirf <strong>value</strong> ko lock
+          karta hai. <code>configurable: false</code> <strong>descriptor structure</strong> (flags themselves,
+          aur delete-ability) ko lock karta hai — value nahi. Ek truly-constant property banane ke liye
+          <strong>dono</strong> flags <code>false</code> chahiye. <code>Math.PI</code> ka descriptor exactly
+          isi wajah se dono <code>false</code> hai — na overwrite ho sakta hai, na delete.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">defineProperties + getOwnPropertyDescriptors — bulk aur clone</div>
+        <pre><code><span class="tok-com">// bulk mein multiple properties ek call mein define karna</span>
+<span class="tok-fn">Object.defineProperties</span><span class="tok-punc">(</span>user<span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  name<span class="tok-punc">:</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span> writable<span class="tok-punc">:</span> <span class="tok-kw">false</span> <span class="tok-punc">}</span><span class="tok-punc">,</span>  <span class="tok-com">// har key ke liye ek full descriptor object</span>
+  surname<span class="tok-punc">:</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-str">"Smith"</span><span class="tok-punc">,</span> writable<span class="tok-punc">:</span> <span class="tok-kw">false</span> <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// FLAGS-preserving clone — normal spread/assign flags copy NAHI karta, ye karta hai</span>
+<span class="tok-kw">let</span> clone <span class="tok-punc">=</span> <span class="tok-fn">Object.defineProperties</span><span class="tok-punc">(</span>
+  <span class="tok-punc">{</span><span class="tok-punc">}</span><span class="tok-punc">,</span>                                        <span class="tok-com">// target: fresh empty object</span>
+  <span class="tok-fn">Object.getOwnPropertyDescriptors</span><span class="tok-punc">(</span>user<span class="tok-punc">)</span>      <span class="tok-com">// source ke SAARE descriptors (value+flags) ek object mein</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// { ...user } se ye better hai kyunki ye non-enumerable aur symbol properties bhi copy karta hai,</span>
+<span class="tok-com">// aur flags bhi preserve hote hain — spread sirf enumerable own keys ke plain values copy karta hai</span></code></pre>
+      </div>
+
+      <h2 id="sealing">Object-level sealing — poore object ko lock karna</h2>
+      <p>
+        Individual property flags ke upar, 3 global methods poore object ko restrict karte hain:
+      </p>
+      <table>
+        <thead><tr><th>Method</th><th>Naya property add?</th><th>Existing delete?</th><th>Value change?</th></tr></thead>
+        <tbody>
+          <tr><td><code>Object.preventExtensions(obj)</code></td><td>❌</td><td>✅</td><td>✅</td></tr>
+          <tr><td><code>Object.seal(obj)</code></td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td><code>Object.freeze(obj)</code></td><td>❌</td><td>❌</td><td>❌</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Corresponding check karne ke liye <code>Object.isExtensible</code>, <code>Object.isSealed</code>,
+        <code>Object.isFrozen</code> hain. Practice mein ye rarely use hote hain — ek immutable config
+        object banane ke liye <code>Object.freeze</code> sabse common case hai.
+      </p>
+
+      <h2 id="accessors">Getters/setters — accessor properties</h2>
+      <p>
+        JS mein 2 property types hain: <strong>data properties</strong> (jo humne abhi dekhi — value +
+        flags), aur <strong>accessor properties</strong>, jo function pairs (<code>get</code>/<code>set</code>)
+        ke through kaam karte hain lekin bahar se normal property jaisi dikhti hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">get/set — computed fullName property</div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  name<span class="tok-punc">:</span> <span class="tok-str">"John"</span><span class="tok-punc">,</span>                       <span class="tok-com">// asli backing data — pehla naam</span>
+  surname<span class="tok-punc">:</span> <span class="tok-str">"Smith"</span><span class="tok-punc">,</span>                   <span class="tok-com">// asli backing data — last naam</span>
+
+  <span class="tok-kw">get</span> <span class="tok-fn">fullName</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                    <span class="tok-com">// getter: jab bhi user.fullName PADHA jaayega ye chalega</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">`</span><span class="tok-punc">${</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">}</span> <span class="tok-punc">${</span><span class="tok-kw">this</span><span class="tok-punc">.</span>surname<span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">;</span>  <span class="tok-com">// name+surname ko concat karke return — koi separate storage nahi</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-kw">set</span> <span class="tok-fn">fullName</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>              <span class="tok-com">// setter: jab bhi user.fullName = "..." LIKHA jaayega ye chalega, value = RHS</span>
+    <span class="tok-punc">[</span><span class="tok-kw">this</span><span class="tok-punc">.</span>name<span class="tok-punc">,</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>surname<span class="tok-punc">]</span> <span class="tok-punc">=</span> value<span class="tok-punc">.</span><span class="tok-fn">split</span><span class="tok-punc">(</span><span class="tok-str">" "</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                       <span class="tok-com">// space se split karke array-destructuring se dono fields update</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>user<span class="tok-punc">.</span>fullName<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "John Smith" — getter call hua, bina () ke</span>
+user<span class="tok-punc">.</span>fullName <span class="tok-punc">=</span> <span class="tok-str">"Alice Cooper"</span><span class="tok-punc">;</span> <span class="tok-com">// setter call hua, name="Alice", surname="Cooper" ban gaye</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Validation ke liye getter/setter — private-by-convention backing field</div>
+        <pre><code><span class="tok-kw">let</span> user <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">get</span> <span class="tok-fn">name</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span>_name<span class="tok-punc">;</span>              <span class="tok-com">// _name (underscore prefix = convention, "iske bahar se mat chhedo")</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+
+  <span class="tok-kw">set</span> <span class="tok-fn">name</span><span class="tok-punc">(</span>value<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span>value<span class="tok-punc">.</span>length <span class="tok-punc">&lt;</span> <span class="tok-num">4</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>        <span class="tok-com">// validation check — assignment ke waqt hi guard laga diya</span>
+      <span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-str">"Name too short"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+      <span class="tok-kw">return</span><span class="tok-punc">;</span>                       <span class="tok-com">// invalid ho to silently bail — _name update hi nahi hoga</span>
+    <span class="tok-punc">}</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span>_name <span class="tok-punc">=</span> value<span class="tok-punc">;</span>            <span class="tok-com">// valid ho tabhi actual backing field update</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+user<span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">"Pete"</span><span class="tok-punc">;</span>              <span class="tok-com">// 4 chars, passes → this._name = "Pete"</span>
+user<span class="tok-punc">.</span>name <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">;</span>                  <span class="tok-com">// 0 chars, "Name too short" print, _name unchanged</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root rule: ek property ya data ya accessor, dono nahi</div>
+        <p>
+          Descriptor mein <code>value</code>/<code>writable</code> vs <code>get</code>/<code>set</code> ek
+          saath define karna error deta hai — engine ke andar ek property slot ya toh direct value store
+          karta hai ya function pair, dono simultaneously nahi ho sakte. <code>enumerable</code> aur
+          <code>configurable</code> dono types mein common flags hain.
+        </p>
+      </div>
+
+      <h2 id="prototype-chain">[[Prototype]] chain — property lookup ka asli internal mechanism</h2>
+      <p>
+        Ab asli root-level part: jab tum <code>obj.someProp</code> padhte ho, engine sirf ek object mein
+        nahi dekhta — wo ek <strong>chain</strong> follow karta hai. Har object ke paas ek hidden internal
+        slot hota hai <code>[[Prototype]]</code> (double square brackets specification notation hai, ye
+        koi normal accessible property nahi) jo <code>null</code> ya kisi doosre object ko point karta hai.
+        Legacy accessor <code>__proto__</code> is slot ko read/write karne ka getter/setter hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">3-level chain banate hain: longEar → rabbit → animal</div>
+        <pre><code><span class="tok-kw">let</span> animal <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  eats<span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span>                    <span class="tok-com">// animal ka OWN property</span>
+  <span class="tok-fn">walk</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                     <span class="tok-com">// animal ka OWN method</span>
+    <span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-str">"Animal walk"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> rabbit <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  jumps<span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span>                   <span class="tok-com">// rabbit ka OWN property</span>
+  __proto__<span class="tok-punc">:</span> animal              <span class="tok-com">// rabbit ka [[Prototype]] = animal — literal ke andar hi set kar rahe hain</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">let</span> longEar <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  earLength<span class="tok-punc">:</span> <span class="tok-num">10</span><span class="tok-punc">,</span>                <span class="tok-com">// longEar ka OWN property</span>
+  __proto__<span class="tok-punc">:</span> rabbit               <span class="tok-com">// longEar ka [[Prototype]] = rabbit</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Chain ban gayi: longEar --[[Prototype]]--&gt; rabbit --[[Prototype]]--&gt; animal --[[Prototype]]--&gt; null</span>
+
+longEar<span class="tok-punc">.</span><span class="tok-fn">walk</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "Animal walk" — 3 hops mein resolve hua, neeche step-by-step dekho</span></code></pre>
+      </div>
+
+      <p>
+        <code>longEar.walk()</code> call hone par engine internally exactly ye steps karta hai:
+      </p>
+      <ol>
+        <li>
+          <strong>Step 1 — longEar khud check karo:</strong> kya <code>longEar</code> ki apni (own)
+          property <code>walk</code> hai? Nahi — ismein sirf <code>earLength</code> hai.
+        </li>
+        <li>
+          <strong>Step 2 — longEar.[[Prototype]] pe jao:</strong> jo <code>rabbit</code> hai. Kya
+          <code>rabbit</code> ki own property <code>walk</code> hai? Nahi — ismein sirf <code>jumps</code>
+          hai (aur uska apna <code>[[Prototype]]</code> link).
+        </li>
+        <li>
+          <strong>Step 3 — rabbit.[[Prototype]] pe jao:</strong> jo <code>animal</code> hai. Kya
+          <code>animal</code> ki own property <code>walk</code> hai? <strong>Haan</strong> — found. Search
+          yahin ruk jaati hai.
+        </li>
+        <li>
+          <strong>Step 4 — call karo, lekin this bind karo original object se:</strong> method
+          <code>animal</code> mein defined hai, lekin jab call hota hai to <code>this = longEar</code>
+          (jis object pe call kiya gaya tha), <strong>na ki</strong> <code>animal</code>. Ye "this is
+          always the object before the dot" rule hai — chain sirf lookup ke liye use hoti hai, execution
+          context ke liye nahi.
+        </li>
+      </ol>
+      <p>
+        Agar koi bhi level pe property nahi milti aur chain <code>null</code> tak pahunch jaati hai
+        (<code>Object.prototype.__proto__ === null</code> hai — chain yahin terminate hoti hai), to result
+        <code>undefined</code> hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Writing bypasses the chain — sirf reading walk karta hai</div>
+        <pre><code>longEar<span class="tok-punc">.</span>walk <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-str">"LongEar bounce!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-com">// Ye chain mein UPAR search nahi karta — seedha longEar pe NAYI own property bana deta hai.</span>
+<span class="tok-com">// animal.walk bilkul untouched raha, sirf longEar object apne aap se ab "shadow karta hai" parent ko</span>
+
+longEar<span class="tok-punc">.</span><span class="tok-fn">walk</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "LongEar bounce!" — ab step 1 pe hi own property mil gayi, chain traverse hi nahi hui</span>
+
+<span class="tok-com">// EXCEPTION: accessor properties (get/set) is rule ko break karte hain — unka SETTER</span>
+<span class="tok-com">// chain mein upar defined ho sakta hai lekin call phir bhi hota hai, kyunki assignment</span>
+<span class="tok-com">// ek function-call hai, ek plain memory-write nahi</span></code></pre>
+      </div>
+
+      <h2 id="for-in">for...in vs Object.keys — inherited enumerable properties</h2>
+      <p>
+        Ye ek bahut common interview/production confusion hai. <code>for...in</code> loop
+        <strong>poori prototype chain</strong> ke enumerable properties ko traverse karta hai — sirf own
+        properties nahi. <code>Object.keys()</code>, <code>Object.values()</code>, aur
+        <code>Object.entries()</code> sab sirf <strong>own</strong> enumerable properties dete hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">for..in inherited dikhata hai, Object.keys nahi</div>
+        <pre><code><span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> prop <span class="tok-kw">in</span> rabbit<span class="tok-punc">)</span> <span class="tok-fn">console.log</span><span class="tok-punc">(</span>prop<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// "jumps" (own) aur "eats" (inherited from animal) — DONO print hote hain</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-fn">Object.keys</span><span class="tok-punc">(</span>rabbit<span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// ["jumps"] — SIRF own property, "eats" nadaarad</span>
+
+<span class="tok-com">// Agar sirf own properties chahiye for..in ke andar, guard lagao:</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> prop <span class="tok-kw">in</span> rabbit<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">const</span> isOwn <span class="tok-punc">=</span> rabbit<span class="tok-punc">.</span><span class="tok-fn">hasOwnProperty</span><span class="tok-punc">(</span>prop<span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                <span class="tok-com">// hasOwnProperty khud Object.prototype se INHERIT hua method hai,</span>
+                                <span class="tok-com">// lekin ye check karta hai ki 'prop' rabbit ki APNI property hai ya nahi</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>isOwn<span class="tok-punc">)</span> <span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-punc">`</span>Own: <span class="tok-punc">${</span>prop<span class="tok-punc">}</span><span class="tok-punc">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Root reason: <code>for...in</code> historically prototype-aware design hai (bahut purana feature,
+        jab prototypal-inheritance JS ka primary object model tha), jabki <code>Object.keys/values/entries</code>
+        baad mein add hue aur explicitly "own-data-only" semantics ke saath design hue — modern code mostly
+        yehi prefer karta hai kyunki inherited enumerable properties accidentally leak hone ka risk nahi
+        hota.
+      </p>
+
+      <h2 id="f-prototype">F.prototype vs instance ka [[Prototype]] — precise clarification</h2>
+      <p>
+        Ye naam ki wajah se sabse zyada confuse karne wala topic hai — do bilkul alag cheezein ek jaisa
+        naam share karti hain:
+      </p>
+      <ul>
+        <li>
+          <code>F.prototype</code> — ye function <code>F</code> ki apni ek <strong>normal, regular
+          property</strong> hai jiska naam literally <code>"prototype"</code> hai. Har normal function ke
+          paas by default ye hota hai — engine automatically ise create karta hai as
+          <code>{ constructor: F }</code>. Ye function ke upar baithi hui ek object reference hai.
+        </li>
+        <li>
+          Instance ka <code>[[Prototype]]</code> — ye har object ke andar wo hidden internal slot hai jo
+          uski prototype chain define karta hai (jise <code>__proto__</code> se access karte hain).
+        </li>
+      </ul>
+      <p>
+        Connection sirf ek single moment pe banta hai: <strong><code>new F()</code> call hote waqt</strong>.
+        Us waqt engine <code>F.prototype</code> ki <em>current value</em> ko naye banaye gaye instance ke
+        <code>[[Prototype]]</code> mein copy kar deta hai. Uske baad dono independent ho jaate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">new F() ke andar — kya exactly hota hai</div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span>name<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">this</span><span class="tok-punc">.</span>name <span class="tok-punc">=</span> name<span class="tok-punc">;</span>           <span class="tok-com">// constructor body — "this" naya banaya jaa raha object hoga</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>Rabbit<span class="tok-punc">.</span>prototype<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// { constructor: Rabbit } — engine ne DEFAULT prototype auto-create kiya hai, tumne kuch nahi likha</span>
+
+<span class="tok-kw">let</span> rabbit1 <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span><span class="tok-str">"White"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// internally: 1) naya empty object banaya  2) uska [[Prototype]] = Rabbit.prototype (US MOMENT ki value)</span>
+<span class="tok-com">// 3) constructor function ko this=naya-object ke saath call kiya  4) this return kiya (implicitly)</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>rabbit1<span class="tok-punc">.</span>__proto__ <span class="tok-punc">===</span> Rabbit<span class="tok-punc">.</span>prototype<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — link ban gaya</span>
+
+<span class="tok-com">// AB Rabbit.prototype ko badal do NAYE object se:</span>
+Rabbit<span class="tok-punc">.</span>prototype <span class="tok-punc">=</span> <span class="tok-punc">{</span> eats<span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>  <span class="tok-com">// Rabbit.prototype ab ek DIFFERENT object point karta hai</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>rabbit1<span class="tok-punc">.</span>eats<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// undefined! rabbit1 ka [[Prototype]] abhi bhi PURANE object ko point karta hai</span>
+                                       <span class="tok-com">// (F.prototype sirf 'new' call ke US MOMENT pe use hota hai, retroactive nahi)</span>
+
+<span class="tok-kw">let</span> rabbit2 <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Rabbit</span><span class="tok-punc">(</span><span class="tok-str">"Black"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>rabbit2<span class="tok-punc">.</span>eats<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true — rabbit2 NAYE Rabbit.prototype se banaya gaya, isliye naya link mila</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: constructor property ki fragility</div>
+        <p>
+          <code>F.prototype</code> ka default value <code>{ constructor: F }</code> hota hai — isse tum
+          <code>obj.constructor</code> se hi ek naya same-type instance bana sakte ho
+          (<code>new obj.constructor()</code>), bina class ka naam hardcode kiye. Lekin ye purely convention
+          hai, JS engine isko enforce <strong>nahi</strong> karta. Jaise upar dikhaya, jis moment tum
+          <code>Rabbit.prototype = { eats: true }</code> jaisa <strong>poora object replace</strong> karte
+          ho (ek naya literal assign karke, existing prototype ko mutate karne ke bajaye), <code>constructor</code>
+          link automatically toot jaata hai — kyunki naye literal mein wo property hi nahi hai. Agar tum
+          poora prototype replace karna chahte ho, manually <code>constructor</code> wapas add karna
+          zaroori hai: <code>Rabbit.prototype = { eats: true, constructor: Rabbit };</code> — warna kisi
+          library ya framework code jo <code>.constructor</code> pe depend karta hai wo silently break ho
+          jaayega.
+        </p>
+      </div>
+
+      <h2 id="native-prototypes">Native prototypes — Array.prototype, Object.prototype aur unse door rehna</h2>
+      <p>
+        Jab tum <code>{}</code> ya <code>[1,2,3]</code> likhte ho, engine automatically inka
+        <code>[[Prototype]]</code> respective native prototype pe set kar deta hai —
+        <code>Object.prototype</code> ya <code>Array.prototype</code>. Chain hamesha
+        <code>Object.prototype</code> pe end hoti hai (jiska khud ka <code>[[Prototype]]</code>
+        <code>null</code> hota hai), kyunki JS mein <strong>sab kuch (functions, arrays, dates) ultimately
+        object hi hain</strong>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Array → Object → null chain</div>
+        <pre><code><span class="tok-kw">let</span> arr <span class="tok-punc">=</span> <span class="tok-punc">[</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">]</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>arr<span class="tok-punc">.</span>__proto__ <span class="tok-punc">===</span> Array<span class="tok-punc">.</span>prototype<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true — arr ka direct prototype Array.prototype hai</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>arr<span class="tok-punc">.</span>__proto__<span class="tok-punc">.</span>__proto__ <span class="tok-punc">===</span> Object<span class="tok-punc">.</span>prototype<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — Array.prototype khud Object.prototype se inherit karta hai</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>arr<span class="tok-punc">.</span>__proto__<span class="tok-punc">.</span>__proto__<span class="tok-punc">.</span>__proto__<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// null — chain khatam</span>
+
+<span class="tok-com">// isi wajah se arr.toString() sahi kaam karta hai — Array.prototype.toString mila,</span>
+<span class="tok-com">// jo Object.prototype.toString ko override karta hai kyunki wo chain mein CLOSER hai (step 1 pe hi mil gaya)</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>arr<span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "1,2,3" — comma-joined, Array.prototype ka version</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Method borrowing — array-like object pe Array method use karna</div>
+        <pre><code><span class="tok-kw">let</span> obj <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-num">0</span><span class="tok-punc">:</span> <span class="tok-str">"Hello"</span><span class="tok-punc">,</span>      <span class="tok-com">// numeric-index-jaisi keys, lekin ye ek plain object hai, actual Array nahi</span>
+  <span class="tok-num">1</span><span class="tok-punc">:</span> <span class="tok-str">"world!"</span><span class="tok-punc">,</span>
+  length<span class="tok-punc">:</span> <span class="tok-num">2</span>         <span class="tok-com">// Array methods ko length property chahiye hoti hai kaam karne ke liye</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+obj<span class="tok-punc">.</span>join <span class="tok-punc">=</span> Array<span class="tok-punc">.</span>prototype<span class="tok-punc">.</span>join<span class="tok-punc">;</span>
+                            <span class="tok-com">// Array.prototype.join method ko obj pe SEEDHA property ke roop mein daal diya</span>
+                            <span class="tok-com">// (Array.prototype ko obj ka actual prototype banaye bina)</span>
+
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>obj<span class="tok-punc">.</span><span class="tok-fn">join</span><span class="tok-punc">(</span><span class="tok-str">','</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "Hello,world!" — join internally 'this' ko generic array-like treat karta hai</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Native prototypes ko modify karna — production mein danger</div>
+        <p>
+          Technically tum <code>Array.prototype.myMethod = ...</code> likh sakte ho, lekin ye ek
+          <strong>global, shared, single-source-of-truth</strong> object hai jo tumhare pure app ke saare
+          arrays (aur tumhare dependencies ke arrays bhi) share karte hain. Root problem <strong>collision
+          risk</strong> hai: agar tumhari codebase mein 2 libraries (ya tumhara khud ka code + ek dependency)
+          dono <code>Array.prototype.flattenDeep</code> naam ka method define kar dein, to jo baad mein load
+          hota hai wo pehle wale ko silently overwrite kar deta hai — koi warning nahi milta, bug production
+          mein hi surface hota hai, aur reproduce karna mushkil hota hai kyunki behavior load-order pe
+          depend karta hai. Ek future JS spec version bhi same naam ka native method add kar sakta hai
+          (jaise <code>Array.prototype.flat</code> add hua), jo tumhare custom method se directly clash kar
+          sakta hai. <strong>Ek hi acceptable exception</strong> hai: <em>polyfilling</em> — jab spec mein
+          method defined hai but current runtime purana hai, aur tum <code>if (!String.prototype.repeat)</code>
+          jaisa guard laga ke sirf missing implementation add karte ho.
+        </p>
+      </div>
+
+      <h2 id="prototype-methods">Modern prototype methods vs legacy __proto__</h2>
+      <p>
+        <code>__proto__</code> historically de-facto standard tha, lekin spec mein sirf browsers ke liye
+        "Annex B" (legacy compatibility) section mein hai — modern code ke liye 3 explicit methods
+        recommended hain:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Object.create / getPrototypeOf / setPrototypeOf</div>
+        <pre><code><span class="tok-kw">let</span> animal <span class="tok-punc">=</span> <span class="tok-punc">{</span> eats<span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// Object.create(proto): NAYA object banata hai jiska [[Prototype]] = proto</span>
+<span class="tok-kw">let</span> rabbit <span class="tok-punc">=</span> <span class="tok-fn">Object.create</span><span class="tok-punc">(</span>animal<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>rabbit<span class="tok-punc">.</span>eats<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — animal se inherit hua</span>
+
+<span class="tok-com">// second (optional) argument — property descriptors ke saath, defineProperties jaisa</span>
+<span class="tok-kw">let</span> rabbit2 <span class="tok-punc">=</span> <span class="tok-fn">Object.create</span><span class="tok-punc">(</span>animal<span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  jumps<span class="tok-punc">:</span> <span class="tok-punc">{</span> value<span class="tok-punc">:</span> <span class="tok-kw">true</span> <span class="tok-punc">}</span>  <span class="tok-com">// yahan explicit descriptor chahiye, plain value nahi</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// getPrototypeOf — read (function form, __proto__ getter ka equivalent)</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span><span class="tok-fn">Object.getPrototypeOf</span><span class="tok-punc">(</span>rabbit<span class="tok-punc">)</span> <span class="tok-punc">===</span> animal<span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true</span>
+
+<span class="tok-com">// setPrototypeOf — write (function form, __proto__ setter ka equivalent)</span>
+<span class="tok-fn">Object.setPrototypeOf</span><span class="tok-punc">(</span>rabbit<span class="tok-punc">,</span> <span class="tok-punc">{</span><span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// rabbit ka prototype ab kisi aur cheez ko point karta hai</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Object.create(null) — "very plain" dictionary object</div>
+        <pre><code><span class="tok-kw">let</span> dict <span class="tok-punc">=</span> <span class="tok-fn">Object.create</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+                                <span class="tok-com">// [[Prototype]] = null seedha — Object.prototype se bhi INHERIT NAHI karega</span>
+
+dict<span class="tok-punc">.</span>hello <span class="tok-punc">=</span> <span class="tok-str">"world"</span><span class="tok-punc">;</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>dict<span class="tok-punc">.</span>toString<span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// undefined — koi inherited toString hi nahi hai, kyunki Object.prototype chain mein nahi hai</span>
+
+<span class="tok-com">// SAFE case: user-controlled keys store karna, jisme "__proto__" bhi key ho sakta hai</span>
+<span name="unsafe"><span class="tok-kw">let</span> normalObj <span class="tok-punc">=</span> <span class="tok-punc">{</span><span class="tok-punc">}</span><span class="tok-punc">;</span></span>
+normalObj<span class="tok-punc">[</span><span class="tok-str">"__proto__"</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"hacker-value"</span><span class="tok-punc">;</span>
+<span class="tok-com">// DANGER: normal object mein "__proto__" as a KEY likhne se ye setter trigger ho sakta hai</span>
+<span class="tok-com">// (attempt to reset actual [[Prototype]]) instead of storing a plain data property — surprising bug</span>
+
+<span class="tok-kw">let</span> safeDict <span class="tok-punc">=</span> <span class="tok-fn">Object.create</span><span class="tok-punc">(</span><span class="tok-kw">null</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+safeDict<span class="tok-punc">[</span><span class="tok-str">"__proto__"</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"just a normal string value"</span><span class="tok-punc">;</span>
+<span class="tok-com">// SAFE — kyunki safeDict ke chain mein __proto__ getter/setter waala Object.prototype hai hi nahi,</span>
+<span class="tok-com">// isliye "__proto__" bilkul ek NORMAL key ki tarah treat hota hai</span>
+<span class="tok-fn">console.log</span><span class="tok-punc">(</span>safeDict<span class="tok-punc">[</span><span class="tok-str">"__proto__"</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "just a normal string value"</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ __proto__ ki slow-path problem</div>
+        <p>
+          <code>obj.__proto__ = ...</code> ya <code>Object.setPrototypeOf</code> se runtime pe prototype
+          change karna V8-jaisa engines ke internal <strong>hidden class / shape optimizations</strong> ko
+          break kar deta hai — engine assume karta hai ki ek given "shape" ka object hamesha same prototype
+          rakhega, taaki property access ko fast-path le sake. Isse ye operation object creation ke baad
+          "on-the-fly" karna significantly slow hai. Best practice: prototype ko object creation ke waqt hi
+          finalize karo (<code>Object.create(proto)</code> se, ya class syntax se) — baad mein badalna
+          avoid karo.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Har property ke 3 flags hote hain: <code>writable</code>, <code>enumerable</code>, <code>configurable</code> — literal syntax se sab true, <code>defineProperty</code> se sab default false.</li>
+        <li><code>writable:false</code> = value lock; <code>configurable:false</code> = descriptor-structure aur delete lock — dono independent hain, ek constant ke liye dono chahiye.</li>
+        <li>Accessor properties (<code>get</code>/<code>set</code>) aur data properties (<code>value</code>/<code>writable</code>) mutually exclusive hain ek hi property slot mein.</li>
+        <li><code>[[Prototype]]</code> chain lookup step-by-step upar traverse karti hai jab tak property mile ya <code>null</code> aaye; <code>this</code> hamesha calling object hota hai, chain mein jahan method mila wahan nahi.</li>
+        <li>Writing/deleting properties chain ko bypass karta hai — direct object pe operate karta hai, sirf accessor setters exception hain.</li>
+        <li><code>for...in</code> inherited enumerable properties include karta hai; <code>Object.keys/values/entries</code> sirf own properties dete hain.</li>
+        <li><code>F.prototype</code> ek regular property hai jo sirf <code>new F()</code> ke moment pe instance ke <code>[[Prototype]]</code> mein copy hoti hai — baad mein <code>F.prototype</code> badalne se existing instances affect nahi hote.</li>
+        <li>Native prototypes (<code>Array.prototype</code> etc.) modify karna collision-risk ki wajah se dangerous hai — sirf spec-defined polyfilling exception hai.</li>
+        <li><code>Object.create/getPrototypeOf/setPrototypeOf</code> modern standard hain; <code>__proto__</code> legacy hai aur runtime-mutation slow bhi hai.</li>
+        <li><code>Object.create(null)</code> se "clean" dictionary object banta hai jisme <code>__proto__</code> jaisi keys safe rehti hain, kyunki koi inherited getter/setter hi nahi hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>writable:false aur configurable:false mein exact farak kya hai?</strong><br>Hint: writable value-reassignment control karta hai; configurable descriptor-flags-change aur delete control karta hai. Configurable:false hote hue bhi writable:true→false ek-tarfa transition allowed hai.</li>
+        <li><strong>Object.defineProperty se property create karne par default flags kya hote hain, aur literal syntax se kyun alag hain?</strong><br>Hint: defineProperty se sab flags default false; literal object syntax se sab true — history/design choice hai, defineProperty "explicit control" ke liye hai isliye safe-default (sab restricted) rakha gaya.</li>
+        <li><strong>[[Prototype]] chain mein property lookup step-by-step explain karo — 3 level ki chain lo aur batao "this" kya resolve hota hai.</strong><br>Hint: har level pe own-property check, na mile to upar jao, mile to search ruk jaati hai; this hamesha dot ke pehle wala object hota hai chahe method jahan bhi defined ho.</li>
+        <li><strong>for...in aur Object.keys mein enumerable-inheritance ka farak kyun hota hai?</strong><br>Hint: for..in historically prototype-chain-aware hai (poori chain traverse karta hai), Object.keys/values/entries baad mein explicitly "own-only" design ke saath aaye.</li>
+        <li><strong>F.prototype ko new object banane ke baad change karo — existing instances affect honge?</strong><br>Hint: nahi — F.prototype sirf 'new F()' call ke exact moment pe instance ke [[Prototype]] mein copy hota hai, baad ka change retroactive nahi hai.</li>
+        <li><strong>Array.prototype pe custom method add karna kyun risky maana jaata hai?</strong><br>Hint: global shared object hai — naming collision risk (dusri library/future spec version ke saath), silent overwrite, load-order-dependent bugs.</li>
+        <li><strong>Object.create(null) kis situation mein zaroori hota hai?</strong><br>Hint: jab object ko pure key-value dictionary ki tarah use karna ho aur keys user-controlled ho sakti hain (jaise "__proto__" as a key) — normal object mein ye Object.prototype ke __proto__ setter ko trigger kar sakta hai.</li>
+        <li><strong>__proto__ ko runtime pe change karna slow kyun hai, jabki Object.create(proto) fast hai?</strong><br>Hint: engines (V8 etc.) hidden-class/shape optimizations use karte hain jo assume karte hain object ka prototype stable rahega; on-the-fly change se ye optimization invalidate ho jaata hai, jabki create-time prototype fixed rehta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="09-advanced-functions.html">
+        <div class="label">← Previous</div>
+        <div class="title">Advanced Functions</div>
+      </a>
+      <a class="next" href="11-classes.html">
+        <div class="label">Next →</div>
+        <div class="title">Classes</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

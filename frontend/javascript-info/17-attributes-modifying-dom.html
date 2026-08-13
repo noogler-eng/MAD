@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attributes &amp; Modifying DOM — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link active" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 17</div>
+      <div class="progress-pill">17 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">DOM · Attributes · Nodes · Styles</span>
+      <h1>Attributes &amp; Modifying DOM</h1>
+      <p class="subtitle">
+        Pichhle chapter mein humne DOM tree ko sirf <em>navigate</em> kiya — read-only tha. Ab hum isse
+        <strong>likhna</strong> seekhenge: attributes vs properties ka asli farak (bahut log confuse hote
+        hain), naye elements create karna, unhe tree mein sahi jagah insert karna bina performance waste
+        kiye, aur classes/styles manage karna. Ye sab root-level samjhoge — sirf "method X karta hai Y"
+        nahi, balki "andar browser kya kar raha hai" bhi.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#attr-vs-prop">Attributes vs Properties — root cause</a></li>
+          <li><a href="#sync">Attribute → Property sync mechanics</a></li>
+          <li><a href="#non-standard">Non-standard attributes</a></li>
+          <li><a href="#dataset">data-* attributes &amp; dataset</a></li>
+          <li><a href="#creating">Creating elements</a></li>
+          <li><a href="#inserting">Inserting nodes — modern methods</a></li>
+          <li><a href="#insertadjacent">insertAdjacentHTML aur variants</a></li>
+          <li><a href="#fragment">DocumentFragment — batch insertion</a></li>
+          <li><a href="#removing">Removing aur cloning nodes</a></li>
+          <li><a href="#styles-classes">Styles &amp; classes: className, classList, style, getComputedStyle</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="attr-vs-prop">Attributes vs Properties — root cause samjho</h2>
+      <p>
+        Ye do alag cheezein hain jo mostly ek jaisi dikhti hain, isliye confusion hoti hai. <strong>Attribute</strong>
+        wo hai jo HTML source mein likha hai — plain text, hamesha string. <strong>Property</strong> wo hai
+        jo DOM object (JavaScript object) pe live hai — kisi bhi type ka ho sakta hai (boolean, object,
+        number). Jab browser HTML parse karta hai, wo ek DOM node object banata hai, aur <em>standard</em>
+        attributes ke liye corresponding property automatically create kar deta hai (initial value ke saath).
+        Iske baad wo do independent cheezein hain jo kabhi-kabhi ek-doosre se sync hoti hain, kabhi nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">DOM node ek plain JS object hai — kuch bhi attach kar sakte ho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// document.body ek DOM element object hai — normal object ki tarah custom property bhi le sakta hai</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">myData</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>          <span class="tok-com">// koi bhi naya property name assign karo — browser rokta nahi</span>
+  <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">'Caesar'</span><span class="tok-punc">,</span>          <span class="tok-com">// arbitrary nested value bhi chal jaayega</span>
+  <span class="tok-attr">title</span><span class="tok-punc">:</span> <span class="tok-str">'Imperator'</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">myData</span><span class="tok-punc">.</span><span class="tok-attr">title</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Imperator" — pura JS object hai, sirf string nahi</span>
+
+<span class="tok-com">// methods bhi assign kar sakte ho — 'this' andar hamesha wo element hoga jispe call hua</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">sayTagName</span> <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">tagName</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// this = document.body, tagName built-in property hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">sayTagName</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// "BODY" — tagName hamesha UPPERCASE hota hai HTML documents mein</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Standard vs non-standard attribute → property mapping<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- HTML: --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"test"</span> <span class="tok-attr">something</span><span class="tok-punc">=</span><span class="tok-str">"non-standard"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-kw">script</span><span class="tok-punc">:</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">id</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// "test" — id STANDARD attribute hai, isliye matching property mil gayi</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">something</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// undefined — non-standard hai, browser ne koi property banayi hi nahi</span>
+
+<span class="tok-com">// "standard" bhi element-specific hota hai — 'type' input ke liye standard hai, body ke liye nahi:</span>
+<span class="tok-com">// &lt;input id="input" type="text"&gt;   input.type === "text"  (standard, property mili)</span>
+<span class="tok-com">// &lt;body type="..."&gt;                body.type === undefined (body pe 'type' standard nahi)</span></code></pre>
+      </div>
+      <p>
+        Root cause: browser ke andar HTML spec ne har element type ke liye ek fixed set of "known"
+        attributes define kiya hai. Parser jab element node banata hai, wo sirf usi list ke against check
+        karta hai. Agar attribute list mein hai to matching property (sahi type ke saath — boolean, string,
+        etc.) create hoti hai. Agar list mein nahi hai (chahe wo kisi doosre element pe standard ho), koi
+        property nahi banti — attribute sirf raw HTML text ke roop mein reh jaata hai, jisse sirf
+        <code>getAttribute</code>/<code>setAttribute</code> se access kar sakte ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Non-standard attributes ke liye universal methods<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ye 4 methods HAR attribute (standard ho ya na ho) ke liye kaam karte hain — property se independent</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">hasAttribute</span><span class="tok-punc">(</span><span class="tok-str">'something'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// true — check karta hai attribute exist karta hai ya nahi</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'something'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>           <span class="tok-com">// "non-standard" — hamesha STRING return karta hai</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">setAttribute</span><span class="tok-punc">(</span><span class="tok-str">'something'</span><span class="tok-punc">,</span> <span class="tok-str">'new'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// attribute ki value badal do (ya naya attribute bana do)</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-fn">removeAttribute</span><span class="tok-punc">(</span><span class="tok-str">'something'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// attribute HTML se hata do</span>
+
+<span class="tok-com">// document.body.attributes — sabhi attributes ka ek iterable/array-like collection (Attr objects)</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-attr">attr</span> <span class="tok-kw">of</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">attributes</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">`</span><span class="tok-str">${attr.name}</span><span class="tok-punc"> = </span><span class="tok-str">${attr.value}</span><span class="tok-punc">`</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// har Attr object ka .name aur .value hota hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// attributes hamesha CASE-INSENSITIVE hain (HTML spec ki wajah se), properties CASE-SENSITIVE hain</span></code></pre>
+      </div>
+
+      <h2 id="sync">Attribute → Property sync mechanics — ye gotcha bahut common hai</h2>
+      <p>
+        Standard attributes aur unki matching property <em>usually</em> dono directions mein sync hoti
+        hain — attribute badlo to property bhi badal jaati hai, aur ulta bhi. Lekin ye guarantee nahi hai
+        har property ke liye — root mechanism ye hai ki har property ka apna getter/setter hota hai jo
+        internally decide karta hai ki attribute se sync karna hai ya nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Normal bidirectional sync (id attribute)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-attr">input</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'input'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// attribute → property direction</span>
+<span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-fn">setAttribute</span><span class="tok-punc">(</span><span class="tok-str">'id'</span><span class="tok-punc">,</span> <span class="tok-str">'id'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// attribute badla</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-attr">id</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// "id" — property automatically update ho gayi</span>
+
+<span class="tok-com">// property → attribute direction</span>
+<span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-attr">id</span> <span class="tok-punc">=</span> <span class="tok-str">'newId'</span><span class="tok-punc">;</span>       <span class="tok-com">// property badli</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'id'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "newId" — attribute bhi automatically update ho gaya</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: value attribute ka one-way sync gotcha</div>
+        <p>
+          Ye sabse common real-world form bug ka root cause hai. <code>&lt;input&gt;</code> ke
+          <code>value</code> property ka sync sirf <strong>ek direction</strong> mein kaam karta hai:
+          attribute → property haan, lekin property → attribute <strong>nahi</strong>. Iska matlab: agar
+          user input mein type karta hai ya tum JS se <code>input.value = "..."</code> set karte ho, to
+          <code>getAttribute('value')</code> hamesha wahi <strong>original HTML value</strong> return
+          karega jo page load ke time thi. Ye browser ka <em>intentional design</em> hai — taaki
+          "original/default value" recover ki ja sake (jaise form reset ke liye), current live value
+          se independent. Bahut developers is behaviour ko bug samajhte hain jab woh
+          <code>getAttribute('value')</code> se current form state padhne ki koshish karte hain aur
+          stale data milta hai — sahi tareeka hamesha <code>input.value</code> (property) use karna hai
+          current state ke liye, aur <code>getAttribute('value')</code> sirf original default ke liye.
+        </p>
+      </div>
+      <div class="code-block">
+        <div class="code-title">value ka one-way sync — demo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-attr">input</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'input'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// attribute → property: ye direction kaam karta hai</span>
+<span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-fn">setAttribute</span><span class="tok-punc">(</span><span class="tok-str">'value'</span><span class="tok-punc">,</span> <span class="tok-str">'text'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-attr">value</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// "text" — property update ho gayi (starting sync hui)</span>
+
+<span class="tok-com">// property → attribute: ye direction NAHI kaam karta (value ke liye special case)</span>
+<span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-attr">value</span> <span class="tok-punc">=</span> <span class="tok-str">'newValue'</span><span class="tok-punc">;</span>   <span class="tok-com">// property badal di (jaise user ne type kiya ho)</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'value'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "text" — UNCHANGED! attribute abhi bhi purani (original) value dikhata hai</span></code></pre>
+      </div>
+      <p>
+        Aur ek dimension: properties <strong>typed</strong> hote hain, attributes hamesha string. Checkbox
+        ka <code>checked</code> attribute empty-string hoke bhi property mein <code>true</code>/
+        <code>false</code> boolean deta hai. <code>style</code> attribute ek string hai lekin
+        <code>elem.style</code> property ek poora <code>CSSStyleDeclaration</code> object hai. Aur
+        <code>href</code> jaisi URL properties resolved (full, absolute) URL return karti hain jabki
+        attribute exact wahi text deta hai jo HTML mein likha tha (relative ho sakta hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Typed properties vs string attributes<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- &lt;input id="input" type="checkbox" checked&gt; --&gt;</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'checked'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "" — HTML mein sirf attribute present tha, value empty string</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">input</span><span class="tok-punc">.</span><span class="tok-attr">checked</span><span class="tok-punc">)</span><span class="tok-punc">;</span>              <span class="tok-com">// true — property BOOLEAN type mein normalize ho gayi</span>
+
+<span class="tok-punc">&lt;!-- &lt;a id="a" href="#hello"&gt;link&lt;/a&gt; --&gt;</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">a</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'href'</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// "#hello" — exactly jo HTML mein likha tha (relative)</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">a</span><span class="tok-punc">.</span><span class="tok-attr">href</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                  <span class="tok-com">// "http://site.com/page#hello" — property RESOLVED absolute URL deti hai</span></code></pre>
+      </div>
+
+      <h2 id="non-standard">Non-standard attributes — HTML se JS/CSS tak data pass karna</h2>
+      <p>
+        Custom (non-standard) attributes historically use hote the arbitrary data HTML mein embed karne
+        ke liye — jaise ek attribute jo batata ho ek div mein user ka konsa field dikhana hai, ya CSS
+        selector ke through element ki "state" style karne ke liye:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Custom attribute se data-driven rendering<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- HTML: kaunsa field dikhana hai wo attribute mein hi likha hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">show-info</span><span class="tok-punc">=</span><span class="tok-str">"name"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">show-info</span><span class="tok-punc">=</span><span class="tok-str">"age"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-kw">script</span><span class="tok-punc">:</span>
+<span class="tok-kw">let</span> <span class="tok-attr">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-attr">name</span><span class="tok-punc">:</span> <span class="tok-str">"Pete"</span><span class="tok-punc">,</span> <span class="tok-attr">age</span><span class="tok-punc">:</span> <span class="tok-num">25</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>  <span class="tok-com">// jo data render karna hai</span>
+
+<span class="tok-com">// attribute selector [show-info] se sabhi matching divs dhoondo</span>
+<span class="tok-kw">for</span><span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-attr">div</span> <span class="tok-kw">of</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">querySelectorAll</span><span class="tok-punc">(</span><span class="tok-str">'[show-info]'</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-attr">field</span> <span class="tok-punc">=</span> <span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">getAttribute</span><span class="tok-punc">(</span><span class="tok-str">'show-info'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// is div ko konsa field dikhana hai</span>
+  <span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-attr">user</span><span class="tok-punc">[</span><span class="tok-attr">field</span><span class="tok-punc">]</span><span class="tok-punc">;</span>       <span class="tok-com">// user object se dynamic property lookup karke render kar do</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Problem ye hai ki future HTML spec versions naye standard attributes add kar sakte hain, aur agar
+        tumhara custom attribute name kabhi standard ban jaaye, unexpected behaviour aa sakta hai. Isi risk
+        ko avoid karne ke liye HTML5 ne <code>data-*</code> namespace reserve kiya — koi bhi
+        <code>data-</code> se shuru hone wala attribute guaranteed hamesha custom rahega, aur spec kabhi
+        usme conflict nahi karegi.
+      </p>
+
+      <h2 id="dataset">data-* attributes aur dataset API</h2>
+      <p>
+        <code>data-*</code> attributes DOM node ki <code>dataset</code> property ke through accessible hote
+        hain — jo ek convenient object hai. Multiword attribute names (dash-separated) automatically
+        camelCase mein convert ho jaate hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">dataset — read aur write dono directions<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- HTML: --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">body</span> <span class="tok-attr">data-about</span><span class="tok-punc">=</span><span class="tok-str">"Elephants"</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-kw">script</span><span class="tok-punc">:</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">dataset</span><span class="tok-punc">.</span><span class="tok-attr">about</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "Elephants" — data-about → dataset.about</span>
+
+<span class="tok-punc">&lt;!-- multiword attribute: data-order-state --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"order"</span> <span class="tok-attr">data-order-state</span><span class="tok-punc">=</span><span class="tok-str">"new"</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-kw">script</span><span class="tok-punc">:</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">order</span><span class="tok-punc">.</span><span class="tok-attr">dataset</span><span class="tok-punc">.</span><span class="tok-attr">orderState</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "new" — dash-case automatically camelCase ban jaata hai</span>
+
+<span class="tok-attr">order</span><span class="tok-punc">.</span><span class="tok-attr">dataset</span><span class="tok-punc">.</span><span class="tok-attr">orderState</span> <span class="tok-punc">=</span> <span class="tok-str">"pending"</span><span class="tok-punc">;</span>  <span class="tok-com">// dataset property likho — underlying HTML attribute bhi update ho jaata hai</span>
+<span class="tok-com">// upar wale se HTML ban jaata hai: &lt;div id="order" data-order-state="pending"&gt;</span></code></pre>
+      </div>
+      <p>
+        Ye pattern CSS ke saath bhi seamlessly kaam karta hai — kyunki underlying attribute normal HTML
+        attribute hi hai, CSS selectors (<code>[data-order-state="pending"]</code>) usse directly target
+        kar sakte hain, aur JS <code>dataset</code> se readable/writable API milta hai — dono worlds ke
+        liye best of both.
+      </p>
+
+      <h2 id="creating">Creating elements — createElement aur createTextNode</h2>
+      <p>
+        Naya DOM node banane ke liye do primary factory methods hain, dono <code>document</code> object pe.
+        Zaroori baat: dono sirf node <strong>create</strong> karte hain — jab tak tum explicitly insert
+        nahi karte, wo tree mein kahin bhi nahi dikhte (memory mein floating rehte hain).
+      </p>
+      <div class="code-block">
+        <div class="code-title">createElement + createTextNode<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// document.createElement(tag) — ek naya ELEMENT node banata hai, tree se abhi disconnected</span>
+<span class="tok-kw">let</span> <span class="tok-attr">div</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'div'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// tag name pass karo — case-insensitive hota hai</span>
+
+<span class="tok-com">// document.createTextNode(text) — ek naya TEXT node banata hai (koi tags nahi, sirf raw text)</span>
+<span class="tok-kw">let</span> <span class="tok-attr">textNode</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createTextNode</span><span class="tok-punc">(</span><span class="tok-str">'Here I am'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// dono abhi kahin bhi visible nahi — appendChild/append jaisa insertion method chahiye</span></code></pre>
+      </div>
+      <p>
+        Practice mein <code>createTextNode</code> rarely direct use hota hai kyunki <code>append</code>/
+        <code>textContent</code> jaise modern methods automatically string ko safe text node mein convert
+        kar dete hain (age dekhenge).
+      </p>
+
+      <h2 id="inserting">Inserting nodes — modern insertion methods</h2>
+      <p>
+        Naye elements ko tree mein sahi jagah daalne ke liye 5 modern methods hain, jo koi bhi node <em>ya
+        plain string</em> (jo automatically text node bana di jaati hai) accept karte hain — multiple
+        arguments bhi ek saath le sakte hain:
+      </p>
+      <ul>
+        <li><code>node.append(...nodes)</code> — node ke end mein insert karo (last child ke baad)</li>
+        <li><code>node.prepend(...nodes)</code> — node ke start mein insert karo (first child se pehle)</li>
+        <li><code>node.before(...nodes)</code> — node se pehle, uske sibling ke roop mein insert karo</li>
+        <li><code>node.after(...nodes)</code> — node ke baad, uske sibling ke roop mein insert karo</li>
+        <li><code>node.replaceWith(...nodes)</code> — node ki jagah naye nodes se replace kar do</li>
+      </ul>
+      <div class="code-block">
+        <div class="code-title">Modern insertion methods — sab ek saath<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// maan lo &lt;ol id="ol"&gt;&lt;li&gt;0&lt;/li&gt;&lt;li&gt;1&lt;/li&gt;&lt;li&gt;2&lt;/li&gt;&lt;/ol&gt; page mein hai</span>
+<span class="tok-kw">let</span> <span class="tok-attr">ol</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">getElementById</span><span class="tok-punc">(</span><span class="tok-str">'ol'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-attr">ol</span><span class="tok-punc">.</span><span class="tok-fn">before</span><span class="tok-punc">(</span><span class="tok-str">'before'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// string 'before' → text node ban ke &lt;ol&gt; se PEHLE (sibling) insert hui</span>
+<span class="tok-attr">ol</span><span class="tok-punc">.</span><span class="tok-fn">after</span><span class="tok-punc">(</span><span class="tok-str">'after'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// string 'after' → &lt;ol&gt; ke BAAD (sibling) insert hui</span>
+
+<span class="tok-kw">let</span> <span class="tok-attr">liFirst</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'li'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// naya &lt;li&gt; element banao</span>
+<span class="tok-attr">liFirst</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">'prepend'</span><span class="tok-punc">;</span>       <span class="tok-com">// uska content set karo</span>
+<span class="tok-attr">ol</span><span class="tok-punc">.</span><span class="tok-fn">prepend</span><span class="tok-punc">(</span><span class="tok-attr">liFirst</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// ol ke CHILDREN list ke SHURU mein daalo (first child se pehle)</span>
+
+<span class="tok-kw">let</span> <span class="tok-attr">liLast</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'li'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-attr">liLast</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">'append'</span><span class="tok-punc">;</span>
+<span class="tok-attr">ol</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-attr">liLast</span><span class="tok-punc">)</span><span class="tok-punc">;</span>            <span class="tok-com">// ol ke CHILDREN list ke END mein daalo (last child ke baad)</span>
+
+<span class="tok-com">// result DOM order: "before", &lt;ol&gt;[prepend, 0, 1, 2, append]&lt;/ol&gt;, "after"</span></code></pre>
+      </div>
+      <p>
+        Ye legacy method <code>appendChild</code> se strictly better hai — sirf ek node lene ki jagah
+        multiple nodes/strings ek saath accept karta hai, aur strings ko automatically escape kiya jaata
+        hai (koi HTML injection risk nahi, unlike <code>innerHTML +=</code>).
+      </p>
+
+      <h2 id="insertadjacent">insertAdjacentHTML — string se direct HTML insert karna</h2>
+      <p>
+        Jab tumhare paas already-formed HTML string hai (jaise server se aaya template) aur node-by-node
+        create karna overkill lagta hai, <code>insertAdjacentHTML(where, html)</code> best option hai —
+        <code>innerHTML +=</code> ki tarah nahi ye poore element ko re-parse nahi karta, sirf naya HTML
+        parse karke sahi jagah insert karta hai (existing children/event listeners safe rehte hain).
+      </p>
+      <div class="code-block">
+        <div class="code-title">insertAdjacentHTML ke 4 positions<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// where ke 4 valid values hain — element ke relative:</span>
+<span class="tok-com">// "beforebegin" → element se PEHLE (sibling)</span>
+<span class="tok-com">// "afterbegin"  → element ke ANDAR, first child se pehle</span>
+<span class="tok-com">// "beforeend"   → element ke ANDAR, last child ke baad</span>
+<span class="tok-com">// "afterend"    → element ke BAAD (sibling)</span>
+
+<span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">insertAdjacentHTML</span><span class="tok-punc">(</span><span class="tok-str">'beforebegin'</span><span class="tok-punc">,</span> <span class="tok-str">'&lt;p&gt;Hello&lt;/p&gt;'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// div se pehle naya &lt;p&gt; sibling insert ho gaya</span>
+<span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">insertAdjacentHTML</span><span class="tok-punc">(</span><span class="tok-str">'afterend'</span><span class="tok-punc">,</span> <span class="tok-str">'&lt;p&gt;Bye&lt;/p&gt;'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// div ke baad naya &lt;p&gt; sibling insert ho gaya</span>
+
+<span class="tok-com">// related variants — same 4 positions, alag input type:</span>
+<span class="tok-com">// div.insertAdjacentText(where, text)    → plain text insert karo (auto-escaped)</span>
+<span class="tok-com">// div.insertAdjacentElement(where, elem) → ek already-existing element node insert karo</span>
+<span class="tok-com">// in dono ka use rare hai — insertAdjacentHTML sabse zyada use hota hai</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Layout thrashing: loop ke andar repeated DOM read+write</div>
+        <p>
+          Agar tum ek loop mein baar-baar DOM ko <strong>likhte</strong> ho (append/insertAdjacentHTML) aur
+          beech-beech mein <strong>padhte</strong> bhi ho (jaise <code>offsetHeight</code>,
+          <code>getBoundingClientRect()</code>), to browser ko har read se pehle pending layout changes ko
+          force-flush karna padta hai — isse ek hi frame mein <strong>dozens of synchronous reflows</strong>
+          trigger ho sakte hain ("layout thrashing"). Fix: pehle saare writes karo (ya
+          <code>DocumentFragment</code> use karo — neeche dekho), phir saare reads ek saath karo — write-then-read
+          ko interleave mat karo.
+        </p>
+      </div>
+
+      <h2 id="fragment">DocumentFragment — batch insertion ka correct tareeka</h2>
+      <p>
+        Jab tumhe loop mein <strong>multiple nodes</strong> insert karne hain, naive approach hai har
+        iteration mein directly <code>parent.appendChild(node)</code> call karna — lekin ye har baar live
+        DOM ko touch karta hai, jisse browser potentially har call pe reflow/re-render trigger kar sakta
+        hai (particularly agar beech mein koi layout read ho). <code>DocumentFragment</code> ek special
+        lightweight container node hai jo tree ka hissa <strong>nahi</strong> hota — usme jitne bhi
+        children daalo, wo sab off-DOM rehte hain. Jab fragment ko finally parent mein insert karte ho,
+        uske <strong>saare children</strong> ek hi single DOM operation mein move ho jaate hain (fragment
+        khud "blend in" ho jaata hai, khud insert nahi hota) — result: ek hi reflow, N nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">DocumentFragment — N appends ki jagah 1 reflow<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">getListContent</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-attr">fragment</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">DocumentFragment</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// off-DOM lightweight container banao</span>
+
+  <span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-attr">i</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-attr">i</span> <span class="tok-punc">&lt;=</span> <span class="tok-num">3</span><span class="tok-punc">;</span> <span class="tok-attr">i</span><span class="tok-punc">++</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">let</span> <span class="tok-attr">li</span> <span class="tok-punc">=</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">createElement</span><span class="tok-punc">(</span><span class="tok-str">'li'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// naya &lt;li&gt; banao</span>
+    <span class="tok-attr">li</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-attr">i</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                     <span class="tok-com">// number ko andar text content ki tarah daalo (auto text-node)</span>
+    <span class="tok-attr">fragment</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-attr">li</span><span class="tok-punc">)</span><span class="tok-punc">;</span>               <span class="tok-com">// live DOM ko touch nahi karta — sirf fragment ke andar jud raha hai</span>
+  <span class="tok-punc">}</span>
+
+  <span class="tok-kw">return</span> <span class="tok-attr">fragment</span><span class="tok-punc">;</span>                    <span class="tok-com">// poora fragment return karo, individual nodes nahi</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-attr">ul</span><span class="tok-punc">.</span><span class="tok-fn">append</span><span class="tok-punc">(</span><span class="tok-fn">getListContent</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// ek hi call — fragment ke 3 &lt;li&gt; children ek saath ul mein move ho jaate hain, fragment khud gayab</span></code></pre>
+      </div>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: fragment kab zaroori hai, kab nahi</div>
+        <p>
+          Modern spread-syntax methods (<code>parent.append(...arrayOfNodes)</code>) internally already
+          batch insertion karte hain — ek hi call mein multiple nodes single reflow ke saath insert ho
+          jaate hain, isliye chhote cases mein explicit <code>DocumentFragment</code> zaroori nahi. Fragment
+          ka real use-case hai jab tumhare paas ek <strong>function</strong> hai jo nodes generate karta hai
+          aur unhe ek unit ke roop mein return karna hai (jaise upar wala <code>getListContent()</code>) —
+          fragment ek clean "bundle of nodes" abstraction deta hai jo caller ko internal loop count se
+          decouple karta hai. Bade lists (100s of rows) ke liye ye pattern still relevant hai kyunki naive
+          <code>for</code> loop mein <code>parent.appendChild(node)</code> repeat karna — especially agar
+          beech mein koi layout-triggering read ho — multiple forced reflows create kar sakta hai.
+        </p>
+      </div>
+
+      <h2 id="removing">Removing aur cloning nodes</h2>
+      <p>
+        Node hatane ka modern tareeka simple hai — legacy <code>parentElem.removeChild(node)</code> ki
+        zaroorat nahi:
+      </p>
+      <div class="code-block">
+        <div class="code-title">remove() aur cloneNode()<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// node.remove() — parent ki zaroorat nahi bataani, khud apne aap ko tree se hata leta hai</span>
+
+<span class="tok-com">// IMPORTANT: agar insertion methods (append/before/after) ek node pe call karte ho jo pehle se</span>
+<span class="tok-com">// kahin aur DOM mein attached hai, wo automatically OLD location se hata ke NAYI jagah move ho jaata hai —</span>
+<span class="tok-com">// explicit remove() call karne ki zaroorat NAHI (ek node ek hi jagah exist kar sakta hai)</span>
+
+<span class="tok-com">// cloneNode(true) — DEEP clone: saare attributes + saare descendant children copy hote hain</span>
+<span class="tok-kw">let</span> <span class="tok-attr">div2</span> <span class="tok-punc">=</span> <span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">cloneNode</span><span class="tok-punc">(</span><span class="tok-kw">true</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-attr">div2</span><span class="tok-punc">.</span><span class="tok-fn">querySelector</span><span class="tok-punc">(</span><span class="tok-str">'strong'</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-attr">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">'Bye there!'</span><span class="tok-punc">;</span>  <span class="tok-com">// clone independent hai, original affect nahi hota</span>
+<span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-fn">after</span><span class="tok-punc">(</span><span class="tok-attr">div2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// clone ko original ke baad insert kar do</span>
+
+<span class="tok-com">// cloneNode(false) — SHALLOW clone: sirf element khud, children copy NAHI hote</span></code></pre>
+      </div>
+
+      <h2 id="styles-classes">Styles &amp; Classes — className, classList, style, getComputedStyle</h2>
+      <p>
+        Element ki CSS class access karne ke do tareeke hain — <code>className</code> jo poore class-string
+        ko ek single string ki tarah treat karta hai (isliye replace risky hai), aur <code>classList</code>
+        jo individual class names manage karne ke liye special object hai (add/remove/toggle without
+        touching baaki classes).
+      </p>
+      <div class="code-block">
+        <div class="code-title">className vs classList<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;!-- &lt;body class="main page"&gt; --&gt;</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">className</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "main page" — poora string, ek hi property</span>
+
+<span class="tok-com">// className = "..." assign karna SAARI existing classes OVERWRITE kar deta hai — dhyan se!</span>
+<span class="tok-com">// document.body.className = "new-class"; // yahan 'main' aur 'page' dono gayab ho jaate</span>
+
+<span class="tok-com">// classList individual classes ke saath surgical operations deta hai:</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">'article'</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// sirf ek naya class add karta hai, baaki untouched</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">className</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "main page article" — dekh sakte ho ki original classes safe hain</span>
+
+<span class="tok-com">// classList iterable hai — for-of se loop kar sakte ho:</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-attr">name</span> <span class="tok-kw">of</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "main", phir "page", phir "article"</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">classList ke 4 core methods<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">elem</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">add</span><span class="tok-punc">(</span><span class="tok-str">"active"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>       <span class="tok-com">// class add karo — agar already hai to no-op (duplicate nahi banega)</span>
+<span class="tok-attr">elem</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">remove</span><span class="tok-punc">(</span><span class="tok-str">"active"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// class hatao — agar nahi hai to no-op (error nahi)</span>
+<span class="tok-attr">elem</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">toggle</span><span class="tok-punc">(</span><span class="tok-str">"active"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// agar hai to remove, agar nahi hai to add — ek hi call mein switch</span>
+<span class="tok-attr">elem</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">contains</span><span class="tok-punc">(</span><span class="tok-str">"active"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true/false — check karo class present hai ya nahi</span>
+
+<span class="tok-com">// forced toggle: ek boolean condition ke hisaab se explicitly add/remove karna hai (common UI pattern)</span>
+<span class="tok-attr">elem</span><span class="tok-punc">.</span><span class="tok-attr">classList</span><span class="tok-punc">.</span><span class="tok-fn">toggle</span><span class="tok-punc">(</span><span class="tok-str">"active"</span><span class="tok-punc">,</span> <span class="tok-attr">someCondition</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// 2nd arg true→force add, false→force remove</span></code></pre>
+      </div>
+      <p>
+        Manually <code>className</code> string ko concatenate/split/regex karke class manage karna
+        (<code>elem.className += ' active'</code>) technically kaam karta hai lekin fragile hai — duplicate
+        class names, extra spaces, aur "already present hai kya" check karne ke liye manual string parsing
+        chahiye hoti. <code>classList</code> ye sab internally handle karta hai, isliye production code mein
+        hamesha <code>classList</code> preferred hai.
+      </p>
+
+      <h3>elem.style — sirf INLINE styles ka object</h3>
+      <p>
+        <code>elem.style</code> HTML ke <code>style</code> attribute ka JS-object equivalent hai. Multi-word
+        CSS properties (jinme dash hota hai) camelCase mein likhi jaati hain:
+      </p>
+      <div class="code-block">
+        <div class="code-title">CSS property → JS style property naming<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// CSS dash-case               → JS camelCase</span>
+<span class="tok-com">// background-color            → elem.style.backgroundColor</span>
+<span class="tok-com">// z-index                     → elem.style.zIndex</span>
+<span class="tok-com">// border-left-width           → elem.style.borderLeftWidth</span>
+
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">backgroundColor</span> <span class="tok-punc">=</span> <span class="tok-str">'green'</span><span class="tok-punc">;</span>  <span class="tok-com">// directly is element ke inline style attribute mein likh diya</span>
+
+<span class="tok-com">// vendor-prefixed properties bhi wahi convention follow karte hain:</span>
+<span class="tok-attr">button</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">MozBorderRadius</span> <span class="tok-punc">=</span> <span class="tok-str">'5px'</span><span class="tok-punc">;</span>   <span class="tok-com">// -moz-border-radius</span>
+<span class="tok-attr">button</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">WebkitBorderRadius</span> <span class="tok-punc">=</span> <span class="tok-str">'5px'</span><span class="tok-punc">;</span>  <span class="tok-com">// -webkit-border-radius</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-title">Style reset: empty string, delete NAHI<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">display</span> <span class="tok-punc">=</span> <span class="tok-str">"none"</span><span class="tok-punc">;</span>  <span class="tok-com">// element hide kar do (display: none inline style set hua)</span>
+
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">display</span> <span class="tok-punc">=</span> <span class="tok-str">""</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// EMPTY STRING assign karo remove karne ke liye — CSS engine ko default/stylesheet value use karne deta hai</span>
+
+<span class="tok-com">// alternative: removeProperty() explicit method — same effect, alag syntax:</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">background</span> <span class="tok-punc">=</span> <span class="tok-str">'red'</span><span class="tok-punc">;</span>
+<span class="tok-fn">setTimeout</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-fn">removeProperty</span><span class="tok-punc">(</span><span class="tok-str">'background'</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-num">1000</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        <code>delete elem.style.display</code> jaisa syntax kaam nahi karta kyunki <code>style</code> ek
+        special <code>CSSStyleDeclaration</code> object hai jo getter/setter ke through kaam karta hai —
+        normal object delete semantics apply nahi hoti.
+      </p>
+      <div class="code-block">
+        <div class="code-title">cssText — multiple styles ek saath (LEKIN replace karta hai)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-attr">div</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">cssText</span> <span class="tok-punc">=</span> <span class="tok-punc">`</span><span class="tok-attr">color</span><span class="tok-punc">:</span> <span class="tok-attr">red</span> <span class="tok-punc">!</span><span class="tok-attr">important</span><span class="tok-punc">;</span>
+  <span class="tok-attr">background-color</span><span class="tok-punc">:</span> <span class="tok-attr">yellow</span><span class="tok-punc">;</span>
+  <span class="tok-attr">width</span><span class="tok-punc">:</span> <span class="tok-num">100</span><span class="tok-attr">px</span><span class="tok-punc">;</span>
+  <span class="tok-attr">text-align</span><span class="tok-punc">:</span> <span class="tok-attr">center</span><span class="tok-punc">;</span>
+<span class="tok-punc">`</span><span class="tok-punc">;</span>
+<span class="tok-com">// IMPORTANT: cssText SAARE existing inline styles ko REPLACE karta hai (add nahi karta) —</span>
+<span class="tok-com">// agar div pe pehle se koi aur inline style thi jo yahan list nahi ki, wo GAYAB ho jaayegi</span>
+<span class="tok-com">// use case: jab tumhe pura style block ek hi baar mein set karna ho (template se, computed string se)</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Numeric values bina CSS unit ke silently ignore hote hain</div>
+        <p>
+          Style properties ko plain number assign karna kaam nahi karta — CSS ko hamesha ek unit chahiye
+          (<code>px</code>, <code>%</code>, <code>em</code>, etc.), aur agar missing hai to browser assignment
+          ko <strong>silently ignore</strong> kar deta hai (no error thrown):
+        </p>
+      </div>
+      <div class="code-block">
+        <div class="code-title">CSS unit mandatory hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// galat: bina unit ke</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">margin</span> <span class="tok-punc">=</span> <span class="tok-num">20</span><span class="tok-punc">;</span>       <span class="tok-com">// number 20 pass kiya — INVALID CSS value</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">margin</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// '' — empty! assignment silently REJECT ho gayi, koi error nahi</span>
+
+<span class="tok-com">// sahi: unit ke saath string</span>
+<span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">margin</span> <span class="tok-punc">=</span> <span class="tok-str">'20px'</span><span class="tok-punc">;</span>   <span class="tok-com">// px unit explicitly diya</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">margin</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// '20px' — set ho gaya</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">.</span><span class="tok-attr">style</span><span class="tok-punc">.</span><span class="tok-attr">marginTop</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// '20px' — shorthand 'margin' set karne se longhand properties bhi auto-populate hoti hain</span></code></pre>
+      </div>
+
+      <h3>getComputedStyle — resolved styles, sirf inline nahi</h3>
+      <p>
+        <code>elem.style</code> ek fundamental limitation ke saath aata hai: ye <strong>sirf</strong> inline
+        <code>style="..."</code> attribute dekhta hai — kisi bhi <code>&lt;style&gt;</code> block ya external
+        stylesheet se aayi CSS rules usme <strong>reflect nahi hoti</strong>, chahe wo actually element pe
+        apply ho rahi ho. Actual "final rendered" style value jaanne ke liye
+        <code>getComputedStyle(elem)</code> use karna padta hai — ye browser se poochta hai "sab CSS rules
+        (stylesheet + inline + browser default) apply karne ke baad is property ki final resolved value
+        kya hai".
+      </p>
+      <div class="code-block">
+        <div class="code-title">getComputedStyle — stylesheet-applied values bhi dikhta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span> <span class="tok-attr">body</span> <span class="tok-punc">{</span> <span class="tok-attr">color</span><span class="tok-punc">:</span> <span class="tok-attr">red</span><span class="tok-punc">;</span> <span class="tok-attr">margin</span><span class="tok-punc">:</span> <span class="tok-num">5</span><span class="tok-attr">px</span> <span class="tok-punc">}</span> <span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+
+<span class="tok-kw">script</span><span class="tok-punc">:</span>
+<span class="tok-com">// getComputedStyle(element, pseudo) — 2nd arg optional (jaise "::before")</span>
+<span class="tok-kw">let</span> <span class="tok-attr">computedStyle</span> <span class="tok-punc">=</span> <span class="tok-fn">getComputedStyle</span><span class="tok-punc">(</span><span class="tok-punc">document</span><span class="tok-punc">.</span><span class="tok-fn">body</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">computedStyle</span><span class="tok-punc">.</span><span class="tok-attr">marginTop</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "5px" — &lt;style&gt; block se aaya, INLINE style mein kahin nahi hai ye</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-attr">computedStyle</span><span class="tok-punc">.</span><span class="tok-attr">color</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// "rgb(255, 0, 0)" — RESOLVED format mein, "red" keyword nahi</span>
+
+<span class="tok-com">// document.body.style.marginTop yahan "" hota — kyunki elem.style sirf INLINE dekhta, stylesheet nahi</span></code></pre>
+      </div>
+      <p>
+        Zaroori nuance: naam "computed" style hai, lekin actual return value <strong>resolved</strong>
+        value hoti hai (jaise geometry properties px mein normalize ho jaati hain, colors
+        <code>rgb()</code> format mein). Return object read-only hai — isse direct assign nahi kar sakte.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: getComputedStyle bhi ek layout-read hai</div>
+        <p>
+          <code>getComputedStyle</code> internally browser ko force karta hai ki wo pending style
+          recalculations ko turant flush kare (jaise <code>offsetHeight</code> ya
+          <code>getBoundingClientRect()</code> bhi karte hain) — isliye ye bhi <strong>layout thrashing</strong>
+          ka source ban sakta hai agar DOM writes ke beech mein interleave kiya jaaye. Best practice: agar
+          multiple elements ke computed styles chahiye, pehle saare DOM writes complete karo, phir ek batch
+          mein saare reads karo — kabhi write→read→write→read pattern loop mein mat chalao.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Attribute</strong> = HTML source ka raw text (hamesha string). <strong>Property</strong> = DOM object ki live value (typed). Standard attributes ke liye dono usually sync hote hain, non-standard ke liye sirf attribute exist karta hai.</li>
+        <li><code>value</code> property ka sync sirf attribute→property direction mein kaam karta hai — <code>getAttribute('value')</code> hamesha original HTML default deta hai, current form state nahi.</li>
+        <li>Non-standard attributes ke liye <code>getAttribute</code>/<code>setAttribute</code>/<code>hasAttribute</code>/<code>removeAttribute</code> use karo; custom data ke liye <code>data-*</code> + <code>dataset</code> preferred hai (future-proof, dash-case auto camelCase).</li>
+        <li>Node banane ke liye <code>createElement</code>/<code>createTextNode</code>; insert karne ke liye modern methods <code>append/prepend/before/after/replaceWith</code> — multiple args accept karte hain, strings auto-escape hoti hain.</li>
+        <li><code>insertAdjacentHTML(where, html)</code> string-based HTML insert karne ka safe, non-destructive tareeka hai (existing DOM/listeners intact rehte hain).</li>
+        <li><strong>DocumentFragment</strong> loop mein multiple nodes ko off-DOM batch karta hai — final insertion ek hi reflow trigger karta hai, N nahi.</li>
+        <li><code>classList</code> (add/remove/toggle/contains) individual classes surgically manage karta hai; <code>className</code> poora string replace karta hai — risky manual concatenation avoid karo.</li>
+        <li><code>elem.style</code> sirf inline styles dekhta hai; <code>getComputedStyle(elem)</code> resolved final value deta hai (stylesheet + inline + defaults sab combine karke) — dono hi layout-forcing reads hain, batch karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Attribute aur property mein fundamental farak kya hai, aur ye kab diverge (out-of-sync) ho sakte hain?</strong><br>Hint: attribute = HTML source string, property = typed DOM object value; standard attributes usually bidirectionally sync hote hain lekin har property ka apna getter/setter hai jo decide karta hai — <code>value</code> jaise cases mein sync sirf ek direction mein hota hai.</li>
+        <li><strong>Ek form ka current input value padhne ke liye <code>getAttribute('value')</code> use karna kyun galat hai?</strong><br>Hint: value attribute→property sync sirf ek-baar (parse time) ya explicit setAttribute call pe hota hai — user typing ya <code>.value =</code> assignment attribute ko update nahi karta, isliye stale/original default milta hai.</li>
+        <li><strong>data-* attributes kyun banaye gaye, aur dataset kaise naming convert karta hai?</strong><br>Hint: future HTML spec collisions avoid karne ke liye reserved namespace; multiword dash-case attributes camelCase mein <code>dataset</code> property banti hain (data-order-state → dataset.orderState).</li>
+        <li><strong>Loop mein N baar <code>appendChild</code> call karne se kya problem hoti hai, aur DocumentFragment kaise fix karta hai?</strong><br>Hint: har call live DOM ko touch karta hai jo potential reflow trigger kar sakta hai (especially agar beech mein layout read ho); fragment sabhi nodes ko off-DOM collect karta hai, phir ek single insertion operation mein sab move hote hain — ek hi reflow.</li>
+        <li><strong>classList vs manual className string manipulation — production code mein classList kyun preferred hai?</strong><br>Hint: classList duplicate-check, whitespace handling, aur individual add/remove/toggle/contains internally handle karta hai; className manual concatenation fragile hai (duplicate classes, extra spaces, poori string overwrite ka risk).</li>
+        <li><strong>elem.style.margin aur getComputedStyle(elem).margin mein farak batao.</strong><br>Hint: elem.style sirf INLINE style attribute dekhta hai; getComputedStyle sabhi applicable CSS rules (stylesheet + inline + UA defaults) combine karke final resolved value deta hai, aur ye read-only hai.</li>
+        <li><strong>insertAdjacentHTML, innerHTML += string ke comparison mein kyun better hai?</strong><br>Hint: innerHTML += poore element ko re-parse karta hai (existing children destroy-recreate hote hain, event listeners aur input state loss ho sakta hai); insertAdjacentHTML sirf naya HTML parse karke specific position pe insert karta hai, existing content untouched rehta hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="16-dom-tree-navigation.html">
+        <div class="label">← Previous</div>
+        <div class="title">DOM Tree &amp; Navigation</div>
+      </a>
+      <a class="next" href="18-sizes-scrolling-coordinates.html">
+        <div class="label">Next →</div>
+        <div class="title">Sizes, Scrolling, Coordinates</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Functions Basics — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link active" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> JavaScript.info <span>›</span> Functions Basics</div>
+      <div class="progress-pill">Chapter 3 / 34</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Part 1 · The JS Language</span>
+      <h1>Functions Basics</h1>
+      <p class="subtitle">
+        Function declaration se function expression tak, arrow functions ka intro, aur "functions are
+        values" wala root-level mental model — jo baaki poore JS ko samajhne ki foundation hai.
+        Advanced part (closures, <code>call/apply/bind</code>, rest/spread) chapter 9 mein aayega.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#declarations-hoisting">Function declarations aur hoisting</a></li>
+          <li><a href="#local-outer">Local vs outer variables</a></li>
+          <li><a href="#params-defaults">Parameters aur default values</a></li>
+          <li><a href="#return">Return statement</a></li>
+          <li><a href="#expr-vs-decl">Function expressions vs declarations</a></li>
+          <li><a href="#function-as-value">Function as a value — root internals</a></li>
+          <li><a href="#callbacks">Callback functions</a></li>
+          <li><a href="#arrow-basics">Arrow function basics</a></li>
+          <li><a href="#specials">Recap: JavaScript specials</a></li>
+        </ul>
+      </div>
+
+      <h2 id="declarations-hoisting">Function declarations aur hoisting</h2>
+      <p>
+        Sabse common tareeka function banane ka — <strong>Function Declaration</strong>. Syntax simple hai:
+        <code>function</code> keyword, naam, parentheses mein parameters, aur curly braces mein body.
+        Yehi function baad mein naam se call hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">function-declaration.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// call hone se PEHLE bhi ye kaam karega — kyunki hoisting</span>
+<span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello, main JavaScript hoon!" alert hoga</span>
+
+<span class="tok-com">// function declaration — standalone statement, "function" keyword se shuru</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// ye variable sirf isi function ke andar exist karta hai — "local variable"</span>
+  <span class="tok-kw">let</span> message <span class="tok-punc">=</span> <span class="tok-str">"Hello, main JavaScript hoon!"</span><span class="tok-punc">;</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// message ko popup mein dikhao</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// function ke bahar 'message' access karne ki koshish — ReferenceError dega</span>
+<span class="tok-com">// alert(message); // Error! message yahan defined nahi hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Root-level: hoisting andar se kaise kaam karti hai</div>
+        <p>
+          Engine jab kisi scope (script ya function body) mein enter karta hai, execution shuru karne se
+          pehle ek <strong>creation phase</strong> chalta hai — us phase mein saare <code>function
+          declaration</code>s (poora function object, sirf naam nahi!) memory mein already allocate ho
+          jaate hain, execution-order se pehle. Isiliye <code>showMessage()</code> ko call top pe likhne
+          ke bawajood chalta hai — jab tak wo call ki line execute hoti hai, function already fully
+          ready hota hai memory mein. Ye sirf <code>var</code>-jaisa "naam hoist, value nahi" wala
+          behavior nahi hai — poora function <em>definition</em> hoist hoti hai. Function Expressions
+          (<code>let f = function(){}</code>) is treatment se exempt hain — unka sirf variable naam
+          (agar <code>let</code>/<code>const</code>) "temporal dead zone" mein reserve hota hai, value
+          nahi — isi wajah se expression ko call-before-define karne pe error aata hai.
+        </p>
+      </div>
+
+      <h2 id="local-outer">Local vs outer variables</h2>
+      <p>
+        Function ke andar declare kiya variable sirf us function ke andar visible hota hai —
+        <strong>local variable</strong>. Lekin function apne bahar declare kiye variables ko
+        <strong>read aur modify</strong> dono kar sakta hai — unhe "outer" ya (agar sabse bahar hai to)
+        "global" variables kehte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">outer-variables.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> userName <span class="tok-punc">=</span> <span class="tok-str">'John'</span><span class="tok-punc">;</span> <span class="tok-com">// outer (global) variable</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  userName <span class="tok-punc">=</span> <span class="tok-str">"Bob"</span><span class="tok-punc">;</span> <span class="tok-com">// koi local 'userName' nahi hai, isliye ye outer wala hi modify hoga</span>
+  <span class="tok-kw">let</span> message <span class="tok-punc">=</span> <span class="tok-str">"Hello, "</span> <span class="tok-punc">+</span> userName<span class="tok-punc">;</span> <span class="tok-com">// naya local variable</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello, Bob"</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>userName<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "John" nahi — function call ke baad "Bob" hi rahega (permanently modified)</span>
+<span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// call karte hi userName "Bob" ho jaata hai</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>userName<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab "Bob" — outer variable permanently badal gaya</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">showMessageShadowed</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> userName <span class="tok-punc">=</span> <span class="tok-str">"Bob"</span><span class="tok-punc">;</span> <span class="tok-com">// agar yahan LOCAL userName declare karo, to ye "shadow" ho jaata hai</span>
+  <span class="tok-kw">let</span> message <span class="tok-punc">=</span> <span class="tok-str">"Hello, "</span> <span class="tok-punc">+</span> userName<span class="tok-punc">;</span> <span class="tok-com">// local wala use hoga, outer wala touch hi nahi hota</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>message<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <p>
+        <strong>Shadowing</strong> ka matlab: agar function ke andar outer variable jaisa hi naam declare
+        ho jaaye, to us function ke andar sirf local wala "dikhta" hai — outer wala completely hidden ho
+        jaata hai (chhup jaata hai, isliye "shadow"). Best practice: globals kam se kam use karo —
+        functions ko independent, self-contained rakho taaki unka behavior sirf unke parameters pe
+        depend kare, kisi bahar ke hidden state pe nahi.
+      </p>
+
+      <h2 id="params-defaults">Parameters aur default values</h2>
+      <p>
+        Function declaration mein jo variables parentheses mein likhte ho unhe <strong>parameters</strong>
+        kehte hain; call karte waqt unme jo values pass karte ho unhe <strong>arguments</strong> kehte hain.
+        Important: JS values ko <em>copy karke</em> pass karta hai (primitives ke liye) — function ke
+        andar parameter modify karne se caller ka original variable affect nahi hota.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">default-parameters.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 'text' parameter ke liye default value diya — agar caller na de to ye use hoga</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showMessage</span><span class="tok-punc">(</span>from<span class="tok-punc">,</span> text <span class="tok-punc">=</span> <span class="tok-str">"no text given"</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>from <span class="tok-punc">+</span> <span class="tok-str">": "</span> <span class="tok-punc">+</span> text<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// dono values ko concat karke dikhao</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-str">"Ann"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Ann: no text given" — text argument diya hi nahi, default chala</span>
+<span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-str">"Ann"</span><span class="tok-punc">,</span> <span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// explicitly undefined pass karne pe bhi default chalega</span>
+<span class="tok-fn">showMessage</span><span class="tok-punc">(</span><span class="tok-str">"Ann"</span><span class="tok-punc">,</span> <span class="tok-str">"Hi!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Ann: Hi!" — dono arguments diye, default trigger hi nahi hoga</span>
+
+<span class="tok-com">// default expression sirf tab evaluate hota hai jab argument miss/undefined ho —</span>
+<span class="tok-com">// aur har call pe FRESH evaluate hota hai, ek baar cache nahi hota</span>
+<span class="tok-kw">function</span> <span class="tok-fn">logCallTime</span><span class="tok-punc">(</span>label<span class="tok-punc">,</span> t <span class="tok-punc">=</span> <span class="tok-fn">Date</span><span class="tok-punc">.</span><span class="tok-fn">now</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// Date.now() har baar naya call hoga jab t argument nahi diya jaaye</span>
+  <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span>label<span class="tok-punc">,</span> t<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// modern alternative: nullish coalescing (??) — sirf null/undefined pe fallback deta hai,</span>
+<span class="tok-com">// 0 ya "" jaisi "falsy but valid" values ko preserve karta hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">showCount</span><span class="tok-punc">(</span>count<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  count <span class="tok-punc">=</span> count <span class="tok-punc">??</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-com">// agar count null/undefined hai tabhi 0 rakho</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span>count<span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Default value ka <code>||</code> se manually likhna galat kyun</div>
+        <p>
+          Purane code mein <code>count = count || 0</code> pattern dikhta hai — lekin <code>||</code> har
+          <strong>falsy</strong> value (<code>0</code>, <code>""</code>, <code>NaN</code>, <code>false</code>)
+          pe fallback trigger karta hai, sirf missing/undefined pe nahi. Isse agar caller genuinely
+          <code>0</code> pass kare, wo silently <code>0</code> hi rahega chahiye lekin <code>||</code>
+          ise bhi overwrite kar dega — subtle bug. <code>??</code> ya function-parameter default
+          (<code>= 0</code>) safe hai kyunki wo sirf <code>undefined</code> (ya missing argument) pe
+          fire hota hai.
+        </p>
+      </div>
+
+      <h2 id="return">Return statement</h2>
+      <p>
+        <code>return</code> function ko turant terminate karke value caller ko wapas deta hai. Ek
+        function ke andar <code>return</code> multiple jagah, multiple conditions ke saath ho sakta hai.
+        Agar <code>return</code> hai hi nahi, ya value ke bina hai, function <code>undefined</code>
+        return karta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">return-statement.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">checkAge</span><span class="tok-punc">(</span>age<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span>age <span class="tok-punc">>=</span> <span class="tok-num">18</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span> <span class="tok-com">// yahin function turant exit ho jaata hai, neeche wala code nahi chalega</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">confirm</span><span class="tok-punc">(</span><span class="tok-str">'Parents se permission li?'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// confirm() ka boolean result hi return ho jaata hai</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">doNothing</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// return hi nahi hai body mein</span>
+  <span class="tok-com">// koi return statement nahi</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">doNothing</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">===</span> <span class="tok-kw">undefined</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — implicit undefined return hota hai</span>
+
+<span class="tok-com">// KHATARNAAK: return aur value ke beech newline mat daalo — ASI (Automatic Semicolon</span>
+<span class="tok-com">// Insertion) 'return' ke baad turant semicolon insert kar deta hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">buggyReturn</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">return</span>
+    <span class="tok-punc">(</span>
+      <span class="tok-str">"kuch value"</span>
+    <span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">buggyReturn</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// undefined! JS ne 'return;' padha, value wali line unreachable ban gayi</span></code></pre>
+      </div>
+
+      <h2 id="expr-vs-decl">Function expressions vs declarations</h2>
+      <p>
+        Function banane ka doosra tareeka — <strong>Function Expression</strong>: function ko ek
+        assignment ke right side pe likhna, jaise koi normal value.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">function-expression.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// function expression: 'function' keyword yahan ek EXPRESSION ke andar hai (assignment ka right side)</span>
+<span class="tok-kw">let</span> sayHi <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// body — declaration jaisa hi hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// NOTE: semicolon lagta hai kyunki ye ek assignment statement hai</span>
+
+<span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello" — sirf iske baad hi call kar sakte ho, pehle nahi</span></code></pre>
+      </div>
+
+      <p>Comparison — dono syntax alag hain, isliye behavior bhi alag:</p>
+
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th>Function Declaration</th><th>Function Expression</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Syntax</td><td>Standalone <code>function name(){}</code> statement</td><td>Assignment ke right side pe, <code>let f = function(){}</code></td></tr>
+          <tr><td>Hoisting</td><td>Poora function definition creation-phase mein hoist hota hai</td><td>Sirf variable naam hoist (agar <code>let</code>/<code>const</code>, TDZ mein), value nahi</td></tr>
+          <tr><td>Call-before-define</td><td>Kaam karta hai</td><td>Error deta hai (variable abhi assigned nahi)</td></tr>
+          <tr><td>Block scope</td><td>Sirf apne containing block mein visible (strict mode)</td><td>Normal variable scoping rules follow karta hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">block-scope-declaration.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> age <span class="tok-punc">=</span> <span class="tok-num">16</span><span class="tok-punc">;</span> <span class="tok-com">// test value</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>age <span class="tok-punc">&lt;</span> <span class="tok-num">18</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-com">// function declaration ek block ({...}) ke andar hai — strict mode mein</span>
+  <span class="tok-com">// ye sirf isi block ke andar visible hoga</span>
+  <span class="tok-kw">function</span> <span class="tok-fn">welcome</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// welcome(); // Error: welcome is not defined — block ke bahar invisible hai</span>
+
+<span class="tok-com">// Fix: function EXPRESSION use karo, variable ko block ke BAHAR declare karo</span>
+<span class="tok-kw">let</span> welcomeFixed<span class="tok-punc">;</span> <span class="tok-com">// outer scope mein variable pehle se declare</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span>age <span class="tok-punc">&lt;</span> <span class="tok-num">18</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  welcomeFixed <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// outer variable ko assign kiya, naya scope nahi banaya</span>
+<span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+  welcomeFixed <span class="tok-punc">=</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Greetings!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">welcomeFixed</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// ab kaam karta hai — outer variable ke through call</span></code></pre>
+      </div>
+
+      <p>
+        Recommendation: default Function Declarations use karo — readable, self-documenting, aur
+        hoisting ki wajah se flexible order mein likh sakte ho. Function Expressions tab use karo jab
+        conditional assignment chahiye, ya jab function inline ek anonymous callback ki tarah pass karna
+        ho.
+      </p>
+
+      <h2 id="function-as-value">Function as a value — root internals</h2>
+      <p>
+        Ye is chapter ka sabse important mental-model shift hai: JavaScript mein function koi
+        "magical language construct" nahi hai — ye ek <strong>special kind of value</strong> hai, aur
+        andar se ek <strong>object</strong> hai (callable object). Isiliye function ko variables mein
+        copy kar sakte ho, arguments ki tarah pass kar sakte ho, aur return kar sakte ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">function-as-value.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>sayHi<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// parentheses NAHI — function ka source code (as string) dikhega, call nahi hoga</span>
+
+<span class="tok-kw">let</span> func <span class="tok-punc">=</span> sayHi<span class="tok-punc">;</span> <span class="tok-com">// function object ko naye variable mein COPY kiya — ek naya function nahi bana</span>
+
+<span class="tok-fn">func</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello" — copy ke through original hi call ho raha hai</span>
+<span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello" — original naam se bhi kaam karta hai</span>
+
+<span class="tok-com">// proof ki function object hai: uspe custom property attach ho sakti hai</span>
+sayHi<span class="tok-punc">.</span>counter <span class="tok-punc">=</span> <span class="tok-num">0</span><span class="tok-punc">;</span> <span class="tok-com">// function object pe ek naya property daala — jaise kisi bhi object pe</span>
+sayHi<span class="tok-punc">.</span>counter<span class="tok-punc">++</span><span class="tok-punc">;</span> <span class="tok-com">// property ko increment kiya</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span>sayHi<span class="tok-punc">.</span>counter<span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 1 — function pe stored state, closures se bhi related concept hai (ch.9)</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Root-level: "function is an object" ka matlab engine ke andar</div>
+        <p>
+          V8 (ya koi bhi JS engine) ke internal representation mein function object ek normal object ki
+          tarah hi hota hai — uske paas properties store karne ke liye slots hote hain (jaise
+          <code>name</code>, <code>length</code>, custom properties) — plus ek special hidden
+          <strong>[[Call]]</strong> internal method jo use "callable" banata hai (yaani parentheses
+          <code>()</code> laga ke invoke kiya jaa sakta hai). Yehi wo cheez hai jo function ko object se
+          differentiate karti hai — <code>typeof sayHi</code> "function" return karta hai as a
+          convenience, lekin <code>sayHi instanceof Object</code> bhi <code>true</code> hai. Isi
+          "functions are first-class objects" property ki wajah se JS mein higher-order functions,
+          callbacks, closures — sab possible hain. Ye chapter 9 (Advanced Functions) mein closures ke
+          through aur deep jaayega.
+        </p>
+      </div>
+
+      <h2 id="callbacks">Callback functions</h2>
+      <p>
+        Function ko value ki tarah treat karne ka sabse practical use case: ek function ko doosre
+        function ke argument ki tarah pass karo, taaki wo "later" — kisi specific condition/event pe —
+        <strong>call back</strong> kiya jaa sake.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">callback-functions.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 'ask' function 3 parameters leta hai: sawaal, aur 2 CALLBACK functions</span>
+<span class="tok-kw">function</span> <span class="tok-fn">ask</span><span class="tok-punc">(</span>question<span class="tok-punc">,</span> yes<span class="tok-punc">,</span> no<span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-fn">confirm</span><span class="tok-punc">(</span>question<span class="tok-punc">)</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// user ne "OK" dabaya to true</span>
+    <span class="tok-fn">yes</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// jo callback 'yes' role mein pass hua, wahi call hoga</span>
+  <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+    <span class="tok-fn">no</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// user ne "Cancel" dabaya to 'no' callback call hoga</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">// callback functions inline, anonymous function EXPRESSIONS ki tarah pass kiye</span>
+<span class="tok-fn">ask</span><span class="tok-punc">(</span>
+  <span class="tok-str">"Do you agree?"</span><span class="tok-punc">,</span>
+  <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"You agreed."</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span><span class="tok-punc">,</span> <span class="tok-com">// yes callback — koi naam nahi diya, isliye "anonymous function"</span>
+  <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"You canceled."</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">// no callback — same tareeka</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <p>
+        Ye exact pattern hi aage <code>setTimeout</code>, array methods (<code>arr.map(fn)</code>,
+        <code>arr.filter(fn)</code>), event listeners (<code>el.addEventListener('click', fn)</code>),
+        aur Promises mein bhi repeat hota hai — sab jagah "function ko value ki tarah pass karo" wala
+        concept hi core mein hai.
+      </p>
+
+      <h2 id="arrow-basics">Arrow function basics</h2>
+      <p>
+        Arrow functions function expressions ka ek concise (chhota) alternative syntax hain — khaaskar
+        simple, one-line callbacks ke liye useful.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">arrow-basics.js<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// basic form: (params) => expression — expression ka result AUTOMATICALLY return hota hai</span>
+<span class="tok-kw">let</span> sum <span class="tok-punc">=</span> <span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">)</span> <span class="tok-punc">=></span> a <span class="tok-punc">+</span> b<span class="tok-punc">;</span> <span class="tok-com">// do parameters, implicit return</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">sum</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3</span>
+
+<span class="tok-com">// single argument: round brackets OPTIONAL hain</span>
+<span class="tok-kw">let</span> double <span class="tok-punc">=</span> n <span class="tok-punc">=></span> n <span class="tok-punc">*</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// 'n' ke around () nahi lagaye — chalega</span>
+<span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-fn">double</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 6</span>
+
+<span class="tok-com">// no arguments: empty () REQUIRED hain, skip nahi kar sakte</span>
+<span class="tok-kw">let</span> sayHi <span class="tok-punc">=</span> <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=></span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Hello!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-fn">sayHi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hello!"</span>
+
+<span class="tok-com">// multiline: curly braces {} lagani padti hain — aur ab return EXPLICIT likhna zaroori hai</span>
+<span class="tok-kw">let</span> sumVerbose <span class="tok-punc">=</span> <span class="tok-punc">(</span>a<span class="tok-punc">,</span> b<span class="tok-punc">)</span> <span class="tok-punc">=></span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> result <span class="tok-punc">=</span> a <span class="tok-punc">+</span> b<span class="tok-punc">;</span> <span class="tok-com">// intermediate step likhna hai isliye {} zaroori hai</span>
+  <span class="tok-kw">return</span> result<span class="tok-punc">;</span> <span class="tok-com">// {} ke andar automatic return NAHI hota — explicitly likhna padta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// callback ke roop mein arrow — 03 chapter tak ke liye yehi "basics" hai</span>
+<span class="tok-fn">ask</span><span class="tok-punc">(</span>
+  <span class="tok-str">"Do you agree?"</span><span class="tok-punc">,</span>
+  <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=></span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"You agreed."</span><span class="tok-punc">)</span><span class="tok-punc">,</span> <span class="tok-com">// function expression ki jagah concise arrow</span>
+  <span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">=></span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"You canceled."</span><span class="tok-punc">)</span>
+<span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ye "basics" hai — real differences chapter 9 mein</div>
+        <p>
+          Is chapter mein arrow functions ko sirf ek <strong>syntactic shortcut</strong> ki tarah dekha —
+          function expression jaisa hi behavior, bas chhota syntax. Lekin arrow functions ka ek
+          fundamentally alag behavior hai jo yahan cover nahi kiya: unke paas apna <code>this</code>
+          nahi hota (lexical <code>this</code> — surrounding scope se "borrow" karte hain), aur
+          <code>arguments</code> object bhi nahi hota. Ye differences important hote hain jab arrow
+          functions ko object methods ya constructors ki tarah use karne ki galti ki jaaye — poora
+          detail Chapter 9 (Advanced Functions) mein milega.
+        </p>
+      </div>
+
+      <h2 id="specials">Recap: JavaScript specials</h2>
+      <p>
+        Chapter 1-3 tak jo cover hua uska ek quick official recap — javascript.info ke
+        "JavaScript Specials" article se, taaki context fresh rahe:
+      </p>
+
+      <ul>
+        <li><strong>Code structure</strong> — statements semicolon se separate hote hain, lekin
+          automatic semicolon insertion line breaks ko mostly delimiter treat kar leta hai. Code blocks
+          <code>{...}</code> aur control-structures ke baad semicolon nahi chahiye.</li>
+        <li><strong>Strict mode</strong> — <code>"use strict"</code> script ya function body ke top pe
+          honi chahiye. Classes aur modules implicitly strict mode enable karte hain.</li>
+        <li><strong>Variables</strong> — <code>let</code>, <code>const</code> (immutable binding),
+          <code>var</code> (legacy, function-scoped). 8 data types: <code>number</code>,
+          <code>bigint</code>, <code>string</code>, <code>boolean</code>, <code>null</code>,
+          <code>undefined</code>, <code>object</code>, <code>symbol</code>. <code>typeof null</code>
+          "object" deta hai — ye ek language quirk/historical bug hai.</li>
+        <li><strong>Interaction</strong> — <code>alert</code>, <code>prompt</code>, <code>confirm</code>
+          teeno modal (execution ko pause karte hain).</li>
+        <li><strong>Operators</strong> — arithmetic, assignment, bitwise, ternary, logical
+          (<code>&& || !</code>), aur nullish coalescing <code>??</code>. Loose <code>==</code> type
+          convert karta hai, strict <code>===</code> nahi.</li>
+        <li><strong>Loops</strong> — <code>while</code>, <code>do...while</code>, <code>for</code>;
+          <code>break</code>/<code>continue</code>, aur labels nested loops break karne ke liye.</li>
+        <li><strong>Functions</strong> — teen tareeke: declarations, expressions, arrow functions.
+          Default parameters support hote hain, aur function hamesha kuch return karta hai
+          (<code>undefined</code> agar explicit return nahi hai).</li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Interview mein jaldi bolne wali line</div>
+        <p>
+          "Function declaration hoisted hoti hai poori definition ke saath, function expression sirf
+          variable-naam hoist hota hai (value nahi) — isliye expression ko upar call karoge to error
+          aayega." — ye ek line kaafi baar directly interview mein pucha jaata hai.
+        </p>
+      </div>
+
+      <h2>Key Takeaways</h2>
+      <ul>
+        <li>Function Declaration <strong>poori definition ke saath hoist</strong> hoti hai — call-before-define
+          kaam karta hai. Function Expression sirf variable-naam hoist hota hai (agar <code>let</code>/
+          <code>const</code>, TDZ mein), value nahi — isliye call-before-define error deta hai.</li>
+        <li>Default parameter values <strong>har call pe fresh evaluate</strong> hote hain — cache nahi
+          hote. <code>??</code> use karo <code>||</code> ke bajaye jab <code>0</code>/<code>""</code>
+          jaisi falsy-but-valid values preserve karni ho.</li>
+        <li><code>return</code> aur uski value ke beech kabhi newline mat daalo — ASI silently
+          <code>undefined</code> return kar dega.</li>
+        <li>Function Declarations <strong>block-scoped</strong> hain (strict mode) — block ke bahar
+          invisible. Conditional function assignment ke liye Function Expression + outer <code>let</code>
+          use karo.</li>
+        <li>Function root mein ek <strong>object</strong> hai — copy ho sakta hai, properties attach ho
+          sakti hain, argument ki tarah pass ho sakta hai (callback pattern).</li>
+        <li>Arrow functions is stage pe sirf <strong>concise syntax</strong> hain — <code>this</code> aur
+          <code>arguments</code> ka lexical/absent behavior Chapter 9 mein aayega.</li>
+      </ul>
+
+      <h2>🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q1.</strong> Function declaration aur function expression mein hoisting ka fark kya
+          hai? <em>Hint: "poori definition hoist" vs "sirf naam hoist, TDZ".</em></li>
+        <li><strong>Q2.</strong> <code>count = count || 0</code> mein kya bug ho sakta hai jab
+          <code>count</code> genuinely <code>0</code> ho? <em>Hint: <code>||</code> falsy check karta
+          hai, <code>??</code> sirf nullish check karta hai.</em></li>
+        <li><strong>Q3.</strong> Default parameter expression kab evaluate hota hai — function define hote
+          waqt ek baar, ya har call pe? <em>Hint: <code>Date.now()</code> jaisa default example socho.</em></li>
+        <li><strong>Q4.</strong> Ek <code>if</code> block ke andar declare kiya function declaration
+          block ke bahar call kyun fail hota hai? <em>Hint: block scope, strict mode behavior.</em></li>
+        <li><strong>Q5.</strong> "Function is a value/object" — is statement ko justify karne ke liye do
+          concrete examples do. <em>Hint: copy to variable, custom property attach.</em></li>
+        <li><strong>Q6.</strong> Callback function kya hota hai, aur kaunsi built-in JS APIs isi pattern pe
+          based hain? <em>Hint: setTimeout, addEventListener, array methods.</em></li>
+        <li><strong>Q7.</strong> Arrow function ka multiline body likhte waqt <code>return</code> kyun
+          explicit likhna padta hai? <em>Hint: curly braces = normal function body, no implicit return.</em></li>
+        <li><strong>Q8.</strong> <code>return \n (value)</code> likhne pe kya output aata hai aur kyun?
+          <em>Hint: Automatic Semicolon Insertion.</em></li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="02-js-fundamentals-2.html">
+          <div class="label">← Previous</div>
+          <div class="title">JS Fundamentals II</div>
+        </a>
+        <a class="next" href="04-code-quality.html">
+          <div class="label">Next →</div>
+          <div class="title">Code Quality</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

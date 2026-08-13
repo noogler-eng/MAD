@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Numbers &amp; Strings — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link active" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 6</div>
+      <div class="progress-pill">6 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">JS Language · Primitives · Numbers · Strings</span>
+      <h1>Numbers &amp; Strings</h1>
+      <p class="subtitle">
+        Primitives (number, string, boolean) "lightweight" hote hain — koi property, koi method nahi
+        rakh sakte, direct object nahi hain. Fir bhi <code>"abc".toUpperCase()</code> kaam kyun karta
+        hai? Iske peeche ek internal trick hai — <strong>temporary wrapper object</strong>. Is chapter
+        mein hum ye trick, Number ka IEEE-754 binary representation (jisse <code>0.1 + 0.2 !== 0.3</code>
+        aata hai), aur String ka UTF-16 internal encoding — sab root-level samjhenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#wrapper-trick">Object wrapper trick — primitives pe methods kaise chalte hain</a></li>
+          <li><a href="#wrapper-gotchas">new Number()/new String() ke gotchas</a></li>
+          <li><a href="#number-internals">Number internals — IEEE 754 binary float</a></li>
+          <li><a href="#float-precision">0.1 + 0.2 !== 0.3 — root cause</a></li>
+          <li><a href="#number-formats">Number likhne ke tareeke — e-notation, hex, octal, binary</a></li>
+          <li><a href="#rounding">Rounding — toFixed, toPrecision, Math functions</a></li>
+          <li><a href="#parsing">parseInt/parseFloat aur isNaN/isFinite</a></li>
+          <li><a href="#string-internals">String internals — UTF-16 code units</a></li>
+          <li><a href="#immutability">String immutability — proof</a></li>
+          <li><a href="#surrogate-pairs">Surrogate pairs — Unicode ka andhera pehlu</a></li>
+          <li><a href="#string-methods">Common string methods aur comparison rules</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="wrapper-trick">Object wrapper trick — primitives pe methods kaise chalte hain</h2>
+      <p>
+        Ye JS ke design mein ek fundamental contradiction lagta hai: primitives ko "lightweight" hona
+        chahiye (no properties, no methods — sirf raw value), lekin developer experience ke liye
+        <code>str.toUpperCase()</code> jaisi calls chahiye. Spec is contradiction ko ek clever trick se
+        resolve karta hai — jab bhi tum kisi primitive pe method call karte ho, engine ek
+        <strong>temporary wrapper object</strong> banata hai, method usi object pe run hota hai, aur
+        turant wo object discard ho jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Wrapper trick — step by step<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"hello"</span><span class="tok-punc">;</span> <span class="tok-com">// str ek PRIMITIVE hai — object nahi, koi method physically iske saath attached nahi</span>
+
+<span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">toUpperCase</span><span class="tok-punc">()</span><span class="tok-punc">;</span> <span class="tok-com">// jab engine ye line dekhta hai, andar ye hota hai:</span>
+<span class="tok-com">// 1. ek special String wrapper object banta hai: new String(str)</span>
+<span class="tok-com">// 2. toUpperCase() method us wrapper object pe call hota hai, jo "HELLO" return karta hai</span>
+<span class="tok-com">// 3. wrapper object turant destroy ho jaata hai (garbage collected)</span>
+<span class="tok-com">// str variable khud abhi bhi original primitive "hello" hi hai — unchanged</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "string" — proof ki str ab bhi primitive hi hai, object nahi bana</span></code></pre>
+      </div>
+
+      <p>
+        Ye exact same mechanism <code>Number</code> aur <code>Boolean</code> primitives ke liye bhi
+        chalta hai. Har primitive type ka apna corresponding wrapper constructor hai:
+        <code>String</code>, <code>Number</code>, <code>Boolean</code>, <code>Symbol</code>,
+        <code>BigInt</code> — in sab par methods define hain, aur wahi methods primitives ko "borrow"
+        milte hain wrapper ke through.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 null aur undefined exception hain</div>
+        <p>
+          <code>null</code> aur <code>undefined</code> ke liye koi corresponding wrapper object exist
+          nahi karta. Isliye <code>null.toString()</code> ya <code>undefined.length</code> jaisa kuch
+          bhi likhoge to seedha <code>TypeError: Cannot read properties of null</code> milega — engine
+          ke paas wrap karne ke liye koi wrapper hi nahi hai.
+        </p>
+      </div>
+
+      <h2 id="wrapper-gotchas">new Number()/new String() ke gotchas</h2>
+      <p>
+        Chunki wrapper constructors (<code>String</code>, <code>Number</code>, <code>Boolean</code>)
+        publicly accessible hain, tum manually bhi <code>new Number(5)</code> likh sakte ho — lekin ye
+        <strong>strongly discouraged</strong> hai kyunki isse actual object ban jaata hai, primitive
+        nahi, aur uska behavior surprising hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">new Number() ka trap<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">zero</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "new" ke saath call karne se ek REAL OBJECT banta hai, primitive nahi</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">zero</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "object" — number nahi! ye bahut confusing bug source hai</span>
+
+<span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">zero</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                    <span class="tok-com">// object hamesha truthy hota hai in if-checks mein, chahe value 0 ho</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"zero is truthy!!"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// YE line chalti hai — obviously wrong intuition ke against</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">num</span> <span class="tok-punc">=</span> <span class="tok-fn">Number</span><span class="tok-punc">(</span><span class="tok-str">"123"</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// BINA "new" ke — ye sirf TYPE CONVERSION hai, safe aur recommended</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">num</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "number" — primitive hi bana, conversion ke through</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Primitive pe property assign karna — silently fail hota hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Hello"</span><span class="tok-punc">;</span> <span class="tok-com">// primitive string</span>
+
+<span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-punc">test</span> <span class="tok-punc">=</span> <span class="tok-num">5</span><span class="tok-punc">;</span>    <span class="tok-com">// ye internally: (1) temp wrapper banta hai, (2) uspe test=5 set hota hai,</span>
+                <span class="tok-com">// (3) wrapper turant discard ho jaata hai — property kabhi save hi nahi hoti</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-punc">test</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// undefined — original str primitive pe kabhi test property thi hi nahi</span>
+<span class="tok-com">// strict mode ("use strict") mein ye line assignment ek TypeError throw karti hai, silent fail nahi hoti</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: engines actual wrapper skip kar dete hain</div>
+        <p>
+          Spec-level pe har method call ek wrapper object create/destroy karta hai, lekin real engines
+          (V8, SpiderMonkey) is allocation ko <strong>optimize away</strong> kar dete hain jab tak
+          observable behavior spec ke identical rahe — matlab tumhare code ko chalane mein har baar
+          heap allocation nahi ho rahi hoti, JIT compiler ye "as-if" rule follow karte hue skip kar
+          deta hai. Ye samajhna zaroori hai kyunki string/number methods "expensive" nahi hote practice
+          mein, jaisa naively wrapper-per-call model se lagta hai.
+        </p>
+      </div>
+
+      <h2 id="number-internals">Number internals — IEEE 754 binary float</h2>
+      <p>
+        JavaScript mein sirf ek numeric primitive type hai — <code>number</code> — jo internally
+        <strong>64-bit IEEE-754 double-precision floating point</strong> format mein store hota hai.
+        64 bits is tarah divide hote hain: 1 bit sign ke liye, 11 bits exponent (decimal point kahan
+        hai) ke liye, aur 52 bits mantissa/fraction (actual digits) ke liye. Isi wajah se JS mein
+        integer aur float ek hi type hain — <code>5</code> aur <code>5.5</code> dono "number" hi hain.
+      </p>
+      <p>
+        52-bit mantissa ka direct consequence hai <strong>safe integer limit</strong>:
+        <code>Number.MAX_SAFE_INTEGER</code> = <code>2^53 - 1</code> = <code>9007199254740991</code>.
+        Isse bada koi integer bina precision loss ke represent nahi ho sakta — do consecutive integers
+        (jaise <code>2^53</code> aur <code>2^53 + 1</code>) same binary pattern share karne lagte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Safe integer limit ka proof<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Number</span><span class="tok-punc">.</span><span class="tok-punc">MAX_SAFE_INTEGER</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 9007199254740991 — isse aage precision guaranteed nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">big</span> <span class="tok-punc">=</span> <span class="tok-num">9007199254740991</span> <span class="tok-punc">+</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-com">// MAX_SAFE_INTEGER + 1</span>
+<span class="tok-kw">let</span> <span class="tok-punc">bigger</span> <span class="tok-punc">=</span> <span class="tok-num">9007199254740991</span> <span class="tok-punc">+</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// MAX_SAFE_INTEGER + 2</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">big</span> <span class="tok-punc">===</span> <span class="tok-punc">bigger</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true !! — dono ek hi binary pattern mein round ho gaye, precision khatam</span>
+
+<span class="tok-com">// Iske liye BigInt use karo — ek alag primitive type jo arbitrary-precision integers store karta hai</span>
+<span class="tok-kw">let</span> <span class="tok-punc">reallyBig</span> <span class="tok-punc">=</span> <span class="tok-num">9007199254740993n</span><span class="tok-punc">;</span> <span class="tok-com">// trailing "n" suffix = BigInt literal, exact precision</span></code></pre>
+      </div>
+
+      <h2 id="float-precision">0.1 + 0.2 !== 0.3 — root cause</h2>
+      <p>
+        Ye JS ka sabse mashhoor "gotcha" hai, lekin ye JS-specific bug nahi hai — ye IEEE-754 binary
+        floating point ka fundamental limitation hai (Python, Java, C — sabme same behavior hota hai).
+        Root cause: <strong>0.1 aur 0.2 ko binary (base-2) fractions mein exactly represent nahi kiya ja
+        sakta</strong> — bilkul waise hi jaise decimal (base-10) mein 1/3 ko exactly likhna impossible
+        hai (0.333... infinitely chalta hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Floating point imprecision — dekho aur samjho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">0.1</span> <span class="tok-punc">+</span> <span class="tok-num">0.2</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// 0.30000000000000004 — expected 0.3 nahi mila</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-num">0.1</span> <span class="tok-punc">+</span> <span class="tok-num">0.2</span> <span class="tok-punc">===</span> <span class="tok-num">0.3</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — root: dono operands binary mein hi approximate the</span>
+
+<span class="tok-com">// WHY: 0.1 decimal mein binary fraction hai 0.0001100110011... (repeating, infinite)</span>
+<span class="tok-com">// 52-bit mantissa mein sirf FIXED number of bits fit hote hain, so ye truncate/round hota hai</span>
+<span class="tok-com">// stored 0.1 asal mein 0.1000000000000000055511151231257827021181583404541015625 hai (bahut close, exact nahi)</span>
+<span class="tok-com">// jab do aise approximated numbers add hote hain, rounding errors accumulate ho jaate hain</span>
+
+<span class="tok-com">// FIX 1: toFixed se display-level round karo (result string return karta hai)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-num">0.1</span> <span class="tok-punc">+</span> <span class="tok-num">0.2</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">toFixed</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "0.30" — string hai, number nahi, display ke liye theek</span>
+
+<span class="tok-com">// FIX 2: comparison ke liye epsilon (chhota threshold) use karo</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Math</span><span class="tok-punc">.</span><span class="tok-fn">abs</span><span class="tok-punc">(</span><span class="tok-num">0.1</span> <span class="tok-punc">+</span> <span class="tok-num">0.2</span> <span class="tok-punc">-</span> <span class="tok-num">0.3</span><span class="tok-punc">)</span> <span class="tok-punc">&lt;</span> <span class="tok-kw">Number</span><span class="tok-punc">.</span><span class="tok-punc">EPSILON</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — "close enough" check</span>
+
+<span class="tok-com">// FIX 3: money/currency jaisi cheezein — integers (paise/cents) mein store karo, floats mein nahi</span>
+<span class="tok-kw">let</span> <span class="tok-punc">priceInPaise</span> <span class="tok-punc">=</span> <span class="tok-num">1050</span><span class="tok-punc">;</span> <span class="tok-com">// ₹10.50 ko 1050 paise ke roop mein — integer math mein no precision loss</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Production mein ye kahan bite karta hai</div>
+        <p>
+          E-commerce cart totals, financial calculations, ya kisi bhi jagah decimal currency add/subtract
+          ho rahi ho — agar directly floats use kiye to rounding errors accumulate ho kar galat totals
+          dikha sakte hain (jaise ₹19.999999999999996 instead of ₹20). Root fix: currency ko hamesha
+          smallest integer unit (paise/cents) mein store aur calculate karo, sirf display ke time decimal
+          mein convert karo.
+        </p>
+      </div>
+
+      <h2 id="number-formats">Number likhne ke tareeke</h2>
+      <div class="code-block">
+        <div class="code-title">e-notation, underscore separator, hex/octal/binary<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">billion</span> <span class="tok-punc">=</span> <span class="tok-num">1e9</span><span class="tok-punc">;</span>          <span class="tok-com">// 1 * 10^9 = 1000000000 — "e9" matlab 9 zeros aage</span>
+<span class="tok-kw">let</span> <span class="tok-punc">microsecond</span> <span class="tok-punc">=</span> <span class="tok-num">1e-6</span><span class="tok-punc">;</span>    <span class="tok-com">// 1 * 10^-6 = 0.000001 — negative exponent, decimal point 6 places left</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">readable</span> <span class="tok-punc">=</span> <span class="tok-num">1_000_000_000</span><span class="tok-punc">;</span> <span class="tok-com">// underscore sirf readability ke liye — engine ignore karta hai, value same billion hai</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">hex</span> <span class="tok-punc">=</span> <span class="tok-num">0xff</span><span class="tok-punc">;</span>          <span class="tok-com">// hexadecimal (base 16): 0x prefix, ff = 255 decimal</span>
+<span class="tok-kw">let</span> <span class="tok-punc">binary</span> <span class="tok-punc">=</span> <span class="tok-num">0b11111111</span><span class="tok-punc">;</span> <span class="tok-com">// binary (base 2): 0b prefix, same value 255</span>
+<span class="tok-kw">let</span> <span class="tok-punc">octal</span> <span class="tok-punc">=</span> <span class="tok-num">0o377</span><span class="tok-punc">;</span>       <span class="tok-com">// octal (base 8): 0o prefix, same value 255</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-num">255</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-num">16</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "ff" — toString(base) kisi bhi number ko given base mein convert karta hai (2-36)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-num">255</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">toString</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// "11111111" — base 2, useful for bitwise debugging</span>
+<span class="tok-com">// note: (255).toString() mein extra parens/space zaroori — warna "255." se JS ise decimal point samajhega</span></code></pre>
+      </div>
+
+      <h2 id="rounding">Rounding — toFixed, toPrecision, Math functions</h2>
+      <div class="code-block">
+        <div class="code-title">Rounding methods comparison<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Math</span><span class="tok-punc">.</span><span class="tok-fn">floor</span><span class="tok-punc">(</span><span class="tok-num">3.6</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 3 — hamesha neeche round (towards -Infinity)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Math</span><span class="tok-punc">.</span><span class="tok-fn">ceil</span><span class="tok-punc">(</span><span class="tok-num">3.1</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// 4 — hamesha upar round (towards +Infinity)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Math</span><span class="tok-punc">.</span><span class="tok-fn">round</span><span class="tok-punc">(</span><span class="tok-num">3.5</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 4 — nearest integer, .5 upar jaata hai</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Math</span><span class="tok-punc">.</span><span class="tok-fn">trunc</span><span class="tok-punc">(</span><span class="tok-num">3.9</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 3 — sirf decimal part hata do, koi rounding nahi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">num</span> <span class="tok-punc">=</span> <span class="tok-num">12.3456</span><span class="tok-punc">;</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">num</span><span class="tok-punc">.</span><span class="tok-fn">toFixed</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "12.35" — exactly n digits AFTER decimal, string return karta hai, trailing zeros bhi rakhta hai</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">num</span><span class="tok-punc">.</span><span class="tok-fn">toPrecision</span><span class="tok-punc">(</span><span class="tok-num">4</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "12.35" — TOTAL 4 significant digits (not just after decimal), string return</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-num">5</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">toFixed</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// "5.00" — trailing zeros pad ho jaate hain, useful for currency display</span></code></pre>
+      </div>
+
+      <h2 id="parsing">parseInt/parseFloat aur isNaN/isFinite</h2>
+      <div class="code-block">
+        <div class="code-title">String → Number parsing aur validity checks<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">parseInt</span><span class="tok-punc">(</span><span class="tok-str">"100px"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// 100 — leading numeric part padhta hai, "px" pe ruk jaata hai (Number() would give NaN)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">parseFloat</span><span class="tok-punc">(</span><span class="tok-str">"12.5em"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 12.5 — decimal point tak parse karta hai, "em" ignore</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">parseInt</span><span class="tok-punc">(</span><span class="tok-str">"ff"</span><span class="tok-punc">,</span> <span class="tok-num">16</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 255 — second arg = radix/base, hex string ko decimal mein convert</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">parseInt</span><span class="tok-punc">(</span><span class="tok-str">"abc"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// NaN — koi bhi leading digit nahi mila, parse hi nahi ho paya</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">isNaN</span><span class="tok-punc">(</span><span class="tok-str">"abc"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// true — global isNaN() PEHLE argument ko Number() se convert karta hai, phir check</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Number</span><span class="tok-punc">.</span><span class="tok-fn">isNaN</span><span class="tok-punc">(</span><span class="tok-str">"abc"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>   <span class="tok-com">// false — strict version, koi coercion nahi, direct type+value check (string !== NaN)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Number</span><span class="tok-punc">.</span><span class="tok-fn">isNaN</span><span class="tok-punc">(</span><span class="tok-kw">NaN</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// true — actual NaN value pe hi true deta hai</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-fn">isFinite</span><span class="tok-punc">(</span><span class="tok-str">"15"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>        <span class="tok-com">// true — coerce karke check karta hai ki NaN/Infinity/-Infinity toh nahi</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">Number</span><span class="tok-punc">.</span><span class="tok-fn">isFinite</span><span class="tok-punc">(</span><span class="tok-str">"15"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — strict version, string ko convert nahi karta, sirf actual number type check</span></code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Rule of thumb</div>
+        <p>
+          Production code mein hamesha <code>Number.isNaN</code> aur <code>Number.isFinite</code> ko
+          prefer karo — global <code>isNaN</code>/<code>isFinite</code> ka implicit type coercion
+          confusing bugs de sakta hai (jaise <code>isNaN("abc")</code> true hai but string kabhi number
+          thi hi nahi).
+        </p>
+      </div>
+
+      <h2 id="string-internals">String internals — UTF-16 code units</h2>
+      <p>
+        JavaScript strings internally <strong>UTF-16</strong> encoding mein stored hote hain — matlab
+        har character ko ek ya do 16-bit "code units" mein represent kiya jaata hai. <code>.length</code>
+        property actual "characters" ka count nahi deti, balki <strong>UTF-16 code units</strong> ka
+        count deti hai — ye distinction advanced Unicode characters ke saath important ho jaata hai
+        (aage surrogate pairs section mein dekhenge).
+      </p>
+      <div class="code-block">
+        <div class="code-title">length property — escape sequences count hote hain as one unit<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"My\n"</span><span class="tok-punc">;</span> <span class="tok-com">// M, y, aur \n (newline) — teen characters, \n ek hi special char hai</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 3 — \n do characters nahi (backslash + n), ek hi code unit hai</span></code></pre>
+      </div>
+
+      <h2 id="immutability">String immutability — proof</h2>
+      <p>
+        Strings JavaScript mein <strong>immutable</strong> hain — ek baar bana lene ke baad, uske andar
+        ka koi bhi character direct modify nahi ho sakta. Ye array se fundamentally different hai.
+        Immutability ka faayda: strings safely share ho sakti hain (memory mein duplicate nahi karna
+        padta) aur multiple references ke beech koi accidental mutation nahi ho sakti.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Immutability ka direct proof<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Hi"</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">str</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-str">"h"</span><span class="tok-punc">;</span>  <span class="tok-com">// index pe direct assignment try karo — silently fails (non-strict mode mein error bhi nahi aati)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Hi" — kuch change nahi hua, "H" bilkul waisa hi hai jaisa tha</span>
+
+<span class="tok-com">// SAHI tareeka: naya string banao, poori tarah reassign karo</span>
+<span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-punc">str</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">.</span><span class="tok-fn">toLowerCase</span><span class="tok-punc">()</span> <span class="tok-punc">+</span> <span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-com">// str[0] = "H", .toLowerCase() se "h" mila; str.slice(1) = "i" (index 1 se end tak)</span>
+<span class="tok-com">// dono ko concat karke ek NAYA string "hi" bana, phir variable str usko point karne laga</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "hi" — original "Hi" string object memory mein untouched hi hai, ye ek naya hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: repeated concatenation ka cost</div>
+        <p>
+          Immutability ka ek performance implication hai — loop mein baar-baar
+          <code>str += char</code> karna har iteration pe ek <strong>naya string object allocate</strong>
+          karta hai (O(n) copy har baar), so ek n-length string build karne mein O(n²) time lag sakta
+          hai naive concatenation se. Bade strings build karne ke liye array mein pieces push karo aur
+          end mein ek baar <code>arr.join('')</code> karo — ye O(n) hota hai. Modern engines chhote
+          concatenations ko optimize (rope/cons-string internally) kar dete hain, lekin bade loops mein
+          ye pattern abhi bhi matter karta hai.
+        </p>
+      </div>
+
+      <h2 id="surrogate-pairs">Surrogate pairs — Unicode ka andhera pehlu</h2>
+      <p>
+        UTF-16 encoding mein 16 bits (ek code unit) sirf <code>U+0000</code> se <code>U+FFFF</code> tak
+        ke characters cover karte hain — ye "Basic Multilingual Plane" (BMP) kehlata hai, jisme most
+        common characters aa jaate hain (Latin, Devanagari, Cyrillic, etc). Lekin emojis, kuch rare
+        CJK characters, aur mathematical symbols jaise <code>𝒳</code> is range se bahar hain — unhe
+        represent karne ke liye <strong>do 16-bit code units ka pair</strong> use hota hai, jise
+        "surrogate pair" kehte hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Surrogate pair — length aur indexing break ho jaate hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">emoji</span> <span class="tok-punc">=</span> <span class="tok-str">"𝒳"</span><span class="tok-punc">;</span> <span class="tok-com">// ye ek hi VISUAL character hai — script capital X (U+1D4B3), BMP se bahar</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">emoji</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 2 — ek character, lekin DO code units (surrogate pair: high + low surrogate)</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">emoji</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// half-broken character dikhega — index[0] pura character nahi deta, sirf pehla code unit</span>
+
+<span class="tok-com">// Sahi tareeka: codePointAt() jo pura Unicode code point return karta hai, code unit nahi</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">emoji</span><span class="tok-punc">.</span><span class="tok-fn">codePointAt</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 120499 — full code point number, surrogate pair ko combine karke</span>
+
+<span class="tok-com">// for...of loop surrogate pairs ko SAHI se iterate karta hai, index access nahi karta</span>
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">char</span> <span class="tok-kw">of</span> <span class="tok-punc">emoji</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// for...of Unicode-aware hai — surrogate pair ko ek hi "character" treat karta hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">char</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "𝒳" — pura correct character milega, ek hi baar loop chalega</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Real bug: string truncation surrogate pair beech mein tod sakta hai</div>
+        <p>
+          Agar tum <code>str.slice(0, 10)</code> jaisa naive truncation karte ho (jaise bio/tweet
+          character-limit enforce karne ke liye) aur cut point exactly ek surrogate pair ke beech mein
+          gira, to ek "broken" character bach jaata hai — jo UI mein ek garbled box/question-mark
+          dikhega. Emoji-heavy user-generated content handle karte waqt hamesha
+          <code>Array.from(str)</code> ya <code>[...str]</code> use karo (ye dono Unicode-aware split
+          karte hain) truncation se pehle.
+        </p>
+      </div>
+
+      <h2 id="string-methods">Common string methods aur comparison rules</h2>
+      <div class="code-block">
+        <div class="code-title">Searching, extracting, comparing<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"Widget with id"</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">indexOf</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// 1 — "id" "Widget" ke andar "id" pe pehla match, position 1 se shuru</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">includes</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// true — sirf boolean, koi position nahi deta</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">startsWith</span><span class="tok-punc">(</span><span class="tok-str">"Wid"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// true — beginning check</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">endsWith</span><span class="tok-punc">(</span><span class="tok-str">"id"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// true — ending check</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">6</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "Widget" — start se end tak (end EXCLUDED), NEGATIVE index bhi allowed</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">slice</span><span class="tok-punc">(</span><span class="tok-punc">-</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>      <span class="tok-com">// "id" — negative index = end se count, last 2 characters</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">substring</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">,</span> <span class="tok-num">6</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Widget" — slice jaisa, lekin negative index ko 0 treat karta hai, args swap ho sakte</span>
+
+<span class="tok-com">// Template literals — backtick strings, expression embed + multiline dono</span>
+<span class="tok-kw">let</span> <span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">;</span>
+<span class="tok-kw">let</span> <span class="tok-punc">greet</span> <span class="tok-punc">=</span> <span class="tok-str">`Hello, </span><span class="tok-punc">${</span><span class="tok-punc">name</span><span class="tok-punc">}</span><span class="tok-str">!</span>
+<span class="tok-str">Multiline bina \n ke.`</span><span class="tok-punc">;</span> <span class="tok-com">// ${...} ke andar koi bhi JS expression evaluate hoke string mein interpolate hota hai</span>
+
+<span class="tok-com">// Comparison — UTF-16 code unit ke hisaab se lexicographic, case-sensitive</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"a"</span> <span class="tok-punc">></span> <span class="tok-str">"Z"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — lowercase letters ka code point uppercase se BADA hota hai ("a"=97, "Z"=90)</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">"Österreich"</span><span class="tok-punc">.</span><span class="tok-fn">localeCompare</span><span class="tok-punc">(</span><span class="tok-str">"Zurich"</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// language-aware comparison, "correct" alphabetical order deta hai</span></code></pre>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Primitives pe method call karne se ek <strong>temporary wrapper object</strong> banta hai, method run hota hai, object turant discard ho jaata hai — primitive khud lightweight rehta hai.</li>
+        <li><code>new Number()</code>/<code>new String()</code> se banaye gaye actual objects use mat karo — <code>typeof</code> "object" ban jaata hai aur wo hamesha truthy hote hain (chahe value 0/"" ho).</li>
+        <li>Numbers 64-bit IEEE-754 float mein store hote hain — safe integer limit <code>2^53 - 1</code> hai, isse aage BigInt use karo.</li>
+        <li><code>0.1 + 0.2 !== 0.3</code> kyunki decimal fractions binary mein exactly represent nahi hote — money/currency ke liye integer (paise/cents) math use karo.</li>
+        <li>Strings <strong>immutable</strong> hain — koi character direct edit nahi ho sakta, hamesha naya string banta hai. Bade loop mein concatenation ki jagah array + join use karo.</li>
+        <li>String internally UTF-16 hai — <code>.length</code> code units count karta hai, characters nahi. BMP se bahar ke characters (emoji, rare symbols) <strong>surrogate pairs</strong> (2 code units) lete hain, jisse naive indexing/truncation break ho sakta hai.</li>
+        <li><code>Number.isNaN</code>/<code>Number.isFinite</code> global versions se better hain kyunki wo implicit type coercion nahi karte.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>"abc".toUpperCase() kaam kaise karta hai jab string ek primitive hai, object nahi?</strong><br>Hint: temporary wrapper object banta hai method call ke time, method run hota hai, wrapper turant discard ho jaata hai — original primitive unaffected rehta hai.</li>
+        <li><strong>new Number(0) aur Number(0) mein kya farak hai?</strong><br>Hint: new ke saath actual object banta hai (typeof "object", hamesha truthy); bina new ke sirf type conversion hoti hai, result primitive number hota hai.</li>
+        <li><strong>0.1 + 0.2 === 0.3 false kyun hai? Ye JS-specific bug hai kya?</strong><br>Hint: IEEE-754 binary floating point limitation hai, JS-specific nahi — decimal fractions binary mein exactly represent nahi hote, rounding error accumulate hota hai.</li>
+        <li><strong>Number.MAX_SAFE_INTEGER kya hai aur isse aage kya problem aati hai?</strong><br>Hint: 2^53 - 1, jo 52-bit mantissa se derive hota hai; isse aage consecutive integers same binary pattern share kar sakte hain (precision loss) — BigInt use karo.</li>
+        <li><strong>Strings JavaScript mein immutable kyun hain, aur str[0] = "x" kyun fail hota hai silently?</strong><br>Hint: string primitive internally modify nahi ho sakta; assignment temporary wrapper pe hota hai jo discard ho jaata hai — naya string banakar reassign karna padta hai.</li>
+        <li><strong>String.length aur actual "characters" count mein kab farak aata hai?</strong><br>Hint: length UTF-16 code units count karta hai; BMP se bahar ke characters (emoji) surrogate pairs (2 code units, 1 character) lete hain — length aur visible character count mismatch ho jaata hai.</li>
+        <li><strong>isNaN("abc") aur Number.isNaN("abc") ka result different kyun hai?</strong><br>Hint: global isNaN pehle argument ko Number() se coerce karta hai (NaN ban jaata hai, so true); Number.isNaN koi coercion nahi karta, strict type+value check karta hai (string kabhi NaN nahi hoti, so false).</li>
+        <li><strong>Emoji-heavy user text ko truncate karte waqt str.slice(0, n) use karna risky kyun hai?</strong><br>Hint: cut point exactly surrogate pair ke beech gir sakta hai, jisse ek broken/garbled character bach jaata hai — Array.from(str) ya [...str] se Unicode-aware split karke truncate karna chahiye.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="05-objects-basics.html">
+        <div class="label">← Previous</div>
+        <div class="title">Objects: The Basics</div>
+      </a>
+      <a class="next" href="07-arrays-iterables.html">
+        <div class="label">Next →</div>
+        <div class="title">Arrays &amp; Iterables</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

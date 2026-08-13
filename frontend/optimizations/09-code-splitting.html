@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code-split JavaScript — Web Performance Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link active" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Web Performance <span>/</span> Chapter 9</div>
+      <div class="progress-pill">Chapter 9 of 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Performance · JavaScript · Bundling</span>
+      <h1>Code-split JavaScript</h1>
+      <p class="subtitle">
+        Ek hi giant <code>bundle.js</code> file bhejna sabse aasan raasta hai, lekin sabse slow bhi.
+        Is chapter mein dekhenge ki JavaScript ko chunks mein todna kyun zaroori hai, browser-native
+        <code>import()</code> primitive kaise kaam karta hai, aur React.lazy + route-based splitting
+        se production apps mein isko kaise apply karte hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why">Bada bundle kyun hurt karta hai</a></li>
+          <li><a href="#dynamic-import">Dynamic import() — core primitive</a></li>
+          <li><a href="#route-split">Route-based splitting</a></li>
+          <li><a href="#component-split">Component-based splitting — React.lazy</a></li>
+          <li><a href="#tradeoff">Tradeoff: requests vs wasted bytes</a></li>
+          <li><a href="#nextjs">Next.js app router example</a></li>
+          <li><a href="#analysis">Bundle analysis tools</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why">Bada bundle kyun hurt karta hai</h2>
+      <p>
+        Jab tum saara app ka JS ek single <code>bundle.js</code> mein ship karte ho, to browser ko us
+        poore file ka cost pay karna padta hai — chahe user us page pe abhi sirf home screen dekh raha ho.
+        Cost teen stages mein aata hai, aur teeno hi <strong>bytes ke proportional</strong> hain, matlab
+        unused code bhi cost lagata hai:
+      </p>
+      <ul>
+        <li><strong>Download</strong> — network pe bytes transfer, jo mobile/3G pe already slow hai.</li>
+        <li><strong>Parse + Compile</strong> — V8 (ya koi bhi JS engine) ko poori file ko syntax-check
+          karke bytecode mein convert karna padta hai, sirf wo functions ka jo actually call honge nahi —
+          <em>saari</em> file ka.</li>
+        <li><strong>Execute</strong> — top-level code (module initializers, side effects) run hota hai.</li>
+      </ul>
+      <p>
+        Yahi wajah hai ki bada JS bundle seedha <strong>INP (Interaction to Next Paint)</strong> aur
+        <strong>LCP</strong> dono ko hurt karta hai — main thread busy rehta hai parsing/compiling mein,
+        aur jab tak wo free nahi hota, click/tap events queue mein atke rehte hain. Lighthouse isko
+        explicitly flag karta hai: agar JS execution 2 seconds se zyada leta hai to warning, 3.5 seconds
+        se zyada pe fail. Aur ye sabse zyada matter karta hai <strong>initial load</strong> pe, kyunki
+        wahi time hai jab user sabse zyada interact karne ki koshish karta hai — lekin main thread
+        already busy hota hai tumhare bundle ko chew karne mein.
+      </p>
+      <div class="callout info">
+        <div class="callout-title">📌 Root cause: parse/compile time bytes se scale karta hai</div>
+        <p>
+          Ek common misconception hai ki "unused code free hai kyunki wo call nahi ho raha." Galat.
+          JS engine ko us code ko compile-time pe parse karna hi padta hai taaki wo syntax-valid hai ye
+          confirm ho sake, aur modern engines (V8) baseline compilation bhi kar dete hain speculative
+          optimization ke liye. Matlab <strong>bytes jo download hue, unka cost lagbhag guaranteed hai</strong> —
+          chahe wo code kabhi execute ho ya na ho. Isliye "tree-shaking + code-splitting" combo itna powerful
+          hai: dono milke sirf wahi bytes browser tak bhejte hain jo actually chahiye is moment pe.
+        </p>
+      </div>
+
+      <h2 id="dynamic-import">Dynamic import() — browser-native primitive</h2>
+      <p>
+        Har bundler (webpack, Rollup, Parcel, esbuild, Vite) ke splitting feature ke peeche ek hi
+        underlying browser API hai: <code>import()</code> function-call syntax, jo ES2020 se native
+        JavaScript ka part hai. Ye <strong>static</strong> <code>import</code> statement se fundamentally
+        different hai:
+      </p>
+      <ul>
+        <li><strong>Static import</strong> (<code>import x from 'y'</code>) — module aur uske saare
+          dependencies parse + execute hone chahiye <em>before</em> parent module run ho sake. Ye
+          top-level pe hi likhna padta hai, conditionally nahi chala sakte.</li>
+        <li><strong>Dynamic import()</strong> — ek function call jo Promise return karta hai, jo tumhe
+          <em>kisi bhi point pe</em> — event handler ke andar, condition ke andar — module load karne deta
+          hai. Bundler isi call ko dekh kar us module ko alag chunk mein daal deta hai, jo tab tak network
+          pe fetch nahi hota jab tak wo line actually execute na ho.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">dynamic-import-on-click.js — plain browser-native example<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ek button jiska click hone par hi hume "confetti" animation library chahiye —</span>
+<span class="tok-com">// baaki poore page ke liye ye library kabhi zaroorat nahi hai.</span>
+<span class="tok-kw">const</span> celebrateBtn = <span class="tok-fn">document.querySelector</span>(<span class="tok-str">'#celebrate-btn'</span>); <span class="tok-com">// DOM se button element pakड़te hain</span>
+
+<span class="tok-com">// 'click' event listener register kar rahe hain, aur handler ko 'async' bana rahe hain</span>
+<span class="tok-com">// taaki uske andar 'await' use kar sakein.</span>
+celebrateBtn.<span class="tok-fn">addEventListener</span>(<span class="tok-str">'click'</span>, <span class="tok-kw">async</span> () => {
+  <span class="tok-com">// Button pe click hone ke baad hi disable kar dete hain, taaki double-click se</span>
+  <span class="tok-com">// duplicate import request na chale (network waste aur race condition dono avoid).</span>
+  celebrateBtn.disabled = <span class="tok-kw">true</span>;
+
+  <span class="tok-com">// Yahan asli magic hai: dynamic import(). Ye ek Promise return karta hai jo</span>
+  <span class="tok-com">// module load hone ke baad us module ka "namespace object" resolve karta hai.</span>
+  <span class="tok-com">// 'await' se hum us Promise ke resolve hone tak ruk jaate hain.</span>
+  <span class="tok-kw">const</span> confettiModule = <span class="tok-kw">await</span> <span class="tok-kw">import</span>(<span class="tok-str">'./confetti.mjs'</span>);
+  <span class="tok-com">// NOTE: '.mjs' extension jaan-boojh kar use kiya — browser aur bundler dono ise</span>
+  <span class="tok-com">// ES module maan kar V8 ki "streaming compilation" ka fayda uthate hain, jo</span>
+  <span class="tok-com">// '.js' extension pe production mein opt-out ho jaata hai.</span>
+
+  <span class="tok-com">// Module se named export 'launchConfetti' nikaal rahe hain (destructuring).</span>
+  <span class="tok-kw">const</span> { launchConfetti } = confettiModule;
+
+  <span class="tok-com">// Ab jaake actual animation function call kar rahe hain — is point tak</span>
+  <span class="tok-com">// confetti.mjs ka network request ho chuka, parse ho chuka, execute ho chuka.</span>
+  <span class="tok-fn">launchConfetti</span>();
+
+  <span class="tok-com">// Kaam ho gaya, button wapas enable kar dete hain agle celebration ke liye.</span>
+  celebrateBtn.disabled = <span class="tok-kw">false</span>;
+}, { once: <span class="tok-kw">false</span> }); <span class="tok-com">// 'once: false' explicit rakha hai — hum chahte hain har click pe chale,</span>
+                      <span class="tok-com">// browser cache dusri baar se import() ko instant bana dega (same URL).</span></code></pre>
+      </div>
+
+      <p>
+        Is example mein <code>confetti.mjs</code> ka byte, parse aur execute cost — teeno — sirf tab
+        pay hota hai jab user actually button click karta hai. Agar user kabhi click nahi karta, to wo
+        chunk kabhi download hi nahi hota. Yahi core idea hai jo aage React.lazy aur route splitting
+        dono build karte hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Bundler ke andar kya hota hai</div>
+        <p>
+          Jab webpack tumhare code mein <code>import()</code> call dekhta hai, uska <code>SplitChunksPlugin</code>
+          automatically ek naya "async chunk" bana deta hai. Default config (<code>chunks: 'async'</code>)
+          sirf dynamic imports ko split karta hai; <code>chunks: 'all'</code> set karne se static aur dynamic
+          dono imports ke beech shared dependencies bhi common chunk mein nikal jaate hain — jo duplicate
+          code (jaise ek helper function do jagah bundle hona) avoid karta hai. Agar tum galti se
+          <code>splitChunks: false</code> set kar do, to shared modules har chunk mein duplicate ho jaate
+          hain — bundle size chupke se badh jaata hai.
+        </p>
+      </div>
+
+      <h2 id="component-split">Component-based splitting — React.lazy + Suspense</h2>
+      <p>
+        React apps mein hum dynamic <code>import()</code> ko directly likhne ke bajaye React ka
+        <code>React.lazy()</code> abstraction use karte hain. Andar se ye still same dynamic
+        <code>import()</code> hi call karta hai — bundler (webpack/Vite) ko wahi chunk-splitting
+        signal milta hai — bas React isse component tree ke saath integrate kar deta hai, aur
+        <code>&lt;Suspense&gt;</code> loading state handle karta hai.
+      </p>
+      <p>
+        Classic use-case: ek dashboard jisme multiple tabs hain, aur "Analytics" tab ek heavy charting
+        library (jaise recharts/chart.js wrapper) use karta hai jo shaayad 100+ KB ki hai. Agar user
+        kabhi Analytics tab open hi nahi karta, to wo 100 KB kabhi load nahi honi chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">AnalyticsChart.jsx — heavy component jo lazy-load hoga<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye file khud bhi heavy imports rakhti hai (charting library), lekin isse</span>
+<span class="tok-com">// entry bundle mein import NAHI karenge — isliye ye apne aap ek alag chunk</span>
+<span class="tok-com">// mein compile hogi jab bundler is file tak dynamic import() se pahunchega.</span>
+
+<span class="tok-kw">import</span> { LineChart, Line, XAxis, YAxis, Tooltip } <span class="tok-kw">from</span> <span class="tok-str">'heavy-chart-lib'</span>; <span class="tok-com">// bhaari dependency</span>
+
+<span class="tok-com">// Named export nahi, DEFAULT export use kar rahe hain — React.lazy() ko</span>
+<span class="tok-com">// default export chahiye hota hai jo module resolve hone par milta hai.</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">AnalyticsChart</span>({ data }) {
+  <span class="tok-com">// 'data' prop parent se aata hai — jaise revenue-by-month array.</span>
+  <span class="tok-kw">return</span> (
+    <span class="tok-com">// heavy-chart-lib ka LineChart component, jo tabhi paint hoga jab</span>
+    <span class="tok-com">// ye file already load ho chuki hogi (Suspense boundary ke andar).</span>
+    <span class="tok-punc">&lt;</span><span class="tok-tag">LineChart</span> <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-num">600</span><span class="tok-punc">}</span> <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-num">300</span><span class="tok-punc">}</span> <span class="tok-attr">data</span><span class="tok-punc">=</span><span class="tok-punc">{</span>data<span class="tok-punc">}</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">XAxis</span> <span class="tok-attr">dataKey</span><span class="tok-punc">=</span><span class="tok-str">"month"</span> <span class="tok-punc">/&gt;</span>   <span class="tok-com">{/* X-axis month field se draw hoga */}</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">YAxis</span> <span class="tok-punc">/&gt;</span>                    <span class="tok-com">{/* Y-axis auto-scale */}</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Tooltip</span> <span class="tok-punc">/&gt;</span>                  <span class="tok-com">{/* hover pe tooltip dikhayega */}</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Line</span> <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"monotone"</span> <span class="tok-attr">dataKey</span><span class="tok-punc">=</span><span class="tok-str">"revenue"</span> <span class="tok-attr">stroke</span><span class="tok-punc">=</span><span class="tok-str">"#d97757"</span> <span class="tok-punc">/&gt;</span>
+      <span class="tok-com">{/* revenue field ko smooth curve mein plot kar rahe hain, accent color ke saath */}</span>
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">LineChart</span><span class="tok-punc">&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Dashboard.jsx — parent jo tab-based lazy loading karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> React, { useState, Suspense, lazy } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-com">// 'lazy' aur 'Suspense' dono React core se hi aate hain — koi extra library nahi chahiye.</span>
+
+<span class="tok-com">// React.lazy() ko ek function pass karte hain jo dynamic import() call karke</span>
+<span class="tok-com">// Promise return kare. Ye call yahan turant nahi chalta — React isse "remember"</span>
+<span class="tok-com">// kar leta hai aur sirf pehli baar render hone ki koshish par actually import() trigger karta hai.</span>
+<span class="tok-kw">const</span> AnalyticsChart = <span class="tok-fn">lazy</span>(() => <span class="tok-kw">import</span>(<span class="tok-str">'./AnalyticsChart.jsx'</span>));
+<span class="tok-com">// NOTE: iske equivalent plain dynamic import() hota: await import('./AnalyticsChart.jsx')</span>
+<span class="tok-com">// bas React ismein "loading ke dauraan kya dikhayein" ka logic bhi wrap kar deta hai.</span>
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">Dashboard</span>() {
+  <span class="tok-com">// 'activeTab' state track karta hai user abhi kaunsa tab dekh raha hai — default 'overview'.</span>
+  <span class="tok-kw">const</span> [activeTab, setActiveTab] = <span class="tok-fn">useState</span>(<span class="tok-str">'overview'</span>);
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">className</span><span class="tok-punc">=</span><span class="tok-str">"dashboard"</span><span class="tok-punc">&gt;</span>
+      <span class="tok-com">{/* Tab buttons — inme koi heavy import nahi, ye sab entry bundle mein hi rehte hain */}</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">nav</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">button</span> <span class="tok-attr">onClick</span><span class="tok-punc">=</span><span class="tok-punc">{</span>() => <span class="tok-fn">setActiveTab</span>(<span class="tok-str">'overview'</span>)<span class="tok-punc">}</span><span class="tok-punc">&gt;</span>Overview<span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">button</span> <span class="tok-attr">onClick</span><span class="tok-punc">=</span><span class="tok-punc">{</span>() => <span class="tok-fn">setActiveTab</span>(<span class="tok-str">'analytics'</span>)<span class="tok-punc">}</span><span class="tok-punc">&gt;</span>Analytics<span class="tok-punc">&lt;/</span><span class="tok-tag">button</span><span class="tok-punc">&gt;</span>
+        <span class="tok-com">{/* Analytics button click hone tak AnalyticsChart.jsx ka chunk kabhi fetch nahi hoga */}</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">nav</span><span class="tok-punc">&gt;</span>
+
+      <span class="tok-punc">{</span>activeTab === <span class="tok-str">'overview'</span> && <span class="tok-punc">&lt;</span><span class="tok-tag">OverviewPanel</span> <span class="tok-punc">/&gt;</span><span class="tok-punc">}</span>
+      <span class="tok-com">{/* OverviewPanel normal (non-lazy) import hai — ye light hai, entry bundle mein rehne mein</span>
+          <span class="tok-com">koi harm nahi, isliye ise split karne ka fayda nahi (over-splitting avoid kar rahe hain) */}</span>
+
+      <span class="tok-punc">{</span>activeTab === <span class="tok-str">'analytics'</span> && (
+        <span class="tok-com">// Suspense boundary — jab tak AnalyticsChart ka chunk network se aa nahi jaata aur</span>
+        <span class="tok-com">// execute nahi ho jaata, React 'fallback' prop mein diya gaya UI dikhata rahega.</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">Suspense</span> <span class="tok-attr">fallback</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">&lt;</span><span class="tok-tag">div</span> <span class="tok-attr">className</span><span class="tok-punc">=</span><span class="tok-str">"chart-skeleton"</span><span class="tok-punc">&gt;</span>Chart load ho raha hai…<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span><span class="tok-punc">}</span><span class="tok-punc">&gt;</span>
+          <span class="tok-punc">&lt;</span><span class="tok-tag">AnalyticsChart</span> <span class="tok-attr">data</span><span class="tok-punc">=</span><span class="tok-punc">{</span>monthlyRevenueData<span class="tok-punc">}</span> <span class="tok-punc">/&gt;</span>
+          <span class="tok-com">{/* Ye line hi actual trigger hai — jab React ise render karne ki koshish karta hai,</span>
+              <span class="tok-com">tab jaake 'lazy()' ke andar wala import() Promise chalta hai. */}</span>
+        <span class="tok-punc">&lt;/</span><span class="tok-tag">Suspense</span><span class="tok-punc">&gt;</span>
+      )<span class="tok-punc">}</span>
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>
+  );
+}</code></pre>
+      </div>
+
+      <p>
+        Result: <code>AnalyticsChart.jsx</code> aur uska heavy charting dependency ek alag JS chunk
+        (jaise <code>AnalyticsChart.a1b2c3.chunk.js</code>) mein compile hote hain, jo tabhi network
+        request banta hai jab user "Analytics" tab pe click karta hai. Overview tab dekhne wale users
+        ke liye wo bytes kabhi download hi nahi hote — LCP aur main-thread cost dono kam.
+      </p>
+
+      <h2 id="route-split">Route-based splitting</h2>
+      <p>
+        Component-level (<code>React.lazy</code>) splitting granular control deta hai, lekin sabse
+        common aur highest-leverage split boundary hoti hai <strong>route</strong> — kyunki user ek
+        time pe ek hi route dekhta hai, aur har route ka JS baaki routes se largely independent hota hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">router.jsx — React Router ke saath route-level splitting<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> { lazy, Suspense } <span class="tok-kw">from</span> <span class="tok-str">'react'</span>;
+<span class="tok-kw">import</span> { createBrowserRouter, RouterProvider } <span class="tok-kw">from</span> <span class="tok-str">'react-router-dom'</span>;
+
+<span class="tok-com">// Har route ka component apne aap ek separate chunk banega, kyunki har ek</span>
+<span class="tok-com">// yahan dynamic import() ke through lazily declare kiya gaya hai.</span>
+<span class="tok-kw">const</span> HomePage     = <span class="tok-fn">lazy</span>(() => <span class="tok-kw">import</span>(<span class="tok-str">'./pages/HomePage.jsx'</span>));     <span class="tok-com">// route: '/'</span>
+<span class="tok-kw">const</span> CheckoutPage = <span class="tok-fn">lazy</span>(() => <span class="tok-kw">import</span>(<span class="tok-str">'./pages/CheckoutPage.jsx'</span>)); <span class="tok-com">// route: '/checkout' — payment SDK jaisi heavy libs yahin honge</span>
+<span class="tok-kw">const</span> SettingsPage = <span class="tok-fn">lazy</span>(() => <span class="tok-kw">import</span>(<span class="tok-str">'./pages/SettingsPage.jsx'</span>)); <span class="tok-com">// route: '/settings'</span>
+
+<span class="tok-com">// Router config — har route object ka 'element' Suspense ke andar wrap karte hain</span>
+<span class="tok-com">// taaki navigation ke dauraan fallback dikh sake jab tak us route ka chunk fetch ho raha ho.</span>
+<span class="tok-kw">const</span> router = <span class="tok-fn">createBrowserRouter</span>([
+  {
+    path: <span class="tok-str">'/'</span>, <span class="tok-com">// root path</span>
+    element: (
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Suspense</span> <span class="tok-attr">fallback</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">&lt;</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>Loading…<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span><span class="tok-punc">}</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">HomePage</span> <span class="tok-punc">/&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">Suspense</span><span class="tok-punc">&gt;</span>
+    ),
+  },
+  {
+    path: <span class="tok-str">'/checkout'</span>, <span class="tok-com">// checkout ka JS (payment SDK etc.) home page load karne walon ko kabhi nahi milega</span>
+    element: (
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Suspense</span> <span class="tok-attr">fallback</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">&lt;</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>Loading…<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span><span class="tok-punc">}</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">CheckoutPage</span> <span class="tok-punc">/&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">Suspense</span><span class="tok-punc">&gt;</span>
+    ),
+  },
+  {
+    path: <span class="tok-str">'/settings'</span>,
+    element: (
+      <span class="tok-punc">&lt;</span><span class="tok-tag">Suspense</span> <span class="tok-attr">fallback</span><span class="tok-punc">=</span><span class="tok-punc">{</span><span class="tok-punc">&lt;</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span>Loading…<span class="tok-punc">&lt;/</span><span class="tok-tag">div</span><span class="tok-punc">&gt;</span><span class="tok-punc">}</span><span class="tok-punc">&gt;</span>
+        <span class="tok-punc">&lt;</span><span class="tok-tag">SettingsPage</span> <span class="tok-punc">/&gt;</span>
+      <span class="tok-punc">&lt;/</span><span class="tok-tag">Suspense</span><span class="tok-punc">&gt;</span>
+    ),
+  },
+]);
+
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">App</span>() {
+  <span class="tok-com">// RouterProvider poore app ko is router config se drive karta hai.</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">&lt;</span><span class="tok-tag">RouterProvider</span> <span class="tok-attr">router</span><span class="tok-punc">=</span><span class="tok-punc">{</span>router<span class="tok-punc">}</span> <span class="tok-punc">/&gt;</span>;
+}</code></pre>
+      </div>
+
+      <h2 id="nextjs">Next.js app router — automatic route splitting</h2>
+      <p>
+        Frameworks jaise Next.js (app router) ye pattern by default enforce karte hain — tumhe manually
+        <code>React.lazy</code> likhna hi nahi padta har route ke liye. <code>app/</code> directory mein
+        har <code>page.tsx</code> file apne aap ek separate JS chunk banati hai, aur navigation ke time
+        Next.js sirf us target route ka chunk (aur uske shared layout chunks) fetch karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">app/checkout/page.tsx — Next.js app router example<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// File-based routing: 'app/checkout/page.tsx' apne aap '/checkout' route ban jaata hai.</span>
+<span class="tok-com">// Manually lazy() likhne ki zaroorat nahi — Next.js build-time pe hi</span>
+<span class="tok-com">// is file ko iske apne chunk mein isolate kar deta hai.</span>
+
+<span class="tok-kw">import</span> PaymentForm <span class="tok-kw">from</span> <span class="tok-str">'./PaymentForm'</span>; <span class="tok-com">// ye bhi checkout route ke saath hi bundle hoga</span>
+
+<span class="tok-com">// Default export hi Next.js ke liye page component hota hai.</span>
+<span class="tok-kw">export</span> <span class="tok-kw">default</span> <span class="tok-kw">function</span> <span class="tok-fn">CheckoutPage</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-punc">&lt;</span><span class="tok-tag">main</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>Checkout<span class="tok-punc">&lt;/</span><span class="tok-tag">h1</span><span class="tok-punc">&gt;</span>
+      <span class="tok-punc">&lt;</span><span class="tok-tag">PaymentForm</span> <span class="tok-punc">/&gt;</span> <span class="tok-com">{/* payment SDK jaisa heavy code sirf yahan load hoga */}</span>
+    <span class="tok-punc">&lt;/</span><span class="tok-tag">main</span><span class="tok-punc">&gt;</span>
+  );
+}
+<span class="tok-com">// '/checkout' visit karne wale user ko hi ye chunk milta hai — '/' ya '/settings'</span>
+<span class="tok-com">// dekhne walon ke initial bundle mein iska ek byte bhi nahi jaata.</span>
+<span class="tok-com">// Bas dhyaan rahe: agar 'PaymentForm' bahut heavy hai (jaise 3rd-party payment</span>
+<span class="tok-com">// widget), to usse is page ke andar bhi further React.lazy() se split kar sakte ho</span>
+<span class="tok-com">// taaki wo sirf tab load ho jab user actually "Pay" button ke paas scroll kare.</span></code></pre>
+      </div>
+
+      <h2 id="tradeoff">Tradeoff: zyada requests vs kam wasted bytes</h2>
+      <p>
+        Code-splitting free lunch nahi hai — ye ek explicit tradeoff hai:
+      </p>
+      <table>
+        <tr><th>Ek bada bundle</th><th>Multiple chunks</th></tr>
+        <tr>
+          <td>1 hi HTTP request, better compression ratio (gzip/brotli badi files pe zyada efficient hote hain)</td>
+          <td>Multiple HTTP requests (HTTP/2 multiplexing se cheap hain, but zero-cost nahi)</td>
+        </tr>
+        <tr>
+          <td>Poora bundle re-download hota hai chhoti si bhi code change pe (cache invalidation)</td>
+          <td>Sirf changed chunk invalidate hota hai — baaki chunks browser cache se serve hote hain</td>
+        </tr>
+        <tr>
+          <td>Unused route/component ka JS bhi parse+compile hota hai initial load pe</td>
+          <td>Sirf visited route/opened component ka JS parse+compile hota hai</td>
+        </tr>
+      </table>
+      <p>
+        Short version: hum "compression efficiency + fewer requests" ko thoda trade kar rahe hain
+        "kam wasted bytes on initial load + better long-term caching" ke liye. Zyadatar real-world
+        apps ke liye ye trade worth hai, kyunki initial-load JS jitna kam hoga utna tez INP/LCP milega —
+        lekin isko extreme tak le jaana bhi apna hi cost laata hai (neeche dekho).
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common mistake: over-splitting (waterfall problem)</div>
+        <p>
+          "Zyada splitting = zyada better" nahi hai. Agar tum har chhote component, har chhote util
+          function ko apna alag <code>import()</code> chunk bana doge, to end result ye hota hai ki
+          browser ko <strong>dozens of tiny network requests</strong> ek ke baad ek fire karne padte
+          hain — jinme se har ek ka apna round-trip latency, TCP/TLS overhead (agar connection reuse
+          na ho), aur HTTP header overhead hai. Agar ye chunks ek-doosre pe dependent hain (chunk B
+          load hone ke baad hi pata chalta hai chunk C chahiye), to ye ek <strong>request waterfall</strong>
+          ban jaata hai — total load time individual chunk sizes se zyada in-between round-trips se
+          determine hota hai. Practical rule: chunk boundaries wahi rakho jahan real user-interaction
+          boundary hai (route, tab, modal, heavy optional widget) — random file-per-component splitting
+          mat karo. Bahut chhoti files (few KB) ko group karke ek "vendor" ya "common" chunk mein rakhna
+          behtar hota hai compression aur request-count dono ke liye.
+        </p>
+      </div>
+
+      <h2 id="analysis">Split candidates dhundhna — bundle analysis tools</h2>
+      <div class="callout senior">
+        <div class="callout-title">🧠 Blind splitting mat karo — pehle measure karo</div>
+        <p>
+          Production mein code-splitting decisions "guess" se nahi, <strong>actual bundle composition</strong>
+          dekh kar lene chahiye:
+        </p>
+        <ul style="margin-top:10px;">
+          <li><strong><code>source-map-explorer</code></strong> — production build ke source maps use
+            karke ek treemap dikhata hai ki final bundle mein kaunsi library/module kitni jagah le rahi
+            hai. CLI se: <code>npx source-map-explorer build/static/js/*.js</code></li>
+          <li><strong><code>webpack-bundle-analyzer</code></strong> — webpack config mein plugin add
+            karke interactive zoomable treemap milta hai, module-level gzip size ke saath. Best for
+            spotting "ye ek 200 KB library sirf ek button ke liye import ho rahi hai" jaise cases.</li>
+          <li><strong>Next.js built-in analyzer</strong> — <code>@next/bundle-analyzer</code> package
+            wrap kar deta hai <code>next.config.js</code> ko, aur <code>ANALYZE=true next build</code>
+            chalane par per-route bundle breakdown khud-ba-khud khul jaata hai browser mein.</li>
+        </ul>
+        <p style="margin-top:10px;">
+          Pattern dhoondo: koi heavy dependency jo sirf ek rarely-visited route ya rarely-opened
+          component ke liye use ho rahi hai — wahi tumhara best split candidate hai. Agar koi dependency
+          har route mein already common hai, usse split karne ka koi fayda nahi (upar se over-splitting
+          ka risk hi milega).
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>JS parsing/compiling/executing ka cost <strong>bytes ke proportional</strong> hai — unused
+          code bhi is cost ko pay karta hai agar wo download hua hai.</li>
+        <li><code>import()</code> ek browser-native, Promise-returning function-call syntax hai — sab
+          bundlers (webpack, Vite, Rollup, esbuild) isi signal pe automatic chunk-splitting karte hain.</li>
+        <li><code>React.lazy()</code> + <code>&lt;Suspense&gt;</code> component-level splitting ke liye
+          React ka abstraction hai — andar se still dynamic <code>import()</code> hi hai.</li>
+        <li>Route-based splitting sabse highest-leverage boundary hai — Next.js jaise frameworks isse
+          by default deliver karte hain, file-based routing ke through.</li>
+        <li>Tradeoff hamesha hai: chunks jitne zyada, utne zyada requests — over-splitting se waterfall
+          problem create hoti hai jo net-negative ban sakti hai.</li>
+        <li>Split candidates guess mat karo — <code>source-map-explorer</code> /
+          <code>webpack-bundle-analyzer</code> / Next.js analyzer se actual bundle composition dekho.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: Static import aur dynamic import() mein kya fundamental difference hai?</strong><br>
+          Hint: static import top-level hai, parse-time pe hi resolve hota hai, poori dependency chain
+          execute hone tak parent module block rehta hai. Dynamic import() runtime pe kabhi bhi call ho
+          sakta hai, Promise return karta hai, aur bundlers ise chunk-split signal ki tarah treat karte hain.</li>
+        <li><strong>Q: Bada JS bundle specifically INP ko kaise hurt karta hai, sirf load time nahi?</strong><br>
+          Hint: main thread parsing/compiling mein busy rehta hai, isliye user interactions (click/tap)
+          event queue mein delay hoti hain — ye "input delay" hai jo INP metric mein directly count hota hai.</li>
+        <li><strong>Q: React.lazy() ke andar actually kya ho raha hai?</strong><br>
+          Hint: ek function jo dynamic import() call karke default-export module return karta hai; React
+          usse memoize karke sirf first-render-attempt pe trigger karta hai, aur Suspense boundary uske
+          pending state ko handle karta hai.</li>
+        <li><strong>Q: Route-based aur component-based splitting mein kab kaunsa choose karoge?</strong><br>
+          Hint: route-based default/baseline hona chahiye (highest leverage, framework often free deta
+          hai); component-based tab jab ek single route ke andar hi ek heavy, conditionally-visible
+          UI-piece (modal, tab, chart) ho.</li>
+        <li><strong>Q: Over-splitting kaise identify aur fix karoge?</strong><br>
+          Hint: Network tab mein bahut saare chhote (few KB) sequential/waterfall requests dikhna signal
+          hai; fix — chunk boundaries ko user-interaction boundaries tak consolidate karo, chhoti shared
+          utils ko common/vendor chunk mein group karo (webpack <code>chunks: 'all'</code>).</li>
+        <li><strong>Q: <code>.js</code> ke bajaye <code>.mjs</code> extension use karne ka performance
+          impact kya hai?</strong><br>
+          Hint: <code>.mjs</code> se browser/V8 confidently ES module maan kar "streaming compilation"
+          enable karta hai (download ke saath-saath parse/compile start ho jaata hai); production mein
+          <code>.js</code> extension ke saath ye optimization opt-out ho sakta hai.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="08-web-fonts.html">
+          <div class="label">← Previous</div>
+          <div class="title">Optimize Web Fonts</div>
+        </a>
+        <a class="next" href="10-lazy-loading.html">
+          <div class="label">Next →</div>
+          <div class="title">Lazy Load Images/iframes</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

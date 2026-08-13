@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Components II — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link active" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 31</div>
+      <div class="progress-pill">31 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Components · Shadow DOM · Slots · Styling · Events</span>
+      <h1>Web Components II</h1>
+      <p class="subtitle">
+        Pichle chapter mein humne Shadow DOM banana seekha — apna alag, encapsulated DOM tree jo custom
+        element ke andar chhupa hota hai. Lekin ek real component (jaise <code>&lt;custom-menu&gt;</code>
+        ya <code>&lt;user-card&gt;</code>) ko caller se content accept karna padta hai, styling ke liye
+        externally control-points expose karne padte hain, aur uske andar fire hone wale events ko
+        outside world se properly interact karna padta hai. Ye teeno cheezein — <strong>slots</strong>,
+        <strong>Shadow DOM styling</strong>, aur <strong>Shadow DOM events</strong> — root level pe
+        samajhte hain, kyunki inke internal mechanics mein hi saare production gotchas chhupe hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#light-vs-shadow">Light DOM vs Shadow DOM — flattened DOM</a></li>
+          <li><a href="#named-slots">Named slots aur distribution algorithm</a></li>
+          <li><a href="#default-slot">Default slot + fallback content</a></li>
+          <li><a href="#slotchange">slotchange event</a></li>
+          <li><a href="#host">:host aur :host()</a></li>
+          <li><a href="#host-context">:host-context()</a></li>
+          <li><a href="#slotted">::slotted() — sirf top-level, gotcha</a></li>
+          <li><a href="#custom-props">CSS custom properties — theming ka sanctioned channel</a></li>
+          <li><a href="#retargeting">Event retargeting</a></li>
+          <li><a href="#composed">composed flag — boundary crossing</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="light-vs-shadow">Light DOM vs Shadow DOM — "flattened DOM" ka concept</h2>
+      <p>
+        Ek custom element ke <strong>do</strong> separate DOM trees hote hain jo saath render hote hain:
+        <strong>light DOM</strong> (jo caller ne <code>&lt;user-card&gt;...&lt;/user-card&gt;</code> ke
+        andar likha — ye normal document ka part hai) aur <strong>shadow DOM</strong> (jo component ne
+        khud <code>attachShadow()</code> karke banaya — internal template). Browser in dono ko visually
+        combine karke ek <strong>"flattened DOM"</strong> banata hai — lekin ye sirf render aur
+        event-bubbling ke liye ek virtual view hai. JavaScript se <code>element.children</code> query
+        karoge to tumhe wahi original, unflattened structure milega — light DOM ke elements literally
+        shadow tree ke andar move nahi hote.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root mechanism</div>
+        <p>
+          Slot distribution DOM ko <strong>mutate nahi karta</strong> — ye sirf render-time pe ek
+          "assignment" hai: kaunsa light DOM node kaunse <code>&lt;slot&gt;</code> ki jagah visually
+          render hoga. Isiliye <code>node.parentNode</code> abhi bhi original light DOM parent hi
+          dikhayega, shadow tree ka element nahi.
+        </p>
+      </div>
+
+      <h2 id="named-slots">Named slots aur distribution algorithm</h2>
+      <p>
+        Named slot ek specific insertion point define karta hai. Shadow DOM template mein
+        <code>&lt;slot name="x"&gt;</code> likhte ho, aur light DOM ke direct children jinke paas
+        <code>slot="x"</code> attribute hai, wahaan render ho jaate hain. Distribution algorithm ye hai:
+        browser shadow tree ke har <code>&lt;slot&gt;</code> ko scan karta hai, uske <code>name</code>
+        se match karne wale light-DOM direct children dhoondta hai, aur unhe us slot ki jagah insert kar
+        deta hai — <strong>agar ek se zyada elements same name match karein, sab sequentially</strong>
+        us ek slot mein append ho jaate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">custom-menu — named slot distribution<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">'custom-menu'</span><span class="tok-punc">,</span> <span class="tok-kw">class</span> <span class="tok-kw">extends</span> <span class="tok-tag">HTMLElement</span> <span class="tok-punc">{</span> <span class="tok-com">// naya custom element define karo</span>
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>                          <span class="tok-com">// jab element document mein attach ho, ye chale</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">'open'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// open shadow root banao — JS se outside se inspect ho sake</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">`</span>              <span class="tok-com">// shadow tree ka template string-based render</span>
+      <span class="tok-str">&lt;div class="menu"&gt;</span>
+        <span class="tok-str">&lt;slot name="title"&gt;&lt;/slot&gt;</span>       <span class="tok-com">&lt;!-- title-named slot: sirf ek matching child yahan aayega --&gt;</span>
+        <span class="tok-str">&lt;ul&gt;&lt;slot name="item"&gt;&lt;/slot&gt;&lt;/ul&gt;</span> <span class="tok-com">&lt;!-- item-named slot: SAB matching children yahan sequentially append honge --&gt;</span>
+      <span class="tok-str">&lt;/div&gt;</span>
+    <span class="tok-str">`</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">Light DOM usage — caller ka HTML<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">custom-menu</span><span class="tok-punc">&gt;</span>                                     <span class="tok-com">&lt;!-- custom element ka usage, light DOM yahin se shuru --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">span</span> <span class="tok-attr">slot</span><span class="tok-punc">=</span><span class="tok-str">"title"</span><span class="tok-punc">&gt;</span>Candy menu<span class="tok-punc">&lt;/</span><span class="tok-tag">span</span><span class="tok-punc">&gt;</span>          <span class="tok-com">&lt;!-- DIRECT child, slot="title" — sirf DIRECT children hi eligible hain --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">slot</span><span class="tok-punc">=</span><span class="tok-str">"item"</span><span class="tok-punc">&gt;</span>Lollipop<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>              <span class="tok-com">&lt;!-- item-slot #1 --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">slot</span><span class="tok-punc">=</span><span class="tok-str">"item"</span><span class="tok-punc">&gt;</span>Fruit Toast<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>          <span class="tok-com">&lt;!-- item-slot #2 — same slot name, sequential append hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">li</span> <span class="tok-attr">slot</span><span class="tok-punc">=</span><span class="tok-str">"item"</span><span class="tok-punc">&gt;</span>Cup Cake<span class="tok-punc">&lt;/</span><span class="tok-tag">li</span><span class="tok-punc">&gt;</span>             <span class="tok-com">&lt;!-- item-slot #3 --&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">custom-menu</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Flattened render output ek proper <code>&lt;ul&gt;</code> list banega jisme teeno
+        <code>&lt;li slot="item"&gt;</code> sequentially hain — magar DOM tree mein woh li elements
+        actual mein <code>&lt;custom-menu&gt;</code> ke hi direct children rehte hain, <code>&lt;ul&gt;</code>
+        ke andar physically move nahi hote.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Sirf DIRECT children eligible hain</div>
+        <p>
+          <code>slot</code> attribute sirf shadow host ke <strong>direct</strong> children pe kaam
+          karta hai. Agar <code>&lt;custom-menu&gt;&lt;div&gt;&lt;li slot="item"&gt;X&lt;/li&gt;&lt;/div&gt;&lt;/custom-menu&gt;</code>
+          likha — ye <code>li</code> distribution mein <strong>ignore</strong> ho jaayega, kyunki uska
+          direct parent <code>custom-menu</code> nahi, <code>div</code> hai. Slot distribution ek
+          shallow (one-level) mechanism hai, deep tree-walk nahi karta.
+        </p>
+      </div>
+
+      <h2 id="default-slot">Default slot + fallback content</h2>
+      <p>
+        <code>&lt;slot&gt;</code> jisme <code>name</code> attribute nahi hai, wo <strong>default
+        slot</strong> ban jaata hai — jo bhi light DOM children ke paas <code>slot</code> attribute
+        <em>nahi</em> hai, wo sab yahaan flow hote hain. Aur agar ek slot ke liye koi matching light
+        DOM element hi nahi mila, to <code>&lt;slot&gt;</code> tag ke andar likha hua content
+        <strong>fallback</strong> ki tarah render hota hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Default slot + fallback<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">`</span>
+  <span class="tok-str">&lt;div&gt;</span>Name<span class="tok-punc">:</span> <span class="tok-str">&lt;slot name="username"&gt;Anonymous&lt;/slot&gt;&lt;/div&gt;</span> <span class="tok-com">&lt;!-- agar slot="username" nahi mila, "Anonymous" dikhega --&gt;</span>
+  <span class="tok-str">&lt;fieldset&gt;</span>
+    <span class="tok-str">&lt;legend&gt;</span>Other info<span class="tok-str">&lt;/legend&gt;</span>
+    <span class="tok-str">&lt;slot&gt;&lt;/slot&gt;</span>                            <span class="tok-com">&lt;!-- name-less = default slot, jo bhi slot attribute NAHI wale children hain, sab yahan --&gt;</span>
+  <span class="tok-str">&lt;/fieldset&gt;</span>
+<span class="tok-str">`</span><span class="tok-punc">;</span></code></pre>
+      </div>
+      <p>
+        Fallback content DOM mein <strong>hamesha exist</strong> karta hai shadow tree ke andar — bas
+        render hokar dikhta tab hai jab actual assignment empty ho. Ye pattern component APIs ke liye
+        bahut useful hai: caller ko default UI free mein milta hai, override karna optional rehta hai.
+      </p>
+
+      <h2 id="slotchange">slotchange event</h2>
+      <p>
+        Jab kisi slot ki assigned nodes list change hoti hai (naya element add/remove/replace hua),
+        browser us <code>&lt;slot&gt;</code> element pe <code>slotchange</code> event fire karta hai.
+        Note: agar assigned element ke <strong>andar</strong> ka text ya child change hota hai (structural
+        slot assignment nahi badla), to <code>slotchange</code> <strong>nahi</strong> chalega — uske
+        liye <code>MutationObserver</code> chahiye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">slotchange + assignedElements() se live items sync<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> <span class="tok-tag">CustomMenu</span> <span class="tok-kw">extends</span> <span class="tok-tag">HTMLElement</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">'open'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">`&lt;div class="menu"&gt;&lt;slot name="item"&gt;&lt;/slot&gt;&lt;/div&gt;`</span><span class="tok-punc">;</span>
+
+    <span class="tok-com">// firstElementChild = wrapper div; addEventListener slot-level events yahan bubble hoke pakde jaate hain</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">firstElementChild</span><span class="tok-punc">.</span><span class="tok-fn">addEventListener</span><span class="tok-punc">(</span><span class="tok-str">'slotchange'</span><span class="tok-punc">,</span> <span class="tok-kw">e</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">let</span> <span class="tok-tag">slot</span> <span class="tok-punc">=</span> <span class="tok-kw">e</span><span class="tok-punc">.</span><span class="tok-attr">target</span><span class="tok-punc">;</span>                     <span class="tok-com">// e.target = wahi &lt;slot&gt; jiski assignment badli</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-tag">slot</span><span class="tok-punc">.</span><span class="tok-attr">name</span> <span class="tok-punc">==</span> <span class="tok-str">'item'</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">// sirf "item" slot ke changes track karo (multi-slot components mein useful)</span>
+        <span class="tok-com">// assignedElements(): current assigned elements ka live array snapshot</span>
+        <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">items</span> <span class="tok-punc">=</span> <span class="tok-tag">slot</span><span class="tok-punc">.</span><span class="tok-fn">assignedElements</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">.</span><span class="tok-fn">map</span><span class="tok-punc">(</span><span class="tok-tag">el</span> <span class="tok-punc">=&gt;</span> <span class="tok-tag">el</span><span class="tok-punc">.</span><span class="tok-tag">textContent</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+        <span class="tok-fn">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">'items synced:'</span><span class="tok-punc">,</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-attr">items</span><span class="tok-punc">)</span><span class="tok-punc">;</span>  <span class="tok-com">// component ki internal state ko light-DOM changes ke saath sync rakho</span>
+      <span class="tok-punc">}</span>
+    <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Root mechanism: <code>node.assignedSlot</code> property se koi bhi light-DOM node reverse-query
+        kar sakta hai ki wo abhi kaunse slot mein assigned hai. Aur
+        <code>slot.assignedNodes({flatten: true})</code> nested components ke case mein deep-nested
+        slots aur fallback content bhi expose kar deta hai — default (<code>flatten: false</code>) sirf
+        direct assignments deta hai.
+      </p>
+
+      <h2 id="host">:host aur :host() — component apni khud ki wrapper ko style karta hai</h2>
+      <p>
+        Shadow DOM ke andar likha CSS normally sirf shadow tree ke elements pe apply hota hai — light
+        DOM ya host element pe nahi. <code>:host</code> is boundary ka apwaad (exception) hai: ye
+        <strong>host element khud</strong> (jaise <code>&lt;custom-dialog&gt;</code> tag) ko target karta
+        hai, shadow DOM ke andar se.
+      </p>
+      <div class="code-block">
+        <div class="code-title">:host — basic self-styling<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">&lt;</span><span class="tok-tag">template</span> <span class="tok-attr">id</span><span class="tok-punc">=</span><span class="tok-str">"tmpl"</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+    <span class="tok-punc">:</span><span class="tok-fn">host</span> <span class="tok-punc">{</span>                       <span class="tok-com">/* :host = &lt;custom-dialog&gt; element khud, shadow ke andar se target */</span>
+      <span class="tok-attr">position</span><span class="tok-punc">:</span> <span class="tok-kw">fixed</span><span class="tok-punc">;</span>            <span class="tok-com">/* fixed positioning — dialog viewport ke relative center hoga */</span>
+      <span class="tok-attr">left</span><span class="tok-punc">:</span> <span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">;</span> <span class="tok-attr">top</span><span class="tok-punc">:</span> <span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">;</span>       <span class="tok-com">/* viewport center point pe le jaao */</span>
+      <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">translate</span><span class="tok-punc">(</span><span class="tok-punc">-</span><span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">,</span> <span class="tok-punc">-</span><span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">/* element ke apne size ka half wapas shift, exact centering */</span>
+      <span class="tok-attr">display</span><span class="tok-punc">:</span> <span class="tok-kw">inline-block</span><span class="tok-punc">;</span>    <span class="tok-com">/* default custom elements inline hote hain, dialog ko box banao */</span>
+      <span class="tok-attr">border</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-kw">px</span> <span class="tok-kw">solid</span> <span class="tok-kw">red</span><span class="tok-punc">;</span>
+      <span class="tok-attr">padding</span><span class="tok-punc">:</span> <span class="tok-num">10</span><span class="tok-kw">px</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">&lt;/</span><span class="tok-tag">style</span><span class="tok-punc">&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">slot</span><span class="tok-punc">&gt;&lt;/</span><span class="tok-tag">slot</span><span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">template</span><span class="tok-punc">&gt;</span></code></pre>
+      </div>
+
+      <p>
+        <code>:host()</code> ek functional variant hai — parentheses ke andar ek selector deke
+        <strong>conditional</strong> host-styling deta hai. Selector host element pe khud match hona
+        chahiye (attribute, class, ya pseudo-class):
+      </p>
+      <div class="code-block">
+        <div class="code-title">:host(selector) — attribute-based conditional style<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">:</span><span class="tok-fn">host</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">display</span><span class="tok-punc">:</span> <span class="tok-kw">inline-block</span><span class="tok-punc">;</span>       <span class="tok-com">/* base style — hamesha apply */</span>
+  <span class="tok-attr">border</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-kw">px</span> <span class="tok-kw">solid</span> <span class="tok-kw">red</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">:</span><span class="tok-fn">host</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-attr">centered</span><span class="tok-punc">]</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">/* SIRF tab apply jab host pe "centered" attribute ho */</span>
+  <span class="tok-attr">position</span><span class="tok-punc">:</span> <span class="tok-kw">fixed</span><span class="tok-punc">;</span>
+  <span class="tok-attr">left</span><span class="tok-punc">:</span> <span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">;</span> <span class="tok-attr">top</span><span class="tok-punc">:</span> <span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">;</span>
+  <span class="tok-attr">transform</span><span class="tok-punc">:</span> <span class="tok-fn">translate</span><span class="tok-punc">(</span><span class="tok-punc">-</span><span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">,</span> <span class="tok-punc">-</span><span class="tok-num">50</span><span class="tok-punc">%</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+  <span class="tok-attr">border-color</span><span class="tok-punc">:</span> <span class="tok-kw">blue</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-punc">&lt;!-- usage: --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">custom-dialog</span> <span class="tok-attr">centered</span><span class="tok-punc">&gt;</span>Centered dialog!<span class="tok-punc">&lt;/</span><span class="tok-tag">custom-dialog</span><span class="tok-punc">&gt;</span> <span class="tok-com">&lt;!-- caller "centered" laga ke behavior toggle karta hai --&gt;</span></code></pre>
+      </div>
+
+      <h2 id="host-context">:host-context() — ancestor ke context pe based styling</h2>
+      <p>
+        <code>:host-context(selector)</code> uss selector se match karta hai jo shadow host ke
+        <strong>kisi bhi ancestor</strong> pe ho (document tree mein upar) — is tarah component apna
+        style parent page ke context (jaise <code>&lt;body class="dark-theme"&gt;</code>) ke hisaab se
+        adapt kar sakta hai, bina caller ko explicit attribute pass kiye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">:host-context(.dark-theme) — ancestor-driven theming<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">:</span><span class="tok-fn">host-context</span><span class="tok-punc">(</span><span class="tok-punc">.</span><span class="tok-fn">dark-theme</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>     <span class="tok-com">/* agar KISI bhi ancestor pe class="dark-theme" mile (body, html, wrapper div...) */</span>
+  <span class="tok-attr">background</span><span class="tok-punc">:</span> <span class="tok-punc">#</span><span class="tok-num">222</span><span class="tok-punc">;</span>
+  <span class="tok-attr">color</span><span class="tok-punc">:</span> <span class="tok-punc">#</span><span class="tok-num">eee</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+<span class="tok-com">/* Iska matlab: &lt;body class="dark-theme"&gt;...&lt;custom-widget&gt;...&lt;/custom-widget&gt;...&lt;/body&gt; */</span>
+<span class="tok-com">/* pe automatically dark styles apply ho jaayenge — bina component ko koi prop diye. */</span></code></pre>
+      </div>
+
+      <h2 id="slotted">::slotted() — sirf top-level slotted node target hota hai</h2>
+      <p>
+        Slotted elements light DOM se aate hain, isliye by default wo document/page ke styles inherit
+        karte hain, shadow DOM ke styles <strong>nahi</strong>. Do tareeke hain unhe style karne ke: (1)
+        <code>slot</code> ko style karo — sirf CSS-inheritable properties (jaise
+        <code>font-weight</code>) slotted children tak pahunchengi, non-inherited (jaise
+        <code>background</code>) nahi. (2) <code>::slotted()</code> pseudo-element use karo — ye
+        directly slotted element ko target karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">::slotted(selector) usage<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-punc">::</span><span class="tok-fn">slotted</span><span class="tok-punc">(</span><span class="tok-tag">div</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>            <span class="tok-com">/* koi bhi &lt;div&gt; jo directly slot ke through render hua ho */</span>
+  <span class="tok-attr">border</span><span class="tok-punc">:</span> <span class="tok-num">1</span><span class="tok-kw">px</span> <span class="tok-kw">solid</span> <span class="tok-kw">red</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Gotcha: ::slotted() sirf TOP-LEVEL slotted node ko match karta hai</div>
+        <p>
+          <code>::slotted()</code> ki ek hard limitation hai jo bahut logon ko surprise karti hai —
+          ye sirf uss element ko target kar sakta hai jo <strong>directly</strong> slot mein assign hua
+          hai, uske <strong>descendants ko nahi</strong>. <code>::slotted(div) span</code> ya
+          <code>::slotted(div span)</code> — dono <strong>invalid</strong> hain aur kuch bhi select
+          nahi karenge. Matlab agar light DOM mein
+          <code>&lt;div slot="x"&gt;&lt;span&gt;text&lt;/span&gt;&lt;/div&gt;</code> hai, to
+          <code>::slotted(div)</code> us div ko style kar sakta hai, lekin uske andar ke
+          <code>span</code> ko shadow-side CSS se kabhi target nahi kar sakte — chahe kitna bhi nested
+          selector likho. Sirf ek level deep tak hi selector reach hai
+          (<code>::slotted(*)</code> se bhi sirf top-level assigned nodes match honge, unke children
+          nahi). Isi wajah se real components (design systems mein) apne "slot content" ko simple,
+          shallow markup rakhne ki recommend karte hain, ya phir CSS custom properties wale
+          theming-hook pattern pe switch karte hain.
+        </p>
+      </div>
+
+      <h2 id="custom-props">CSS custom properties — shadow boundary cross karne ka SANCTIONED channel</h2>
+      <p>
+        Jab <code>::slotted()</code> ki reach kam pade, ya jab tumhe shadow tree ke kisi deeply-nested
+        internal element (jo light DOM se accessible hi nahi) ko externally style karna ho, to CSS
+        custom properties (<code>--my-var</code>) hi ek design-mandated escape hatch hain. Ye single
+        mechanism hai jo shadow boundary ko explicitly, deliberately cross karta hai — isliye ye
+        component "theming API" ka standard tareeka ban gaya hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Custom property "hook" — internal styling ka public API<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">/* SHADOW DOM ke andar — component author ye likhta hai */</span>
+<span class="tok-punc">.</span><span class="tok-fn">field</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">color</span><span class="tok-punc">:</span> <span class="tok-fn">var</span><span class="tok-punc">(</span><span class="tok-punc">--</span><span class="tok-tag">user-card-field-color</span><span class="tok-punc">,</span> <span class="tok-kw">black</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">/* var(name, fallback): agar caller ne set nahi kiya, "black" default */</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-com">/* DOCUMENT (light DOM) ke andar — caller/consumer ye likhta hai */</span>
+<span class="tok-tag">user-card</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">--</span><span class="tok-tag">user-card-field-color</span><span class="tok-punc">:</span> <span class="tok-kw">green</span><span class="tok-punc">;</span>  <span class="tok-com">/* is host element pe custom property set — shadow tree ke andar tak percolate hoti hai */</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Root cause ye hai ki custom properties <strong>inherited</strong> hote hain — inheritance
+        shadow-DOM boundary se rukti nahi (jabki normal CSS rules shadow tree ke andar isolated rehte
+        hain by design). Isliye ye behaviour spec-level pe deliberately allow kiya gaya hai, taaki
+        component authors ek documented "styling contract" expose kar sakein — bilkul waise jaise ek
+        class method/prop ek behavior contract expose karta hai, custom property ek visual contract
+        expose karta hai, bina component ke internal DOM structure ko leak kiye.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: theming API design karte waqt</div>
+        <p>
+          Production design systems (jaise Shoelace, Material Web Components) apne components ke saath
+          ek documented list of <code>--component-*</code> custom properties dete hain — exactly is
+          pattern ka scaled-up version. Rule of thumb jo follow karo: (1) har custom property ko ek
+          fallback value do (<code>var(--x, default)</code>) taaki component custom property set kiye
+          bina bhi kaam kare, (2) property names ko component-namespaced rakho
+          (<code>--user-card-field-color</code>, na ki generic <code>--color</code>) taaki naming clash
+          na ho jab multiple custom elements same page pe ho, (3) sirf visual/theming properties expose
+          karo custom properties se — behavior/logic ke liye attributes ya JS properties use karo, ye
+          teeno alag-alag "API surfaces" hain aur inhe mix nahi karna chahiye.
+        </p>
+      </div>
+
+      <h2 id="retargeting">Event retargeting — encapsulation ke liye event.target rewrite hota hai</h2>
+      <p>
+        Jab shadow DOM ke andar koi event fire hoti hai (jaise button click), aur wo event bubble hoke
+        document tak pahunchti hai, to browser <strong>event.target ko rewrite</strong> kar deta hai —
+        outside listeners ko internal shadow structure kabhi dikhta nahi, unhe sirf
+        <strong>host element</strong> target ki tarah dikhta hai. Isse component ka internal DOM
+        implementation detail rehta hai, kabhi leak nahi hota.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Retargeting demo — inner vs outer target<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">customElements</span><span class="tok-punc">.</span><span class="tok-fn">define</span><span class="tok-punc">(</span><span class="tok-str">'user-card'</span><span class="tok-punc">,</span> <span class="tok-kw">class</span> <span class="tok-kw">extends</span> <span class="tok-tag">HTMLElement</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">connectedCallback</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-fn">attachShadow</span><span class="tok-punc">(</span><span class="tok-punc">{</span> <span class="tok-attr">mode</span><span class="tok-punc">:</span> <span class="tok-str">'open'</span> <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">innerHTML</span> <span class="tok-punc">=</span> <span class="tok-str">`&lt;p&gt;&lt;button&gt;Click me&lt;/button&gt;&lt;/p&gt;`</span><span class="tok-punc">;</span> <span class="tok-com">// internal shadow tree, ek button</span>
+
+    <span class="tok-com">// SHADOW-INTERNAL listener — actual DOM element dekhta hai</span>
+    <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-tag">shadowRoot</span><span class="tok-punc">.</span><span class="tok-tag">firstElementChild</span><span class="tok-punc">.</span><span class="tok-attr">onclick</span> <span class="tok-punc">=</span>
+      <span class="tok-kw">e</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Inner target: "</span> <span class="tok-punc">+</span> <span class="tok-kw">e</span><span class="tok-punc">.</span><span class="tok-attr">target</span><span class="tok-punc">.</span><span class="tok-tag">tagName</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Inner target: BUTTON" — actual internal element</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-com">// DOCUMENT-LEVEL listener — bubble hoke yahan pahunchega, par target REWRITE ho chuka hai</span>
+<span class="tok-tag">document</span><span class="tok-punc">.</span><span class="tok-attr">onclick</span> <span class="tok-punc">=</span>
+  <span class="tok-kw">e</span> <span class="tok-punc">=&gt;</span> <span class="tok-fn">alert</span><span class="tok-punc">(</span><span class="tok-str">"Outer target: "</span> <span class="tok-punc">+</span> <span class="tok-kw">e</span><span class="tok-punc">.</span><span class="tok-attr">target</span><span class="tok-punc">.</span><span class="tok-tag">tagName</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Outer target: USER-CARD" — host element, BUTTON nahi</span></code></pre>
+      </div>
+      <p>
+        Retargeting ka exception: <strong>slotted elements</strong>. Agar click kisi
+        <code>&lt;span slot="username"&gt;</code> pe hui jo actually light DOM ka part hai (sirf slot
+        ke through render ho raha hai), to us par retargeting apply nahi hoti — dono internal aur
+        external listeners ko wahi span hi target dikhega, kyunki wo element genuinely document tree
+        mein hi exist karta hai, shadow tree mein nahi.
+      </p>
+
+      <p>
+        Full internal path (shadow-crossing elements sahit) access karne ke liye
+        <code>event.composedPath()</code> hai — flattened DOM ke ancestor chain ko return karta hai. Ek
+        <strong>closed</strong> shadow tree (<code>{mode: 'closed'}</code>) ke case mein, ye path host
+        element se upar hi shuru hota hai — internal shadow details completely conceal ho jaate hain,
+        even composedPath() se bhi.
+      </p>
+
+      <h2 id="composed">composed flag — kaunse events boundary cross karte hain</h2>
+      <p>
+        Har event ka ek <code>composed</code> boolean property hai jo decide karta hai ki wo shadow DOM
+        boundary cross karke bahar bubble ho sakti hai ya nahi. Zyaadatar native UI events
+        (<code>click</code>, <code>mousedown</code>, <code>focus</code>, <code>input</code>,
+        <code>keydown</code>, touch/pointer events) <code>composed: true</code> hote hain — cross karte
+        hain. Kuch events jaanbujh kar <code>composed: false</code> hote hain —
+        <code>mouseenter</code>, <code>mouseleave</code>, <code>load</code>, <code>unload</code>,
+        <code>select</code>, aur khud <code>slotchange</code> bhi — ye component ke andar hi confined
+        rehte hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Custom event: bubbles + composed dono chahiye boundary cross karne ke liye<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// inner = shadow DOM ke andar ka koi element</span>
+<span class="tok-tag">inner</span><span class="tok-punc">.</span><span class="tok-fn">dispatchEvent</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">CustomEvent</span><span class="tok-punc">(</span><span class="tok-str">'test'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">bubbles</span><span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span>       <span class="tok-com">// bubbles: event upar (parent chain mein) travel kare — is-tree ke andar</span>
+  <span class="tok-attr">composed</span><span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span>      <span class="tok-com">// composed: shadow boundary bhi cross kare — dono TRUE tabhi document tak pahunchega</span>
+  <span class="tok-attr">detail</span><span class="tok-punc">:</span> <span class="tok-str">"composed"</span>     <span class="tok-com">// detail: custom payload jo listener e.detail se read kar sakta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// -&gt; document.addEventListener('test', ...) is event ko PAKDEGA</span>
+
+<span class="tok-tag">inner</span><span class="tok-punc">.</span><span class="tok-fn">dispatchEvent</span><span class="tok-punc">(</span><span class="tok-kw">new</span> <span class="tok-fn">CustomEvent</span><span class="tok-punc">(</span><span class="tok-str">'test'</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-attr">bubbles</span><span class="tok-punc">:</span> <span class="tok-kw">true</span><span class="tok-punc">,</span>       <span class="tok-com">// bubbles true hai, lekin...</span>
+  <span class="tok-attr">composed</span><span class="tok-punc">:</span> <span class="tok-kw">false</span><span class="tok-punc">,</span>     <span class="tok-com">// composed false — shadow root pe hi ruk jaayega, aage nahi jayega</span>
+  <span class="tok-attr">detail</span><span class="tok-punc">:</span> <span class="tok-str">"not composed"</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span>                    <span class="tok-com">// -&gt; document.addEventListener('test', ...) ISE NAHI PAKDEGA</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ Default CustomEvent options: dono false hote hain</div>
+        <p>
+          <code>new CustomEvent('name', {detail: x})</code> — agar <code>bubbles</code> aur
+          <code>composed</code> explicitly na do, dono <strong>default false</strong> hain. Matlab tumhara
+          custom event by default sirf usi element tak limited rahega jispe dispatch hua — na bubble
+          karega, na shadow boundary cross karega. Component-to-parent communication ke liye (jaise
+          <code>&lt;my-input&gt;</code> ka "value-changed" event outer app tak pahunchana), tumhe
+          <strong>explicitly</strong> <code>{ bubbles: true, composed: true }</code> dena hoga — ye
+          accidental default nahi, spec ka deliberate "opt-in to encapsulation-breaking" design hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Flattened DOM</strong> = sirf render/event-bubbling ke liye virtual view; JS se light aur shadow DOM alag-alag trees hi rehte hain, nodes physically move nahi hote.</li>
+        <li><strong>Named slots</strong> ek "shallow" distribution algorithm follow karte hain — sirf host ke DIRECT children match hote hain, <code>slot</code> attribute wale multiple children same-named slot mein sequentially append hote hain.</li>
+        <li><strong>Default (unnamed) slot</strong> un light-DOM children ko pakadta hai jinke paas <code>slot</code> attribute nahi hai; <code>&lt;slot&gt;</code> ke andar likha content sirf tab render hota hai jab koi matching assignment na ho (fallback).</li>
+        <li><strong>slotchange</strong> sirf assignment-level structural changes pe fire hota hai, andar-ke-content changes ke liye MutationObserver chahiye.</li>
+        <li><strong>:host</strong> = host element khud; <strong>:host(sel)</strong> = conditional (host pe attribute/class check); <strong>:host-context(sel)</strong> = ancestor tree mein kahin bhi match ho to apply — page-level theming ke liye useful.</li>
+        <li><strong>::slotted()</strong> sirf top-level assigned node ko target karta hai, uske descendants ko kabhi nahi — deeper styling ke liye CSS custom properties use karo.</li>
+        <li><strong>CSS custom properties (--x)</strong> hi ek deliberate, spec-sanctioned channel hain jo shadow boundary cross karke internal elements ko style kar sakte hain — component theming API ka standard.</li>
+        <li><strong>Event retargeting</strong> shadow-internal events ke <code>event.target</code> ko outside listeners ke liye host element bana deta hai — internal implementation detail hide karta hai (slotted elements is retargeting se exempt hain).</li>
+        <li><strong>composed: true</strong> chahiye kisi bhi custom event ko shadow boundary cross karne ke liye — default false hai, explicit opt-in zaroori hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Named slot distribution algorithm kaise kaam karta hai, aur ye light DOM ko mutate karta hai kya?</strong><br>Hint: browser shadow tree ke slots scan karta hai, matching direct-children ko unke naam se link karta hai render-time pe; ye sirf visual/flattened-DOM assignment hai, actual parentNode light DOM hi rehta hai.</li>
+        <li><strong>slot attribute nested (non-direct) child pe kyun ignore ho jaata hai?</strong><br>Hint: distribution algorithm shallow hai — sirf shadow host ke direct children hi eligible hote hain, deep tree-walk nahi hota.</li>
+        <li><strong>::slotted(div span) invalid kyun hai? ::slotted() ki exact reach kya hai?</strong><br>Hint: ::slotted() sirf top-level slotted node ko match karta hai, uske descendants ko kabhi nahi — koi bhi compound/descendant selector andar invalid hai.</li>
+        <li><strong>CSS custom properties shadow boundary kyun cross kar paate hain jabki normal rules nahi?</strong><br>Hint: custom properties inherited hote hain by spec, aur inheritance shadow-DOM isolation se independent hai — normal selector-based rules shadow tree ke andar isolated rehte hain by design.</li>
+        <li><strong>Event retargeting kya hai aur ye kis problem ko solve karta hai?</strong><br>Hint: shadow-internal element pe event fire ho to outside listeners ko event.target host element dikhta hai, actual internal element nahi — internal DOM structure ko implementation detail ki tarah encapsulate karta hai.</li>
+        <li><strong>Slotted elements event retargeting se exempt kyun hain?</strong><br>Hint: wo genuinely light DOM (document tree) ka part hote hain, sirf slot ke through render hote hain — isliye unpe wahi target dikhta hai jo actually hai, koi rewriting nahi.</li>
+        <li><strong>CustomEvent default options kya hote hain, aur parent-communication ke liye kya explicitly set karna padta hai?</strong><br>Hint: bubbles aur composed dono default false hain — component-to-page communication ke liye dono explicitly true karne padte hain, warna event shadow root pe hi ruk jaata hai.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="30-web-components-1.html">
+        <div class="label">← Previous</div>
+        <div class="title">Web Components I</div>
+      </a>
+      <a class="next" href="32-regexp-1-syntax.html">
+        <div class="label">Next →</div>
+        <div class="title">RegExp I — Syntax</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

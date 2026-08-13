@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimize Resource Loading — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link active" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Optimizations <span>/</span> Chapter 4</div>
+      <div class="progress-pill">Chapter 4 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Web Performance · Resource Loading · async/defer</span>
+      <h1>Optimize Resource Loading</h1>
+      <p class="subtitle">
+        CSS aur JS browser ke liye "blocking" resources hain by default — jab tak ye ache se load nahi ho jaate,
+        page render hi nahi hota ya JS execute hi nahi hota. Is chapter mein hum root-level dekhenge ki
+        <code>async</code>, <code>defer</code>, aur <code>type="module"</code> ka exact execution-order kya hai,
+        CSS ko render-blocking se kaise bachaayein, aur bundling/minification kaise critical path ko chhota karta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#css-critical-path">CSS aur Critical Path ka rishta</a></li>
+          <li><a href="#css-strategies">CSS Delivery Strategies</a></li>
+          <li><a href="#critical-css">Critical CSS Inline karna</a></li>
+          <li><a href="#js-parser-blocking">JS Parser-Blocking Kaise Hota Hai</a></li>
+          <li><a href="#async-defer">async vs defer vs module — Exact Semantics</a></li>
+          <li><a href="#comparison-table">Comparison Table</a></li>
+          <li><a href="#bundling">Bundling &amp; Minification</a></li>
+          <li><a href="#framework-note">Next.js/Vite Automatic Handling</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="css-critical-path">CSS aur Critical Path ka rishta</h2>
+      <p>
+        CSS by default ek <strong>render-blocking resource</strong> hai. Iska matlab: jab tak browser CSS file
+        download aur parse karke <strong>CSSOM</strong> (CSS Object Model) nahi bana leta, tab tak wo screen pe
+        kuch bhi paint nahi karega — chahe HTML parsing already complete ho chuki ho.
+      </p>
+      <p>
+        Ye design intentional hai. Agar browser CSS ka wait kiye bina hi HTML ko paint kar de, toh user ko pehle
+        unstyled markup dikhega, phir achanak styles apply honge — isse <strong>FOUC (Flash of Unstyled Content)</strong>
+        kehte hain. Browser jaan-bujh kar rendering ko block karta hai taaki ye jhatka (flash) na ho — because
+        showing broken/unstyled UI aur phir usse "fix" karna, showing nothing thoda der ke liye, is se worse UX hai.
+      </p>
+      <div class="callout info">
+        <div class="callout-title">📌 Root-level: Kyun render-blocking?</div>
+        <p>
+          Render Tree banane ke liye DOM + CSSOM dono chahiye (Chapter 3 mein detail hai). Agar CSSOM incomplete hai
+          aur browser phir bhi paint kar de, toh usko baad mein CSSOM complete hone pe <strong>re-paint/re-layout</strong>
+          karna padega — jo extra work hai aur visually jarring bhi. Isliye spec ne CSS ko render-blocking banaya:
+          ek hi baar correct state mein paint karo, bar-bar nahi.
+        </p>
+      </div>
+
+      <h2 id="css-strategies">CSS Delivery Strategies</h2>
+      <p>Teen core strategies hain CSS ka blocking-impact kam karne ke liye:</p>
+
+      <h3>1. Minification</h3>
+      <p>
+        Whitespace, comments, aur unnecessary characters hata do. Ye download time kam karta hai (smaller file
+        over network) — lekin parsing/CSSOM-construction cost pe zyada asar nahi dalta, sirf transfer size kam
+        karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">before-after.css — Minification example<button class="copy-btn">Copy</button></div>
+        <pre><code>/* BEFORE: readable, 45 bytes+ whitespace */
+<span class="tok-tag">h1</span> {
+  <span class="tok-attr">font-size</span>: <span class="tok-num">2</span>em;      <span class="tok-com">/* har property apni line pe */</span>
+  <span class="tok-attr">color</span>: <span class="tok-num">#000000</span>;   <span class="tok-com">/* 6-hex color, redundant */</span>
+}
+
+/* AFTER: minifier ne whitespace/comments/redundant hex hata diya */
+<span class="tok-tag">h1</span>{<span class="tok-attr">font-size</span>:<span class="tok-num">2</span>em;<span class="tok-attr">color</span>:<span class="tok-num">#000</span>}
+<span class="tok-com">/* #000000 -> #000 shorthand, no spaces, no newlines, no comments */</span></code></pre>
+      </div>
+
+      <h3>2. Unused CSS hatao</h3>
+      <p>
+        Chrome DevTools ke <strong>Coverage</strong> tab se pata chalta hai ki current page pe kaun se CSS rules
+        actually use ho rahe hain aur kaun se dead code hain. Unused CSS hatane ke do fayde hain: (1) download size
+        kam hoti hai, aur (2) — jyada important — <strong>render tree construction fast hota hai</strong>, kyunki
+        browser ko kam rules process karne padte hain jab wo har DOM node pe matching CSS selectors evaluate karta hai.
+      </p>
+
+      <h3>3. <code>@import</code> avoid karo</h3>
+      <p>
+        CSS ke andar <code>@import url('another.css')</code> use karna ek anti-pattern hai — ye
+        <strong>sequential/chained requests</strong> banata hai. Browser pehle outer stylesheet download+parse
+        karega, tabhi usse pata chalega ki ek aur file <code>@import</code> se chahiye — aur wo request tab jaake
+        start hoga. Matlab requests waterfall ban jaati hain, parallel nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">bad-vs-good.html — @import vs &lt;link&gt;<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- BAD: style.css download hone ke BAAD hi browser ko pata chalega ki --&gt;</span>
+<span class="tok-com">&lt;!-- fonts.css bhi chahiye — sequential/chained request, slow --&gt;</span>
+<span class="tok-tag">&lt;style&gt;</span>
+  <span class="tok-kw">@import</span> <span class="tok-fn">url</span>(<span class="tok-str">'style.css'</span>); <span class="tok-com">/* style.css ke andar phir ek aur @import ho sakta hai */</span>
+<span class="tok-tag">&lt;/style&gt;</span>
+
+<span class="tok-com">&lt;!-- GOOD: dono &lt;link&gt; tags HTML parse hote hi discover ho jaate hain --&gt;</span>
+<span class="tok-com">&lt;!-- preload scanner inhe turant dekh leta hai, requests PARALLEL jaati hain --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"style.css"</span><span class="tok-tag">&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"fonts.css"</span><span class="tok-tag">&gt;</span></code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Mistake</div>
+        <p>
+          Bahut se legacy codebases mein <code>@import</code> chains milte hain — ek CSS file doosri ko import
+          karti hai, jo teesri ko. Har extra <code>@import</code> level ek aur round-trip add karta hai critical
+          path mein. Lighthouse ka "Avoid chaining critical requests" audit exactly isi cheez ko flag karta hai.
+          Fix: sab imports ko top-level <code>&lt;link&gt;</code> tags mein flatten karo, ya build-time pe bundle
+          karke ek single CSS file bana do.
+        </p>
+      </div>
+
+      <h2 id="critical-css">Critical CSS Inline karna</h2>
+      <p>
+        "Critical CSS" wo minimal set of styles hai jo <strong>above-the-fold content</strong> (jo user ko pehli
+        screen pe bina scroll kiye dikhta hai) ko correctly render karne ke liye chahiye. Is CSS ko
+        <code>&lt;head&gt;</code> mein directly <code>&lt;style&gt;</code> tag ke andar inline kar do — isse extra
+        network round-trip ki zaroorat nahi padti, aur pehla paint fast hota hai. Baaki (non-critical) CSS ko
+        normal <code>&lt;link&gt;</code> se, ya asynchronously, load karo.
+      </p>
+      <div class="code-block">
+        <div class="code-title">critical-css-inline.html — Above-the-fold styles inline<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-tag">&lt;head&gt;</span>
+  <span class="tok-com">&lt;!-- Critical CSS: sirf above-the-fold ke liye — hero heading ka size/color --&gt;</span>
+  <span class="tok-com">&lt;!-- Network round-trip ki zaroorat nahi, HTML ke saath hi aa jaata hai --&gt;</span>
+  <span class="tok-tag">&lt;style&gt;</span>
+    <span class="tok-tag">h1</span>,<span class="tok-tag">h2</span>{<span class="tok-attr">color</span>:<span class="tok-num">#000</span>}   <span class="tok-com">/* dono headings ka color, minified */</span>
+    <span class="tok-tag">h1</span>{<span class="tok-attr">font-size</span>:<span class="tok-num">2</span>em}     <span class="tok-com">/* h1 ka size */</span>
+    <span class="tok-tag">h2</span>{<span class="tok-attr">font-size</span>:<span class="tok-num">1.5</span>em}   <span class="tok-com">/* h2 ka size */</span>
+  <span class="tok-tag">&lt;/style&gt;</span>
+<span class="tok-tag">&lt;/head&gt;</span>
+<span class="tok-tag">&lt;body&gt;</span>
+  <span class="tok-com">&lt;!-- Non-critical CSS: rest of the page (footer, modals, below-fold sections) --&gt;</span>
+  <span class="tok-com">&lt;!-- ye render-blocking hai lekin above-fold content already paint ho chuka hai --&gt;</span>
+  <span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"non-critical.css"</span><span class="tok-tag">&gt;</span>
+<span class="tok-tag">&lt;/body&gt;</span></code></pre>
+      </div>
+
+      <p>
+        Agar non-critical CSS ko bhi <strong>fully non-blocking</strong> banana ho (bilkul render ko block hi na
+        kare), toh ek classic trick hai: <code>media="print"</code> + <code>onload</code> swap. Idea ye hai ki
+        browser <code>media="print"</code> wale stylesheets ko <strong>low priority pe fetch karta hai aur render
+        ko block nahi karta</strong> (kyunki wo sirf print ke time apply hote hain) — lekin download hone ke baad
+        hum JS se <code>media</code> attribute ko <code>"all"</code> mein switch kar dete hain, taaki wo turant
+        apply ho jaaye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">media-print-swap.html — Non-blocking CSS load trick<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- media="print" ki wajah se browser ise render-blocking NAHI maanta --&gt;</span>
+<span class="tok-com">&lt;!-- but background mein download to ho hi raha hai --&gt;</span>
+<span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"non-critical.css"</span> <span class="tok-attr">media</span>=<span class="tok-str">"print"</span>
+      <span class="tok-attr">onload</span>=<span class="tok-str">"this.media='all'"</span><span class="tok-tag">&gt;</span>
+      <span class="tok-com">&lt;!-- onload fire hote hi (download complete), media ko 'all' bana do --&gt;</span>
+      <span class="tok-com">&lt;!-- ab styles apply honge but tab tak page already paint ho chuka tha --&gt;</span>
+
+<span class="tok-com">&lt;!-- Fallback: agar JS disabled hai, noscript se normal load ensure karo --&gt;</span>
+<span class="tok-tag">&lt;noscript&gt;</span>
+  <span class="tok-tag">&lt;link</span> <span class="tok-attr">rel</span>=<span class="tok-str">"stylesheet"</span> <span class="tok-attr">href</span>=<span class="tok-str">"non-critical.css"</span><span class="tok-tag">&gt;</span>
+<span class="tok-tag">&lt;/noscript&gt;</span></code></pre>
+      </div>
+
+      <h2 id="js-parser-blocking">JS Parser-Blocking Kaise Hota Hai</h2>
+      <p>
+        Jab HTML parser ek plain <code>&lt;script&gt;</code> tag (bina <code>async</code>/<code>defer</code> ke)
+        encounter karta hai, toh wo <strong>HTML parsing ko pause kar deta hai</strong>, script ko download karta
+        hai (agar external hai), execute karta hai, aur <strong>tabhi</strong> aage HTML parse karna resume karta hai.
+      </p>
+      <p>
+        Ye by-design hai — kyunki script DOM ko access ya modify kar sakta hai (jaise
+        <code>document.write()</code>) jabki DOM abhi bhi construct ho raha hai. Browser ko guarantee chahiye ki
+        jab script chale, tab tak jo bhi DOM parse ho chuka hai wo stable/consistent state mein ho. Isi wajah se
+        <code>&lt;script&gt;</code> tags ko traditionally <code>&lt;body&gt;</code> ke end mein rakha jaata tha —
+        taaki wo poore DOM ke baad load ho aur parsing ko block na kare.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Note: Client-Side Rendering ka hidden cost</div>
+        <p>
+          Agar aapka markup JavaScript se render hota hai (jaise pure CSR React app, bina SSR ke), toh wo content
+          <strong>preload scanner</strong> ko bilkul dikhta hi nahi — kyunki preload scanner sirf raw HTML source
+          ko scan karta hai, JS-generated DOM ko nahi. Isका matlab: agar aapki LCP image ya critical resource
+          client-rendered markup ke andar hai, toh uski discovery tab tak delay hogi jab tak JS download+parse+execute
+          na ho jaaye. Yahi ek core reason hai ki SSR/SSG apps CSR se better LCP dete hain — server se aaya HTML
+          preload scanner ko turant sab kuch dikha deta hai.
+        </p>
+      </div>
+
+      <h2 id="async-defer">async vs defer vs module — Exact Semantics</h2>
+      <p>
+        Teeno attributes HTML parsing ko block hone se bachate hain (script ka <strong>download</strong> parallel
+        chalta hai), lekin unka <strong>execution timing aur order</strong> alag-alag hai — ye difference production
+        bugs ka bahut bada source hai.
+      </p>
+
+      <h3>Plain <code>&lt;script&gt;</code> (no attribute)</h3>
+      <p>
+        Parser rukta hai → script download hota hai (agar external) → script turant execute hota hai → parsing
+        resume hoti hai. Fully blocking, sequential.
+      </p>
+
+      <h3><code>async</code></h3>
+      <p>
+        Script download <strong>parallel</strong> hota hai HTML parsing ke saath (parsing block nahi hoti download
+        ke liye). Lekin jaise hi download complete hota hai, parser turant <strong>ruk jaata hai</strong> aur
+        script ko execute karta hai — chahe HTML parsing beech mein ho. Execution order guaranteed nahi hai: agar
+        do async scripts hain aur dusra pehle download ho jaaye, toh <strong>dusra pehle execute hoga</strong>.
+      </p>
+
+      <h3><code>defer</code></h3>
+      <p>
+        Script download parallel hota hai, lekin execution <strong>HTML parsing complete hone ke baad</strong>
+        hota hai — <code>DOMContentLoaded</code> event fire hone se theek pehle. Multiple defer scripts
+        <strong>document order mein hi execute hote hain</strong>, chahe unki download speed kuch bhi ho.
+      </p>
+
+      <h3><code>type="module"</code></h3>
+      <p>
+        ES modules (<code>&lt;script type="module"&gt;</code>) <strong>by default deferred</strong> hote hain —
+        matlab bina kisi extra attribute ke, ye <code>defer</code> jaisa hi behave karte hain: parsing block nahi
+        karte, aur document parsing complete hone ke baad, document order mein execute hote hain. Agar aap explicitly
+        <code>async</code> add karte ho module script pe, toh wo async ki tarah behave karega (order guarantee
+        chali jaayegi).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">script-loading.html — defer me migrate karna (before/after)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- BEFORE: blocking script &lt;head&gt; mein — parser yahin ruk jaata hai --&gt;</span>
+<span class="tok-com">&lt;!-- pura HTML parsing tab tak pause rahega jab tak analytics.js load+run na ho --&gt;</span>
+<span class="tok-tag">&lt;head&gt;</span>
+  <span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"analytics.js"</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-tag">&lt;/head&gt;</span>
+
+<span class="tok-com">&lt;!-- AFTER: defer attribute add kiya --&gt;</span>
+<span class="tok-com">&lt;!-- ab download parallel hoga, execution DOMContentLoaded se pehle, --&gt;</span>
+<span class="tok-com">&lt;!-- document order maintain hoga — analytics.js dusre defer scripts se pehle chalega --&gt;</span>
+<span class="tok-tag">&lt;head&gt;</span>
+  <span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"analytics.js"</span> <span class="tok-attr">defer</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-tag">&lt;/head&gt;</span></code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">module-example.html — type="module" is deferred by default<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- Ye already "defer" jaisa behave karega — koi extra attribute nahi chahiye --&gt;</span>
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">type</span>=<span class="tok-str">"module"</span> <span class="tok-attr">src</span>=<span class="tok-str">"app.js"</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-com">&lt;!-- Parsing block nahi hoga, aur ye DOMContentLoaded se pehle, document order mein chalega --&gt;</span>
+
+<span class="tok-com">&lt;!-- Agar explicitly async chahiye module pe (order guarantee chhod ke): --&gt;</span>
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">type</span>=<span class="tok-str">"module"</span> <span class="tok-attr">src</span>=<span class="tok-str">"analytics-module.js"</span> <span class="tok-attr">async</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-com">/* is case mein ye jaldi jaldi execute ho sakta hai, doosre modules se pehle ya baad — no order guarantee */</span></code></pre>
+      </div>
+
+      <h2 id="comparison-table">Comparison Table — async vs defer vs module vs plain</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Blocks HTML Parser?</th>
+            <th>Kab Execute Hota Hai</th>
+            <th>Execution Order Guaranteed?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Plain <code>&lt;script&gt;</code></td>
+            <td>Haan — download + execute dono ke liye ruk jaata hai</td>
+            <td>Turant, jaise hi mile (inline parsing ke beech mein)</td>
+            <td>Haan (document order, kyunki sequential hi chalta hai)</td>
+          </tr>
+          <tr>
+            <td><code>async</code></td>
+            <td>Nahi (download parallel) — but execute hote waqt parser rukta hai</td>
+            <td>Jaise hi download complete ho, turant (kabhi bhi, mid-parsing)</td>
+            <td>Nahi — jo pehle download ho, wo pehle chalta hai</td>
+          </tr>
+          <tr>
+            <td><code>defer</code></td>
+            <td>Nahi</td>
+            <td>Parsing complete hone ke baad, <code>DOMContentLoaded</code> se pehle</td>
+            <td>Haan — document order mein</td>
+          </tr>
+          <tr>
+            <td><code>type="module"</code> (default)</td>
+            <td>Nahi</td>
+            <td>Parsing complete hone ke baad (defer jaisa behavior)</td>
+            <td>Haan — document order mein</td>
+          </tr>
+          <tr>
+            <td><code>type="module" async</code></td>
+            <td>Nahi</td>
+            <td>Jaise hi download + module graph resolve ho jaaye</td>
+            <td>Nahi</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Common Mistake: async ka galat use</div>
+        <p>
+          Sabse common production bug: do scripts jinme dependency hai (jaise <code>jquery.js</code> aur ek plugin
+          jo <code>jQuery</code> global expect karta hai) — dono ko <code>async</code> laga do "performance ke liye".
+          Result: race condition. Zyaadatar waqt sahi order mein load ho jaate hain (jquery.js chhota hai, jaldi
+          download hota hai), lekin kabhi-kabhi network conditions badalte hain (CDN slow, cache miss) aur plugin
+          pehle execute ho jaata hai — <code>Uncaught ReferenceError: jQuery is not defined</code>. Ye bug
+          intermittent hota hai, isliye QA mein miss ho jaata hai aur production mein randomly fail hota hai.
+          <strong>Fix:</strong> agar order matter karta hai, <code>defer</code> use karo (ya module imports, jo
+          dependency graph khud resolve karte hain) — <code>async</code> sirf un scripts ke liye jo fully
+          independent hain (jaise analytics, ads).
+        </p>
+      </div>
+
+      <h2 id="bundling">Bundling &amp; Minification Basics</h2>
+      <p>
+        Bundling multiple JS/CSS files ko ek (ya kuch) files mein combine karta hai — isse HTTP request count kam
+        hota hai. Minification whitespace/comments hata deta hai; JS ke liye ek extra step hai
+        <strong>uglification</strong> — jisme variable/function names ko chhote, meaningless names se replace kar
+        diya jaata hai (kyunki humans ko readability nahi chahiye production build mein, sirf browser ko parse
+        karna hai).
+      </p>
+      <div class="code-block">
+        <div class="code-title">uglify-example.js — Uglification (variable renaming)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// BEFORE: readable variable name, developer ke liye</span>
+<span class="tok-kw">const</span> scriptElement = <span class="tok-fn">document.createElement</span>(<span class="tok-str">'script'</span>);
+<span class="tok-com">// yahan 'scriptElement' naam se pata chalta hai ye kya hai</span>
+
+<span class="tok-com">// AFTER: uglifier ne 'scriptElement' ko 't' bana diya — bytes kam</span>
+<span class="tok-kw">const</span> t=<span class="tok-fn">document.createElement</span>(<span class="tok-str">"script"</span>);
+<span class="tok-com">// functionality same hai, sirf naam chhota — parser/network ke liye faster,</span>
+<span class="tok-com">// lekin ab ye source maps ke bina debug karna mushkil hai</span></code></pre>
+      </div>
+      <p>
+        Modern bundlers (Webpack, esbuild, Rollup, Vite) ye sab automatically karte hain build step mein — tree
+        shaking (unused exports hata dena), code splitting, aur minification sab ek saath.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Note: Next.js/Vite manual HTML control se kaise alag hai</div>
+        <p>
+          Jab aap raw HTML likhte ho, aapko khud decide karna padta hai — kaunsa script <code>defer</code> hoga,
+          konsi CSS critical hai, <code>@import</code> avoid karna hai ya nahi. Modern frameworks ye sab
+          <strong>automate</strong> kar dete hain:
+        </p>
+        <ul>
+          <li>
+            <strong>Next.js:</strong> <code>next/script</code> component ek <code>strategy</code> prop deta hai
+            (<code>beforeInteractive</code>, <code>afterInteractive</code>, <code>lazyOnload</code>) jo internally
+            defer/async decide karta hai. CSS Modules aur built-in CSS optimization automatically critical CSS ko
+            per-route extract karke inline kar sakta hai (with the right config), aur unused CSS ko route-level
+            code-split karta hai.
+          </li>
+          <li>
+            <strong>Vite:</strong> dev mode mein native ES modules use karta hai (<code>type="module"</code>, jo
+            already deferred hai — isliye dev server itna fast feel hota hai). Production build mein Rollup use
+            karke automatically bundling, minification, aur CSS code-splitting karta hai — chunk ke hisaab se
+            <code>&lt;link rel="modulepreload"&gt;</code> tags bhi auto-inject karta hai.
+          </li>
+        </ul>
+        <p>
+          Interview mein ye samajhna important hai: framework "magic" nahi kar raha — wo bas inhi primitives
+          (<code>defer</code>, <code>type="module"</code>, <code>@import</code> avoidance, minification) ko
+          build-time pe automatically apply kar raha hai jo hum yahan manually kar rahe hain. Agar aapko pata hai
+          ye sab andar se kaise kaam karta hai, toh aap framework ke output ko debug/tune kar paoge jab default
+          config kaafi na ho.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>CSS render-blocking hai — CSSOM complete hue bina browser paint nahi karta, taaki FOUC na ho.</li>
+        <li><code>@import</code> chains sequential requests banate hain — hamesha <code>&lt;link&gt;</code> tags use karo, ya build-time pe bundle karo.</li>
+        <li>Critical (above-the-fold) CSS ko inline karo <code>&lt;head&gt;</code> mein; baaki CSS ko normal link ya <code>media="print"</code> + <code>onload</code> swap trick se non-blocking banao.</li>
+        <li>Plain <code>&lt;script&gt;</code> parser ko fully block karta hai — download bhi, execute bhi.</li>
+        <li><code>async</code>: download parallel, execute turant jaise hi mile — order guaranteed nahi.</li>
+        <li><code>defer</code>: download parallel, execute parsing ke baad, document order maintained.</li>
+        <li><code>type="module"</code> by default deferred hai — same guarantees jo <code>defer</code> deta hai.</li>
+        <li>Dependency wale scripts pe kabhi <code>async</code> mat lagao — race condition ka risk hai; <code>defer</code> ya modules use karo.</li>
+        <li>Client-side rendered markup preload scanner ko invisible hota hai — SSR/SSG isi wajah se LCP mein better hota hai.</li>
+        <li>Bundling + minification + uglification request count aur transfer size dono kam karte hain; frameworks ye automate karte hain build step mein.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li>
+          <strong>Q1. async aur defer mein exact difference kya hai — sirf "jaldi load hota hai" nahi, mechanism batao.</strong><br>
+          Hint: dono download ko parallel karte hain, lekin execution timing/order alag hai — async turant execute karta hai download hote hi (parser ko interrupt karke), defer parsing complete hone ke baad, document order mein execute karta hai.
+        </li>
+        <li>
+          <strong>Q2. type="module" script by default async hai ya defer? Kyun?</strong><br>
+          Hint: Default deferred hota hai — spec design decision taaki module dependency graph predictably, document order mein resolve ho.
+        </li>
+        <li>
+          <strong>Q3. CSS ko render-blocking kyun banaya gaya hai — kya browser CSSOM ke bina paint nahi kar sakta?</strong><br>
+          Hint: Technically kar sakta hai, lekin FOUC avoid karne ke liye jaan-bujh kar block kiya jaata hai — ek hi correct paint, multiple re-paints nahi.
+        </li>
+        <li>
+          <strong>Q4. @import CSS mein anti-pattern kyun maana jaata hai?</strong><br>
+          Hint: Sequential/chained requests — outer file download+parse hue bina browser ko pata hi nahi chalta ki aur ek file chahiye, isliye parallel fetch nahi hota.
+        </li>
+        <li>
+          <strong>Q5. Ek page pe do async scripts hain jinme dependency hai (A, B jo A pe depend karta hai). Production mein kabhi-kabhi crash hota hai. Kyun, aur fix kya hai?</strong><br>
+          Hint: async mein execution order guaranteed nahi — network conditions ke hisaab se B, A se pehle load ho sakta hai. Fix: defer use karo ya ES modules (import) jo dependency graph khud resolve karte hain.
+        </li>
+        <li>
+          <strong>Q6. Next.js jaisa framework "automatically" performance optimize karta hai — iska matlab kya hai andar se? Interview mein sirf "framework handles it" bolna kyun weak answer hai?</strong><br>
+          Hint: Framework internally wahi primitives use karta hai (defer/module/critical CSS extraction/minification) jo manually HTML mein likhe jaate — samajhna ki "kaise" zaroori hai taaki default config fail hone pe aap debug kar sako.
+        </li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="03-critical-rendering-path.html">
+          <div class="label">← Previous</div>
+          <div class="title">Understanding the Critical Path</div>
+        </a>
+        <a class="next" href="05-resource-hints.html">
+          <div class="label">Next →</div>
+          <div class="title">Resource Hints</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

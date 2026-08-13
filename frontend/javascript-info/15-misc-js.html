@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miscellaneous JS — JavaScript.info Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>JS Docs</span></div>
+    <div class="tagline">javascript.info ka full Hinglish adaptation — language se DOM/Events tak, root-level.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Home</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 1 · The JS Language</div>
+      <a class="nav-link" href="01-js-fundamentals-1.html"><span class="num">1</span> JS Fundamentals I</a>
+      <a class="nav-link" href="02-js-fundamentals-2.html"><span class="num">2</span> JS Fundamentals II</a>
+      <a class="nav-link" href="03-functions-basics.html"><span class="num">3</span> Functions Basics</a>
+      <a class="nav-link" href="04-code-quality.html"><span class="num">4</span> Code Quality</a>
+      <a class="nav-link" href="05-objects-basics.html"><span class="num">5</span> Objects: The Basics</a>
+      <a class="nav-link" href="06-numbers-strings.html"><span class="num">6</span> Numbers &amp; Strings</a>
+      <a class="nav-link" href="07-arrays-iterables.html"><span class="num">7</span> Arrays &amp; Iterables</a>
+      <a class="nav-link" href="08-collections-destructuring.html"><span class="num">8</span> Collections &amp; Destructuring</a>
+      <a class="nav-link" href="09-advanced-functions.html"><span class="num">9</span> Advanced Functions</a>
+      <a class="nav-link" href="10-property-config-prototypes.html"><span class="num">10</span> Property Config &amp; Prototypes</a>
+      <a class="nav-link" href="11-classes.html"><span class="num">11</span> Classes</a>
+      <a class="nav-link" href="12-error-handling.html"><span class="num">12</span> Error Handling</a>
+      <a class="nav-link" href="13-promises-async-await.html"><span class="num">13</span> Promises, Async/Await</a>
+      <a class="nav-link" href="14-generators-modules.html"><span class="num">14</span> Generators &amp; Modules</a>
+      <a class="nav-link active" href="15-misc-js.html"><span class="num">15</span> Miscellaneous JS</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 2 · Browser</div>
+      <a class="nav-link" href="16-dom-tree-navigation.html"><span class="num">16</span> DOM Tree &amp; Navigation</a>
+      <a class="nav-link" href="17-attributes-modifying-dom.html"><span class="num">17</span> Attributes &amp; Modifying DOM</a>
+      <a class="nav-link" href="18-sizes-scrolling-coordinates.html"><span class="num">18</span> Sizes, Scrolling, Coordinates</a>
+      <a class="nav-link" href="19-events-fundamentals.html"><span class="num">19</span> Events Fundamentals</a>
+      <a class="nav-link" href="20-ui-events.html"><span class="num">20</span> UI Events</a>
+      <a class="nav-link" href="21-forms-controls.html"><span class="num">21</span> Forms &amp; Controls</a>
+      <a class="nav-link" href="22-document-resource-loading.html"><span class="num">22</span> Document &amp; Resource Loading</a>
+      <a class="nav-link" href="23-misc-browser.html"><span class="num">23</span> Misc Browser</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Part 3 · Additional</div>
+      <a class="nav-link" href="24-frames-windows.html"><span class="num">24</span> Frames &amp; Windows</a>
+      <a class="nav-link" href="25-binary-data-files.html"><span class="num">25</span> Binary Data &amp; Files</a>
+      <a class="nav-link" href="26-fetch-network-1.html"><span class="num">26</span> Fetch &amp; Network I</a>
+      <a class="nav-link" href="27-network-2-xhr-ws-sse.html"><span class="num">27</span> Network II — XHR/WS/SSE</a>
+      <a class="nav-link" href="28-storing-data-browser.html"><span class="num">28</span> Storing Data in Browser</a>
+      <a class="nav-link" href="29-animation.html"><span class="num">29</span> Animation</a>
+      <a class="nav-link" href="30-web-components-1.html"><span class="num">30</span> Web Components I</a>
+      <a class="nav-link" href="31-web-components-2.html"><span class="num">31</span> Web Components II</a>
+      <a class="nav-link" href="32-regexp-1-syntax.html"><span class="num">32</span> RegExp I — Syntax</a>
+      <a class="nav-link" href="33-regexp-2-quantifiers-groups.html"><span class="num">33</span> RegExp II — Quantifiers/Groups</a>
+      <a class="nav-link" href="34-regexp-3-lookaround-methods.html"><span class="num">34</span> RegExp III — Lookaround/Methods</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>›</span> Chapter 15</div>
+      <div class="progress-pill">15 / 34 topics</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Proxy · Reflect · Currying · BigInt · Unicode · WeakRef</span>
+      <h1>Miscellaneous JS</h1>
+      <p class="subtitle">
+        Ye chapter un topics ka collection hai jo "core language" mein nahi aate lekin senior-level
+        code mein baar-baar milte hain — object operations ko intercept karna (Proxy/Reflect), dynamic
+        code execution ka danger (eval), function composition ka pattern (currying), ek subtle spec
+        mechanism jo <code>this</code> ko silently todta hai (Reference Type), bade integers (BigInt),
+        strings ke andar ka encoding (Unicode/UTF-16), aur advanced memory management (WeakRef,
+        FinalizationRegistry). Sab root-level "internally kya ho raha hai" angle se.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#proxy-reflect">Proxy &amp; Reflect</a></li>
+          <li><a href="#eval">eval() aur uska danger</a></li>
+          <li><a href="#currying">Currying &amp; Partial Application</a></li>
+          <li><a href="#reference-type">Reference Type — this kaise lose hota hai</a></li>
+          <li><a href="#bigint">BigInt</a></li>
+          <li><a href="#unicode">Unicode &amp; String Internals</a></li>
+          <li><a href="#weakref">WeakRef &amp; FinalizationRegistry</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="proxy-reflect">Proxy &amp; Reflect — object operations ko intercept karna</h2>
+      <p>
+        <code>Proxy</code> ek object ke around ek "wrapper" banata hai jo us object pe hone wale
+        fundamental operations — <code>get</code>, <code>set</code>, <code>has</code>,
+        <code>deleteProperty</code>, function call, aur bahut saare aur — ko intercept kar sakta hai.
+        Root mechanism: JS engine ke andar har object operation (property read, write, delete, etc.)
+        internal spec-level "trap" methods ko invoke karta hai. Proxy in traps ko override karne ka
+        <strong>public API</strong> deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Basic Proxy — get/set traps<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">target</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Sharad"</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// original object jise wrap karna hai</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">handler</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-com">// handler object — isme traps define hote hain</span>
+  <span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">,</span> <span class="tok-punc">prop</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// get trap — property READ hone par fire hota hai</span>
+    <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Reading prop: ${prop}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// side-effect: har read ko log karo</span>
+    <span class="tok-kw">return</span> <span class="tok-punc">prop</span> <span class="tok-kw">in</span> <span class="tok-punc">obj</span> <span class="tok-punc">?</span> <span class="tok-punc">obj</span><span class="tok-punc">[</span><span class="tok-punc">prop</span><span class="tok-punc">]</span> <span class="tok-punc">:</span> <span class="tok-num">37</span><span class="tok-punc">;</span> <span class="tok-com">// agar prop exist nahi karta to default 37 return karo</span>
+  <span class="tok-punc">}</span><span class="tok-punc">,</span>
+  <span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">,</span> <span class="tok-punc">prop</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// set trap — property WRITE hone par fire hota hai</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">value</span> <span class="tok-punc">!==</span> <span class="tok-str">"string"</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// validation: sirf strings allowed</span>
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">TypeError</span><span class="tok-punc">(</span><span class="tok-str">"name must be a string"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// invalid type pe error throw karo</span>
+    <span class="tok-punc">}</span>
+    <span class="tok-punc">obj</span><span class="tok-punc">[</span><span class="tok-punc">prop</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-punc">value</span><span class="tok-punc">;</span> <span class="tok-com">// actual write target object pe karo</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span> <span class="tok-com">// true return karna MANDATORY hai — false = silent/strict-mode error</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">p</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Proxy</span><span class="tok-punc">(</span><span class="tok-punc">target</span><span class="tok-punc">,</span> <span class="tok-punc">handler</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// proxy banao — target aur handler dono chahiye</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">p</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span>    <span class="tok-com">// "Reading prop: name" log hoga, phir "Sharad" print hoga</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">p</span><span class="tok-punc">.</span><span class="tok-punc">age</span><span class="tok-punc">)</span><span class="tok-punc">;</span>     <span class="tok-com">// prop "age" exist nahi karta target mein, so 37 (default) milega</span>
+<span class="tok-punc">p</span><span class="tok-punc">.</span><span class="tok-punc">name</span> <span class="tok-punc">=</span> <span class="tok-num">123</span><span class="tok-punc">;</span>      <span class="tok-com">// TypeError throw hoga — set trap ne number reject kar diya</span></code></pre>
+      </div>
+      <p>
+        Sabse common traps: <code>get</code> (read), <code>set</code> (write), <code>has</code>
+        (<code>in</code> operator ke liye), <code>deleteProperty</code> (<code>delete</code>
+        keyword ke liye), <code>ownKeys</code> (<code>Object.keys</code>/<code>for...in</code>),
+        aur <code>apply</code>/<code>construct</code> (function call / <code>new</code>).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Real example: validation proxy for a "positive numbers only" array<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">createValidatedArray</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// factory function jo ek validated proxy array return karega</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">new</span> <span class="tok-fn">Proxy</span><span class="tok-punc">(</span><span class="tok-punc">[</span><span class="tok-punc">]</span><span class="tok-punc">,</span> <span class="tok-punc">{</span> <span class="tok-com">// underlying target ek empty array hai</span>
+    <span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">arr</span><span class="tok-punc">,</span> <span class="tok-punc">prop</span><span class="tok-punc">,</span> <span class="tok-punc">value</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// set trap — push/index-assign dono isse guzarte hain</span>
+      <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">prop</span> <span class="tok-punc">!==</span> <span class="tok-str">"length"</span> <span class="tok-punc">&amp;&amp;</span> <span class="tok-punc">isNaN</span><span class="tok-punc">(</span><span class="tok-punc">prop</span><span class="tok-punc">)</span> <span class="tok-punc">===</span> <span class="tok-kw">false</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// prop numeric index hai (array element hai), "length" nahi</span>
+        <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">value</span> <span class="tok-punc">!==</span> <span class="tok-str">"number"</span> <span class="tok-punc">||</span> <span class="tok-punc">value</span> <span class="tok-punc">&lt;=</span> <span class="tok-num">0</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// non-number ya <=0 reject karo</span>
+          <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">RangeError</span><span class="tok-punc">(</span><span class="tok-str">"Only positive numbers allowed"</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// clear error message</span>
+        <span class="tok-punc">}</span>
+      <span class="tok-punc">}</span>
+      <span class="tok-punc">arr</span><span class="tok-punc">[</span><span class="tok-punc">prop</span><span class="tok-punc">]</span> <span class="tok-punc">=</span> <span class="tok-punc">value</span><span class="tok-punc">;</span> <span class="tok-com">// valid hai to actual array pe set karo (length auto-update hoga)</span>
+      <span class="tok-kw">return</span> <span class="tok-kw">true</span><span class="tok-punc">;</span> <span class="tok-com">// success signal</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">nums</span> <span class="tok-punc">=</span> <span class="tok-fn">createValidatedArray</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// naya validated array banao</span>
+<span class="tok-punc">nums</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span><span class="tok-num">5</span><span class="tok-punc">)</span><span class="tok-punc">;</span>          <span class="tok-com">// push internally arr[0]=5 karta hai — set trap fire hoga, pass hoga</span>
+<span class="tok-punc">nums</span><span class="tok-punc">.</span><span class="tok-fn">push</span><span class="tok-punc">(</span><span class="tok-punc">-</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">;</span>         <span class="tok-com">// RangeError throw hoga — negative number reject</span></code></pre>
+      </div>
+
+      <p>
+        <code>Reflect</code> Proxy ka companion object hai — ye same operations (get, set, has,
+        deleteProperty, etc.) ko function calls ke roop mein perform karta hai, jo default/original
+        behavior deliver karte hain. Root reason ye exist karta hai: jab tum ek trap ke andar
+        "original behavior fallback" karna chahte ho, <code>obj[prop]</code> likhna edge cases mein
+        buggy ho sakta hai (jaise inherited getters ka <code>this</code> galat bind hona), jabki
+        <code>Reflect.get(obj, prop, receiver)</code> spec-correct semantics guarantee karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Reflect ke saath correct forwarding<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">_name</span><span class="tok-punc">:</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">,</span> <span class="tok-kw">get</span> <span class="tok-fn">name</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">return</span> <span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">_name</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// getter jo "this" use karta hai</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">proxy</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">Proxy</span><span class="tok-punc">(</span><span class="tok-punc">user</span><span class="tok-punc">,</span> <span class="tok-punc">{</span>
+  <span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">target</span><span class="tok-punc">,</span> <span class="tok-punc">prop</span><span class="tok-punc">,</span> <span class="tok-punc">receiver</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// receiver = proxy khud (ya jisne property access kiya)</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">Reflect</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">target</span><span class="tok-punc">,</span> <span class="tok-punc">prop</span><span class="tok-punc">,</span> <span class="tok-punc">receiver</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// receiver pass karna zaroori — getter ka "this" proxy bane, target nahi</span>
+  <span class="tok-punc">}</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">proxy</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Sharad" — agar target[prop] likhte to bhi kaam karta, lekin</span>
+                       <span class="tok-com">// inheritance/getter chains mein Reflect zyada robust hai</span></code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: invariants aur limited engine optimization</div>
+        <p>
+          Proxy powerful hai lekin free nahi — har intercepted operation ek extra function call
+          layer se guzarta hai, jo V8 jaise engines ke inline-caching/hidden-class optimizations ko
+          bypass kar deta hai. Hot paths (tight loops, high-frequency property access) mein Proxy
+          avoid karo. Bhi Proxy "invariants" enforce karta hai — jaise agar target ki koi property
+          <code>configurable: false</code> hai, to <code>get</code> trap usse different value return
+          nahi kar sakta (engine <code>TypeError</code> throwega) — ye traps ko silently
+          object ke real semantics todne se rokta hai. Production mein Proxy ka real use: Vue 3 ki
+          reactivity system, ORM-style validation layers, aur API mocking/logging wrappers.
+        </p>
+      </div>
+
+      <h2 id="eval">eval() aur uska danger</h2>
+      <p>
+        <code>eval(code)</code> ek string ko JS code ki tarah run karta hai, current scope mein.
+        Modern JS mein ye almost hamesha avoid kiya jaata hai — do root reasons hain: security aur
+        performance.
+      </p>
+      <div class="code-block">
+        <div class="code-title">eval basic behavior<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">code</span> <span class="tok-punc">=</span> <span class="tok-str">'console.log("hello from eval")'</span><span class="tok-punc">;</span> <span class="tok-com">// code ek plain string hai</span>
+<span class="tok-fn">eval</span><span class="tok-punc">(</span><span class="tok-punc">code</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// string ko parse+execute karta hai, "hello from eval" print hoga</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-num">1</span><span class="tok-punc">;</span> <span class="tok-com">// outer scope variable</span>
+<span class="tok-kw">function</span> <span class="tok-fn">f</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">let</span> <span class="tok-punc">a</span> <span class="tok-punc">=</span> <span class="tok-num">2</span><span class="tok-punc">;</span> <span class="tok-com">// local scope variable — same naam se</span>
+  <span class="tok-fn">eval</span><span class="tok-punc">(</span><span class="tok-str">'console.log(a)'</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// direct eval — current LOCAL scope access karta hai, so 2 print hoga</span>
+<span class="tok-punc">}</span>
+<span class="tok-fn">f</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// call karo — output: 2</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ eval() security aur performance dono ke liye danger hai</div>
+        <p>
+          <strong>Security:</strong> agar eval ke andar ka string kisi user input se (even indirectly)
+          aata hai, to attacker arbitrary code inject karke run karwa sakta hai — classic
+          code-injection vulnerability, XSS ka ek variant. <strong>Scope pollution:</strong> "direct
+          eval" (jab call literally <code>eval(...)</code> dikhta hai, kisi variable mein assign
+          kiye bina) current scope ke variables ko read/modify kar sakta hai, jo minifiers aur bundlers
+          ko confuse karta hai — wo safely variable names rename nahi kar paate kyunki unhe pata nahi
+          eval ke andar kya reference ho raha hai. <strong>Performance:</strong> JS engines (V8, etc.)
+          code ko ahead-of-time analyze karke JIT-optimize karte hain — lekin eval() ke andar ka code
+          runtime pe generate hota hai, engine use pre-optimize nahi kar sakta, aur jis function mein
+          eval hai use bhi de-optimize kar deta hai kyunki uska scope ab "unpredictable" ho gaya. Modern
+          alternatives: <code>JSON.parse</code> (data ke liye), dynamic <code>import()</code> (code ke
+          liye), <code>new Function(...)</code> (agar sandboxed execution chahiye — ye global scope mein
+          hi run hota hai, local scope pollute nahi karta).
+        </p>
+      </div>
+
+      <h2 id="currying">Currying &amp; Partial Application</h2>
+      <p>
+        Currying ek transformation hai jisse <code>f(a, b, c)</code> jaisa multi-argument function
+        <code>f(a)(b)(c)</code> ban jaata hai — matlab ek function jo arguments ek-ek karke leta hai,
+        aur har call pe ek naya function return karta hai jab tak saare arguments collect na ho jaayein.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Manual curry() implementation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">curry</span><span class="tok-punc">(</span><span class="tok-punc">fn</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// curry ek higher-order function hai — fn leke curried version return karta hai</span>
+  <span class="tok-kw">return</span> <span class="tok-kw">function</span> <span class="tok-fn">curried</span><span class="tok-punc">(</span><span class="tok-punc">...</span><span class="tok-punc">args</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// curried — rest params se jitne bhi args diye gaye collect karo</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">args</span><span class="tok-punc">.</span><span class="tok-punc">length</span> <span class="tok-punc">&gt;=</span> <span class="tok-punc">fn</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// fn.length = original function ke declared params ki count</span>
+      <span class="tok-kw">return</span> <span class="tok-punc">fn</span><span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> <span class="tok-punc">args</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// enough args mil gaye — original fn ko call karo aur result return karo</span>
+    <span class="tok-punc">}</span> <span class="tok-kw">else</span> <span class="tok-punc">{</span>
+      <span class="tok-kw">return</span> <span class="tok-kw">function</span><span class="tok-punc">(</span><span class="tok-punc">...</span><span class="tok-punc">args2</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// kam args diye — ek naya function return karo jo baaki args lega</span>
+        <span class="tok-kw">return</span> <span class="tok-punc">curried</span><span class="tok-punc">.</span><span class="tok-fn">apply</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">,</span> <span class="tok-punc">args</span><span class="tok-punc">.</span><span class="tok-fn">concat</span><span class="tok-punc">(</span><span class="tok-punc">args2</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// old args + new args merge karke curried ko recursively call karo</span>
+      <span class="tok-punc">}</span><span class="tok-punc">;</span>
+    <span class="tok-punc">}</span>
+  <span class="tok-punc">}</span><span class="tok-punc">;</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">sum</span><span class="tok-punc">(</span><span class="tok-punc">a</span><span class="tok-punc">,</span> <span class="tok-punc">b</span><span class="tok-punc">,</span> <span class="tok-punc">c</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// original 3-argument function</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">a</span> <span class="tok-punc">+</span> <span class="tok-punc">b</span> <span class="tok-punc">+</span> <span class="tok-punc">c</span><span class="tok-punc">;</span> <span class="tok-com">// teeno add karo</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">curriedSum</span> <span class="tok-punc">=</span> <span class="tok-fn">curry</span><span class="tok-punc">(</span><span class="tok-punc">sum</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// curried version banao</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">curriedSum</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">,</span> <span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 6 — ek hi call mein saare args, seedha fn.apply chala</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">curriedSum</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">,</span> <span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 6 — pehle 1 args=[1], phir 2,3 merge hoke [1,2,3] complete</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">curriedSum</span><span class="tok-punc">(</span><span class="tok-num">1</span><span class="tok-punc">)</span><span class="tok-punc">(</span><span class="tok-num">2</span><span class="tok-punc">)</span><span class="tok-punc">(</span><span class="tok-num">3</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 6 — teen alag calls, har baar ek naya wrapper function</span></code></pre>
+      </div>
+      <p>
+        Practical use case: partial application — ek generic function se specific, reusable variants
+        banana. Jaise <code>const double = curriedMultiply(2)</code> — <code>double</code> ab ek
+        one-argument function hai jo hamesha 2 se multiply karta hai. React/Redux mein
+        <code>mapStateToProps(state)(dispatch)</code> jaisa pattern, ya logging utilities
+        (<code>log(level)(module)(message)</code>) is idiom ka common real-world use hain.
+      </p>
+
+      <h2 id="reference-type">Reference Type — "this" kaise chupke se lose ho jaata hai</h2>
+      <p>
+        Ye ek subtle spec-internal mechanism hai jo bahut senior devs ko bhi confuse karta hai. Jab tum
+        <code>obj.method()</code> likhte ho, JS engine internally ek special intermediate value banata
+        hai jise spec "Reference Type" kehta hai — ye sirf value nahi, balki
+        <code>(base, propertyName, strict)</code> ka ek triplet hota hai. Jab is reference pe
+        <code>()</code> call hota hai, engine <code>base</code> (yaani <code>obj</code>) ko
+        <code>this</code> ke roop mein use karta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Reference Type lose hone ka classic case<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">user</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">"Sharad"</span><span class="tok-punc">,</span> <span class="tok-com">// property</span>
+  <span class="tok-fn">hi</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">this</span><span class="tok-punc">.</span><span class="tok-punc">name</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-punc">}</span> <span class="tok-com">// method jo "this.name" use karta hai</span>
+<span class="tok-punc">}</span><span class="tok-punc">;</span>
+
+<span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-fn">hi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Sharad" — obj.method() syntax: Reference Type (user, "hi") ban ke this=user bind hua</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">hi</span> <span class="tok-punc">=</span> <span class="tok-punc">user</span><span class="tok-punc">.</span><span class="tok-punc">hi</span><span class="tok-punc">;</span> <span class="tok-com">// property ko variable mein assign — sirf FUNCTION VALUE copy hoti hai, Reference Type nahi</span>
+<span class="tok-fn">hi</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// TypeError (strict mode) ya "undefined" — this ab user nahi, kyunki "base" info kho gayi</span>
+
+<span class="tok-kw">let</span> <span class="tok-punc">{</span> <span class="tok-punc">hi</span><span class="tok-punc">:</span> <span class="tok-punc">hi2</span> <span class="tok-punc">}</span> <span class="tok-punc">=</span> <span class="tok-punc">user</span><span class="tok-punc">;</span> <span class="tok-com">// destructuring bhi wahi karta hai — sirf value nikalti hai, reference nahi</span>
+<span class="tok-fn">hi2</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// same problem — this.name fail hoga, kyunki "this" ab undefined/global hai</span></code></pre>
+      </div>
+      <p>
+        Root cause explanation: <code>obj.method()</code> ka syntax do steps ka combined operation
+        <em>nahi</em> hai (property-get + call) jaise dikhta hai — property access khud ek Reference
+        (with base = <code>obj</code>) return karta hai, aur <code>()</code> call directly usi
+        Reference pe hota hai, jisse engine ko pata chalta hai <code>this</code> kya bind karna hai.
+        Lekin jaise hi tum us function value ko <strong>kisi bhi variable mein assign karte ho</strong>
+        (chahe simple assignment ho ya destructuring), sirf function value copy hoti hai — Reference
+        Type ka <code>base</code> discard ho jaata hai. Isliye assign/destructure karne ke baad call
+        karne pe <code>this</code> lost ho jaata hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Fix: bind() ya arrow function wrapper</div>
+        <p>
+          <code>const hi = user.hi.bind(user)</code> — explicit binding karo taaki
+          <code>this</code> hamesha <code>user</code> rahe, chahe function kahin bhi call ho. Ya
+          class methods ko class fields (arrow function) ke roop mein define karo:
+          <code>hi = () =&gt; console.log(this.name)</code> — arrow functions apna khud ka
+          <code>this</code> nahi rakhte, wo lexical scope se le lete hain (class constructor time
+          ka <code>this</code>), so destructure/pass-as-callback karne pe bhi safe rehta hai. Yehi
+          reason hai ki React class components mein event handlers aksar arrow-function class
+          fields ke roop mein likhe jaate the — <code>onClick={this.handleClick}</code> pass karne
+          pe method ka reference nikal jaata tha, so plain method hota to <code>this</code> undefined
+          ho jaata.
+        </p>
+      </div>
+
+      <h2 id="bigint">BigInt — arbitrary-precision integers</h2>
+      <p>
+        Regular JS numbers IEEE-754 double-precision float hain — safely sirf
+        <code>±(2^53 - 1)</code> (<code>Number.MAX_SAFE_INTEGER</code>) tak ke integers represent kar
+        sakte hain. Isse aage precision loss hone lagta hai. <code>BigInt</code> ek separate primitive
+        type hai jo arbitrarily large integers ko exactly represent kar sakta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">BigInt basics<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">big</span> <span class="tok-punc">=</span> <span class="tok-num">1234567890123456789012345678901234567890n</span><span class="tok-punc">;</span> <span class="tok-com">// trailing "n" suffix = BigInt literal</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-kw">typeof</span> <span class="tok-punc">big</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "bigint" — number se alag type</span>
+
+<span class="tok-kw">const</span> <span class="tok-punc">alsoBig</span> <span class="tok-punc">=</span> <span class="tok-fn">BigInt</span><span class="tok-punc">(</span><span class="tok-num">123</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// BigInt() function se bhi bana sakte ho, regular number se convert</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">big</span> <span class="tok-punc">+</span> <span class="tok-num">10n</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// arithmetic works — dono operands BigInt hone chahiye</span>
+
+<span class="tok-kw">try</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">big</span> <span class="tok-punc">+</span> <span class="tok-num">10</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// TypeError — BigInt aur regular Number ko mix nahi kar sakte</span>
+<span class="tok-punc">}</span> <span class="tok-kw">catch</span> <span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">e</span><span class="tok-punc">.</span><span class="tok-punc">message</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// "Cannot mix BigInt and other types" jaisa message</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">big</span> <span class="tok-punc">&gt;</span> <span class="tok-num">100</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — comparison operators exception hain, ye mixing allow karte hain</span></code></pre>
+      </div>
+      <p>
+        Root reason mixing disallowed hai: BigInt exact integer arithmetic ke liye hai, aur Number
+        floating-point approximation ke liye — inhe silently mix karne se precision-loss bugs chhup
+        jaate, jo BigInt ke poore purpose (exactness) ko hi defeat kar deta. Isliye spec explicitly
+        deliberate conversion maangta hai (<code>Number(big)</code> ya <code>BigInt(num)</code>).
+        Real use-cases: cryptography, high-precision timestamps (nanoseconds), financial calculations
+        jahan cent-level precision zaroori hai, database IDs jo 64-bit se bade ho sakte hain.
+      </p>
+
+      <h2 id="unicode">Unicode &amp; String Internals</h2>
+      <p>
+        JS strings internally <strong>UTF-16</strong> encoding use karte hain — har character 1 ya 2
+        "code units" (16-bit each) se represent hota hai. Basic Multilingual Plane (BMP) ke characters
+        (jaise Latin, Devanagari, most common symbols) sirf 1 code unit lete hain. Lekin emoji, kuch
+        rare CJK characters, aur mathematical symbols jaise BMP ke bahar (astral plane) ke characters
+        ko <strong>2 code units</strong> — ek "surrogate pair" — chahiye hote hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Surrogate pairs ka effect string operations pe<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">str</span> <span class="tok-punc">=</span> <span class="tok-str">"😂"</span><span class="tok-punc">;</span> <span class="tok-com">// ek emoji — visually ek character dikhta hai</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-punc">length</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 2 — kyunki internally ye 2 UTF-16 code units (surrogate pair) hai</span>
+
+<span class="tok-kw">for</span> <span class="tok-punc">(</span><span class="tok-kw">let</span> <span class="tok-punc">ch</span> <span class="tok-kw">of</span> <span class="tok-punc">str</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// for...of iterable protocol — Unicode-code-point-aware hai, code-unit-aware nahi</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">ch</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// pura emoji ek hi baar print hota hai — for...of surrogate pair samajhta hai</span>
+<span class="tok-punc">}</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">[</span><span class="tok-num">0</span><span class="tok-punc">]</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// GARBAGE — sirf pehla code unit milega, ek broken/lone surrogate</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">str</span><span class="tok-punc">.</span><span class="tok-fn">codePointAt</span><span class="tok-punc">(</span><span class="tok-num">0</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// 128514 — codePointAt() surrogate pair ko decode karke SAHI code point deta hai</span></code></pre>
+      </div>
+      <p>
+        Isi wajah se legacy string methods (<code>str[i]</code>, <code>.charAt()</code>,
+        <code>.charCodeAt()</code>) astral-plane characters pe "reh jaate" hain, jabki modern
+        Unicode-aware methods (<code>.codePointAt()</code>, <code>String.fromCodePoint()</code>,
+        <code>for...of</code>, spread <code>[...str]</code>) correctly handle karte hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Normalization — same visual character, different byte representation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> <span class="tok-punc">s1</span> <span class="tok-punc">=</span> <span class="tok-str">"é"</span><span class="tok-punc">;</span>        <span class="tok-com">// "é" — ek single precomposed Unicode code point</span>
+<span class="tok-kw">let</span> <span class="tok-punc">s2</span> <span class="tok-punc">=</span> <span class="tok-str">"é"</span><span class="tok-punc">;</span>       <span class="tok-com">// "e" + combining accent mark — DO code points, same visual result</span>
+
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">s1</span> <span class="tok-punc">===</span> <span class="tok-punc">s2</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// false — byte-level representation alag hai, so strict equality fail</span>
+<span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-punc">s1</span><span class="tok-punc">.</span><span class="tok-fn">normalize</span><span class="tok-punc">(</span><span class="tok-punc">)</span> <span class="tok-punc">===</span> <span class="tok-punc">s2</span><span class="tok-punc">.</span><span class="tok-fn">normalize</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// true — normalize() dono ko canonical form mein le aata hai</span></code></pre>
+      </div>
+      <p>
+        Root cause: Unicode ek hi visual character ko multiple valid representations deta hai
+        (precomposed vs decomposed). User-generated text (forms, search, dedup logic) compare karte
+        waqt hamesha <code>.normalize()</code> se guzaarna chahiye — warna do "same-dikhne-wale"
+        strings silently unequal treat ho jaate hain.
+      </p>
+
+      <h2 id="weakref">WeakRef &amp; FinalizationRegistry</h2>
+      <p>
+        Normally jab tum kisi object ko reference karte ho (variable, array element, object property
+        mein), wo reference garbage collector ko "strong" signal deta hai: object ko GC karna mana hai
+        jab tak koi reachable reference exist karti hai. <code>WeakRef</code> ek "weak" reference
+        banata hai — object ko alive rakhta hai jab tak <em>koi aur</em> strong reference exist karti
+        hai, lekin khud GC ko object collect karne se rokta nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">WeakRef basic usage — caching use case<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">function</span> <span class="tok-fn">getCachedUser</span><span class="tok-punc">(</span><span class="tok-punc">id</span><span class="tok-punc">,</span> <span class="tok-punc">cache</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// cache = Map&lt;id, WeakRef&gt;</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">ref</span> <span class="tok-punc">=</span> <span class="tok-punc">cache</span><span class="tok-punc">.</span><span class="tok-fn">get</span><span class="tok-punc">(</span><span class="tok-punc">id</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// cache se WeakRef nikalo (agar exist karta hai)</span>
+  <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">ref</span><span class="tok-punc">)</span> <span class="tok-punc">{</span> <span class="tok-com">// agar cache mein entry mili</span>
+    <span class="tok-kw">const</span> <span class="tok-punc">obj</span> <span class="tok-punc">=</span> <span class="tok-punc">ref</span><span class="tok-punc">.</span><span class="tok-fn">deref</span><span class="tok-punc">(</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// deref() — agar object abhi bhi alive hai to return karega, warna undefined</span>
+    <span class="tok-kw">if</span> <span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">)</span> <span class="tok-kw">return</span> <span class="tok-punc">obj</span><span class="tok-punc">;</span> <span class="tok-com">// cache HIT — object abhi memory mein hai, seedha return karo</span>
+  <span class="tok-punc">}</span>
+  <span class="tok-kw">const</span> <span class="tok-punc">freshUser</span> <span class="tok-punc">=</span> <span class="tok-punc">{</span> <span class="tok-punc">id</span><span class="tok-punc">,</span> <span class="tok-punc">name</span><span class="tok-punc">:</span> <span class="tok-str">`User ${id}`</span> <span class="tok-punc">}</span><span class="tok-punc">;</span> <span class="tok-com">// cache MISS — naya object banao (yahaan DB call hota real app mein)</span>
+  <span class="tok-punc">cache</span><span class="tok-punc">.</span><span class="tok-fn">set</span><span class="tok-punc">(</span><span class="tok-punc">id</span><span class="tok-punc">,</span> <span class="tok-kw">new</span> <span class="tok-fn">WeakRef</span><span class="tok-punc">(</span><span class="tok-punc">freshUser</span><span class="tok-punc">)</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// weak reference store karo — cache khud object ko alive nahi rakhega</span>
+  <span class="tok-kw">return</span> <span class="tok-punc">freshUser</span><span class="tok-punc">;</span> <span class="tok-com">// fresh object return karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+      <p>
+        Is pattern ka fayda: agar koi aur part of the app <code>freshUser</code> ko use nahi kar raha
+        (no strong reference bachi), to GC use collect kar sakta hai — cache Map khud memory leak nahi
+        banta, kyunki <code>WeakRef</code> object ko force-alive nahi rakhta. Regular Map ke saath ye
+        cache hamesha memory leak hota, kyunki Map ki key/value dono strong references hoti hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">FinalizationRegistry — cleanup callback on GC<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> <span class="tok-punc">registry</span> <span class="tok-punc">=</span> <span class="tok-kw">new</span> <span class="tok-fn">FinalizationRegistry</span><span class="tok-punc">(</span><span class="tok-punc">(</span><span class="tok-punc">heldValue</span><span class="tok-punc">)</span> <span class="tok-punc">=&gt;</span> <span class="tok-punc">{</span> <span class="tok-com">// callback jo GC hone par (kabhi na kabhi) fire ho SAKTA hai</span>
+  <span class="tok-kw">console</span><span class="tok-punc">.</span><span class="tok-fn">log</span><span class="tok-punc">(</span><span class="tok-str">`Cleaned up: ${heldValue}`</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// heldValue = registration ke time diya gaya identifier</span>
+<span class="tok-punc">}</span><span class="tok-punc">)</span><span class="tok-punc">;</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">register</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">,</span> <span class="tok-punc">id</span><span class="tok-punc">)</span> <span class="tok-punc">{</span>
+  <span class="tok-punc">registry</span><span class="tok-punc">.</span><span class="tok-fn">register</span><span class="tok-punc">(</span><span class="tok-punc">obj</span><span class="tok-punc">,</span> <span class="tok-punc">id</span><span class="tok-punc">)</span><span class="tok-punc">;</span> <span class="tok-com">// obj ko track karo, id ko heldValue ke roop mein store karo</span>
+<span class="tok-punc">}</span></code></pre>
+      </div>
+
+      <div class="callout danger">
+        <div class="callout-title">⚠️ FinalizationRegistry ka timing non-deterministic hai — critical logic ke liye kabhi use mat karo</div>
+        <p>
+          Spec explicitly guarantee <strong>nahi</strong> karta ki finalization callback kab (ya agar
+          bhi) chalega. GC engine ki apni marzi se, kabhi bhi, ya kabhi nahi bhi chal sakta — page
+          unload ho jaaye to bhi callback guarantee nahi. Isse resource cleanup (file handles,
+          network connections, database transactions), UI state updates, ya kisi bhi "must-happen"
+          logic ke liye use mat karo. Sahi use-case sirf <strong>optional, best-effort diagnostics</strong>
+          hai — jaise memory leak debugging mein "kya ye object actually collect hua ya nahi" track
+          karna. Critical cleanup ke liye hamesha explicit methods use karo (<code>.close()</code>,
+          <code>.dispose()</code>, <code>try/finally</code>) — GC pe kabhi depend mat karo.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note: WeakRef bhi rarely-needed hai</div>
+        <p>
+          MDN aur TC39 spec authors khud warn karte hain: WeakRef aur FinalizationRegistry advanced,
+          niche APIs hain jo mostly library/framework authors ke liye hain (caching layers, DOM-node
+          tracking tools, WASM memory bridges) — application-level code mein inki zaroorat kam hi
+          padti hai. Agar seedha caching chahiye jisme entries "kabhi na kabhi" evict ho jaayein,
+          <code>WeakMap</code>/<code>WeakSet</code> (chapter 8 mein cover kiya) simpler aur zyada
+          predictable choice hote hain jab tak explicit "deref + freshly-check" semantics ki zaroorat
+          na ho. WeakRef reach for tab karo jab tumhe object ko access bhi karna ho (agar abhi alive
+          hai) AND uski lifetime ko control bhi na karna ho.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Proxy</strong> object operations (get/set/has/deleteProperty/etc.) ko intercept karta hai via traps; <strong>Reflect</strong> unhi operations ka default/spec-correct implementation deta hai — forwarding ke liye saath use karo.</li>
+        <li><strong>eval()</strong> security risk (code injection) aur performance risk (JIT de-optimization, scope pollution) dono deta hai — <code>JSON.parse</code>, dynamic <code>import()</code>, ya <code>new Function()</code> se replace karo.</li>
+        <li><strong>Currying</strong> multi-arg function ko chained single-arg calls mein todta hai — <code>fn.length</code> aur recursive wrapper se implement hota hai; real use: partial application, reusable specialized functions.</li>
+        <li><strong>Reference Type</strong> ek internal spec triplet hai (base, propertyName, strict) jo sirf <code>obj.method()</code> syntax mein exist karta hai — assign ya destructure karte hi <code>base</code> (aur <code>this</code>) kho jaata hai.</li>
+        <li><strong>BigInt</strong> arbitrary-precision integers deta hai (<code>123n</code> syntax) — regular Number ke saath directly mix nahi ho sakta, explicit conversion chahiye.</li>
+        <li>JS strings internally <strong>UTF-16</strong> hain — astral-plane characters (emoji, etc.) 2 code units (surrogate pair) lete hain, jisse <code>.length</code> aur indexing misleading ho sakte hain; <code>.normalize()</code> visual-duplicate strings ko canonical form mein laata hai.</li>
+        <li><strong>WeakRef</strong> object ko GC-eligible rakhte hue bhi access allow karta hai (caching use case); <strong>FinalizationRegistry</strong> ka timing non-deterministic hai — sirf best-effort diagnostics ke liye, kabhi critical logic ke liye nahi.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Proxy ke get trap mein Reflect.get use karne ka reason kya hai, seedha target[prop] return karne ke bajaye?</strong><br>Hint: getters/inheritance chains mein "receiver" argument pass karna zaroori hai taaki this sahi bind ho — target[prop] ye guarantee nahi deta.</li>
+        <li><strong>eval() JIT optimization ko kaise affect karta hai?</strong><br>Hint: engine ahead-of-time code analyze karke optimize karta hai; eval() ka code runtime pe generate hota hai aur scope ko "unpredictable" bana deta hai, jisse containing function bhi de-optimize ho jaati hai.</li>
+        <li><strong>const {method} = obj; method() — this kyun undefined hota hai, jabki obj.method() kaam karta hai?</strong><br>Hint: obj.method() syntax ek Reference Type (base+propName) create karta hai jisse this bind hota hai; destructuring sirf function VALUE copy karta hai, base info discard ho jaata hai.</li>
+        <li><strong>BigInt aur Number ko direct arithmetic mein mix karne pe error kyun aata hai, comparison operators mein kyun nahi?</strong><br>Hint: arithmetic mein silent precision loss chhup sakta hai (BigInt ka poora purpose defeat), isliye spec explicit conversion maangta hai; comparisons safe hain kyunki wo koi naya numeric value produce nahi karte.</li>
+        <li><strong>Emoji jaise character ka .length 2 kyun aata hai, jabki visually ek character hai?</strong><br>Hint: JS strings UTF-16 use karte hain; BMP ke bahar ke characters (astral plane) ko represent karne ke liye 2 code units (surrogate pair) chahiye hote hain, .length code-unit count hai, character count nahi.</li>
+        <li><strong>WeakRef-based cache regular Map-based cache se kaise better hai memory ke liye?</strong><br>Hint: Map value ko strong reference se hold karta hai (kabhi collect nahi hota, memory leak), WeakRef object ko GC-eligible rehne deta hai jab tak koi aur strong reference exist na kare.</li>
+        <li><strong>FinalizationRegistry ko production cleanup logic (jaise closing a DB connection) ke liye kyun use nahi karna chahiye?</strong><br>Hint: spec callback ki timing ya execution guarantee nahi karta — GC ki marzi se chalta hai, kabhi bhi nahi bhi chal sakta; critical cleanup ke liye explicit dispose/close pattern use karo.</li>
+      </ul>
+
+    </div>
+
+    <div class="prevnext">
+      <a class="prev" href="14-generators-modules.html">
+        <div class="label">← Previous</div>
+        <div class="title">Generators &amp; Modules</div>
+      </a>
+      <a class="next" href="16-dom-tree-navigation.html">
+        <div class="label">Next →</div>
+        <div class="title">DOM Tree &amp; Navigation</div>
+      </a>
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
+</content>

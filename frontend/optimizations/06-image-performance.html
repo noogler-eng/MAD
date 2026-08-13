@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Performance — web.dev Learn Performance (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Perf Docs</span></div>
+    <div class="tagline">web.dev "Learn Performance" course — Hinglish mein, root-level depth ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Course</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-why-speed-matters.html"><span class="num">1</span> Why Speed Matters</a>
+      <a class="nav-link" href="02-html-performance.html"><span class="num">2</span> HTML Performance</a>
+      <a class="nav-link" href="03-critical-rendering-path.html"><span class="num">3</span> Critical Rendering Path</a>
+      <a class="nav-link" href="04-resource-loading.html"><span class="num">4</span> Optimize Resource Loading</a>
+      <a class="nav-link" href="05-resource-hints.html"><span class="num">5</span> Resource Hints</a>
+      <a class="nav-link active" href="06-image-performance.html"><span class="num">6</span> Image Performance</a>
+      <a class="nav-link" href="07-video-performance.html"><span class="num">7</span> Video Performance</a>
+      <a class="nav-link" href="08-web-fonts.html"><span class="num">8</span> Web Fonts</a>
+      <a class="nav-link" href="09-code-splitting.html"><span class="num">9</span> Code-split JavaScript</a>
+      <a class="nav-link" href="10-lazy-loading.html"><span class="num">10</span> Lazy Load Images/iframes</a>
+      <a class="nav-link" href="11-prefetch-prerender-precache.html"><span class="num">11</span> Prefetch/Prerender/Precache</a>
+      <a class="nav-link" href="12-web-workers-overview.html"><span class="num">12</span> Web Workers — Overview</a>
+      <a class="nav-link" href="13-web-workers-demo.html"><span class="num">13</span> Web Workers — Use Case</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Frontend Docs <span>/</span> Image Performance</div>
+      <div class="progress-pill">Chapter 6 / 13</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Images · AVIF/WebP · srcset · LCP</span>
+      <h1>Image Performance</h1>
+      <p class="subtitle">
+        Zyada tar websites pe images hi sabse bhaari (byte-wise) aur sabse zyada in-count resource hoti hain.
+        Is chapter mein hum root-level dekhenge ki modern formats (AVIF/WebP) kaise kaam karte hain, browser
+        <code>srcset</code>/<code>sizes</code> se kaunsa candidate image pick karta hai, <code>&lt;picture&gt;</code>
+        se format fallback kaise milta hai, aur LCP + CLS ko images ke through kaise optimize karte hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#formats">Modern image formats — AVIF vs WebP vs JPEG/PNG</a></li>
+          <li><a href="#compression">Lossy vs Lossless compression trade-offs</a></li>
+          <li><a href="#srcset">Responsive images — srcset + sizes</a></li>
+          <li><a href="#picture">&lt;picture&gt; element se format fallback</a></li>
+          <li><a href="#lcp-attrs">loading="lazy" vs fetchpriority="high"</a></li>
+          <li><a href="#cdn">Image CDNs — on-the-fly transforms</a></li>
+          <li><a href="#cls">width/height aur aspect-ratio se CLS rokna</a></li>
+          <li><a href="#takeaways">Key Takeaways</a></li>
+          <li><a href="#interview">Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="formats">Modern Image Formats — AVIF vs WebP vs JPEG/PNG</h2>
+      <p>
+        Har image format ek trade-off hai: compression ratio, browser support, encode/decode speed, aur
+        features (transparency, animation, HDR) ke beech. Root-level samajhna zaroori hai ki "better format"
+        ka matlab hai — <strong>same visual quality pe kam bytes</strong>.
+      </p>
+      <ul>
+        <li>
+          <strong>JPEG (legacy baseline):</strong> DCT (Discrete Cosine Transform) based lossy compression,
+          1990s se chal raha hai. Transparency support nahi hai. Sharp edges/text pe "blocky" artifacts dikhte
+          hain kyunki JPEG 8x8 pixel blocks mein compress karta hai.
+        </li>
+        <li>
+          <strong>PNG (legacy lossless):</strong> DEFLATE-based lossless compression — screenshots, logos,
+          icons ke liye best (sharp edges, flat colors) kyunki koi quality loss nahi hota. Photos ke liye
+          bahut bada file size deta hai — ye best use-case nahi hai.
+        </li>
+        <li>
+          <strong>WebP:</strong> Google ka format, ab sab modern browsers mein widely supported hai. Lossy
+          aur lossless dono modes support karta hai, aur lossy mode mein bhi alpha channel (transparency)
+          support karta hai — jo JPEG kabhi nahi kar saka. Typically JPEG se ~25-35% chhota output deta hai
+          same perceived quality pe.
+        </li>
+        <li>
+          <strong>AVIF:</strong> AV1 video codec pe based next-gen format. Compression sabse strong hai —
+          kuch cases mein JPEG ke comparison mein 50%+ savings report hui hain. Wide Color Gamut aur HDR
+          support karta hai. Trade-off: encode time zyada hota hai (slower build pipeline) aur kuch purane
+          browsers/OS combos pe support thoda inconsistent hai — isiliye AVIF ko hamesha fallback ke saath
+          serve karna best practice hai.
+        </li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Root-level: "compression" ka matlab kya hai</div>
+        <p>
+          Image compression 2 tarah ka kaam karta hai — <strong>spatial redundancy</strong> (nearby pixels
+          often similar hote hain, unko efficiently encode karna) aur <strong>perceptual redundancy</strong>
+          (human eye kuch color/detail differences notice hi nahi karti, unko discard karna). AVIF/WebP jaise
+          modern formats better prediction models aur transform techniques use karte hain isiliye same quality
+          pe kam bits chahiye hote hain — encoder "smarter" hai, format "magic" nahi hai.
+        </p>
+      </div>
+
+      <h2 id="compression">Lossy vs Lossless Compression Trade-offs</h2>
+      <p>
+        Ye decision — lossy ya lossless — sabse pehla decision hai jo tumhe har image ke liye lena hota hai.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Kaise kaam karta hai</th><th>Best For</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lossy</td>
+            <td>Quantization (color precision reduce karna) aur chroma subsampling (color detail kam,
+            luminance detail zyada rakhna — kyunki eye brightness ke changes zyada sensitive hai) se accuracy
+            drop karke size chhota karta hai.</td>
+            <td>Photos, hero banners, high-detail images jahan thoda quality loss visually acceptable hai.</td>
+          </tr>
+          <tr>
+            <td>Lossless</td>
+            <td>Neighboring pixels ke differences describe karke encode karta hai (delta encoding jaisa) —
+            zero data loss, pixel-perfect reconstruction.</td>
+            <td>Logos, icons, screenshots, text-heavy images jahan sharp edges/exact colors critical hain.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="srcset">Responsive Images — srcset + sizes</h2>
+      <p>
+        Root problem: ek hi image sabhi devices ke liye kaam nahi karti. Ek mobile phone ka viewport 375px hai,
+        laptop ka 1440px — aur upar se <strong>Device Pixel Ratio (DPR)</strong> bhi vary karta hai (Retina/high-DPI
+        screens pe DPR 2x ya 3x hota hai). Iska matlab agar tumhara container 500px wide hai, toh DPR-2 screen
+        pe actually 1000px intrinsic image chahiye taaki sharp dikhe, aur DPR-3 pe 1500px.
+      </p>
+      <p>
+        <code>srcset</code> attribute browser ko multiple image "candidates" deta hai, aur browser khud decide
+        karta hai konsa best fit hai — network speed, DPR, aur viewport ko dekh kar. Do syntax hain:
+      </p>
+      <ul>
+        <li><strong>Pixel density descriptor (<code>1x</code>, <code>2x</code>):</strong> jab display size fixed ho.</li>
+        <li><strong>Width descriptor (<code>500w</code>):</strong> jab display size viewport ke hisaab se change ho — is case mein <code>sizes</code> bhi mandatory hai.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">responsive-hero.html — srcset (width descriptor) + sizes<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- img tag jo hero banner render karta hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span>
+  <span class="tok-com">&lt;!-- src: fallback — jo browsers srcset/sizes samajhte hi nahi unke liye default image --&gt;</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-800.jpg"</span>
+  <span class="tok-com">&lt;!-- srcset: candidates ki list, har candidate ke saath uski ACTUAL intrinsic width "w" descriptor mein --&gt;</span>
+  <span class="tok-com">&lt;!-- ye width, DPR NAHI hai — ye us file ka real pixel-width hai jo server pe hosted hai --&gt;</span>
+  <span class="tok-attr">srcset</span><span class="tok-punc">=</span><span class="tok-str">"</span>
+    <span class="tok-str">hero-400.jpg 400w,</span>
+    <span class="tok-str">hero-800.jpg 800w,</span>
+    <span class="tok-str">hero-1200.jpg 1200w,</span>
+    <span class="tok-str">hero-1600.jpg 1600w</span>
+  <span class="tok-str">"</span>
+  <span class="tok-com">&lt;!-- sizes: browser ko batata hai ki YE image, LAYOUT mein kitni CSS-pixel-wide render hogi --&gt;</span>
+  <span class="tok-com">&lt;!-- browser ye sizes value ko layout se PEHLE hi CSS parse karke evaluate karta hai (early, before full layout) --&gt;</span>
+  <span class="tok-attr">sizes</span><span class="tok-punc">=</span><span class="tok-str">"</span>
+    <span class="tok-str">(min-width: 1024px) 1024px,</span>
+    <span class="tok-str">(min-width: 640px) 100vw,</span>
+    <span class="tok-str">100vw</span>
+  <span class="tok-str">"</span>
+  <span class="tok-com">&lt;!-- alt: accessibility ke liye zaroori, image na load ho toh bhi context milta hai --&gt;</span>
+  <span class="tok-attr">alt</span><span class="tok-punc">=</span><span class="tok-str">"Product hero banner dikhata hua"</span>
+  <span class="tok-com">&lt;!-- width/height: intrinsic aspect ratio browser ko batate hain — CLS prevention ke liye (neeche section mein) --&gt;</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"1600"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"900"</span>
+<span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — browser candidate kaise select karta hai</div>
+        <p>
+          Algorithm exact spec-defined nahi hai (browser vendors ki apni heuristics hain), lekin general flow:
+          (1) <code>sizes</code> list ko left-to-right evaluate karo, pehla matching media condition jeet jaata
+          hai, uski length value final "display width" ban jaati hai (agar koi match nahi mila toh last value
+          default hai). (2) Us display-width ko device ke <strong>effective DPR</strong> se multiply karo — ye
+          required "resource pixel density" hai. (3) <code>srcset</code> ke candidates mein se us density ke
+          closest-ya-usse-bada width wala candidate pick karo. Important: browser <em>network conditions</em>
+          (Save-Data header, slow connection) ko bhi factor kar sakta hai — Chrome kabhi jaanbujh kar chhota
+          candidate select karta hai bandwidth bachane ke liye. Isiliye "sizes" ko galat likhna (jaise hamesha
+          <code>100vw</code> likh dena jab actually image 400px hi render hoti ho) bahut common bug hai — browser
+          usse zyada bada image download kar leta hai, bandwidth waste.
+        </p>
+      </div>
+
+      <h2 id="picture">The &lt;picture&gt; Element — Format Fallback</h2>
+      <p>
+        <code>srcset</code> ek hi format ke andar resolution switching ke liye hai. Lekin agar tumhe
+        <strong>different formats</strong> (AVIF vs WebP vs JPEG) offer karne hain — jahan browser support
+        capability ke hisaab se decide kare — tab <code>&lt;picture&gt;</code> chahiye. Andar se ye kaam karta
+        hai: browser top-se-bottom har <code>&lt;source&gt;</code> ko check karta hai, jiska <code>type</code>
+        support karta hai wahi pehla match use karta hai, aur agar koi source match nahi hua toh
+        <code>&lt;img&gt;</code> fallback pe gir jaata hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">picture-fallback.html — AVIF → WebP → JPEG fallback chain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- picture: wrapper element, khud kuch render nahi karta, sirf source-selection logic hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">picture</span><span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- 1st priority: AVIF — sabse zyada compression, agar browser support karta hai toh yahi use hoga --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span>
+    <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"image/avif"</span>
+    <span class="tok-attr">srcset</span><span class="tok-punc">=</span><span class="tok-str">"</span>
+      <span class="tok-str">hero-400.avif 400w,</span>
+      <span class="tok-str">hero-800.avif 800w,</span>
+      <span class="tok-str">hero-1200.avif 1200w</span>
+    <span class="tok-str">"</span>
+    <span class="tok-attr">sizes</span><span class="tok-punc">=</span><span class="tok-str">"(min-width: 1024px) 1024px, 100vw"</span>
+  <span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- 2nd priority: WebP — agar AVIF support nahi hai toh ye try hoga (widely supported hai aaj-kal) --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">source</span>
+    <span class="tok-attr">type</span><span class="tok-punc">=</span><span class="tok-str">"image/webp"</span>
+    <span class="tok-attr">srcset</span><span class="tok-punc">=</span><span class="tok-str">"</span>
+      <span class="tok-str">hero-400.webp 400w,</span>
+      <span class="tok-str">hero-800.webp 800w,</span>
+      <span class="tok-str">hero-1200.webp 1200w</span>
+    <span class="tok-str">"</span>
+    <span class="tok-attr">sizes</span><span class="tok-punc">=</span><span class="tok-str">"(min-width: 1024px) 1024px, 100vw"</span>
+  <span class="tok-punc">&gt;</span>
+  <span class="tok-com">&lt;!-- fallback: img tag — agar koi bhi source support nahi hua (bahut purana browser) toh ye chalega --&gt;</span>
+  <span class="tok-com">&lt;!-- img tag hamesha LAST hona chahiye — ye HTML spec requirement hai, warna behavior undefined --&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">img</span>
+    <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-800.jpg"</span>
+    <span class="tok-attr">alt</span><span class="tok-punc">=</span><span class="tok-str">"Product hero banner dikhata hua"</span>
+    <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"1200"</span>
+    <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"675"</span>
+    <span class="tok-com">&lt;!-- loading aur fetchpriority yahin img tag pe lagte hain, source pe nahi --&gt;</span>
+    <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"eager"</span>
+    <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"high"</span>
+  <span class="tok-punc">&gt;</span>
+<span class="tok-punc">&lt;/</span><span class="tok-tag">picture</span><span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <p>
+        <code>&lt;picture&gt;</code> ka ek aur use-case hai <strong>art direction</strong> — jahan mobile pe
+        cropped/different image dikhani ho (poore banner ki jagah sirf subject ka close-up), waha
+        <code>&lt;source media="(max-width: 600px)"&gt;</code> use karke different image serve kar sakte ho.
+        Ye format-switching se alag concept hai lekin same element use karta hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Server-side content negotiation ka alternative</div>
+        <p>
+          Ek dusra approach hai — HTML mein kuch bhi mention na karo, browser <code>Accept</code> request header
+          mein bata deta hai konse image formats wo support karta hai (e.g.
+          <code>Accept: image/avif,image/webp,*/*</code>). Server/CDN is header ko dekh kar best format serve
+          kar sakta hai, aur response mein <code>Vary: Accept</code> header add karta hai taaki CDN/browser cache
+          different formats ko alag-alag cache entries mein rakhe (warna galat format cache ho kar sabko serve
+          ho sakta hai). Ye approach HTML ko clean rakhta hai, lekin <code>&lt;picture&gt;</code> jitna explicit
+          control nahi deta — dono approaches production mein saath bhi use hote hain (CDN format-negotiation +
+          picture for art-direction).
+        </p>
+      </div>
+
+      <h2 id="lcp-attrs">loading="lazy" vs fetchpriority="high" — LCP Image ka Sahi Treatment</h2>
+      <p>
+        Ye dono attributes browser ke <strong>resource loading priority</strong> ko control karte hain, lekin
+        opposite directions mein.
+      </p>
+      <ul>
+        <li>
+          <strong><code>loading="lazy"</code>:</strong> Browser ko batata hai ki jab tak image viewport ke
+          paas nahi aati, download shuru mat karo. Andar se browser ek "distance-from-viewport" threshold
+          maintain karta hai (implementation-specific, roughly ek-do viewport heights pehle se prefetch shuru
+          ho jaata hai) — taaki scroll karte waqt image "pop-in" na dikhe.
+        </li>
+        <li>
+          <strong><code>fetchpriority="high"</code>:</strong> Browser ke default resource-priority queue ko
+          override karta hai — is image ko HIGH priority do, baaki resources (jo normally pehle load hote)
+          se pehle fetch karo. Ye specifically un images ke liye hai jo <strong>LCP (Largest Contentful
+          Paint)</strong> element banne wali hain.
+        </li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">lcp-image.html — LCP hero image: eager + high priority (NOT lazy)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- ye image page load hote hi viewport mein visible hai — ye hi LCP candidate hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"hero-1200.jpg"</span>
+  <span class="tok-attr">srcset</span><span class="tok-punc">=</span><span class="tok-str">"hero-400.jpg 400w, hero-800.jpg 800w, hero-1200.jpg 1200w"</span>
+  <span class="tok-attr">sizes</span><span class="tok-punc">=</span><span class="tok-str">"100vw"</span>
+  <span class="tok-attr">alt</span><span class="tok-punc">=</span><span class="tok-str">"Hero banner"</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"1200"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"675"</span>
+  <span class="tok-com">&lt;!-- IMPORTANT: loading="lazy" YAHAN KABHI mat lagao — image already viewport mein hai --&gt;</span>
+  <span class="tok-com">&lt;!-- default value "eager" hai, isliye is attribute ko chhod bhi sakte ho, lekin explicit likhna documentation ke liye acha hai --&gt;</span>
+  <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"eager"</span>
+  <span class="tok-com">&lt;!-- fetchpriority="high": browser ko bolta hai ki isse pehle fetch karo, JS bundles se bhi pehle agar zaroorat pade --&gt;</span>
+  <span class="tok-com">&lt;!-- ye Chrome 101+ mein supported hai, LCP improve karne ka directly measurable tareeka hai --&gt;</span>
+  <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"high"</span>
+<span class="tok-punc">&gt;</span>
+
+<span class="tok-com">&lt;!-- comparison: neeche fold wali (below-the-fold) image — isko lazy karna sahi hai --&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">img</span>
+  <span class="tok-attr">src</span><span class="tok-punc">=</span><span class="tok-str">"testimonial-photo.jpg"</span>
+  <span class="tok-attr">alt</span><span class="tok-punc">=</span><span class="tok-str">"Customer testimonial photo"</span>
+  <span class="tok-attr">width</span><span class="tok-punc">=</span><span class="tok-str">"400"</span>
+  <span class="tok-attr">height</span><span class="tok-punc">=</span><span class="tok-str">"400"</span>
+  <span class="tok-com">&lt;!-- ye image scroll karke hi dikhegi, isliye lazy load karna bandwidth/LCP ke liye sahi hai --&gt;</span>
+  <span class="tok-attr">loading</span><span class="tok-punc">=</span><span class="tok-str">"lazy"</span>
+  <span class="tok-com">&lt;!-- fetchpriority yahan "low" bhi de sakte ho explicitly, ya chhod do (default "auto" hai) --&gt;</span>
+  <span class="tok-attr">fetchpriority</span><span class="tok-punc">=</span><span class="tok-str">"low"</span>
+<span class="tok-punc">&gt;</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Sabse Common Mistake — LCP Image ko Lazy-Load Karna</div>
+        <p>
+          Kai developers "best practice" samajh kar <strong>saari</strong> images pe <code>loading="lazy"</code>
+          daal dete hain — including hero banner jo page load hote hi viewport mein already visible hai. Ye
+          seedha LCP ko badha deta hai, kyunki lazy-loading browser ko force karta hai pehle layout calculate
+          karne ka wait kare (ya viewport-intersection check kare) <em>phir</em> fetch shuru kare — jabki
+          normally browser HTML parse karte hi turant fetch shuru kar deta. Lighthouse specifically isko
+          flag karta hai: <strong>"Largest Contentful Paint image was lazily loaded"</strong> ek audit failure
+          hai. Rule of thumb: <strong>above-the-fold / LCP candidate image kabhi lazy mat karo</strong> — usse
+          eager + <code>fetchpriority="high"</code> do. Sirf below-the-fold images lazy honi chahiye.
+        </p>
+      </div>
+
+      <p>
+        Ek related attribute hai <code>decoding</code> — ye batata hai image ka pixel-data decode kab ho:
+      </p>
+      <ul>
+        <li><code>decoding="async"</code> — image asynchronously decode hoti hai, baaki content ka render block nahi hota (achha for non-critical images).</li>
+        <li><code>decoding="sync"</code> — image baaki content ke saath hi ek hi paint mein decode+present hoti hai (tearing avoid karta hai jab image critical visual hai).</li>
+        <li><code>decoding="auto"</code> — browser decide karta hai (default).</li>
+      </ul>
+
+      <h2 id="cdn">Image CDNs — On-the-Fly Transforms</h2>
+      <p>
+        Real production apps mein manually har image ka har size/format pre-generate karna (400w/800w/1200w ×
+        AVIF/WebP/JPEG = 9 files per image) operationally painful hai. <strong>Image CDN</strong> (jaise
+        Cloudinary, Imgix, Cloudflare Images, ya framework-native solutions) ye kaam runtime pe karte hain —
+        URL query params se transform specify karte ho, CDN pehli request pe transform + cache kar deta hai,
+        baad ki requests edge cache se seedhe serve hoti hain.
+      </p>
+      <div class="code-block">
+        <div class="code-title">image-cdn-url.txt — conceptual URL-based transform (placeholder domain)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">&lt;!-- placeholder CDN URL — real image URL nahi, sirf pattern samjhane ke liye --&gt;</span>
+<span class="tok-com">&lt;!-- width=800: CDN ko batao 800px wide image chahiye --&gt;</span>
+<span class="tok-com">&lt;!-- format=auto: CDN khud Accept header dekh kar AVIF/WebP/JPEG decide karega --&gt;</span>
+<span class="tok-com">&lt;!-- quality=75: lossy compression ka quality level (0-100), 75 usually sweet-spot hai --&gt;</span>
+https<span class="tok-punc">:</span>//cdn.example.com/images/hero.jpg<span class="tok-punc">?</span>width<span class="tok-punc">=</span><span class="tok-num">800</span><span class="tok-punc">&amp;</span>format<span class="tok-punc">=</span>auto<span class="tok-punc">&amp;</span>quality<span class="tok-punc">=</span><span class="tok-num">75</span>
+</code></pre>
+      </div>
+      <p>
+        Root-level benefit: origin server ko sirf ek "source of truth" image store karni padti hai, baaki
+        saare variants CDN edge pe on-demand generate + cache hote hain. Trade-off ye hai ki pehli request
+        (cache miss) pe thoda extra latency lagta hai transform compute karne mein — isiliye CDNs usually
+        pre-warm ya popular sizes proactively cache karte hain.
+      </p>
+
+      <h2 id="cls">width/height ya aspect-ratio — CLS Prevention</h2>
+      <p>
+        Root cause samajhna zaroori hai: jab browser HTML parse karta hai aur ek <code>&lt;img&gt;</code> tag
+        milta hai jiske paas <code>width</code>/<code>height</code> attributes nahi hain, toh us image ke liye
+        layout box ki height <strong>0px</strong> maan li jaati hai (jab tak image download+decode na ho jaaye).
+        Jab image aakhir load hoti hai, browser suddenly layout box ko resize karta hai — jo neeche ka content
+        push kar deta hai. Ye hi <strong>Cumulative Layout Shift (CLS)</strong> ka sabse common cause hai.
+      </p>
+      <p>
+        Fix simple hai: <code>width</code> aur <code>height</code> attributes HTML mein specify karo (intrinsic
+        pixel dimensions, CSS px nahi) — browser inse aspect-ratio calculate kar leta hai aur turant sahi-size
+        ka layout box reserve kar deta hai, image download hone se pehle hi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">cls-fix.css — width/height attribute se derived aspect-ratio<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">/* modern browsers img width/height attributes se
+   automatically ek "aspect-ratio" CSS property compute karte hain —
+   ye UA stylesheet (browser default styles) mein already hoti hai */</span>
+<span class="tok-fn">img</span> {
+  <span class="tok-com">/* browser internally kuch aisa apply karta hai jab width/height attrs set ho: */</span>
+  <span class="tok-attr">aspect-ratio</span>: <span class="tok-fn">attr</span><span class="tok-punc">(</span>width<span class="tok-punc">)</span> / <span class="tok-fn">attr</span><span class="tok-punc">(</span>height<span class="tok-punc">)</span>;
+  <span class="tok-com">/* isiliye agar CSS mein image ki width ko override karo (e.g. 100%), */</span>
+  <span class="tok-com">/* height automatically aspect-ratio maintain karte hue calculate ho jaati hai */</span>
+  <span class="tok-attr">width</span>: <span class="tok-num">100%</span>;
+  <span class="tok-attr">height</span>: <span class="tok-str">auto</span>;
+}
+</code></pre>
+      </div>
+      <p>
+        Responsive images (jahan display size viewport ke saath change hoti hai) ke liye bhi yahi
+        width/height attributes original intrinsic aspect ratio ke hisaab se set karo — CSS
+        <code>width: 100%; height: auto;</code> ke saath combine karke browser sahi placeholder-box reserve
+        kar leta hai, chahe actual rendered size kuch bhi ho.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Next.js &lt;Image&gt; / Astro Image Integration</div>
+        <p>
+          Production frameworks ye poora complexity automate kar dete hain. <strong>Next.js</strong>'s
+          <code>&lt;Image&gt;</code> component build-time (static images) ya request-time (remote images, via
+          built-in image optimization API) pe multiple sizes + AVIF/WebP variants generate karta hai, correct
+          <code>srcset</code>/<code>sizes</code> emit karta hai, aur <code>width</code>/<code>height</code>
+          mandatory bana deta hai (TypeScript error deta hai agar missing ho) — CLS structurally prevent ho
+          jaata hai. Priority image ke liye sirf <code>priority</code> prop dena padta hai, jo internally
+          <code>fetchpriority="high"</code> + eager loading set kar deta hai. <strong>Astro</strong>'s
+          <code>&lt;Image&gt;</code>/<code>&lt;Picture&gt;</code> components (built-in image integration,
+          Sharp-based) similarly build-time pe optimized formats generate karte hain aur
+          <code>&lt;picture&gt;</code> fallback chain khud construct karte hain. Root-level samajhna important
+          hai — in abstractions ke peeche yahi concepts (srcset candidates, format negotiation, dimension
+          reservation) hain jo is chapter mein cover kiye — framework sirf boilerplate hata deta hai,
+          decision-making tumhari hi rehti hai (kaunsi sizes chahiye, kaunsi image priority hai).
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>AVIF sabse zyada compression deta hai, WebP wide-support + strong compression ka balance hai — dono ko JPEG/PNG fallback ke saath serve karo.</li>
+        <li>Lossy compression photos ke liye, lossless logos/icons/screenshots ke liye — quantization vs pixel-difference encoding samjho.</li>
+        <li><code>srcset</code> + <code>sizes</code> browser ko multiple resolution candidates deta hai; <code>sizes</code> galat likhna sabse common bug hai.</li>
+        <li><code>&lt;picture&gt;</code> format-fallback aur art-direction dono ke liye use hota hai — img tag hamesha last child.</li>
+        <li>LCP image ko kabhi <code>loading="lazy"</code> mat do — eager + <code>fetchpriority="high"</code> do; sirf below-fold images lazy karo.</li>
+        <li>Image CDNs URL params se runtime pe format+size transform karte hain, manual pre-generation ki zaroorat khatam kar dete hain.</li>
+        <li><code>width</code>/<code>height</code> attributes (ya CSS <code>aspect-ratio</code>) set karna CLS ka sabse direct fix hai.</li>
+        <li>Next.js <code>&lt;Image&gt;</code> aur Astro image integrations ye sab automate karte hain — lekin decision-making samajhna zaroori hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <ul>
+        <li><strong>Q: srcset ka "w" descriptor aur "x" descriptor mein kya farak hai?</strong><br>Hint: "w" = actual intrinsic file width, sizes ke saath mandatory; "x" = pixel density ratio, fixed-size images ke liye jab sizes ki zaroorat nahi.</li>
+        <li><strong>Q: Browser srcset se candidate kaise select karta hai?</strong><br>Hint: sizes se display-width nikalo → DPR se multiply karo → closest-or-larger width wala candidate pick — plus network conditions bhi factor ho sakte hain.</li>
+        <li><strong>Q: LCP image ko lazy-load karna kyun bura hai?</strong><br>Hint: fetch start delay hoti hai jab tak viewport-intersection check na ho, jabki normally parser turant fetch start kar deta — LCP directly badh jaata hai, Lighthouse audit fail hota hai.</li>
+        <li><strong>Q: CLS kis wajah se hoti hai jab image ke width/height missing hon?</strong><br>Hint: layout box initially 0-height maana jaata hai, image load hone pe sudden resize + reflow, neeche content push hota hai.</li>
+        <li><strong>Q: AVIF ke practical downsides kya hain jinke wajah se JPEG/WebP fallback zaroori hai?</strong><br>Hint: encode time zyada, kuch purane browser/OS combos pe inconsistent decode support, isliye picture element se graceful fallback chahiye.</li>
+        <li><strong>Q: Image CDN "format=auto" internally kaise decide karta hai kaunsa format bhejna hai?</strong><br>Hint: request ke Accept header ko parse karke (image/avif, image/webp support check), phir Vary: Accept header set karke correctly cache karta hai.</li>
+      </ul>
+
+      <div class="prevnext">
+        <a class="prev" href="05-resource-hints.html">
+          <div class="label">← Previous</div>
+          <div class="title">Resource Hints</div>
+        </a>
+        <a class="next" href="07-video-performance.html">
+          <div class="label">Next →</div>
+          <div class="title">Video Performance</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
