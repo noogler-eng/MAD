@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Engineering Handbook — Agents, RAG, MCP, System Design (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link active" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs</div>
+      <div class="progress-pill">13 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Agents · RAG · MCP · System Design · Scaling</span>
+      <h1>AI Engineering Handbook</h1>
+      <p class="subtitle">
+        Ye handbook <strong>AI Engineering</strong> ke liye hai — model banana/training karna (ML) is scope
+        mein nahi hai. Focus hai: pehle se trained foundation models (GPT, Claude, Gemini, Llama...) ko
+        production products mein use karna — agents banana, RAG/MCP se context dena, tool calling, system
+        design, aur scale/latency ke real trade-offs.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 ML vs AI Engineering — line kahan khींchi hai</div>
+        <p>
+          <strong>ML Engineer</strong> model architecture design karta hai, data pe train karta hai,
+          research karta hai (weights.bin banata hai). <strong>AI Engineer</strong> already-trained
+          foundation model ko leta hai aur usse ek real product banata hai — prompting, RAG, tool
+          calling, agents, aur woh saara infra jo LLM ko app mein reliably, fast, aur affordably chalata
+          hai. Ye poora handbook isi dusre role ke around hai.
+        </p>
+      </div>
+
+      <h2 style="border-top:none; padding-top:0; margin-top:32px;">Available Chapters</h2>
+      <div class="grid">
+
+        <a class="card" href="01-ai-engineering-vs-ml.html">
+          <div class="card-num">1</div>
+          <h3>AI Engineering vs ML</h3>
+          <p>AI Engineer actually kya banata hai, ML se kaise different role hai, career/skill map.</p>
+          <div class="topics"><span>Role Clarity</span><span>Skill Map</span><span>Foundation Models</span></div>
+        </a>
+
+        <a class="card" href="02-llm-internals.html">
+          <div class="card-num">2</div>
+          <h3>LLM Internals for Engineers</h3>
+          <p>Tokenization, embeddings, context window, inference — sirf utna jitna building ke liye chahiye.</p>
+          <div class="topics"><span>Tokenization</span><span>Context Window</span><span>Inference</span></div>
+        </a>
+
+        <a class="card" href="03-prompt-engineering.html">
+          <div class="card-num">3</div>
+          <h3>Prompt Engineering & Structured Output</h3>
+          <p>System prompts, few-shot, JSON mode, structured output schemas — real API code ke saath.</p>
+          <div class="topics"><span>Structured Output</span><span>Few-shot</span><span>JSON Schema</span></div>
+        </a>
+
+        <a class="card" href="04-rag-deep-dive.html">
+          <div class="card-num">4</div>
+          <h3>RAG Deep-Dive</h3>
+          <p>Chunking, embeddings, vector DB, reranking — end-to-end RAG pipeline practical code ke saath.</p>
+          <div class="topics"><span>Chunking</span><span>Vector DB</span><span>Reranking</span></div>
+        </a>
+
+        <a class="card" href="05-mcp-deep-dive.html">
+          <div class="card-num">5</div>
+          <h3>MCP Deep-Dive</h3>
+          <p>Model Context Protocol andar se kaise kaam karta hai — apna MCP server/client code ke saath.</p>
+          <div class="topics"><span>MCP Server</span><span>MCP Client</span><span>Tool Discovery</span></div>
+        </a>
+
+        <a class="card" href="06-tool-function-calling.html">
+          <div class="card-num">6</div>
+          <h3>Tool/Function Calling</h3>
+          <p>Function calling ka mechanism, multi-step tool loops, error handling — practical code.</p>
+          <div class="topics"><span>Function Calling</span><span>Tool Loop</span><span>Schemas</span></div>
+        </a>
+
+        <a class="card" href="07-agent-fundamentals.html">
+          <div class="card-num">7</div>
+          <h3>AI Agent Fundamentals</h3>
+          <p>Agent kya hota hai, ReAct loop, planning, agentic vs workflow — first agent code ke saath.</p>
+          <div class="topics"><span>ReAct</span><span>Planning</span><span>Agent Loop</span></div>
+        </a>
+
+        <a class="card" href="08-agent-architectures.html">
+          <div class="card-num">8</div>
+          <h3>Agent Architectures</h3>
+          <p>Single-agent, multi-agent, orchestrator-worker, supervisor, swarm — kab kaunsa use karein.</p>
+          <div class="topics"><span>Multi-Agent</span><span>Orchestrator-Worker</span><span>Supervisor</span></div>
+        </a>
+
+        <a class="card" href="09-agent-memory.html">
+          <div class="card-num">9</div>
+          <h3>Agent Memory Systems</h3>
+          <p>Short-term vs long-term memory, context window management, episodic memory patterns.</p>
+          <div class="topics"><span>Short-term Memory</span><span>Long-term Memory</span><span>Context Mgmt</span></div>
+        </a>
+
+        <a class="card" href="10-choosing-a-model.html">
+          <div class="card-num">10</div>
+          <h3>Choosing a Model</h3>
+          <p>Market landscape — GPT/Claude/Gemini/Llama/Mistral/DeepSeek — latency, context limit, pricing.</p>
+          <div class="topics"><span>Model Comparison</span><span>Latency</span><span>Context Limits</span></div>
+        </a>
+
+        <a class="card" href="11-system-design.html">
+          <div class="card-num">11</div>
+          <h3>System Design for AI Products</h3>
+          <p>Real AI product architecture patterns — chatbot, RAG assistant, agent backend.</p>
+          <div class="topics"><span>Architecture</span><span>API Gateway</span><span>Streaming</span></div>
+        </a>
+
+        <a class="card" href="12-scaling-and-latency.html">
+          <div class="card-num">12</div>
+          <h3>Scaling & Latency</h3>
+          <p>Batching, KV cache, streaming, caching layers, load balancing — latency ke root causes.</p>
+          <div class="topics"><span>KV Cache</span><span>Batching</span><span>Caching</span></div>
+        </a>
+
+        <a class="card" href="13-production-hardening.html">
+          <div class="card-num">13</div>
+          <h3>Production Hardening</h3>
+          <p>Guardrails, prompt injection defense, rate limiting, fallback models, tracing/observability.</p>
+          <div class="topics"><span>Guardrails</span><span>Prompt Injection</span><span>Observability</span></div>
+        </a>
+
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Har chapter mein kya milega</div>
+        <p>
+          Root-level "andar se kaise kaam karta hai" explanation, real practical code (har line commented),
+          senior-dev production notes, aur end mein interview-style questions — taaki concept sirf padha na
+          jaaye, implement bhi kiya ja sake.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

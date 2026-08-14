@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Deep-Dive — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link active" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 5</div>
+      <div class="progress-pill">5 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">MCP Server · MCP Client · Tool Discovery</span>
+      <h1>MCP Deep-Dive</h1>
+      <p class="subtitle">
+        RAG wale chapter mein humne dekha LLM ko <em>data</em> kaise doon. Ab sawaal ye hai — LLM ko
+        <em>tools</em> aur <em>live systems</em> se kaise connect karoon, without har naye tool ke liye
+        custom glue code likhe? Yahi problem <strong>Model Context Protocol (MCP)</strong> solve karta hai —
+        is chapter mein hum ye samjhenge ki ye andar se kaam kaise karta hai, aur apna khud ka MCP server
+        aur client bhi banayenge.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#what-is-mcp">1. MCP Kya Hai Aur Kyun Bana</a></li>
+          <li><a href="#architecture">2. MCP Architecture — Host, Client, Server</a></li>
+          <li><a href="#transport">3. Transport Layer — stdio Aur HTTP/SSE</a></li>
+          <li><a href="#schema">4. Tool Metadata — Description Field Kyun Critical Hai</a></li>
+          <li><a href="#server-code">5. Practical — Apna MCP Server Banana</a></li>
+          <li><a href="#client-code">6. Practical — Client Se Tool Discover Aur Call Karna</a></li>
+          <li><a href="#mcp-vs-function-calling">7. MCP vs Plain Function Calling</a></li>
+          <li><a href="#limitations">8. Limitations — Context Bloat Aur Tool Overload</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="what-is-mcp">MCP Kya Hai Aur Kyun Bana</h2>
+      <p>
+        Sabse simple mental model: <strong>"HTTP web ke liye jo kaam karta hai, MCP AI context/tools ke
+        liye wahi kaam karta hai."</strong> HTTP se pehle, har browser aur har server ko apna khud ka
+        custom protocol invent karna padta — chaos. HTTP ek standard bana diya, aur ab koi bhi browser
+        kisi bhi server se baat kar sakta hai bina custom integration ke. MCP exactly yahi standardization
+        AI tools/data ke liye la raha hai.
+      </p>
+      <p>
+        Problem jo MCP solve karta hai — usko <strong>N×M integration problem</strong> kehte hain. Socho
+        tumhare paas N AI applications hain (Claude Desktop, Claude Code, tumhara custom agent, VS Code
+        extension...) aur M tools/data sources hain (GitHub, Postgres, Slack, internal CRM, file system...).
+        MCP se pehle, har application ko har tool ke liye <em>alag custom integration</em> likhni padti thi
+        — matlab N × M integrations. Agar 10 apps aur 20 tools hain, wo 200 custom integrations hain, sab
+        maintain karna, sab break hote rehte hain jab koi API change hoti hai.
+      </p>
+      <p>
+        MCP is N×M problem ko <strong>N+M problem</strong> mein convert kar deta hai. Ek tool ek MCP server
+        banata hai (ek baar), aur koi bhi MCP-compatible client (Claude Desktop, Claude Code, custom agent)
+        use kar sakta hai bina us tool ke liye specific code likhe. Tool builder ek baar likhta hai,
+        <em>sab</em> clients isse use kar sakte hain. Anthropic ne ye protocol open-standard ke roop mein
+        release kiya (2024 ke end mein), aur ab OpenAI, Google jaise players bhi MCP support kar rahe hain
+        — matlab ye industry-wide standard ban raha hai, na ki sirf ek company ka proprietary format.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 MCP "naya" LLM capability nahi hai</div>
+        <p>
+          Important clarification — MCP khud koi naya AI capability introduce nahi karta. LLMs already tool
+          calling kar sakte the (chapter 6 mein detail milega). MCP sirf ye <strong>standardize</strong>
+          karta hai ki tools ko <em>discover</em> kaise kiya jaaye aur <em>expose/transport</em> kaise kiya
+          jaaye — taaki tool-building ecosystem fragment na ho. Ye ek plumbing/protocol layer hai, model
+          intelligence layer nahi.
+        </p>
+      </div>
+
+      <h2 id="architecture">MCP Architecture — Host, Client, Server</h2>
+      <p>
+        MCP teen components ke around design kiya gaya hai:
+      </p>
+      <ul>
+        <li><strong>Host</strong> — wo application jisme user directly interact karta hai, jaise Claude
+        Desktop ya Claude Code. Host LLM ko run karta hai aur user-facing UI provide karta hai.</li>
+        <li><strong>Client</strong> — host ke andar ek component jo <em>ek specific MCP server ke saath
+        1:1 connection maintain</em> karta hai. Agar host 3 alag MCP servers se connect hai (e.g. GitHub,
+        Postgres, filesystem), to host ke andar 3 separate client instances honge, har ek apne server ke
+        saath.</li>
+        <li><strong>Server</strong> — wo lightweight program jo actual tools/data/prompts expose karta hai.
+        Server GitHub API ko wrap kar sakta hai, ya ek database ko, ya local file system ko — jo bhi
+        capability tum LLM ko dena chahte ho.</li>
+      </ul>
+      <p>
+        Flow kuch is tarah chalta hai — jab user Claude Code mein kuch poochta hai jisme koi tool chahiye
+        (jaise "meri repo ke open issues list karo"), host LLM ko batata hai "ye tools available hain"
+        (client ne pehle hi server se <strong>tool discovery</strong> karke ye list le li thi — ek
+        <code>list_tools</code> request bhejke). LLM decide karta hai kaunsa tool call karna hai aur kaunse
+        arguments ke saath. Client us call ko server tak forward karta hai (<code>call_tool</code> request),
+        server actual kaam karta hai (jaise GitHub API hit karna), aur result wapas client → host → LLM ke
+        context mein jaata hai. LLM phir us result ko dekhke apna final response banata hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Server ko "dumb" rakho</div>
+        <p>
+          Achha MCP server design principle — server sirf <em>capability expose</em> karta hai, decision
+          making nahi karta. "Kaunsa tool call karna hai" wala reasoning LLM (host side) karta hai, server
+          sirf jo call kiya gaya wahi execute karta hai aur result return karta hai. Agar tum server ke
+          andar bhi "smart" logic dalna shuru karoge (jaise server khud decide kare ki konsa tool chain
+          karna hai), tum architecture ko confuse kar rahe ho — wo agent ka kaam hai (chapter 7), server ka
+          nahi. Server = capability provider, Agent/LLM = decision maker. Ye separation testing aur
+          debugging dono ko drastically simpler banata hai.
+        </p>
+      </div>
+
+      <h2 id="transport">Transport Layer — stdio Aur HTTP/SSE</h2>
+      <p>
+        MCP messages <strong>JSON-RPC 2.0</strong> format mein encode hote hain (ek lightweight,
+        well-established RPC spec — request mein <code>method</code> aur <code>params</code> hote hain,
+        response mein <code>result</code> ya <code>error</code>). MCP khud transport-agnostic hai — wo bas
+        JSON-RPC messages ka format define karta hai, unhe actually bhejne ka kaam "transport" layer ka hai.
+        Do primary transports common hain:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Transport</th><th>Kaise kaam karta hai</th><th>Kab use karo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>stdio</code></td><td>Server ek local subprocess ke roop mein spawn hota hai; client stdin pe likhta hai, server stdout pe reply karta hai</td><td>Local tools — filesystem, local scripts, local DB. Claude Desktop/Code ka most common case.</td></tr>
+          <tr><td>HTTP + SSE / Streamable HTTP</td><td>Server ek remote HTTP endpoint hai; requests POST hoti hain, responses (streaming ke liye) Server-Sent Events se aate hain</td><td>Remote/hosted MCP servers — jaise team-wide shared tool server, ya SaaS product ka MCP integration.</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Practical mein — jab tum local development kar rahe ho ya ek personal tool bana rahe ho, <code>stdio</code>
+        simplest hai (koi networking setup nahi chahiye, bas ek executable). Jab tum ek tool ko team ya
+        multiple users ke liye share karna chahte ho, HTTP-based transport chahiye hoga taaki server ek
+        jagah host ho sake aur multiple clients usse connect kar sakein.
+      </p>
+
+      <h2 id="schema">Tool Metadata — Description Field Kyun Critical Hai</h2>
+      <p>
+        Har tool jo server expose karta hai, teen cheezein declare karta hai:
+      </p>
+      <ul>
+        <li><strong><code>name</code></strong> — unique identifier, jaise <code>fetch_crypto_price</code>.</li>
+        <li><strong><code>description</code></strong> — natural language mein batata hai tool kya karta hai,
+        kab use karna chahiye.</li>
+        <li><strong><code>input_schema</code></strong> — JSON Schema jo define karta hai tool ko kaunse
+        arguments chahiye, kis type ke, konse required hain.</li>
+      </ul>
+      <p>
+        Ye teeno LLM ko tool-selection time pe dikhaye jaate hain (context mein inject hote hain jab request
+        LLM ko jaati hai). Isliye <strong><code>description</code> field ki quality directly affect karti
+        hai ki LLM sahi tool pick karega ya nahi</strong> — LLM ke paas tool ka actual code dekhne ka koi
+        tareeka nahi hai, usko sirf ye metadata dikhta hai. Agar description vague hai ("gets data") ya do
+        tools ke descriptions overlap karte hain, LLM confuse ho sakta hai aur galat tool call kar sakta hai,
+        ya sahi tool ko galat arguments ke saath call kar sakta hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Bad vs good description — real difference</div>
+        <p>
+          Bad: <code>"Gets price"</code> — LLM ko pata nahi kis cheez ka price, kaunsa format, symbol kaise
+          pass karna hai. Good: <code>"Given a cryptocurrency symbol like BTC or ETH, real-time USD price
+          fetch karta hai from a live market data API. Symbol uppercase ticker hona chahiye, full coin naam
+          nahi (BTC, na ki Bitcoin)."</code> — ye specific hai, format bataata hai, edge case (uppercase
+          ticker) clarify karta hai. Ye same principle hai jo tumne prompt engineering (chapter 3) mein
+          seekha — LLM ko jitna precise, unambiguous context doge, utna accurate uska decision hoga.
+        </p>
+      </div>
+
+      <h2 id="server-code">Practical — Apna MCP Server Banana</h2>
+      <p>
+        Chalo ek minimal MCP server banate hain Python ke official <code>mcp</code> SDK se, FastMCP-style
+        (jo decorators use karke boilerplate kam karta hai). Ye server ek tool expose karega —
+        <code>fetch_crypto_price</code> — jo ek public crypto API (CoinGecko) se live price fetch karega.
+        Har line commented hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">crypto_mcp_server.py — minimal MCP server ek tool ke saath<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># crypto_mcp_server.py — MCP server jo live crypto price fetch karne ka tool expose karta hai</span>
+<span class="tok-kw">import</span> httpx  <span class="tok-com"># async-capable HTTP client, CoinGecko API call karne ke liye</span>
+
+<span class="tok-kw">from</span> mcp.server.fastmcp <span class="tok-kw">import</span> FastMCP  <span class="tok-com"># FastMCP — decorators se tool registration handle karta hai</span>
+
+mcp = FastMCP(<span class="tok-str">"crypto-prices"</span>)  <span class="tok-com"># server instance banao — "crypto-prices" iska display name hai</span>
+
+<span class="tok-kw">@mcp</span>.tool()  <span class="tok-com"># decorator — is function ko ek MCP tool banata hai, clients discover/call kar sakte hain</span>
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">fetch_crypto_price</span>(symbol: <span class="tok-kw">str</span>) -> <span class="tok-kw">dict</span>:  <span class="tok-com"># signature se hi input_schema banta hai</span>
+    <span class="tok-com">"""Given a crypto ticker symbol (e.g. 'BTC', 'ETH'), fetch its current USD price.</span>
+<span class="tok-com">    Symbol must be an uppercase ticker, not the full coin name.</span>
+<span class="tok-com">    """</span>  <span class="tok-com"># docstring hi tool ki 'description' banti hai — FastMCP auto-extract karta hai</span>
+
+    symbol_to_id = {<span class="tok-str">"BTC"</span>: <span class="tok-str">"bitcoin"</span>, <span class="tok-str">"ETH"</span>: <span class="tok-str">"ethereum"</span>, <span class="tok-str">"SOL"</span>: <span class="tok-str">"solana"</span>}  <span class="tok-com"># ticker → CoinGecko coin-id map</span>
+    coin_id = symbol_to_id.get(symbol.upper())  <span class="tok-com"># symbol ko uppercase normalize karke lookup karo</span>
+
+    <span class="tok-kw">if</span> coin_id <span class="tok-kw">is</span> <span class="tok-kw">None</span>:  <span class="tok-com"># agar symbol map mein nahi mila</span>
+        <span class="tok-kw">return</span> {<span class="tok-str">"error"</span>: <span class="tok-str">f"Unknown symbol: {symbol}. Try BTC, ETH, or SOL."</span>}  <span class="tok-com"># readable error, exception nahi (LLM ko feedback milta hai)</span>
+
+    <span class="tok-kw">async</span> <span class="tok-kw">with</span> httpx.AsyncClient() <span class="tok-kw">as</span> client:  <span class="tok-com"># async HTTP client — request khatam hote hi cleanup</span>
+        response = <span class="tok-kw">await</span> client.<span class="tok-fn">get</span>(  <span class="tok-com"># CoinGecko simple-price endpoint ko GET request</span>
+            <span class="tok-str">"https://api.coingecko.com/api/v3/simple/price"</span>,  <span class="tok-com"># base URL</span>
+            params={<span class="tok-str">"ids"</span>: coin_id, <span class="tok-str">"vs_currencies"</span>: <span class="tok-str">"usd"</span>},  <span class="tok-com"># query params — konsa coin, konsi currency</span>
+        )  <span class="tok-com"># request call yahan complete hoti hai</span>
+        response.<span class="tok-fn">raise_for_status</span>()  <span class="tok-com"># non-2xx status pe exception raise karo, silent failure mat hone do</span>
+
+    data = response.<span class="tok-fn">json</span>()  <span class="tok-com"># response body JSON dict mein parse karo — e.g. {"bitcoin": {"usd": 61234.5}}</span>
+    <span class="tok-kw">return</span> {<span class="tok-str">"symbol"</span>: symbol.upper(), <span class="tok-str">"usd_price"</span>: data[coin_id][<span class="tok-str">"usd"</span>]}  <span class="tok-com"># clean dict — yahi call_tool response ban ke client ko jaata hai</span>
+
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:  <span class="tok-com"># script directly run hone par (import hone par nahi)</span>
+    mcp.<span class="tok-fn">run</span>()  <span class="tok-com"># default transport stdio hai — stdin/stdout pe JSON-RPC messages sunega</span>
+</code></pre>
+      </div>
+      <p>
+        Notice karo — humne kahin bhi manually JSON-RPC handle nahi kiya, koi schema hand-likha nahi. FastMCP
+        function signature (<code>symbol: str</code>) aur docstring se automatically <code>input_schema</code>
+        aur <code>description</code> generate kar deta hai. Ye wahi principle hai jo pehle discuss kiya —
+        docstring/description quality directly LLM ki tool-selection accuracy ko affect karti hai, isliye
+        yahan bhi ek generic docstring likhne ke bajaye humne format aur edge case explicitly mention kiya.
+      </p>
+
+      <h2 id="client-code">Practical — Client Se Tool Discover Aur Call Karna</h2>
+      <p>
+        Ab dekhte hain client side se ye kaise dikhta hai — MCP Python SDK ka client hi use karke hum server
+        ko subprocess ke roop mein spawn karenge, uske tools discover karenge, aur ek tool call karenge:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">crypto_mcp_client.py — server se connect, tools discover, tool call karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># crypto_mcp_client.py — minimal MCP client jo upar wale server se baat karta hai</span>
+<span class="tok-kw">import</span> asyncio  <span class="tok-com"># client/server dono async hote hain, isliye event loop chahiye</span>
+
+<span class="tok-kw">from</span> mcp <span class="tok-kw">import</span> ClientSession, StdioServerParameters  <span class="tok-com"># session manager + stdio launch-config class</span>
+
+<span class="tok-kw">from</span> mcp.client.stdio <span class="tok-kw">import</span> stdio_client  <span class="tok-com"># subprocess spawn karke stdin/stdout ko transport banata hai</span>
+
+server_params = StdioServerParameters(  <span class="tok-com"># server ko kaise launch karna hai uski details</span>
+    command=<span class="tok-str">"python"</span>,  <span class="tok-com"># server subprocess kis command se chalega</span>
+    args=[<span class="tok-str">"crypto_mcp_server.py"</span>],  <span class="tok-com"># us command ko diye jaane wale arguments — script path</span>
+)  <span class="tok-com"># params object yahan complete hota hai</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">main</span>():  <span class="tok-com"># async entrypoint, kyunki MCP calls sab awaitable hain</span>
+    <span class="tok-kw">async</span> <span class="tok-kw">with</span> stdio_client(server_params) <span class="tok-kw">as</span> (read_stream, write_stream):  <span class="tok-com"># server process spawn, read/write streams milte hain</span>
+        <span class="tok-kw">async</span> <span class="tok-kw">with</span> ClientSession(read_stream, write_stream) <span class="tok-kw">as</span> session:  <span class="tok-com"># streams pe session banao — JSON-RPC wrap karta hai</span>
+            <span class="tok-kw">await</span> session.<span class="tok-fn">initialize</span>()  <span class="tok-com"># MCP handshake — protocol version, capabilities exchange</span>
+
+            tools_response = <span class="tok-kw">await</span> session.<span class="tok-fn">list_tools</span>()  <span class="tok-com"># discovery step — server se poochta hai "kaunse tools hain"</span>
+            <span class="tok-kw">for</span> tool <span class="tok-kw">in</span> tools_response.tools:  <span class="tok-com"># response mein har tool ka name/description/input_schema hota hai</span>
+                <span class="tok-fn">print</span>(<span class="tok-str">f"Discovered tool: {tool.name} — {tool.description}"</span>)  <span class="tok-com"># yahi metadata LLM ko dikhaya jaata hai</span>
+
+            result = <span class="tok-kw">await</span> session.<span class="tok-fn">call_tool</span>(  <span class="tok-com"># actual tool invoke karo</span>
+                <span class="tok-str">"fetch_crypto_price"</span>,  <span class="tok-com"># jo tool call karna hai uska registered naam</span>
+                arguments={<span class="tok-str">"symbol"</span>: <span class="tok-str">"BTC"</span>},  <span class="tok-com"># input_schema ke hisaab se required arguments</span>
+            )  <span class="tok-com"># call yahan complete hoti hai</span>
+            <span class="tok-fn">print</span>(<span class="tok-str">f"Tool result: {result.content}"</span>)  <span class="tok-com"># result.content mein tool ka return value milta hai (price dict)</span>
+
+asyncio.<span class="tok-fn">run</span>(main())  <span class="tok-com"># event loop start karo aur async main() function run karo</span>
+</code></pre>
+      </div>
+      <p>
+        Real-world mein (Claude Desktop, Claude Code), ye discovery-and-call flow automatically host ke andar
+        hota hai — tumhe manually <code>list_tools()</code> aur <code>call_tool()</code> nahi likhna padta,
+        host ye handle karta hai aur discovered tools ko LLM ke context mein inject kar deta hai. Ye example
+        isliye important hai kyunki ye dikhata hai ki <strong>protocol level</strong> pe actually kya ho raha
+        hai — jo debug karte waqt ya custom host banate waqt kaam aata hai.
+      </p>
+
+      <h2 id="mcp-vs-function-calling">MCP vs Plain Function Calling</h2>
+      <p>
+        Ye distinction bahut confusing hoti hai shuru mein, isliye clearly separate kar dete hain (agla
+        chapter, chapter 6, isi function calling mechanism ko deep-dive karega):
+      </p>
+      <ul>
+        <li><strong>Function/tool calling</strong> ek <em>LLM-level mechanism</em> hai — model ko tools ki
+        ek list dikhayi jaati hai (name/description/schema, chahe wo kahin se bhi aayi ho), aur model decide
+        karta hai "is user request ke liye mujhe konsa tool call karna chahiye, kaunse arguments ke saath".
+        Ye har major LLM provider (Claude, GPT, Gemini) mein built-in capability hai.</li>
+        <li><strong>MCP</strong> ek <em>protocol/transport layer</em> hai jo standardize karta hai un tools ko
+        <em>discover kaise karo</em> aur <em>call kaise karo</em>, across different servers aur clients,
+        without custom integration code likhe har baar.</li>
+      </ul>
+      <p>
+        Simplified: <strong>function calling batata hai LLM "kya" decide karta hai (kaunsa tool, kaunse
+        args); MCP batata hai wo tools system mein "kahan se aate hain aur kaise wire hote hain"</strong>.
+        Tum function calling MCP ke bina bhi use kar sakte ho (khud se ek tool list hardcode karke, jaisa
+        agle chapter mein karenge) — MCP sirf isko scale aur reusable banata hai jab tumhare paas multiple
+        tools/servers/clients ka ecosystem ho.
+      </p>
+
+      <h2 id="limitations">Limitations Aur Mitigations</h2>
+      <p>
+        MCP powerful hai, lekin real production usage mein do common problems face hote hain:
+      </p>
+      <h3>1. Large Tool Results → Context Window Bloat</h3>
+      <p>
+        Agar koi tool ek bada result return karta hai — jaise ek database query jo 500 rows deti hai, ya ek
+        file-read tool jo poori 50-page document return kar deta hai — wo pura result LLM ke context window
+        mein chala jaata hai. Isse context bloat hota hai: cost badh jaati hai (zyada tokens), latency badh
+        jaati hai, aur agar context limit hit ho gaya to model bhool sakta hai purani conversation ke important
+        parts. Mitigation — tool ke andar hi result ko <strong>chunk ya summarize</strong> karo before return
+        karne ke, ya agar data bada/searchable type ka hai, use vector store mein daal do (RAG pipeline,
+        chapter 4 dekho) aur tool sirf top-relevant chunks return kare, poora dataset nahi.
+      </p>
+      <h3>2. Too Many Tools Exposed → Selection Accuracy Drops</h3>
+      <p>
+        Jab ek host multiple MCP servers se connected hota hai (GitHub + Postgres + Slack + internal tools),
+        LLM ke context mein <em>saare</em> tools ki descriptions ek saath ja sakti hain — kabhi kabhi 50-100+
+        tools. Research aur practical experience dono batate hain ki jitne zyada tools ek saath dikhaye
+        jaate hain, LLM ki <strong>tool-selection accuracy utni hi girti hai</strong> (similar tools confuse
+        hote hain, ya model galat tool pick kar leta hai). Mitigations:
+      </p>
+      <ul>
+        <li><strong>Tool namespacing/grouping</strong> — tools ko logical groups mein organize karo (jaise
+        <code>github.*</code>, <code>db.*</code>) taaki naming clarity rahe aur similar-sounding tools clash
+        na karein.</li>
+        <li><strong>Progressive discovery</strong> — sab tools ek saath expose karne ke bajaye, LLM ko pehle
+        ek high-level "which category of tool do I need" decide karne do, aur uske baad hi us category ke
+        specific tools load/expose karo. Ye ek two-step discovery hai — chapter 6 aur 8 mein isko agent
+        design ke context mein aur detail se dekhenge.</li>
+        <li>Sirf wahi MCP servers connect karo jo current task ke liye actually relevant hain — "connect
+        everything by default" anti-pattern hai.</li>
+      </ul>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Security angle bhi yaad rakho</div>
+        <p>
+          MCP server jo bhi data return karta hai wo LLM ke context mein untrusted input ki tarah treat hona
+          chahiye — agar koi tool external/user-controlled data fetch karta hai (jaise ek webpage ya email),
+          us data ke andar embedded instructions ho sakti hain jo LLM ko manipulate karne ki koshish karein
+          (prompt injection). Ye topic chapter 13 (Production Hardening) mein detail se cover hoga, lekin abhi
+          itna samajh lo — MCP tool result ko "trusted system output" mat maano, wo bhi ek attack surface hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>MCP "HTTP for AI tools/context" hai — N×M custom-integration problem ko N+M problem mein convert
+        karta hai, ek open standard ke through.</li>
+        <li>Architecture teen parts mein bant-ta hai — Host (user-facing app), Client (ek server ke saath 1:1
+        connection), Server (tools/data ko expose karta hai).</li>
+        <li>Messages JSON-RPC 2.0 format mein hote hain; transport <code>stdio</code> (local) ya HTTP/SSE
+        (remote/shared) ho sakta hai.</li>
+        <li>Tool metadata (name, description, input_schema) hi LLM ko dikhta hai — description ki quality
+        directly tool-selection accuracy determine karti hai.</li>
+        <li>MCP aur function calling alag layers hain — function calling LLM-level "kya karna hai" decision
+        hai, MCP protocol-level "tools kahan se aate hain, kaise wire hote hain" hai.</li>
+        <li>Limitations — bade tool results context bloat karte hain (chunk/summarize ya vector-store karo),
+        bahut saare tools ek saath expose karna accuracy girata hai (namespacing/progressive discovery se
+        fix karo).</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. MCP kya hai aur ye kis problem ko solve karta hai — apne words mein explain karo.</strong></p>
+      <p>
+        MCP (Model Context Protocol) ek open standard hai jo AI applications ko external tools/data sources
+        se connect karne ka standardized tareeka deta hai — isko "HTTP for AI context/tools" bola ja sakta
+        hai. Ye N×M integration problem (N applications × M tools, sab custom-wired) ko N+M problem mein
+        convert karta hai — tool builder ek MCP server ek baar banata hai, aur koi bhi MCP-compatible client
+        (Claude Desktop, Claude Code, custom agent) usse bina extra integration code ke use kar sakta hai.
+      </p>
+
+      <p><strong>Q2. MCP architecture ke teen main components kya hain aur unka role kya hai?</strong></p>
+      <p>
+        Host — user-facing application jo LLM run karta hai (jaise Claude Desktop). Client — host ke andar
+        ek component jo ek specific MCP server ke saath 1:1 connection maintain karta hai (multiple servers
+        connected hain to multiple client instances honge). Server — lightweight program jo actual
+        tools/data/prompts expose karta hai, jaise GitHub API ya database ko wrap karke. Server sirf
+        capability provide karta hai, decision-making (kaunsa tool kab call karna hai) LLM/host side pe hoti
+        hai.
+      </p>
+
+      <p><strong>Q3. Ek MCP tool ki description field itni important kyun hai?</strong></p>
+      <p>
+        LLM ko tool ka actual code nahi dikhta — usko sirf metadata (name, description, input_schema) dikhta
+        hai tool-selection decision lene ke liye. Agar description vague ya ambiguous hai, ya multiple tools
+        ke descriptions overlap karte hain, LLM galat tool pick kar sakta hai ya sahi tool ko galat arguments
+        ke saath call kar sakta hai. Isliye description ko specific hona chahiye — kya karta hai, kab use
+        karna hai, format/edge-cases kya hain — bilkul waise jaise prompt engineering mein clear/unambiguous
+        instructions important hoti hain.
+      </p>
+
+      <p><strong>Q4. MCP aur function calling mein kya difference hai — kya ye same cheez hai?</strong></p>
+      <p>
+        Nahi, ye alag layers hain. Function/tool calling ek LLM-level mechanism hai jahan model decide karta
+        hai "is request ke liye kaunsa tool call karna hai, kaunse arguments ke saath" — ye capability har
+        major LLM provider mein built-in hai, MCP ke bina bhi use ho sakti hai. MCP ek protocol/transport
+        layer hai jo standardize karta hai un tools ko discover aur call kaise kiya jaaye across different
+        servers/clients, bina custom integration code baar-baar likhe. Function calling batata hai "kya"
+        decide hota hai, MCP batata hai "kahan se tools aate hain aur kaise wire hote hain".
+      </p>
+
+      <p><strong>Q5. Production mein bahut saare MCP tools expose karne se kya problem hoti hai, aur kaise
+      fix karoge?</strong></p>
+      <p>
+        Jab bahut saare tools (50-100+) ek saath LLM ke context mein expose hote hain, tool-selection accuracy
+        girti hai — similar-sounding tools confuse hote hain, model galat tool pick kar sakta hai. Fix karne
+        ke tareeke — tool namespacing/grouping karo (logical prefixes jaise <code>github.*</code>) taaki
+        naming clarity rahe, "progressive discovery" pattern use karo (pehle high-level category decide karo,
+        phir us category ke specific tools hi load karo), aur sirf wahi servers connect karo jo current task
+        ke liye relevant hain — sab kuch by default connect karna anti-pattern hai.
+      </p>
+
+      <div class="prevnext">
+        <a href="04-rag-deep-dive.html">
+          <div class="label">← Previous</div>
+          <div class="title">RAG Deep-Dive</div>
+        </a>
+        <a class="next" href="06-tool-function-calling.html">
+          <div class="label">Next →</div>
+          <div class="title">Tool/Function Calling</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

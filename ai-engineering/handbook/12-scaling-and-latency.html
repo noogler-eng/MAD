@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scaling & Latency — MAD AI Engineering Docs (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link active" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 12</div>
+      <div class="progress-pill">12 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">TTFT · KV Cache · Prompt Caching · Streaming · Semantic Cache</span>
+      <h1>Scaling & Latency</h1>
+      <p class="subtitle">
+        Ye chapter is poore handbook ka sabse "engineering-heavy" chapter hai — kyunki latency woh cheez hai
+        jo user directly feel karta hai. Hum yahan LLM training internals ya GPU kernel optimization nahi
+        karenge — hum wahi cover karenge jo tumhe as an <strong>AI engineer</strong> chahiye: latency kahan
+        se aati hai, provider APIs kya knobs dete hain (caching, streaming), aur apni app ke andar tum
+        latency/scale ko kaise control mein rakh sakte ho.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#anatomy">1. Ek LLM Request Ki Latency Anatomy — End to End</a></li>
+          <li><a href="#prefill-decode">2. Prefill vs Decode — Alag Kyun Behave Karte Hain</a></li>
+          <li><a href="#kv-cache">3. KV Cache — Engineering-Level Samajh</a></li>
+          <li><a href="#prompt-caching">4. Prompt Caching — Real Latency + Cost Win</a></li>
+          <li><a href="#streaming">5. Streaming — Perceived Latency Ka Trick</a></li>
+          <li><a href="#batching">6. Provider-Side Batching Aur Iska Tumpe Impact</a></li>
+          <li><a href="#app-levers">7. Apne App-Level Scaling Levers</a></li>
+          <li><a href="#horizontal">8. Apne Backend Ka Horizontal Scaling</a></li>
+          <li><a href="#semantic-cache">9. Practical Code — Semantic Response Cache</a></li>
+          <li><a href="#takeaways">10. Key Takeaways</a></li>
+          <li><a href="#interview">11. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="anatomy">Ek LLM Request Ki Latency Anatomy — End to End</h2>
+      <p>
+        Jab tumhara user "Send" dabata hai aur unhe response dikhne mein 3 second lagte hain, wo 3 second
+        ek single block nahi hai — kai alag-alag stages ka sum hai. In stages ko samajhna zaroori hai
+        kyunki har stage ko fix karne ka alag tareeka hai, aur galat stage optimize karne mein time waste
+        karna common mistake hai.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Stage</th><th>Kya ho raha hai</th><th>Kis cheez pe control hai</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Network round-trip</td><td>Client → provider server tak request jaana, response wapas aana</td><td>Mostly provider/CDN — tum region choose kar sakte ho</td></tr>
+          <tr><td>Queueing</td><td>Provider ke paas request GPU pe schedule hone se pehle wait karti hai (load ke hisaab se)</td><td>Tumhare control mein nahi, lekin retry/backoff strategy se manage hota hai</td></tr>
+          <tr><td>TTFT (Time to First Token)</td><td><strong>Prefill</strong> phase — poora input prompt process hota hai pehle output token generate hone se pehle</td><td>Input prompt length — chhota prompt = fast TTFT</td></tr>
+          <tr><td>Inter-token latency</td><td><strong>Decode</strong> phase — har output token ek-ek karke generate hota hai</td><td>Output length (max_tokens), model size</td></tr>
+          <tr><td>App-level latency</td><td>Retrieval (RAG), tool calls, post-processing, guardrail checks</td><td>Poori tarah tumhare control mein — ye "your code" hai</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Zyada beginners sochte hain "LLM latency" ek monolithic number hai jo sirf model ki speed pe depend
+        karta hai. Reality mein aksar biggest latency contributor tumhari <em>apni</em> app hoti hai — RAG
+        retrieval slow hai, sequential tool calls hain, ya prompt itna bada hai ki prefill hi seconds le raha
+        hai. Isliye latency debug karte waqt sabse pehla step hamesha ye hai: <strong>end-to-end request ko
+        stages mein break karo aur measure karo har stage individually kitna time le raha hai</strong>,
+        guess mat karo.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 TTFT vs Total Latency — dono alag metrics hain</div>
+        <p>
+          <strong>TTFT (Time to First Token)</strong> batata hai user ko response dikhna kab shuru hoga —
+          ye perceived responsiveness ke liye critical hai. <strong>Total latency</strong> batata hai poora
+          response complete hone mein kitna time laga — ye batch jobs ya non-streaming use cases ke liye
+          relevant hai. Chapter 11 (System Design) mein hum streaming architecture discuss kar chuke hain —
+          is chapter mein hum <em>kyun</em> TTFT aur inter-token latency alag behave karte hain, wahi samjhenge.
+        </p>
+      </div>
+
+      <h2 id="prefill-decode">Prefill vs Decode — Alag Kyun Behave Karte Hain</h2>
+      <p>
+        Ye is poore chapter ka sabse important mental model hai, isliye dhyaan se samjho. Ek LLM request
+        internally do phases mein hoti hai, aur ye dono phases fundamentally different compute
+        characteristics rakhte hain:
+      </p>
+      <ul>
+        <li>
+          <strong>Prefill (input processing)</strong> — model poore input prompt (system prompt + context +
+          user message) ko ek saath process karta hai taaki wo samajh sake "context kya hai". Ye step
+          <strong>parallelizable</strong> hai — GPU ek saath saare input tokens pe attention compute kar
+          sakta hai, kyunki saare input tokens already available hain (koi sequential dependency nahi).
+          Isi wajah se prefill fast hota hai relative to its token count — GPUs parallel compute mein bahot
+          achhe hain.
+        </li>
+        <li>
+          <strong>Decode (output generation)</strong> — model ek-ek token generate karta hai, aur har naya
+          token generate karne ke liye usse <em>pichhle saare tokens</em> (input + ab tak generate hue output)
+          dekhne padte hain. Ye step <strong>inherently sequential</strong> hai — token N+1 generate karne
+          se pehle token N ka result pata hona zaroori hai (autoregressive generation). Isliye decode phase
+          parallelize nahi ho sakta across tokens — har token apni baari ka wait karta hai.
+        </li>
+      </ul>
+      <p>
+        Practical implication: <strong>longer OUTPUTS latency ko zyada hurt karte hain compared to longer
+        INPUTS</strong>, token-count ke hisaab se. 1000 extra input tokens prefill mein parallelize ho jaate
+        hain aur TTFT thoda hi badhaate hain. Lekin 1000 extra output tokens ka matlab hai 1000 additional
+        <em>sequential</em> steps — jo directly total generation time mein add hote hain. Yahi wajah hai ki
+        agar tumhara use case latency-sensitive hai, "output ko concise rakho" (via prompting ya
+        <code>max_tokens</code>) input trimming se aksar zyada impactful lever hota hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — "input vs output" latency budget ko explicitly design karo</div>
+        <p>
+          Jab tum ek AI feature design karo, explicitly socho: "iska output kitna lamba hona chahiye?" Ek
+          summarization feature jiska output 3 lines hai, chahe input 50 pages ho, decode phase short hoga
+          isliye overall latency reasonable rahegi. Lekin ek "generate a detailed report" feature jiska
+          output 2000 tokens hai, wo inherently slow hoga chahe input chhota ho — kyunki decode sequential
+          hai. Agar product requirement allow kare, output length ko structurally chhota rakhna (bullet
+          points ki jagah ek summary field, ya streaming ke saath progressive disclosure) latency ka
+          sabse bada lever hai jo tumhare control mein hai.
+        </p>
+      </div>
+
+      <h2 id="kv-cache">KV Cache — Engineering-Level Samajh</h2>
+      <p>
+        Decode phase sequential hone ke bawajood, ek important optimization hai jo isse itna slow hone se
+        bachati hai: <strong>KV cache (Key-Value cache)</strong>. Yahan poori attention math nahi karenge —
+        sirf itna samajhna kaafi hai jo tumhare engineering decisions ko inform kare:
+      </p>
+      <ul>
+        <li>
+          Har token ko process karte waqt, model kuch internal tensors compute karta hai (called "keys" aur
+          "values") jo represent karte hain "ye token kis cheez ke baare mein hai". Agar model naya token
+          generate kare aur usse pichhle saare tokens ke liye ye tensors <em>dobara</em> compute karne pade,
+          decode extremely slow ho jaata.
+        </li>
+        <li>
+          Isliye model in key/value tensors ko <strong>cache</strong> kar leta hai jaise-jaise woh process
+          hote hain — pehli baar compute karo, GPU memory mein store kar do, aur agle token ke liye reuse
+          karo. Har naye token ke liye sirf <em>us naye token</em> ke liye key/value compute karna padta hai,
+          poore conversation ke liye nahi.
+        </li>
+        <li>
+          Yahi mechanism hai jo <strong>conversation history reuse</strong> ko practically fast banata hai —
+          agar tum ek multi-turn conversation continue kar rahe ho, provider (agar wo cache retain karta hai)
+          ko poori history dobara "samajhni" nahi padti processing ke terms mein.
+        </li>
+        <li>
+          Engineering-relevant side-effect: KV cache GPU memory consume karta hai, aur uska size context
+          length ke proportional hai. Yahi ek reason hai ki lambi context windows provider-side pe expensive
+          hoti hain — sirf "compute" nahi, memory bhi bottleneck banta hai. Ye tumhare liye directly relevant
+          hai kyunki providers isi wajah se lambe context requests ko zyada charge karte hain aur/ya lower
+          rate limits dete hain.
+        </li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Itna hi samajhna kaafi hai</div>
+        <p>
+          Tumhe KV cache ki exact math (attention formula) implement nahi karni — tum inference engine nahi
+          bana rahe. Bas ye samajhna hai: <strong>"already-processed tokens ka result reusable hai, isliye
+          repeated prefixes ko cache karna latency aur cost dono bachata hai"</strong> — aur yahi principle
+          agle section, prompt caching, ka foundation hai.
+        </p>
+      </div>
+
+      <h2 id="prompt-caching">Prompt Caching — Real Latency + Cost Win</h2>
+      <p>
+        Major provider APIs (Anthropic prompt caching, OpenAI ka automatic prefix caching) ne KV cache ke
+        isi idea ko ek client-facing feature bana diya hai. Agar tumhari app baar-baar ek <strong>same
+        prefix</strong> bhejti hai (ek lamba system prompt, tool definitions, ya ek RAG document jo multiple
+        queries ke liye reuse hota hai), provider us prefix ka KV-state cache kar sakta hai request-to-request
+        — matlab agli baar wahi prefix aane pe, provider ko usse dobara prefill (process) nahi karna padta.
+      </p>
+      <p>
+        Ye dono cheezein deta hai: <strong>latency</strong> (cached prefix ka prefill time skip ho jaata hai
+        — bade system prompts ke liye ye seconds bacha sakta hai) aur <strong>cost</strong> (cached input
+        tokens providers typically bahot kam rate pe charge karte hain, kabhi-kabhi ~90% discount).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">prompt_caching.py — Anthropic-style API mein cacheable system prompt block<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># prompt_caching.py — reusable large system prompt ko cache-marked block ke saath bhejna</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># anthropic ka official Python SDK import karo</span>
+
+<span class="tok-com"># client — API key env var se automatically pick ho jaati hai (ANTHROPIC_API_KEY)</span>
+client = anthropic.Anthropic()  <span class="tok-com"># Anthropic client instance banao</span>
+
+<span class="tok-com"># LARGE_SYSTEM_PROMPT — ye har request mein same rehta hai (tool defs, instructions, style guide)</span>
+<span class="tok-com"># isko baar-baar prefill karna wasteful hai, isliye ise cache-mark karenge</span>
+LARGE_SYSTEM_PROMPT = <span class="tok-str">"""You are a customer support assistant for Acme Corp...
+... (lamba, detailed, 2000+ token system prompt, jo shayad hi kabhi change hota hai) ...
+"""</span>  <span class="tok-com"># multi-line string mein poora stable system prompt</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">ask_with_cached_prompt</span>(user_message: <span class="tok-kw">str</span>) -> <span class="tok-kw">str</span>:
+    <span class="tok-com"># ask_with_cached_prompt — user query bhejta hai, system prompt ko cache-eligible mark karke</span>
+    response = client.messages.<span class="tok-fn">create</span>(
+        model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># jo bhi model use kar rahe ho</span>
+        max_tokens=<span class="tok-num">1024</span>,  <span class="tok-com"># output ko bounded rakho — decode time bachane ke liye</span>
+        system=[  <span class="tok-com"># system prompt ko ek list of blocks ke roop mein bhejo (string ki jagah)</span>
+            {
+                <span class="tok-str">"type"</span>: <span class="tok-str">"text"</span>,  <span class="tok-com"># block ka type — plain text content</span>
+                <span class="tok-str">"text"</span>: LARGE_SYSTEM_PROMPT,  <span class="tok-com"># wahi stable, lamba system prompt daalo</span>
+                <span class="tok-str">"cache_control"</span>: {<span class="tok-str">"type"</span>: <span class="tok-str">"ephemeral"</span>}  <span class="tok-com"># is block ko cache karne ke liye mark karo</span>
+            }
+        ],
+        messages=[
+            {<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_message}  <span class="tok-com"># actual per-request user query — ye change hota rehta hai</span>
+        ],
+    )
+    <span class="tok-com"># agli calls mein agar system prompt exactly same rahe, provider cached KV-state reuse karega</span>
+    <span class="tok-com"># — prefill skip, latency kam, aur cached input tokens sasti rate pe charge hote hain</span>
+    <span class="tok-kw">return</span> response.content[<span class="tok-num">0</span>].text  <span class="tok-com"># model ka text response return karo</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Don't cache aggressively without an invalidation strategy</div>
+        <p>
+          Prompt caching sirf tab kaam karta hai jab prefix <strong>exactly</strong> same rahe — ek single
+          character change bhi cache miss cause kar sakta hai. Ye especially RAG-heavy apps mein risky hai
+          jahan tum retrieved documents ko cacheable block mein daalne ka soch sakte ho — agar underlying
+          document set change hota rehta hai (naye documents add ho rahe hain, purane update ho rahe hain),
+          tumhara "cached context" stale ho sakta hai, ya cache hit rate itna low ho jaayega ki caching se
+          koi fayda hi nahi milega. Rule of thumb: <strong>sirf genuinely stable prefixes cache karo</strong>
+          (system prompts, tool definitions, static style guides) — dynamic, frequently-changing content
+          (fresh retrieval results, real-time data) ko cache-marked block mein mat daalo, aur agar cache
+          karna hi hai to explicit TTL/invalidation strategy define karo.
+        </p>
+      </div>
+
+      <h2 id="streaming">Streaming — Perceived Latency Ka Trick</h2>
+      <p>
+        Chapter 11 mein humne streaming ko architecture ke level pe touch kiya tha — yahan iska latency
+        angle samjhte hain. Streaming <strong>total generation time ko change nahi karta</strong> — agar
+        model ko 500 tokens generate karne mein 5 seconds lagte hain, streaming ke saath bhi 5 seconds hi
+        lagenge. Jo change hota hai wo hai <strong>perceived latency</strong> — user ko pehla token dikhna
+        shuru ho jaata hai TTFT ke baad hi (typically sub-second se 1-2 second), poore response ka wait
+        karne ke bajaye.
+      </p>
+      <p>
+        Psychologically ye bahot bada difference hai — ek user jo dekh raha hai text progressively appear
+        ho raha hai, feel karta hai system "kaam kar raha hai" aur responsive hai, jabki wahi user agar
+        5 second blank screen dekhe (fir poora response ek saath aaye), usse system "hung" ya "slow" lagta
+        hai — chahe total time same ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">stream_to_client.py — LLM stream consume karke SSE ke through client ko forward karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># stream_to_client.py — FastAPI endpoint jo LLM se stream leke SSE format mein client ko bhejta hai</span>
+<span class="tok-kw">from</span> fastapi <span class="tok-kw">import</span> FastAPI  <span class="tok-com"># FastAPI framework import karo</span>
+<span class="tok-kw">from</span> fastapi.responses <span class="tok-kw">import</span> StreamingResponse  <span class="tok-com"># chunked response bhejne ke liye class</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># Anthropic SDK import karo</span>
+
+app = FastAPI()  <span class="tok-com"># FastAPI app instance banao</span>
+client = anthropic.Anthropic()  <span class="tok-com"># Anthropic client instance banao</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">event_generator</span>(user_message: <span class="tok-kw">str</span>):
+    <span class="tok-com"># event_generator — LLM se token-by-token aane wale chunks ko SSE events mein convert karta hai</span>
+    <span class="tok-kw">with</span> client.messages.<span class="tok-fn">stream</span>(  <span class="tok-com"># streaming mode mein API call kholo (context manager)</span>
+        model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># model choose karo</span>
+        max_tokens=<span class="tok-num">1024</span>,  <span class="tok-com"># output length bound karo — rambling se decode time waste na ho</span>
+        messages=[{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_message}],  <span class="tok-com"># user ka query bhejo</span>
+    ) <span class="tok-kw">as</span> stream:  <span class="tok-com"># stream object ko 'stream' naam do</span>
+        <span class="tok-kw">for</span> text_chunk <span class="tok-kw">in</span> stream.text_stream:  <span class="tok-com"># jaise-jaise naye tokens/chunks aate hain, loop karo</span>
+            <span class="tok-kw">yield</span> <span class="tok-str">f"data: {text_chunk}\n\n"</span>  <span class="tok-com"># SSE format — 'data: ' prefix aur double newline terminator</span>
+    <span class="tok-kw">yield</span> <span class="tok-str">"event: done\ndata: [DONE]\n\n"</span>  <span class="tok-com"># stream khatam hone pe ek explicit 'done' event bhejo</span>
+
+<span class="tok-fn">@app.post</span>(<span class="tok-str">"/chat/stream"</span>)  <span class="tok-com"># POST route define karo jo streaming response degi</span>
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">chat_stream</span>(user_message: <span class="tok-kw">str</span>):
+    <span class="tok-com"># chat_stream — endpoint handler jo event_generator ko StreamingResponse mein wrap karta hai</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">StreamingResponse</span>(
+        event_generator(user_message),  <span class="tok-com"># generator function pass karo jo chunks yield karega</span>
+        media_type=<span class="tok-str">"text/event-stream"</span>,  <span class="tok-com"># browser ko batao ye SSE stream hai (EventSource API compatible)</span>
+    )
+    <span class="tok-com"># client-side EventSource ya fetch+ReadableStream se ye chunks progressively receive karega</span>
+    <span class="tok-com"># — user ko pehla token TTFT ke turant baad dikhega, poore response ka wait nahi karna padega</span>
+</code></pre>
+      </div>
+
+      <h2 id="batching">Provider-Side Batching Aur Iska Tumpe Impact</h2>
+      <p>
+        Since tum khud inference host nahi kar rahe (chapter scope ke hisaab se), provider apne GPUs pe
+        multiple concurrent requests ko <strong>batch</strong> karta hai — matlab ek saath kai users ke
+        requests ek GPU pass mein process ho jaate hain, kyunki GPU compute mostly memory-bandwidth-bound
+        hota hai aur batching throughput ko dramatically improve karta hai (per-request cost bhi kam hota
+        hai).
+      </p>
+      <p>
+        Ye tumhare liye practical implication rakhta hai, chahe tum batching khud implement nahi kar rahe:
+      </p>
+      <ul>
+        <li>
+          <strong>Rate limits</strong> — providers rate limits (requests/min, tokens/min) is liye enforce
+          karte hain taaki unka batching aur capacity planning predictable rahe. Ye tumhari app ke liye ek
+          hard constraint hai jo tumhe design mein account karna hoga.
+        </li>
+        <li>
+          <strong>Bursty traffic tumhari khud ki latency ko degrade kar sakta hai</strong> — agar tum
+          suddenly 100 requests ek saath fire karte ho (e.g., ek batch job, ya ek viral traffic spike), tum
+          rate limit errors (HTTP 429) hit karoge, jo retries trigger karega, jo further latency add karega
+          — ek cascading slowdown.
+        </li>
+        <li>
+          Isliye recommendation ye hai: <strong>apne side pe explicit request queuing/backpressure
+          implement karo</strong> — bajaye ki har incoming request seedha provider ko fire ho, ek queue
+          (jaise Redis-backed job queue, ya simple in-process semaphore) se concurrency ko bound karo, taaki
+          tum apni khud ki traffic ko provider ke rate limits ke andar smooth rakho, aur users ko graceful
+          "queued" state dikha sako bajaye raw 429 errors ke.
+        </li>
+      </ul>
+
+      <h2 id="app-levers">Apne App-Level Scaling Levers</h2>
+      <p>
+        Ye section sabse actionable hai — kyunki inference internals (KV cache, batching) provider control
+        karta hai, lekin ye levers poori tarah <strong>tumhare</strong> control mein hain:
+      </p>
+      <ol>
+        <li>
+          <strong>Full response caching (semantic, not just exact-match)</strong> — agar users similar
+          queries baar-baar poochhte hain ("refund policy kya hai?", "how do I get a refund?"), exact-string
+          matching cache miss dega, lekin embeddings ke through semantic similarity check karke tum cache hit
+          paa sakte ho. Full implementation neeche <a href="#semantic-cache">Practical Code</a> section mein
+          hai.
+        </li>
+        <li>
+          <strong>Independent LLM/tool calls ko parallelize karo</strong> — agar tumhare pipeline mein
+          multiple independent steps hain (e.g., 3 alag retrieval sources query karna), unhe sequential
+          <code>await</code> se chalane ki jagah <code>asyncio.gather()</code> se parallel chalao. Sequential
+          teen 500ms calls = 1.5s; parallel teeno = ~500ms.
+        </li>
+        <li>
+          <strong>Speculative/optimistic UI patterns</strong> — jab tak final LLM response stream ho raha hai,
+          jo cheezein already available hain (jaise RAG se retrieved source documents) unhe turant dikha do
+          UI mein — "Sources" panel turant populate karo, "Answer" panel streaming ke saath fill ho. User ko
+          feel hota hai system already kaam kar raha hai.
+        </li>
+        <li>
+          <strong>Model tiering/routing</strong> — jaisa chapter 10 mein cover kiya, simple/routine requests
+          ko chhote, faster models pe route karo (jinka TTFT aur decode dono fast hote hain), aur complex
+          requests hi bade models tak jaane do. Ye latency aur cost dono ek saath improve karta hai.
+        </li>
+        <li>
+          <strong>Prompt size reduce karo</strong> — prefill time (aur cost) input tokens ke proportional
+          scale karta hai. Unnecessary context trim karo, purani conversation history ko summarize karo
+          (chapter 9 ke memory techniques use karke), aur sirf relevant RAG chunks bhejo — bloat directly
+          latency mein translate hota hai.
+        </li>
+        <li>
+          <strong>Appropriate <code>max_tokens</code> set karo</strong> — decode sequential hai, isliye
+          model ko rambling se roko. Agar tumhe pata hai response ~200 tokens ka hona chahiye, <code>max_tokens</code>
+          ko unbounded (jaise 4096 default) chhodna galat hai — model rambling continue kar sakta hai aur
+          decode time waste karta hai (aur tokens ke liye tum charge bhi ho rahe ho).
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-title">parallel_retrieval.py — sequential awaits ko asyncio.gather se parallelize karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># parallel_retrieval.py — teen independent retrieval sources ko parallel query karna</span>
+<span class="tok-kw">import</span> asyncio  <span class="tok-com"># asyncio import karo concurrent coroutines chalane ke liye</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">query_vector_db</span>(query: <span class="tok-kw">str</span>) -> <span class="tok-kw">list</span>:
+    <span class="tok-com"># query_vector_db — vector database se semantic matches fetch karta hai (async I/O call)</span>
+    <span class="tok-kw">await</span> asyncio.<span class="tok-fn">sleep</span>(<span class="tok-num">0.4</span>)  <span class="tok-com"># simulate karo ki ye network call 400ms leti hai</span>
+    <span class="tok-kw">return</span> [<span class="tok-str">"doc_a"</span>, <span class="tok-str">"doc_b"</span>]  <span class="tok-com"># retrieved documents return karo</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">query_sql_db</span>(query: <span class="tok-kw">str</span>) -> <span class="tok-kw">list</span>:
+    <span class="tok-com"># query_sql_db — structured data source se relevant rows fetch karta hai</span>
+    <span class="tok-kw">await</span> asyncio.<span class="tok-fn">sleep</span>(<span class="tok-num">0.3</span>)  <span class="tok-com"># simulate karo ki ye call 300ms leti hai</span>
+    <span class="tok-kw">return</span> [<span class="tok-str">"row_1"</span>]  <span class="tok-com"># retrieved rows return karo</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">query_web_search</span>(query: <span class="tok-kw">str</span>) -> <span class="tok-kw">list</span>:
+    <span class="tok-com"># query_web_search — external web search tool call karta hai</span>
+    <span class="tok-kw">await</span> asyncio.<span class="tok-fn">sleep</span>(<span class="tok-num">0.5</span>)  <span class="tok-com"># simulate karo ki ye call 500ms leti hai (sabse slow)</span>
+    <span class="tok-kw">return</span> [<span class="tok-str">"result_x"</span>]  <span class="tok-com"># search results return karo</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">gather_context_slow</span>(query: <span class="tok-kw">str</span>):
+    <span class="tok-com"># gather_context_slow — ANTI-PATTERN: sequential awaits, total time = 0.4+0.3+0.5 = 1.2s</span>
+    a = <span class="tok-kw">await</span> <span class="tok-fn">query_vector_db</span>(query)  <span class="tok-com"># pehle vector db ka wait karo</span>
+    b = <span class="tok-kw">await</span> <span class="tok-fn">query_sql_db</span>(query)  <span class="tok-com"># fir sql db ka wait karo (a khatam hone ke baad hi shuru hua)</span>
+    c = <span class="tok-kw">await</span> <span class="tok-fn">query_web_search</span>(query)  <span class="tok-com"># fir web search ka wait karo (b khatam hone ke baad)</span>
+    <span class="tok-kw">return</span> a + b + c  <span class="tok-com"># saare results combine karke return karo</span>
+
+<span class="tok-kw">async</span> <span class="tok-kw">def</span> <span class="tok-fn">gather_context_fast</span>(query: <span class="tok-kw">str</span>):
+    <span class="tok-com"># gather_context_fast — CORRECT: teeno independent calls ko parallel chalao</span>
+    a, b, c = <span class="tok-kw">await</span> asyncio.<span class="tok-fn">gather</span>(  <span class="tok-com"># asyncio.gather saare coroutines ko concurrently schedule karta hai</span>
+        <span class="tok-fn">query_vector_db</span>(query),  <span class="tok-com"># in teeno mein koi dependency nahi, isliye parallel chal sakte hain</span>
+        <span class="tok-fn">query_sql_db</span>(query),  <span class="tok-com"># dusra independent call</span>
+        <span class="tok-fn">query_web_search</span>(query),  <span class="tok-com"># teesra independent call</span>
+    )  <span class="tok-com"># total time = max(0.4, 0.3, 0.5) = 0.5s — 2.4x faster than sequential</span>
+    <span class="tok-kw">return</span> a + b + c  <span class="tok-com"># saare results combine karke return karo</span>
+</code></pre>
+      </div>
+
+      <h2 id="horizontal">Apne Backend Ka Horizontal Scaling</h2>
+      <p>
+        Ye lever "model latency" se related nahi hai, lekin equally important hai jab traffic badhta hai —
+        <strong>tumhare khud ke backend</strong> ko scale karna, jo requests ko orchestrate karta hai
+        (retrieval, LLM calls, post-processing).
+      </p>
+      <ul>
+        <li>
+          <strong>Stateless services behind a load balancer</strong> — tumhara API layer stateless hona
+          chahiye (session state Redis/DB mein, in-memory nahi) taaki tum horizontally scale kar sako —
+          jitna traffic badhe, utne instances spin up kar do, load balancer requests distribute karega.
+        </li>
+        <li>
+          <strong>Connection pooling to the LLM provider</strong> — har request pe naya HTTP connection
+          establish karna (TLS handshake overhead) wasteful hai. HTTP client libraries (jaise <code>httpx</code>)
+          connection pooling support karti hain — reuse existing connections across requests.
+        </li>
+        <li>
+          <strong>Circuit breakers/timeouts</strong> — agar LLM provider slow ho jaaye ya down ho jaaye,
+          bina timeout ke tumhare backend threads/connections un slow calls pe hang ho jaayenge — ek
+          cascading failure jo poori app ko down kar sakta hai (thread pool exhaustion). Har external call
+          pe explicit timeout lagao, aur circuit breaker pattern use karo (agar failure rate threshold cross
+          kare, temporarily calls fail-fast kar do bajaye retry karte rehne ke) taaki ek slow dependency
+          poore system ko na le doobe.
+        </li>
+      </ul>
+
+      <h2 id="semantic-cache">Practical Code — Semantic Response Cache</h2>
+      <p>
+        Ye is chapter ka main hands-on example hai. Idea simple hai: agar do queries semantically similar
+        hain (chahe exact words alag ho), unke liye same cached response return kar do — LLM call skip karke
+        latency aur cost dono bacha lo.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">semantic_cache.py — embedding-based semantic response cache<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># semantic_cache.py — incoming queries ko embed karke similarity-based cache lookup karna</span>
+<span class="tok-kw">import</span> numpy <span class="tok-kw">as</span> np  <span class="tok-com"># numpy import karo vector math (dot product, norm) ke liye</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># Anthropic SDK import karo LLM call ke liye</span>
+<span class="tok-kw">from</span> openai <span class="tok-kw">import</span> OpenAI  <span class="tok-com"># embeddings ke liye OpenAI client (ya koi bhi embedding provider)</span>
+
+llm_client = anthropic.Anthropic()  <span class="tok-com"># LLM calls ke liye Anthropic client</span>
+embed_client = OpenAI()  <span class="tok-com"># embeddings generate karne ke liye alag client</span>
+
+SIMILARITY_THRESHOLD = <span class="tok-num">0.92</span>  <span class="tok-com"># cosine similarity threshold — isse upar match "same query" mana jaata hai</span>
+
+<span class="tok-com"># _cache — in-memory store: har entry mein {embedding, query_text, response} rehta hai</span>
+<span class="tok-com"># production mein isko Redis/vector DB (Pinecone, pgvector) se replace karo persistence ke liye</span>
+_cache: <span class="tok-kw">list</span>[<span class="tok-kw">dict</span>] = []  <span class="tok-com"># khaali list se shuru karo, requests ke saath grow hoga</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">_embed</span>(text: <span class="tok-kw">str</span>) -> np.ndarray:  <span class="tok-com"># helper: text -> embedding vector</span>
+    <span class="tok-com"># _embed — text ko embedding vector mein convert karta hai (helper function)</span>
+    result = embed_client.embeddings.<span class="tok-fn">create</span>(  <span class="tok-com"># embeddings API call kholo</span>
+        model=<span class="tok-str">"text-embedding-3-small"</span>,  <span class="tok-com"># chhota, fast embedding model — cache lookup ke liye kaafi hai</span>
+        input=text,  <span class="tok-com"># jo text embed karna hai (yahan query)</span>
+    )  <span class="tok-com"># API call ke arguments yahan close ho rahe hain</span>
+    <span class="tok-kw">return</span> np.array(result.data[<span class="tok-num">0</span>].embedding)  <span class="tok-com"># raw embedding list ko numpy array mein convert karke return karo</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">_cosine_similarity</span>(a: np.ndarray, b: np.ndarray) -> <span class="tok-kw">float</span>:  <span class="tok-com"># helper: do vectors ki similarity</span>
+    <span class="tok-com"># _cosine_similarity — do vectors kitne "similar direction" mein hain, 0 se 1 ke beech</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">float</span>(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))  <span class="tok-com"># standard cosine similarity formula</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">_find_cached_response</span>(query_embedding: np.ndarray) -> <span class="tok-kw">str</span> | <span class="tok-kw">None</span>:  <span class="tok-com"># helper: cache lookup</span>
+    <span class="tok-com"># _find_cached_response — cache mein sabse similar past query dhoondta hai</span>
+    best_score = <span class="tok-num">0.0</span>  <span class="tok-com"># ab tak ka best similarity score track karo</span>
+    best_response = <span class="tok-kw">None</span>  <span class="tok-com"># corresponding cached response track karo</span>
+    <span class="tok-kw">for</span> entry <span class="tok-kw">in</span> _cache:  <span class="tok-com"># cache ke har entry pe loop karo (production mein ANN index use karo, linear scan nahi)</span>
+        score = <span class="tok-fn">_cosine_similarity</span>(query_embedding, entry[<span class="tok-str">"embedding"</span>])  <span class="tok-com"># is entry se similarity nikaalo</span>
+        <span class="tok-kw">if</span> score > best_score:  <span class="tok-com"># agar ye ab tak ka best match hai</span>
+            best_score = score  <span class="tok-com"># best_score update karo</span>
+            best_response = entry[<span class="tok-str">"response"</span>]  <span class="tok-com">># corresponding cached response save karo</span>
+    <span class="tok-kw">if</span> best_score >= SIMILARITY_THRESHOLD:  <span class="tok-com"># agar best match threshold se upar hai</span>
+        <span class="tok-kw">return</span> best_response  <span class="tok-com"># cache hit — cached response return karo</span>
+    <span class="tok-kw">return</span> <span class="tok-kw">None</span>  <span class="tok-com"># cache miss — koi close enough match nahi mila</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">ask_with_semantic_cache</span>(query: <span class="tok-kw">str</span>) -> <span class="tok-kw">str</span>:  <span class="tok-com"># main entry point</span>
+    <span class="tok-com"># ask_with_semantic_cache — main entry point: cache check karo, warna LLM call karke cache mein daalo</span>
+    query_embedding = <span class="tok-fn">_embed</span>(query)  <span class="tok-com"># incoming query ko embed karo</span>
+
+    cached = <span class="tok-fn">_find_cached_response</span>(query_embedding)  <span class="tok-com"># cache mein similar query dhoondo</span>
+    <span class="tok-kw">if</span> cached <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:  <span class="tok-com"># agar match mil gaya</span>
+        <span class="tok-kw">return</span> cached  <span class="tok-com"># seedha cached response return karo — koi LLM call nahi, near-zero latency</span>
+
+    <span class="tok-com"># cache miss — ab hi actual LLM call karna padega</span>
+    response = llm_client.messages.<span class="tok-fn">create</span>(  <span class="tok-com"># Anthropic API ko call karo</span>
+        model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># model choose karo</span>
+        max_tokens=<span class="tok-num">1024</span>,  <span class="tok-com"># output length bound karo</span>
+        messages=[{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: query}],  <span class="tok-com">># user ka query bhejo</span>
+    )  <span class="tok-com"># API call arguments yahan close</span>
+    answer = response.content[<span class="tok-num">0</span>].text  <span class="tok-com"># model ka text response nikaalo</span>
+
+    _cache.append({  <span class="tok-com"># is naye query-response pair ko cache mein add karo future lookups ke liye</span>
+        <span class="tok-str">"embedding"</span>: query_embedding,  <span class="tok-com"># future similarity comparisons ke liye embedding store karo</span>
+        <span class="tok-str">"query_text"</span>: query,  <span class="tok-com"># debugging/inspection ke liye original text bhi rakho</span>
+        <span class="tok-str">"response"</span>: answer,  <span class="tok-com">># actual cached response</span>
+    })  <span class="tok-com"># naya cache entry dictionary yahan close hota hai</span>
+    <span class="tok-kw">return</span> answer  <span class="tok-com"># fresh response return karo</span>
+</code></pre>
+      </div>
+      <p>
+        Notice karo: <code>SIMILARITY_THRESHOLD = 0.92</code> ek tuning knob hai — bahot high rakhoge to cache
+        hit rate low hoga (fayda kam), bahot low rakhoge to false-positive matches denge (galat cached answer
+        ek different query ko return ho jaayega). Production mein isko apne actual query distribution pe
+        empirically tune karna padega, aur RAG-based answers ke liye especially conservative rehna chahiye
+        (upar warn callout dekho — underlying data change hone pe cache stale ho sakta hai).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — semantic cache ko RAG ke saath carefully combine karo</div>
+        <p>
+          Agar tumhara response RAG retrieval pe based hai, semantic cache ka response tabhi valid hai jab
+          underlying documents same rahe hon. Practical pattern: cache key mein sirf query embedding nahi,
+          balki <em>retrieved document IDs ka hash</em> bhi shaamil karo — agar retrieval result change ho
+          jaaye (naya document match hua, ya purana update hua), cache automatically invalidate ho jaaye.
+          Isse tum caching ka latency/cost fayda bhi paate ho, aur stale-RAG-answer wala risk bhi avoid
+          karte ho jo warn callout mein discuss kiya gaya tha.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>LLM request latency stages mein break hoti hai — network, queueing, TTFT (prefill), inter-token
+        latency (decode), aur app-level latency (retrieval/tools). Debug karte waqt guess mat karo, har
+        stage individually measure karo.</li>
+        <li>Prefill parallelizable hai (poora input ek saath process), decode sequential hai (har token
+        pichhle pe depend karta hai) — isliye <strong>longer outputs latency ko zyada hurt karte hain
+        compared to longer inputs</strong>.</li>
+        <li>KV cache model ko pehle-processed tokens ke liye recompute karne se bachata hai — ye conversation
+        reuse aur prompt caching dono ka foundation hai, aur context length ke saath memory cost bhi badhata
+        hai.</li>
+        <li>Prompt caching (Anthropic/OpenAI APIs) stable prefixes (system prompts, tool defs) ke liye
+        prefill skip karta hai — bada latency aur cost win, lekin sirf genuinely stable content ke liye,
+        changing RAG context ke liye nahi.</li>
+        <li>Streaming total generation time change nahi karta, sirf perceived latency improve karta hai —
+        user pehla token TTFT ke baad hi dekhna shuru kar deta hai.</li>
+        <li>Provider batching tumhare liye rate limits ka roop leta hai — bursty traffic apni khud ki
+        latency degrade kar sakta hai, isliye apne side pe request queuing/backpressure implement karo.</li>
+        <li>Sabse actionable levers tumhare app ke andar hain: semantic caching, parallel tool/LLM calls
+        (asyncio.gather), speculative UI, model tiering, prompt trimming, aur bounded max_tokens.</li>
+        <li>Apna backend bhi horizontally scale karna padta hai — stateless services, connection pooling,
+        aur circuit breakers/timeouts taaki ek slow LLM call cascading failure na bane.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions — Senior AI Engineer</h2>
+
+      <p><strong>Q1. Prefill aur decode phases mein kya difference hai, aur ye latency ko practically kaise
+      affect karta hai?</strong></p>
+      <p>
+        Prefill mein model poore input prompt ko ek saath process karta hai — ye parallelizable hai kyunki
+        saare input tokens already available hain, GPU unpe ek saath compute kar sakta hai. Decode mein
+        model ek-ek output token generate karta hai, aur har token pichhle saare tokens (input + ab tak
+        generate hue output) pe depend karta hai — ye inherently sequential hai, parallelize nahi ho sakta.
+        Practical implication: longer outputs latency ko token-count ke hisaab se zyada hurt karte hain
+        compared to longer inputs, isliye output length control karna (max_tokens, concise prompting) ek
+        high-leverage latency optimization hai.
+      </p>
+
+      <p><strong>Q2. KV cache kya hai, aur ye engineering decisions ko kaise inform karta hai (bina attention
+      math mein jaaye)?</strong></p>
+      <p>
+        KV cache model ke internal key/value tensors ko store karta hai jaise-jaise tokens process hote hain,
+        taaki agle token generate karte waqt unhe dobara compute na karna pade — sirf naye token ke liye
+        compute hota hai. Iska engineering-relevant implication: (1) repeated prefixes (system prompts,
+        conversation history) ko cache karna fast hai kyunki underlying KV-state reusable hai — yahi prompt
+        caching ka foundation hai; (2) context length ke saath KV cache ka memory footprint bhi badhta hai,
+        isliye providers lambi context windows ko zyada expensive/rate-limited rakhte hain.
+      </p>
+
+      <p><strong>Q3. Prompt caching kab use karni chahiye, aur kab NAHI karni chahiye?</strong></p>
+      <p>
+        Prompt caching tab use karo jab tumhare paas ek genuinely stable prefix ho jo repeatedly reuse hota
+        hai — large system prompts, tool definitions, static style guides. Ye prefill time skip karta hai
+        (latency win) aur cached tokens ko discounted rate pe charge karta hai (cost win). NAHI use karni
+        chahiye jab content frequently change ho — jaise dynamic RAG retrieval results jo underlying
+        document set ke saath badalte rehte hain, kyunki ek single character change bhi cache miss cause
+        karta hai, aur agar tum stale content ko galti se cache-marked block mein daalo, wo ek staleness
+        risk create karta hai (purana context serve ho sakta hai).
+      </p>
+
+      <p><strong>Q4. Streaming latency ko "improve" karta hai — kya isme koi nuance hai?</strong></p>
+      <p>
+        Streaming total generation time ko change NAHI karta — agar model ko poora response generate karne
+        mein 5 seconds lagte hain, streaming ke saath bhi utna hi time lagega. Jo change hota hai wo hai
+        <em>perceived</em> latency — user pehla token TTFT ke turant baad dekhna shuru kar deta hai, poore
+        response ka wait karne ke bajaye. Ye psychologically bahot bada difference hai kyunki progressive
+        text appearance user ko "system kaam kar raha hai" feel karwaata hai, jabki blank-screen-then-full-
+        response pattern "hung/slow" feel karwaata hai — chahe total time same ho.
+      </p>
+
+      <p><strong>Q5. Tumhari app pe traffic spike aata hai aur latency degrade ho jaati hai. LLM provider ka
+      fault nahi hai (unka status page green hai) — root cause kya ho sakta hai, aur kaise fix karoge?</strong></p>
+      <p>
+        Likely cause: provider apne side pe concurrent requests batch karta hai aur rate limits enforce
+        karta hai capacity planning ke liye — bursty traffic se tum rate limit errors (429) hit kar sakte ho,
+        jo retries trigger karta hai aur latency ko cascade karta hai. Fix: apne side pe explicit request
+        queuing/backpressure implement karo (jaise concurrency-bounded queue) taaki provider ko bheji jaane
+        wali traffic smooth rahe, apne backend mein circuit breakers/timeouts lagao taaki slow calls thread/
+        connection exhaustion cause na karein, aur load balancer ke peeche stateless horizontally-scaled
+        services rakho taaki apna khud ka backend bottleneck na bane.
+      </p>
+
+      <div class="prevnext">
+        <a href="11-system-design.html">
+          <div class="label">← Previous</div>
+          <div class="title">System Design for AI Products</div>
+        </a>
+        <a class="next" href="13-production-hardening.html">
+          <div class="label">Next →</div>
+          <div class="title">Production Hardening</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

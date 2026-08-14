@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Internals for Engineers — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link active" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 2</div>
+      <div class="progress-pill">2 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Tokenization · Embeddings · Context Window · Inference</span>
+      <h1>LLM Internals for Engineers</h1>
+      <p class="subtitle">
+        Ye chapter LLM ke andar "training kaise hoti hai" wala rabbit-hole nahi hai — wo ML Engineer ka
+        scope hai, humara nahi. Yahan sirf utna internals cover karenge jitna ek AI Engineer ko chahiye
+        taaki wo samajh sake ki jab tum prompt bhejte ho to model ke andar actually kya ho raha hai —
+        taaki tumhare API calls, context window budgeting, aur cost estimates <em>informed decisions</em>
+        hon, blind guesswork nahi.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#tokenization">1. Tokenization — Model Raw Text Nahi Dekhta</a></li>
+          <li><a href="#embeddings">2. Embeddings — Meaning Ko Coordinates Mein Convert Karna</a></li>
+          <li><a href="#context-window">3. Context Window — Model Ki "Working Memory"</a></li>
+          <li><a href="#inference">4. Inference — Response Kaise Generate Hota Hai</a></li>
+          <li><a href="#sampling-params">5. Sampling Params Jo Engineers Actually Touch Karte Hain</a></li>
+          <li><a href="#streaming">6. Streaming Responses — Token-by-Token Output</a></li>
+          <li><a href="#takeaways">7. Key Takeaways</a></li>
+          <li><a href="#interview">8. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="tokenization">Tokenization — Model Raw Text Nahi Dekhta</h2>
+      <p>
+        Sabse pehli galat-fehmi jo naye AI Engineers rakhte hain: "model mere sentence ke letters ya
+        words padhta hai." Aisa nahi hota. LLM ke andar sirf ek cheez chalti hai — <strong>numbers</strong>.
+        Tumhara input text pehle ek <strong>tokenizer</strong> se guzarta hai jo text ko chhote-chhote
+        chunks (tokens) mein todta hai, aur har token ko ek integer ID assign karta hai. Model sirf in
+        integer IDs ki sequence dekhta hai, kabhi raw characters nahi.
+      </p>
+      <p>
+        Modern LLMs (GPT, Claude, Llama sab) <strong>subword tokenization</strong> use karte hain — usually
+        BPE (Byte-Pair Encoding) ya isi family ka koi variant. Idea simple hai: common words ek single
+        token ban jaate hain, lekin rare/complex words multiple sub-word pieces mein toot jaate hain. Isse
+        tokenizer ka vocabulary chhota reh sakta hai (~50k-100k tokens) jabki koi bhi arbitrary word — chahe
+        wo dictionary mein ho ya na ho — represent kiya ja sake, kyunki worst case mein word letter-level
+        tak bhi break ho sakta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Ek practical example — sentence tokens mein kaise toot-ta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ye purely illustrative hai — exact split model/tokenizer ke hisaab se vary karta hai</span>
+<span class="tok-com">// Input sentence: "Unbelievably, tokenization affects your API cost."</span>
+
+<span class="tok-com">// Common/short words aksar ek hi token ban jaate hain:</span>
+<span class="tok-com">// "affects" -> [" affects"]        (1 token)</span>
+<span class="tok-com">// "your"    -> [" your"]           (1 token)</span>
+<span class="tok-com">// "cost"    -> [" cost"]           (1 token)</span>
+
+<span class="tok-com">// Rare/long/compound words multiple sub-word pieces mein todte hain:</span>
+<span class="tok-com">// "Unbelievably" -> ["Un", "believ", "ably"]   (~3 tokens)</span>
+<span class="tok-com">// "tokenization" -> ["token", "ization"]        (~2 tokens)</span>
+
+<span class="tok-com">// Punctuation apna alag token hota hai:</span>
+<span class="tok-com">// "," -> [","]   "." -> ["."]</span>
+
+<span class="tok-com">// Total: ek 8-word English sentence roughly 10-12 tokens ban sakta hai,</span>
+<span class="tok-com">// word-count se hamesha thoda zyada — ye hi rule-of-thumb hai jo cost estimate ke kaam aata hai</span>
+</code></pre>
+      </div>
+
+      <p>
+        Rule-of-thumb jo production mein kaam aata hai: English text ke liye roughly
+        <strong>1 token ≈ 4 characters</strong>, ya <strong>1 token ≈ 0.75 words</strong>. Non-English
+        languages (especially Hindi, Chinese, Japanese) mein ye ratio kaafi worse ho sakta hai — same
+        meaning ke liye zyada tokens lagte hain, kyunki tokenizer vocabulary mostly English-heavy corpus pe
+        train hota hai. Iska direct matlab hai ki agar tumhara product multi-lingual hai, tumhara per-request
+        cost aur context usage language ke hisaab se significantly vary karega.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Token count estimate karo, guess mat karo</div>
+        <p>
+          Production mein cost aur context-limit dono <strong>token count</strong> pe based hote hain, character
+          count pe nahi. Kabhi bhi "text.length / 4" jaisa rough hack production billing ke liye use mat karo —
+          ye systematically wrong hoga especially code, non-English text, ya JSON-heavy payloads ke liye (jinme
+          symbols/whitespace ka density alag hota hai). Har provider ka apna official tokenizer library hota hai
+          (OpenAI ka <code>tiktoken</code>, Anthropic ke paas token-counting API endpoint hai) — request bhejne
+          se <em>pehle</em> usi se count karo, taaki tumhe pata ho request context window mein fit hoga ya nahi,
+          aur tumhara cost dashboard accurate ho. Ye ek chhota utility function hai jo agar skip kiya to production
+          mein silently galat billing estimates aur unexpected 400 errors (context overflow) dega.
+        </p>
+      </div>
+
+      <h2 id="embeddings">Embeddings — Meaning Ko Coordinates Mein Convert Karna</h2>
+      <p>
+        Ek baar text tokenized ho jaaye, model internally har token ko ek <strong>vector embedding</strong>
+        mein convert karta hai — matlab numbers ki ek list (jaise 1536 ya 3072 numbers ka array), jo us
+        token/phrase ke "meaning" ko multi-dimensional space mein ek <strong>coordinate</strong> ki tarah
+        represent karta hai. Isko training math ke bina bhi samajhna easy hai agar tum ek analogy use karo:
+        socho har word/sentence ek city hai, aur embedding uska GPS coordinate hai. Cities jo semantically
+        similar hain (jaise "dog" aur "puppy"), unke coordinates bhi ek-dusre ke <strong>paas</strong>
+        hote hain us space mein. Cities jo unrelated hain (jaise "dog" aur "quarterly revenue"), unke
+        coordinates door hote hain.
+      </p>
+      <p>
+        Is property ka naam hai <strong>semantic similarity</strong> — do embeddings jitne "close" hote
+        hain (usually cosine similarity ya dot-product se measure kiya jaata hai), unka meaning utna hi
+        similar hota hai, chahe unke actual words/characters completely different hon. Yahi wo property hai
+        jo aage chapter 4 (RAG) mein critical banegi: agar tumhe apne knowledge base se "user ke sawaal se
+        related documents" dhoondhne hain, tum keyword match pe depend nahi karte — tum query aur documents
+        dono ko embeddings mein convert karte ho aur "nearest" vectors dhoondhte ho. Isi wajah se RAG
+        systems synonyms aur paraphrases bhi samajh paate hain, exact keyword match ki zaroorat nahi hoti.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Do alag cheezein hain — internal embeddings vs embedding API</div>
+        <p>
+          LLM ke andar jo embeddings generate hote hain (tokens ko vectors mein convert karna), wo model ke
+          internal working ka part hain — tum unhe directly access nahi karte. Jab AI Engineers "embeddings"
+          bolte hain (jaise RAG context mein), wo usually alag se ek <strong>embedding model</strong> (jaise
+          OpenAI's <code>text-embedding-3</code> ya similar) ko call kar rahe hote hain jo specifically iss
+          kaam ke liye design hua hai — text lo, ek fixed-size vector wapas do, jo phir vector database mein
+          store/search kiya ja sake. Concept same hai (meaning → coordinates), lekin ye ek separate,
+          purpose-built API call hai jo tum khud invoke karte ho. Detail chapter 4 mein.
+        </p>
+      </div>
+
+      <h2 id="context-window">Context Window — Model Ki "Working Memory"</h2>
+      <p>
+        <strong>Context window</strong> = maximum number of tokens jo model ek single request mein
+        "attend" kar sakta hai — aur important baat, ye <strong>input + output dono combined</strong> hota
+        hai, sirf input nahi. Agar model ka context window 128K tokens hai, aur tumne 120K tokens ka input
+        bheja, model ke paas response generate karne ke liye sirf ~8K tokens ka room bacha — agar tumne
+        <code>max_tokens</code> usse zyada set kiya, ya to request reject hogi ya response beech mein cut
+        jaayega.
+      </p>
+      <p>
+        Ye engineers ke liye kai practical consequences create karta hai. Pehla — tum ek poora 300-page PDF
+        "dump" nahi kar sakte kisi bhi prompt mein aur assume nahi kar sakte ki sab kaam karega; agar wo
+        PDF context window se bada hai, tumhe ya to <strong>chunk</strong> karna padega (RAG-style retrieval,
+        chapter 4) ya <strong>summarize</strong> karke condense karna padega. Doosra — long conversations
+        (chatbots, agents) mein har naya message purana poora conversation history bhi carry karta hai
+        (jab tak explicit trimming na ho) — isliye lambi conversations eventually context limit hit karti
+        hain, aur tumhe strategy chahiye: purane messages summarize karo, ya sirf recent N messages rakho,
+        ya important facts ko separately "memory" mein store karo (detail chapter 9).
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Model Family (illustrative class)</th><th>Rough Context Window Range</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>GPT-4.1 / GPT-4o class</td><td>~128K tokens (kuch variants 1M tak)</td><td>Exact number model version ke hisaab se badalta rehta hai</td></tr>
+          <tr><td>Claude Sonnet / Opus class</td><td>~200K tokens</td><td>Kuch offerings mein extended context bhi available hota hai</td></tr>
+          <tr><td>Gemini 1.5 / 2.x class</td><td>~1M tokens (kuch variants 2M tak)</td><td>Sabse bade context windows offer karne wali family rahi hai</td></tr>
+          <tr><td>Llama 3.x class</td><td>~128K tokens</td><td>Self-hosted open models, version ke hisaab se vary karta hai</td></tr>
+          <tr><td>Mistral (large/medium class)</td><td>~32K–128K tokens</td><td>Model size aur version ke hisaab se range wide hai</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Ye numbers <strong>approximate aur illustrative</strong> hain — providers har kuch mahine mein
+        context windows badalte/badhaate rehte hain, isliye production code mein kabhi bhi hard-coded
+        context limit assume mat karo; hamesha current model docs check karo ya provider ke API se
+        limit query karo.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Context overflow "silently" bhi fail ho sakta hai</div>
+        <p>
+          Kuch providers/SDKs context limit exceed hone pe clean error return karte hain, lekin kai real
+          setups mein — especially jab tum khud history trim kar rahe ho, ya ek middleware/proxy layer use
+          kar rahe ho — overflow silently truncate ho sakta hai (purane messages ya document ka beginning
+          drop ho jaata hai bina kisi warning ke). Agar tumhara RAG ya agent system bade context ke saath
+          kaam karta hai, hamesha explicitly token count karo request bhejne se pehle, aur agar limit ke paas
+          ho to proactively trim/summarize karo — model ke "silent truncation" pe bharosa mat karo, kyunki
+          usme tumhara sabse important context (jaise system prompt ya latest user message) galat jagah se
+          kat sakta hai.
+        </p>
+      </div>
+
+      <h2 id="inference">Inference — Response Kaise Generate Hota Hai</h2>
+      <p>
+        Jab tum ek prompt bhejte ho, model <strong>autoregressive</strong> tareeke se response generate
+        karta hai — matlab ek time pe sirf <strong>ek next token predict karta hai</strong>, phir usi
+        predicted token ko apne input mein add karke agla token predict karta hai, aur ye loop chalti
+        rehti hai jab tak model ek "stop" condition hit na kare (jaise ek special end-of-turn token, ya
+        koi explicit stop sequence, ya max_tokens limit). Har step pe model actually poori vocabulary
+        (saare possible tokens) ke upar ek probability distribution generate karta hai — "agla token X hone
+        ka probability 40%, Y hone ka 12%, Z hone ka 8%..." — aur phir ek token us distribution se select
+        kiya jaata hai.
+      </p>
+      <p>
+        Ye "select kaise kiya jaata hai" wala part hi hai jise engineers control kar sakte hain via sampling
+        parameters — aur yahi practically sabse important part hai is chapter ka, kyunki ye tumhare API
+        calls mein directly dikhta hai.
+      </p>
+
+      <h2 id="sampling-params">Sampling Params Jo Engineers Actually Touch Karte Hain</h2>
+      <ul>
+        <li><strong>temperature</strong> — kitna "randomness" allow karni hai token selection mein. Low
+        (0–0.3) = deterministic/focused, factual/structured tasks ke liye achha (data extraction, code).
+        High (0.7–1.0+) = zyada creative/varied, brainstorming ya creative writing ke liye achha.</li>
+        <li><strong>top_p</strong> (nucleus sampling) — sirf un top tokens mein se choose karo jinka
+        cumulative probability top_p tak add ho (jaise 0.9 = top 90% probability mass wale tokens hi
+        consider honge, lambi tail ke rare/weird tokens discard). Aksar temperature ke saath ya uske
+        alternative ke roop mein use hota hai — dono ek saath aggressively tune karna generally avoid
+        kiya jaata hai.</li>
+        <li><strong>max_tokens</strong> — response mein kitne tokens tak generate karne hain, upper limit.
+        Cost aur latency dono control karta hai (zyada tokens = zyada cost, zyada wait time) — aur agar
+        response naturally isse zyada lamba hota, wo beech mein cut ho jaata hai.</li>
+        <li><strong>stop sequences</strong> — specific strings jo mile to model turant generation rok deta
+        hai. Structured output parsing mein useful — jaise agar tum <code>"\n\n"</code> ko stop sequence
+        banao taaki model ek hi paragraph ke baad ruk jaaye.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">chat_completion_example.py — sampling params explicitly set karke ek call<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># chat_completion_example.py — Anthropic-style chat completion call, sampling params ke saath</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># official Anthropic Python SDK import karo</span>
+
+client = anthropic.<span class="tok-fn">Anthropic</span>(api_key=<span class="tok-str">"YOUR_API_KEY"</span>)  <span class="tok-com"># client object banao, apni API key ke saath authenticate karo</span>
+
+<span class="tok-com"># response — model se ek single message request bhejo, sab sampling params explicitly set karke</span>
+response = client.messages.<span class="tok-fn">create</span>(  <span class="tok-com"># create() call shuru — sab sampling params yahan named arguments ke roop mein jaate hain</span>
+    model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># kaunsa model use karna hai, family/version yahan specify hota hai</span>
+    max_tokens=<span class="tok-num">500</span>,  <span class="tok-com"># response ki max length — cost aur latency dono ko bound karta hai</span>
+    temperature=<span class="tok-num">0.2</span>,  <span class="tok-com"># low temperature — hum factual/deterministic-style answer chahte hain</span>
+    top_p=<span class="tok-num">0.9</span>,  <span class="tok-com"># nucleus sampling — sirf top 90% probability mass wale tokens consider karo</span>
+    stop_sequences=[<span class="tok-str">"\n\nEND"</span>],  <span class="tok-com"># agar model ye exact string generate kare, turant ruk jao</span>
+    messages=[  <span class="tok-com"># messages — conversation history list, yahan sirf ek user turn hai</span>
+        {<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: <span class="tok-str">"Summarize what a context window is, in 2 lines."</span>}  <span class="tok-com"># actual user prompt, list of message objects mein</span>
+    ],  <span class="tok-com"># messages list yahan close hoti hai</span>
+)  <span class="tok-com"># create() call yahan close hota hai — ye synchronous call hai, poora response ek saath aayega</span>
+
+<span class="tok-kw">print</span>(response.content[<span class="tok-num">0</span>].text)  <span class="tok-com"># response object se pehla content block nikaalo aur uska text print karo</span>
+</code></pre>
+      </div>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — temperature ka mental model</div>
+        <p>
+          Temperature ko "confidence vs exploration" ka dial samjho. <code>temperature=0</code> ka matlab
+          "hamesha sabse likely next token chuno" (near-deterministic, same input pe roughly same output).
+          Jaise-jaise temperature badhta hai, model kabhi-kabhi ek less-likely token bhi choose karta hai —
+          isse response variety aati hai lekin factual-accuracy-critical tasks (jaise structured data
+          extraction) ke liye ye risky ho sakta hai, kyunki model "creative" ho sakta hai jahan tumhe
+          predictable output chahiye tha.
+        </p>
+      </div>
+
+      <h2 id="streaming">Streaming Responses — Token-by-Token Output</h2>
+      <p>
+        Kyunki inference autoregressive hai (ek time pe ek token), providers response ko
+        <strong>stream</strong> bhi kar sakte hain — matlab poora response complete hone ka wait karne ki
+        jagah, tumhe token-by-token (ya small chunks mein) response milta rehta hai jaise-jaise model unhe
+        generate karta hai. Isse user ko "typing effect" dikhta hai (jaisa ChatGPT/Claude UI mein), aur
+        <strong>perceived latency</strong> kaafi kam ho jaati hai — user ko poora response complete hone
+        tak blank screen nahi dekhni padti. Streaming ke latency/UX trade-offs ka detailed discussion
+        chapter 12 mein hoga; abhi bas itna samajhna hai ki mechanism kaise consume karte hain code mein.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">stream_example.py — streaming response ko consume karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># stream_example.py — token-by-token streaming response consume karna</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># SDK import, same client jo upar use kiya</span>
+
+client = anthropic.<span class="tok-fn">Anthropic</span>(api_key=<span class="tok-str">"YOUR_API_KEY"</span>)  <span class="tok-com"># client authenticate karo</span>
+
+<span class="tok-com"># stream() context manager — ek streaming request open karta hai</span>
+<span class="tok-kw">with</span> client.messages.<span class="tok-fn">stream</span>(  <span class="tok-com"># stream() call shuru — normal create() jaisa hi, bas streaming mode mein</span>
+    model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># same model selection jaise pehle</span>
+    max_tokens=<span class="tok-num">500</span>,  <span class="tok-com"># max response length, streaming mein bhi applicable</span>
+    messages=[  <span class="tok-com"># messages — conversation history list, yahan sirf ek user turn hai</span>
+        {<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: <span class="tok-str">"Explain streaming responses in 2 lines."</span>}  <span class="tok-com"># user prompt</span>
+    ],  <span class="tok-com"># messages list yahan close hoti hai</span>
+) <span class="tok-kw">as</span> stream:  <span class="tok-com"># 'stream' object ab incremental events deta rahega</span>
+    <span class="tok-kw">for</span> text <span class="tok-kw">in</span> stream.text_stream:  <span class="tok-com"># har naya text chunk aane pe loop iterate hota hai</span>
+        <span class="tok-kw">print</span>(text, end=<span class="tok-str">""</span>, flush=<span class="tok-kw">True</span>)  <span class="tok-com"># chunk ko turant print karo, naya line na daalo, buffer turant flush karo</span>
+
+    <span class="tok-com"># loop khatam hone ke baad, agar poora final message chahiye (metadata sahit)</span>
+    final_message = stream.get_final_message()  <span class="tok-com"># poora accumulated response object nikaalo, e.g. token usage ke liye</span>
+    <span class="tok-kw">print</span>(<span class="tok-str">"\nTokens used:"</span>, final_message.usage.output_tokens)  <span class="tok-com"># kitne output tokens actually generate hue, print karo</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Streaming production mein extra complexity laata hai</div>
+        <p>
+          Streaming UX ke liye great hai, lekin engineering-wise iska matlab hai tumhe partial/incomplete
+          JSON handle karna padega agar tum structured output stream kar rahe ho (chunk boundary kisi bhi
+          random jagah pe aa sakta hai, valid JSON ke beech mein), connection drop/retry logic alag se
+          likhni padegi (normal request retry se different hai kyunki tumhe pata karna hoga kitna already
+          stream ho chuka), aur cost/token-counting bhi thoda trickier ho jaata hai kyunki usage info aksar
+          sirf stream ke <em>end</em> mein final event ke saath milta hai. Ye sab detail chapter 12 mein.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>LLM raw text nahi, <strong>tokens</strong> (subword pieces, BPE-style) dekhta hai — English mein
+        roughly 1 token ≈ 4 characters ≈ 0.75 words, but non-English languages mein ye ratio worse ho sakta hai.</li>
+        <li><strong>Embeddings</strong> text ke meaning ko ek multi-dimensional coordinate mein represent karte
+        hain — semantically similar text ke embeddings "paas" hote hain, ye hi property RAG (chapter 4) ka
+        foundation hai.</li>
+        <li><strong>Context window</strong> = input + output combined token limit. Providers/model families ke
+        beech ranges kaafi vary karte hain (roughly 32K se 1M+ tak) aur time ke saath badalte rehte hain.</li>
+        <li>Inference <strong>autoregressive</strong> hai — ek time pe ek next-token prediction, jab tak stop
+        condition hit na ho.</li>
+        <li>Engineers jo params directly control karte hain: <code>temperature</code>, <code>top_p</code>,
+        <code>max_tokens</code>, <code>stop_sequences</code> — inka combination output ki predictability,
+        length, aur creativity decide karta hai.</li>
+        <li><strong>Streaming</strong> perceived latency kam karta hai (token-by-token output) lekin partial-JSON
+        parsing aur retry-handling jaisi extra engineering complexity bhi laata hai.</li>
+        <li>Production mein token count kabhi guess mat karo — provider ke official tokenizer/token-count API
+        se calculate karo, taaki cost estimate aur context-limit checks dono accurate rahein.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. Tokenization kya hai aur LLMs subword tokenization (BPE-style) kyun use karte hain, word-level
+      ya character-level tokenization ki jagah?</strong></p>
+      <p>
+        Tokenization text ko chhote units (tokens) mein todne ka process hai jinhe integer IDs assign hote
+        hain — model sirf in IDs ki sequence dekhta hai, raw text nahi. Subword tokenization is liye use hoti
+        hai kyunki ye dono extremes ke trade-offs balance karti hai: word-level tokenization ka vocabulary
+        explode ho jaata hai (har naya/rare word ek naya vocabulary entry maangta hai, aur out-of-vocabulary
+        words handle nahi ho paate), jabki character-level tokenization vocabulary chhota rakhti hai lekin
+        sequences bahut lambi ban jaati hain (compute-inefficient). Subword (BPE) approach common words ko
+        single tokens rakhta hai aur rare/complex words ko chhote reusable pieces mein todta hai — chhota
+        vocabulary bhi, aur koi bhi arbitrary word represent bhi ho sakta hai.
+      </p>
+
+      <p><strong>Q2. Context window "input + output combined" hota hai — iska practical impact kya hai jab tum ek
+      long conversation ya large document ke saath kaam kar rahe ho?</strong></p>
+      <p>
+        Iska matlab hai tumhare available "budget" ka ek hissa response generate karne ke liye reserve
+        karna padta hai — agar tumne apna poora context window input se hi bhar diya, model ke paas response
+        likhne ke liye room hi nahi bachega. Long conversations mein har naya turn purana poora history carry
+        karta hai (jab tak trim na kiya jaaye), isliye conversation naturally context limit ki taraf grow
+        karti hai. Practical fix — purane messages ko summarize karna, sirf recent N messages retain karna,
+        ya important facts ko separate memory system mein store karna (agent memory, chapter 9), aur bade
+        documents ke liye pura dump karne ki jagah relevant chunks retrieve karna (RAG, chapter 4).
+      </p>
+
+      <p><strong>Q3. temperature aur top_p mein kya difference hai, aur ye dono ek saath aggressively tune karna
+      generally kyun avoid kiya jaata hai?</strong></p>
+      <p>
+        Temperature poori probability distribution ko "sharpen" ya "flatten" karta hai (low = confident/likely
+        tokens ki taraf bias, high = zyada spread-out/random selection). top_p (nucleus sampling) ek cutoff
+        laga deta hai — sirf un tokens ko consider karta hai jinka cumulative probability ek threshold tak
+        add ho, lambi-tail ke bahut unlikely tokens ko poori tarah discard kar deta hai. Dono ek saath
+        aggressively badalna unpredictable interaction create karta hai (ek doosre ke effect ko amplify ya
+        cancel kar sakta hai), isliye common practice hai ek ko fix rakho (usually top_p default pe) aur
+        primarily temperature adjust karo, ya vice versa.
+      </p>
+
+      <p><strong>Q4. Structured data extraction ke liye tum kya sampling params choose karoge, aur kyun?</strong></p>
+      <p>
+        Low temperature (jaise 0 se 0.3) aur high/default top_p — kyunki structured extraction mein consistency
+        aur predictability chahiye, creativity nahi. Explicit <code>stop_sequences</code> bhi useful hai agar
+        output format ek clear boundary marker ke saath end hota ho. <code>max_tokens</code> ko tightly set
+        karna bhi zaroori hai taaki response accidentally beech mein cut na ho na hi unnecessarily lamba ho
+        jaaye, dono cost aur predictability ke liye.
+      </p>
+
+      <p><strong>Q5. Streaming responses production system mein kaunsi extra engineering complexity add karte
+      hain, jo non-streaming request mein nahi hoti?</strong></p>
+      <p>
+        Sabse bada issue partial/incomplete data handle karna hai — agar structured output (jaise JSON) stream
+        ho raha hai, chunk boundary kisi bhi arbitrary jagah pe aa sakta hai, isliye tumhe incremental parser
+        chahiye ya poora accumulate karke hi parse karna padega. Connection drop/retry logic bhi alag hoti hai
+        kyunki tumhe track karna padta hai stream kahan tak pahuncha tha resume/retry ke liye. Token usage/cost
+        info bhi aksar sirf stream ke end mein final event ke saath milta hai, real-time cost tracking ke liye
+        additional handling chahiye hoti hai.
+      </p>
+
+      <div class="prevnext">
+        <a href="01-ai-engineering-vs-ml.html">
+          <div class="label">← Previous</div>
+          <div class="title">AI Engineering vs ML</div>
+        </a>
+        <a class="next" href="03-prompt-engineering.html">
+          <div class="label">Next →</div>
+          <div class="title">Prompt Engineering & Structured Output</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

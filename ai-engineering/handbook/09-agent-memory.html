@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Memory Systems — MAD AI Engineering Docs (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link active" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 9</div>
+      <div class="progress-pill">9 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Short-term Memory · Long-term Memory · Context Mgmt</span>
+      <h1>Agent Memory Systems</h1>
+      <p class="subtitle">
+        LLM ka context window fixed-size hai — usme sirf utna hi fit hoga jitna tum bhejoge. Lekin ek real
+        agent ko multi-turn conversations handle karni hoti hain, sessions ke across kaam yaad rakhna hota
+        hai, aur user ke baare mein personalize hona hota hai. Ye sab context window ke andar akele nahi ho
+        sakta — isi wajah se agents ko explicit <strong>memory systems</strong> chahiye hote hain, jo
+        context window se bahar bhi state persist kar sakein.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why-memory">1. Context Window Se Aage — Memory Kyun Chahiye</a></li>
+          <li><a href="#short-term">2. Short-Term Memory — Conversation History Ka Problem</a></li>
+          <li><a href="#long-term">3. Long-Term Memory — Sessions Ke Across Persist Karna</a></li>
+          <li><a href="#episodic-vs-semantic">4. Episodic vs Semantic Memory</a></li>
+          <li><a href="#working-memory">5. Working Memory / Scratchpad</a></li>
+          <li><a href="#code-example">6. Practical Code — Vector-Store Backed Long-Term Memory</a></li>
+          <li><a href="#strategy-table">7. Context Window Management Strategy — Summary Table</a></li>
+          <li><a href="#takeaways">8. Key Takeaways</a></li>
+          <li><a href="#interview">9. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why-memory">Context Window Se Aage — Memory Kyun Chahiye</h2>
+      <p>
+        Chapter 2 mein humne dekha ki har LLM call stateless hoti hai — model ko koi built-in memory nahi
+        hoti, har request apne aap mein complete honi chahiye. Jo bhi model ko "yaad" rehta hai, wo sirf wahi
+        hota hai jo tum current prompt mein bhejte ho. Ye teen real scenarios mein break ho jaata hai:
+      </p>
+      <ul>
+        <li><strong>Multi-turn conversations</strong> — ek lambi chat mein agar tum har message ke saath poori
+        history nahi bhejoge, model context kho dega ("pichhle message mein maine kya bola tha?"). Lekin
+        poori history bhejna bhi eventually context window se bade ho jaayega.</li>
+        <li><strong>Long-running tasks across sessions</strong> — ek agent jo ek multi-day task pe kaam kar
+        raha hai (jaise ek codebase migrate karna), usse restart hone ke baad bhi yaad rehna chahiye ki
+        kahan tak progress hui thi. Ek naya process spawn hote hi context window khaali ho jaata hai.</li>
+        <li><strong>Personalization across sessions</strong> — agar user ne pichhle session mein bataya tha
+        "main metric units use karta hoon" ya "meri company Clear hai", to agent ko agli baar bhi ye pata
+        hona chahiye, bina user ko dobara batana pade.</li>
+      </ul>
+      <p>
+        Solution ye nahi hai ki context window bada karo (chahe kitna bhi bada karo, ek din full ho jaayega,
+        aur bada context slow + expensive bhi hota hai — chapter 12 mein latency angle dekhenge). Solution ye
+        hai ki agent ko ek <strong>external memory system</strong> do jo context window ke bahar state store
+        kare, aur agent selectively usme se relevant cheezein context window mein <em>inject</em> kare jab
+        zaroorat ho.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Memory ke 4 flavors jo is chapter mein cover honge</div>
+        <p>
+          <strong>Short-term</strong> (current conversation, context window ke andar hi rehti hai),
+          <strong>long-term</strong> (sessions ke across persist, vector store ya DB mein), <strong>episodic
+          vs semantic</strong> (specific ghatna yaad rakhna vs general fact yaad rakhna), aur
+          <strong>working memory/scratchpad</strong> (agent ka apna intermediate reasoning state ek single
+          task ke dauraan). Ye chaaron alag problems solve karte hain — production agent aksar in sabka
+          combination use karta hai.
+        </p>
+      </div>
+
+      <h2 id="short-term">Short-Term Memory — Conversation History Ka Problem</h2>
+      <p>
+        Short-term memory sabse simple concept hai — ye literally conversation ki message history hai, jo
+        context window ke andar hi baithi hoti hai. Har naya turn pe tum poori history (ya uska kuch hissa)
+        model ko bhejte ho taaki wo conversation continue kar sake.
+      </p>
+      <p>
+        Problem ye hai ki ye history <strong>unbounded grow</strong> karti hai. Ek lambi conversation (ya
+        agent ke case mein, ek lamba tool-calling loop jisme har tool result bhi history mein add hota hai)
+        eventually do cheezein hit karti hai:
+      </p>
+      <ul>
+        <li><strong>Context window limit</strong> — model ka hard cap (jaise 200K tokens) ek din exceed ho
+        jaayega, aur request fail hone lagegi.</li>
+        <li><strong>Cost aur latency</strong> — har extra token input cost mein add hota hai, aur bade
+        context ko process karna slower hota hai (chapter 12 mein KV cache detail milega) — chahe limit hit
+        na ho, phir bhi practically ye wasteful ho jaata hai.</li>
+      </ul>
+      <p>Is problem ko handle karne ke teen common mitigation strategies hain:</p>
+      <ul>
+        <li><strong>Sliding window</strong> — sirf last N turns rakho, purane turns ko drop kar do. Simple
+        aur cheap hai, lekin agar koi important fact bahut pehle mention hua tha, wo permanently lost ho
+        jaata hai.</li>
+        <li><strong>Summarization</strong> — periodically purane turns ko ek compressed summary mein convert
+        karo (ek chhota LLM call se), aur us summary ko history ke start mein rakho. Detail kam ho jaata hai
+        lekin high-level context preserve rehta hai.</li>
+        <li><strong>Hybrid</strong> — recent turns verbatim rakho (full detail, kyunki ye abhi relevant hone
+        ki zyada chance hai) + purane turns ka summary. Ye most production systems ka default approach hai
+        kyunki recent detail bhi milta hai aur long-range context bhi preserve hota hai.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Summarization lossy hai</div>
+        <p>
+          Summarization compression hai — koi bhi compression information loss karta hai. Agar user ne turn
+          5 mein ek specific number ya exact wording di thi jo baad mein critical ban jaati hai, aur wo turn
+          summary mein compress ho chuka hai, wo detail ja sakta hai. Isliye critical facts (preferences,
+          IDs, decisions) ko sirf short-term summary pe depend mat karo — unhe long-term memory (agla
+          section) mein explicitly store karo jahan wo verbatim persist hon.
+        </p>
+      </div>
+
+      <h2 id="long-term">Long-Term Memory — Sessions Ke Across Persist Karna</h2>
+      <p>
+        Long-term memory context window ke bahar rehti hai — ek persistent store (database, vector store)
+        jo session khatam hone ke baad bhi zinda rehta hai. Do common implementations hote hain:
+      </p>
+      <ul>
+        <li><strong>Vector store (semantic recall)</strong> — jaisa chapter 4 (RAG) mein dekha, facts/memories
+        ko embeddings mein convert karke store karte ho, aur query time pe semantic similarity se relevant
+        memories retrieve karte ho. Achha hai jab memories unstructured/free-text hon aur exact keyword match
+        zaroori na ho.</li>
+        <li><strong>Structured key-value / database facts store</strong> — jaise <code>{"unit_preference":
+        "metric"}</code> ya <code>{"company": "Clear"}</code> — exact facts jo structured query se lookup
+        ho sakte hain. Achha hai jab facts well-defined categories mein aate hon aur exact retrieval chahiye
+        ho (fuzzy semantic match ki jagah).</li>
+      </ul>
+      <p>
+        Dono approaches ek common pattern follow karte hain — <strong>retrieval-at-start-of-turn</strong>.
+        Matlab, jab bhi agent ko respond karna hota hai, response generate karne se <em>pehle</em> wo long-term
+        memory store se relevant facts query karta hai, aur unhe system prompt ya context mein inject karta
+        hai. Flow kuch aisa dikhta hai:
+      </p>
+      <ol>
+        <li>User ka naya message aata hai.</li>
+        <li>Agent us message (ya conversation context) ko query bana ke long-term memory store se relevant
+        memories retrieve karta hai (top-k semantic search, ya structured lookup).</li>
+        <li>Retrieved memories ko system prompt mein ek "known facts about this user" section ki tarah
+        inject kiya jaata hai.</li>
+        <li>Ab LLM call hoti hai — model ke paas current message + relevant history + relevant long-term
+        facts, sab available hote hain.</li>
+        <li>Agar conversation mein koi naya important fact emerge hota hai, agent usse wapas long-term
+        memory mein <em>save</em> bhi kar sakta hai (write path) — taaki agli baar wo bhi retrievable ho.</li>
+      </ol>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Har cheez memory mein mat daalo</div>
+        <p>
+          Ek common mistake ye hai ki agent har single message ko long-term memory mein save kar de "taaki
+          kuch miss na ho". Ye do problems create karta hai — (1) retrieval noisy ho jaata hai kyunki
+          irrelevant memories bhi top-k mein aa sakti hain, aur (2) storage/embedding cost linearly badhta
+          jaata hai. Production systems mein aksar ek separate lightweight LLM call (ya heuristic) hota hai
+          jo decide karta hai "kya ye fact memory-worthy hai?" — jaise stable preferences, identity facts,
+          ya explicit corrections ("nahi, mera naam Sharad hai, Shard nahi") ko save karo, lekin transient
+          chit-chat ko skip karo. Memory ka quality signal-to-noise ratio pe depend karta hai, sirf volume
+          pe nahi.
+        </p>
+      </div>
+
+      <h2 id="episodic-vs-semantic">Episodic vs Semantic Memory</h2>
+      <p>
+        Cognitive science se udhaar liya gaya ek useful distinction — kuch agent frameworks memory ko do
+        categories mein explicitly split karte hain:
+      </p>
+      <ul>
+        <li><strong>Episodic memory</strong> — specific past events/interactions ko remember karna. Jaise
+        <em>"last time hum is bug ko debug kar rahe the, fix ye tha ki cache invalidation missing thi"</em>
+        — ye ek specific episode hai, ek particular incident jo happen hua tha, apne context ke saath (kab,
+        kya hua, kya result mila).</li>
+        <li><strong>Semantic memory</strong> — general facts, jo kisi specific event se tied nahi hote. Jaise
+        <em>"user Python prefer karta hai JavaScript ke upar"</em> ya <em>"is codebase mein tests
+        pytest se chalte hain"</em> — ye standalone facts hain, kisi particular ghatna ka reference nahi
+        hai.</li>
+      </ul>
+      <p>
+        Ye distinction useful hai kyunki retrieval strategy alag ho sakti hai — episodic memories aksar
+        "similar situation phir se aayi" scenarios mein useful hoti hain (jaise ek coding agent jo ek
+        similar error dobara dekhta hai aur past debugging episode retrieve karta hai), jabki semantic
+        memories har turn pe generically useful ho sakti hain (user preferences jo har response ko shape
+        karte hain). Kuch frameworks (jaise LangGraph ke memory stores, ya Mem0 jaisi libraries) inhe
+        separate namespaces/collections mein store karte hain taaki retrieval logic independently tune ho
+        sake — episodic ke liye recency + situational-similarity weight zyada, semantic ke liye stability
+        aur broad-applicability weight zyada.
+      </p>
+
+      <h2 id="working-memory">Working Memory / Scratchpad</h2>
+      <p>
+        Working memory (ya scratchpad) short-term aur long-term dono se different hai — ye conversation
+        history nahi hai, ye agent ka apna <strong>intermediate reasoning/state</strong> hai jo ek single
+        task ke dauraan use hota hai. Chapter 7 ke ReAct loop ko yaad karo — agent jab ek multi-step task
+        solve kar raha hota hai, use apni progress track karni padti hai: <em>"maine ye sub-tasks complete
+        kar liye hain, ye baaki hain, ye intermediate result maine pichhle step mein nikaala tha"</em>.
+      </p>
+      <p>
+        Practically, ye aksar ek structured object hota hai — jaise ek todo list jo agent khud maintain
+        karta hai, ya ek JSON blob jisme intermediate variables store hote hain — jise agent read/write karta
+        hai as it works. Kuch agent frameworks isko explicitly ek "scratchpad" tool ke through expose karte
+        hain (jaise ek <code>update_plan</code> ya <code>write_scratchpad</code> tool call), taaki agent ka
+        reasoning state observable aur debuggable ho, sirf uski free-text "thinking" ke andar dabi hui na
+        rahe.
+      </p>
+      <p>
+        Farak samajhna important hai: conversation history "kya bola gaya" record karti hai, long-term
+        memory "kya persist karna hai across sessions" record karti hai, aur working memory "is task ko
+        complete karne ke liye main abhi kahan hoon" record karti hai — teeno alag purpose serve karte hain,
+        aur ek production agent teeno ko independently manage karta hai.
+      </p>
+
+      <h2 id="code-example">Practical Code — Vector-Store Backed Long-Term Memory</h2>
+      <p>
+        Chalo ek simple long-term memory system implement karte hain — Chroma (chapter 4 wale RAG setup jaisa)
+        use karke user ke baare mein facts store karenge, aur query time pe top-k relevant memories retrieve
+        karke system prompt mein inject karenge, LLM call se pehle.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">agent_memory.py — Vector-store backed long-term memory (save + retrieve-and-inject)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># agent_memory.py — user ke facts ko vector store mein save karna aur query-time pe retrieve karna</span>
+<span class="tok-kw">import</span> chromadb                                          <span class="tok-com"># Chroma — lightweight open-source vector database</span>
+<span class="tok-kw">from</span> chromadb.utils <span class="tok-kw">import</span> embedding_functions        <span class="tok-com"># Chroma ka built-in embedding function helper</span>
+<span class="tok-kw">from</span> anthropic <span class="tok-kw">import</span> Anthropic                        <span class="tok-com"># Claude API client — final response generate karne ke liye</span>
+<span class="tok-kw">import</span> uuid                                              <span class="tok-com"># har memory ke liye unique ID banane ke liye</span>
+<span class="tok-kw">import</span> time                                              <span class="tok-com"># memory save hone ka timestamp record karne ke liye</span>
+
+client = Anthropic()                                            <span class="tok-com"># Anthropic client initialize karo (env var se API key uthayega)</span>
+
+<span class="tok-com"># --- Vector store setup ---</span>
+chroma_client = chromadb.PersistentClient(path=<span class="tok-str">"./memory_store"</span>)  <span class="tok-com"># disk pe persist hone wala Chroma client (session ke baad bhi zinda rahega)</span>
+
+embedder = embedding_functions.SentenceTransformerEmbeddingFunction(  <span class="tok-com"># local sentence-transformer model se text ko embeddings mein convert karna</span>
+    model_name=<span class="tok-str">"all-MiniLM-L6-v2"</span>                              <span class="tok-com"># chhota, fast embedding model — production mein bada model bhi use kar sakte ho</span>
+)
+
+memory_collection = chroma_client.get_or_create_collection(     <span class="tok-com"># collection banao ya agar already exist karti hai to use hi lo</span>
+    name=<span class="tok-str">"user_memories"</span>,                                    <span class="tok-com"># collection ka naam — is user ki saari long-term memories yahan rahengi</span>
+    embedding_function=embedder                                 <span class="tok-com"># upar define kiya hua embedder is collection ke saath attach karo</span>
+)
+
+<span class="tok-com"># --- Write path: naya fact memory mein save karna ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">save_memory</span>(user_id: <span class="tok-kw">str</span>, fact: <span class="tok-kw">str</span>) -> <span class="tok-kw">None</span>:            <span class="tok-com"># user_id + fact text leta hai, kuch return nahi karta</span>
+    <span class="tok-str">"""Ek naya fact user ki long-term memory mein save karta hai."""</span>  <span class="tok-com"># docstring — function ka purpose</span>
+    memory_id = <span class="tok-kw">str</span>(uuid.uuid4())                             <span class="tok-com"># is memory entry ke liye ek globally unique ID banao</span>
+    memory_collection.add(                                       <span class="tok-com"># Chroma collection mein naya document add karo</span>
+        ids=[memory_id],                                         <span class="tok-com"># unique ID list mein wrap karke pass karo (Chroma batch API expect karta hai)</span>
+        documents=[fact],                                        <span class="tok-com"># actual fact text — isi ko embed karke store kiya jaayega</span>
+        metadatas=[{                                              <span class="tok-com"># fact ke saath extra structured info attach karo</span>
+            <span class="tok-str">"user_id"</span>: user_id,                                <span class="tok-com"># kis user ka fact hai — multi-user filtering ke liye zaroori</span>
+            <span class="tok-str">"timestamp"</span>: time.time()                            <span class="tok-com"># kab save hua — recency-based filtering/ranking ke liye useful</span>
+        }]
+    )
+
+<span class="tok-com"># --- Read path: query ke relevant top-k memories retrieve karna ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">retrieve_memories</span>(user_id: <span class="tok-kw">str</span>, query: <span class="tok-kw">str</span>, top_k: <span class="tok-kw">int</span> = <span class="tok-num">3</span>) -> <span class="tok-kw">list</span>[<span class="tok-kw">str</span>]:  <span class="tok-com"># query text ke liye top_k relevant facts dhoondhta hai</span>
+    <span class="tok-str">"""Current query ke semantically closest memories nikalta hai, sirf isi user ke liye."""</span>  <span class="tok-com"># docstring</span>
+    results = memory_collection.query(                          <span class="tok-com"># Chroma se semantic similarity search karo</span>
+        query_texts=[query],                                     <span class="tok-com"># query ko bhi embedder automatically embed kar dega</span>
+        n_results=top_k,                                         <span class="tok-com"># sirf top-k sabse similar results chahiye, sab nahi</span>
+        where={<span class="tok-str">"user_id"</span>: user_id}                             <span class="tok-com"># metadata filter — sirf isi user ke facts consider karo, dusron ke nahi</span>
+    )
+    <span class="tok-kw">if</span> <span class="tok-kw">not</span> results[<span class="tok-str">"documents"</span>] <span class="tok-kw">or</span> <span class="tok-kw">not</span> results[<span class="tok-str">"documents"</span>][<span class="tok-num">0</span>]:      <span class="tok-com"># agar koi match hi nahi mila (naya user, empty memory)</span>
+        <span class="tok-kw">return</span> []                                            <span class="tok-com"># empty list return karo, error mat throw karo</span>
+    <span class="tok-kw">return</span> results[<span class="tok-str">"documents"</span>][<span class="tok-num">0</span>]                          <span class="tok-com"># Chroma nested list return karta hai — pehle query ke results nikaalo</span>
+
+<span class="tok-com"># --- Inject path: retrieved memories ko system prompt mein daal ke LLM call karna ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">build_system_prompt_with_memory</span>(user_id: <span class="tok-kw">str</span>, user_query: <span class="tok-kw">str</span>) -> <span class="tok-kw">str</span>:  <span class="tok-com"># final system prompt banata hai, memory-aware</span>
+    <span class="tok-str">"""Base system prompt ke saath relevant long-term memories append karta hai."""</span>  <span class="tok-com"># docstring</span>
+    base_prompt = <span class="tok-str">"Tum ek helpful AI assistant ho jo user ko unke sawaalon mein madad karta hai."</span>  <span class="tok-com"># normal, memory-independent system prompt</span>
+    memories = retrieve_memories(user_id, user_query)            <span class="tok-com"># current query ke relevant memories fetch karo (write path se pehle save hui hongi)</span>
+    <span class="tok-kw">if</span> <span class="tok-kw">not</span> memories:                                          <span class="tok-com"># agar koi relevant memory nahi mili</span>
+        <span class="tok-kw">return</span> base_prompt                                   <span class="tok-com"># plain base prompt hi return karo, extra section mat jodo</span>
+    memory_block = <span class="tok-str">"\n"</span>.join(<span class="tok-fn">f</span><span class="tok-str">"- {m}"</span> <span class="tok-kw">for</span> m <span class="tok-kw">in</span> memories)     <span class="tok-com"># har memory ko ek bullet point line mein format karo</span>
+    <span class="tok-kw">return</span> (                                                   <span class="tok-com"># memory-augmented prompt return karo</span>
+        <span class="tok-fn">f</span><span class="tok-str">"{base_prompt}\n\n"</span>                                   <span class="tok-com"># base prompt ke baad ek blank line</span>
+        <span class="tok-fn">f</span><span class="tok-str">"Is user ke baare mein pehle se pata hai:\n{memory_block}"</span>  <span class="tok-com"># retrieved facts ko explicit label ke saath inject karo</span>
+    )
+
+<span class="tok-com"># --- End-to-end: memory-aware agent turn ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">agent_turn</span>(user_id: <span class="tok-kw">str</span>, user_query: <span class="tok-kw">str</span>) -> <span class="tok-kw">str</span>:               <span class="tok-com"># ek single conversation turn poora karta hai, memory ke saath</span>
+    <span class="tok-str">"""Memory retrieve karo, inject karo, LLM call karo, aur response return karo."""</span>  <span class="tok-com"># docstring</span>
+    system_prompt = build_system_prompt_with_memory(user_id, user_query)  <span class="tok-com"># respond karne se PEHLE relevant memory inject karo (retrieval-at-start-of-turn)</span>
+    response = client.messages.create(                           <span class="tok-com"># ab actual LLM call karo, memory-augmented prompt ke saath</span>
+        model=<span class="tok-str">"claude-sonnet-4-5"</span>,                                <span class="tok-com"># jo bhi model tumhare use-case ke liye sahi ho</span>
+        max_tokens=<span class="tok-num">1024</span>,                                       <span class="tok-com"># response ka max length cap</span>
+        system=system_prompt,                                    <span class="tok-com"># memory-injected system prompt yahan pass karo</span>
+        messages=[{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_query}]         <span class="tok-com"># current turn ka user message</span>
+    )
+    <span class="tok-kw">return</span> response.content[<span class="tok-num">0</span>].text                            <span class="tok-com"># model ka text response nikaal ke return karo</span>
+
+<span class="tok-com"># --- Example usage ---</span>
+save_memory(<span class="tok-str">"user_123"</span>, <span class="tok-str">"User metric units prefer karta hai, imperial nahi."</span>)  <span class="tok-com"># ek preference fact save karo</span>
+save_memory(<span class="tok-str">"user_123"</span>, <span class="tok-str">"User ki company Clear hai, wo DevOps seekh raha hai."</span>)  <span class="tok-com"># ek aur fact save karo</span>
+reply = agent_turn(<span class="tok-str">"user_123"</span>, <span class="tok-str">"Mujhe office se ghar ki distance batao"</span>)  <span class="tok-com"># query karo — "metric units" wali memory automatically retrieve + inject hogi</span>
+<span class="tok-kw">print</span>(reply)                                                <span class="tok-com"># final, memory-aware response print karo</span>
+</code></pre>
+      </div>
+      <p>
+        Is example mein <code>save_memory</code> write path hai aur <code>retrieve_memories</code> +
+        <code>build_system_prompt_with_memory</code> read/inject path hai. Real production system mein tum
+        write path ko explicit user-triggered ("mujhe yaad rakho") ke saath-saath ek automatic
+        fact-extraction step bhi bana sakte ho (jaisa senior-dev callout mein discuss kiya), jo conversation
+        se important facts nikaal ke automatically save kare — lekin core retrieval-at-start-of-turn pattern
+        yahi rehta hai.
+      </p>
+
+      <h2 id="strategy-table">Context Window Management Strategy — Summary Table</h2>
+      <table>
+        <thead>
+          <tr><th>Technique</th><th>Kab use karein</th><th>Trade-off</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sliding window</td>
+            <td>Short, low-stakes conversations jahan bahut purani cheezein irrelevant ho jaati hain</td>
+            <td>Simple/cheap, lekin purani important detail permanently lost ho jaati hai</td>
+          </tr>
+          <tr>
+            <td>Summarization</td>
+            <td>Lambi conversations jinme high-level context zaroori hai lekin exact wording nahi</td>
+            <td>Compression lossy hoti hai — specific numbers/exact phrasing kho sakti hai; extra LLM call ka cost</td>
+          </tr>
+          <tr>
+            <td>Long-term retrieval (vector/KV store)</td>
+            <td>Sessions ke across facts persist karne hain — preferences, identity, stable knowledge</td>
+            <td>Infra overhead (vector DB/store maintain karna), retrieval quality embedding/indexing pe depend karti hai</td>
+          </tr>
+          <tr>
+            <td>Working memory / scratchpad</td>
+            <td>Ek single multi-step task ke dauraan intermediate progress/state track karna</td>
+            <td>Task-scoped hai, sessions ke across persist nahi hoti (jab tak explicitly long-term mein save na ho)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — Ek line mein sab kuch</div>
+        <p>
+          <strong>Short-term memory conversation ke andar hoti hai (grow karti hai, isliye sliding
+          window/summarization se manage karo), long-term memory sessions ke across persist hoti hai (vector
+          store/DB mein, retrieval-at-start-of-turn se inject karo), aur working memory ek single task ke
+          dauraan agent ka apna scratchpad hai.</strong> Teeno alag problems solve karte hain — inhe mix
+          mat karo, warna na conversation clean rahegi na long-term facts reliably persist honge.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Agents ko memory chahiye kyunki context window fixed-size hai aur LLM calls stateless hoti hain —
+        multi-turn conversations, cross-session tasks, aur personalization sab context window ke andar akele
+        sustain nahi ho sakte.</li>
+        <li>Short-term memory conversation history hai jo unbounded grow karti hai — mitigations: sliding
+        window (last N turns), summarization (purane turns compress), hybrid (recent verbatim + purana
+        summary).</li>
+        <li>Long-term memory context window ke bahar persist hoti hai — vector store (semantic recall) ya
+        structured key-value facts store — aur retrieval-at-start-of-turn pattern se query karke system
+        prompt mein inject hoti hai, response generate hone se pehle.</li>
+        <li>Episodic memory (specific past interactions/events) aur semantic memory (general facts) alag
+        purpose serve karte hain — kuch frameworks inhe separate namespaces mein store karte hain taaki
+        retrieval strategy independently tune ho sake.</li>
+        <li>Working memory/scratchpad conversation history se different hai — ye ek single task ke dauraan
+        agent ka apna intermediate reasoning/state hai (jaise todo list), often structured object ki tarah
+        implement hota hai.</li>
+        <li>Har cheez memory mein save mat karo — signal-to-noise ratio matter karta hai; stable
+        facts/preferences/corrections save karo, transient chit-chat skip karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. Short-term aur long-term memory mein kya farak hai, aur dono kis problem ko solve karte
+      hain?</strong></p>
+      <p>
+        Short-term memory conversation ki message history hai jo context window ke andar hi rehti hai —
+        current conversation continue karne ke liye zaroori hai, lekin unbounded grow karke context limit
+        ya cost/latency issue create kar sakti hai. Long-term memory context window ke bahar, ek persistent
+        store (vector DB ya structured DB) mein rehti hai, sessions ke across survive karti hai, aur
+        query-time pe selectively relevant facts retrieve karke context mein inject ki jaati hai. Short-term
+        "is conversation mein ab tak kya hua" solve karta hai, long-term "is user/task ke baare mein
+        permanently kya jaanna hai" solve karta hai.
+      </p>
+
+      <p><strong>Q2. Conversation history bahut badi ho jaaye to teen mitigation strategies kya hain, aur
+      inka trade-off kya hai?</strong></p>
+      <p>
+        Sliding window (sirf last N turns rakhna — simple lekin purani detail permanently lost), summarization
+        (purane turns ko compress karke summary bana dena — high-level context preserve hota hai lekin exact
+        detail lossy ho sakti hai), aur hybrid (recent turns verbatim + purane turns ka summary — most
+        production systems ka default, kyunki dono ka balance milta hai). Critical facts ke liye in teeno pe
+        akela depend nahi karna chahiye — unhe explicitly long-term memory mein save karo taaki wo verbatim
+        persist rahein.
+      </p>
+
+      <p><strong>Q3. Retrieval-at-start-of-turn pattern kya hai aur ye kaise kaam karta hai?</strong></p>
+      <p>
+        Ye ek pattern hai jahan agent, response generate karne se <em>pehle</em>, current query/context ko
+        use karke long-term memory store se relevant facts query karta hai (top-k semantic search ya
+        structured lookup), aur unhe system prompt ya context mein inject karta hai. Isse model ko current
+        message ke saath-saath user/task ke relevant persistent facts bhi milte hain, bina poori history
+        ya poora facts-store context window mein daale. Optionally, turn ke end mein agent naye important
+        facts ko wapas memory store mein save bhi kar sakta hai (write path), taaki future turns unhe
+        retrieve kar sakein.
+      </p>
+
+      <p><strong>Q4. Episodic memory aur semantic memory mein kya difference hai — example ke saath
+      samjhao.</strong></p>
+      <p>
+        Episodic memory specific past events/interactions ko remember karti hai, apne context ke saath —
+        jaise "last time is bug ko debug karte waqt fix cache invalidation missing hone se related tha".
+        Semantic memory general, standalone facts hoti hai jo kisi specific event se tied nahi hoti — jaise
+        "user Python prefer karta hai". Kuch agent frameworks inhe alag store karte hain kyunki retrieval
+        strategy alag hoti hai — episodic memories situational-similarity aur recency pe weight karti hain
+        (similar situation dobara aane pe useful), semantic memories har turn pe generically relevant ho
+        sakti hain.
+      </p>
+
+      <p><strong>Q5. Ek agent har single message ko long-term memory mein save kar raha hai "taaki kuch
+      miss na ho" — ye kyun problematic approach hai?</strong></p>
+      <p>
+        Ye do problems create karta hai — pehla, retrieval noisy ho jaata hai kyunki irrelevant/transient
+        memories bhi top-k relevant results mein compete karne lagti hain, jisse actual important facts dab
+        sakte hain. Doosra, storage aur embedding cost linearly (aur eventually unnecessarily) badhta jaata
+        hai. Better approach — ek filtering step (heuristic ya lightweight LLM call) rakho jo decide kare
+        ki kya fact "memory-worthy" hai (stable preference, identity fact, explicit correction), aur sirf
+        wahi save karo, transient chit-chat skip karo. Memory system ka quality signal-to-noise ratio pe
+        depend karta hai, sirf volume pe nahi.
+      </p>
+
+      <div class="prevnext">
+        <a href="08-agent-architectures.html">
+          <div class="label">← Previous</div>
+          <div class="title">Agent Architectures</div>
+        </a>
+        <a class="next" href="10-choosing-a-model.html">
+          <div class="label">Next →</div>
+          <div class="title">Choosing a Model</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Architectures — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link active" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 8</div>
+      <div class="progress-pill">8 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Multi-Agent · Orchestrator-Worker · Supervisor · Swarm · Blackboard</span>
+      <h1>Agent Architectures</h1>
+      <p class="subtitle">
+        Chapter 7 mein humne ek single agent banaya tha — ek LLM, ek tool-set, ek ReAct loop. Ye chapter
+        us idea ko scale karta hai: jab ek agent kaafi nahi rehta (bahut saare tools, bahut saara context,
+        bahut saare distinct sub-tasks), tum multiple agents ko kaise organize karte ho? Hum 5 real-world
+        multi-agent patterns dekhenge, unka comparison, aur ek full working orchestrator-worker implementation.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#single-agent-recap">1. Single-Agent Architecture — Recap Aur Limits</a></li>
+          <li><a href="#orchestrator-worker">2. Orchestrator-Worker (Planner-Executor)</a></li>
+          <li><a href="#supervisor">3. Supervisor Architecture (Router/Dispatcher)</a></li>
+          <li><a href="#pipeline">4. Sequential/Pipeline Multi-Agent</a></li>
+          <li><a href="#swarm">5. Swarm / Peer-to-Peer Handoff</a></li>
+          <li><a href="#blackboard">6. Blackboard Pattern</a></li>
+          <li><a href="#comparison">7. Comparison Table — Kaunsa Kab Use Karein</a></li>
+          <li><a href="#code-example">8. Practical Code — Orchestrator-Worker Implementation</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="single-agent-recap">Single-Agent Architecture — Recap Aur Limits</h2>
+      <p>
+        Chapter 7 ka agent ek simple shape follow karta tha: <strong>ek LLM + ek tool registry + ek loop</strong>
+        jo tab tak chalta rehta hai jab tak model final answer na de de (Thought → Action → Observation →
+        repeat). Ye architecture surprisingly far tak le jaata hai — coding assistants, research agents,
+        customer support bots, sab single-agent loop se hi shuru hote hain, aur bahut saare production
+        systems isi shape mein permanently reh jaate hain kyunki unka scope kabhi itna bada nahi hota.
+      </p>
+      <p>
+        Lekin single-agent shape ke saath structural limits hain jo scope badhne pe surface hote hain:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Problem</th><th>Kya hota hai</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tool selection confusion</strong></td>
+            <td>Jaise-jaise tool count 20-30+ tak badhta hai, model ke liye har turn pe "sahi tool kaunsa
+            hai" decide karna harder hota jaata hai — similar-sounding tools (jaise <code>search_docs</code>
+            vs <code>search_web</code> vs <code>search_code</code>) confuse karte hain, aur wrong-tool-call
+            rate badh jaata hai.</td>
+          </tr>
+          <tr>
+            <td><strong>Unbounded context growth</strong></td>
+            <td>Har tool call ka result conversation history mein add hota jaata hai. Ek long-running task
+            mein (jisme 20+ tool calls ho sakte hain) context window bhar jaata hai, purane observations
+            "push out" ho jaate hain ya aggressively summarize karne padte hain — quality degrade hoti hai.</td>
+          </tr>
+          <tr>
+            <td><strong>Single point of failure</strong></td>
+            <td>Agar ek hi LLM call galat reasoning kare ya galat tool choose kare, poora task derail ho
+            sakta hai — koi doosra "check" nahi hai jo catch kare.</td>
+          </tr>
+          <tr>
+            <td><strong>Prompt specialization impossible</strong></td>
+            <td>Ek hi system prompt ko "research karo", "code likho", aur "customer ko politely reply karo" —
+            teeno alag-alag behaviors ke liye kaam karna padta hai. Ye prompts ko either bloated (sab kuch
+            cover karne ki koshish) ya generic (kisi ek task mein bhi excel nahi karta) bana deta hai.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Jab in mein se koi bhi problem genuinely bottleneck ban jaaye — tab hi multi-agent architecture consider
+        karna chahiye. Neeche 5 patterns hain jo real production systems (LangGraph, CrewAI, OpenAI Swarm/Agents
+        SDK, AutoGen) mein use hote hain.
+      </p>
+
+      <h2 id="orchestrator-worker">1. Orchestrator-Worker (Planner-Executor)</h2>
+      <p>
+        Ek <strong>orchestrator</strong> LLM incoming task ko dekh kar usko 2-N chhote subtasks mein todta hai,
+        har subtask ko ek specialized <strong>worker</strong> agent ko delegate karta hai, aur phir sab workers
+        ke results ko wapas combine (aggregate) karke final answer banata hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Orchestrator-Worker — flow diagram (text)</div>
+        <pre><code><span class="tok-com">          [User Task]</span>
+<span class="tok-com">               |</span>
+<span class="tok-com">               v</span>
+<span class="tok-com">        [ Orchestrator LLM ]   -- task ko subtasks mein todta hai</span>
+<span class="tok-com">          /      |      \</span>
+<span class="tok-com">         v       v       v</span>
+<span class="tok-com">    [Worker A][Worker B][Worker C]   -- parallel ya sequential run</span>
+<span class="tok-com">         \       |       /</span>
+<span class="tok-com">          v      v      v</span>
+<span class="tok-com">        [ Orchestrator — Aggregate ]</span>
+<span class="tok-com">               |</span>
+<span class="tok-com">               v</span>
+<span class="tok-com">          [Final Answer]</span>
+</code></pre>
+      </div>
+      <p>
+        <strong>Pros:</strong> Workers ko independently, parallel mein run kiya ja sakta hai (wall-clock time
+        bachta hai agar subtasks independent hain); har worker ka apna focused prompt ho sakta hai; orchestrator
+        centrally decide karta hai ki kya karna hai, isliye overall flow predictable rehta hai.<br>
+        <strong>Cons:</strong> Orchestrator khud ek single point of failure hai (agar galat plan banaye,
+        poora task galat direction mein jaata hai); aggregation step tricky ho sakta hai agar worker outputs
+        conflict karein.<br>
+        <strong>Use case:</strong> "Competitor analysis report banao" — orchestrator isko break karta hai:
+        Worker A pricing research kare, Worker B feature comparison kare, Worker C reviews/sentiment summarize
+        kare — teeno parallel chalte hain, phir orchestrator ek unified report mein combine karta hai.
+      </p>
+
+      <h2 id="supervisor">2. Supervisor Architecture (Router/Dispatcher)</h2>
+      <p>
+        Ek <strong>supervisor</strong> agent har conversational turn ko dekhta hai aur decide karta hai kaunsa
+        specialist sub-agent us turn ko handle karega — phir sub-agent ka response wapas user tak (ya agle
+        turn ke liye supervisor tak) route karta hai. Orchestrator-worker se key difference: yahaan task ek
+        baar mein saare subtasks mein todha nahi jaata — har turn independently route hota hai, aur sub-agents
+        <strong>kabhi ek doosre se directly baat nahi karte</strong>, sirf supervisor ke through.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Supervisor — flow diagram (text)</div>
+        <pre><code><span class="tok-com">   [User Turn 1: "refund chahiye"]     [User Turn 2: "billing date?"]</span>
+<span class="tok-com">              |                                    |</span>
+<span class="tok-com">              v                                    v</span>
+<span class="tok-com">        [ Supervisor ]  -------- routes -------- [ Supervisor ]</span>
+<span class="tok-com">              |                                    |</span>
+<span class="tok-com">              v                                    v</span>
+<span class="tok-com">     [Refunds Sub-Agent]                  [Billing Sub-Agent]</span>
+<span class="tok-com">              |                                    |</span>
+<span class="tok-com">              v                                    v</span>
+<span class="tok-com">          [Reply]                              [Reply]</span>
+<span class="tok-com">   (sub-agents ek dusre se kabhi directly baat nahi karte)</span>
+</code></pre>
+      </div>
+      <p>
+        <strong>Pros:</strong> Multi-turn conversations ke liye natural fit (customer support jaise use cases);
+        har specialist ka prompt sirf apne domain pe focused rehta hai (billing agent ko refund logic jaanne
+        ki zaroorat nahi); routing logic centralize hone se debugging easier hai (ek jagah dekho ki kis
+        turn pe kaunsa agent chuna gaya).<br>
+        <strong>Cons:</strong> Har turn pe ek extra "routing" LLM call lagta hai (latency/cost overhead);
+        agar routing galat ho (wrong specialist choose ho jaaye), user ko galat/irrelevant answer milta hai.<br>
+        <strong>Use case:</strong> Customer support platform jahan ek supervisor decide karta hai ki query
+        "billing", "technical support", ya "returns" specialist ko jaani chahiye — jaisa Intercom/Zendesk
+        style AI copilots aksar structure karte hain.
+      </p>
+
+      <h2 id="pipeline">3. Sequential/Pipeline Multi-Agent</h2>
+      <p>
+        Agents ek fixed, deterministic order mein chain hote hain — Agent A ka output seedha Agent B ka input
+        banta hai, jo aage Agent C ko feed hota hai. Ye ek assembly line jaisa hai — koi dynamic routing nahi,
+        order hamesha same rehta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Sequential Pipeline — flow diagram (text)</div>
+        <pre><code><span class="tok-com">[Raw Input]</span>
+<span class="tok-com">    |</span>
+<span class="tok-com">    v</span>
+<span class="tok-com">[Agent A: Extract]  --output-->  [Agent B: Summarize]  --output-->  [Agent C: Translate]</span>
+<span class="tok-com">                                                                              |</span>
+<span class="tok-com">                                                                              v</span>
+<span class="tok-com">                                                                       [Final Output]</span>
+</code></pre>
+      </div>
+      <p>
+        <strong>Pros:</strong> Predictable aur debuggable — order fixed hai, isliye tum exactly jaante ho
+        kaunsa step pe failure hua; har agent ka prompt sirf ek narrow transformation ke liye optimize hota
+        hai, jisse quality per-step high rehti hai.<br>
+        <strong>Cons:</strong> Purely sequential hai — koi parallelization nahi, total latency sab agents
+        ke latency ka sum hai; early stage ki galti pura downstream chain corrupt kar deti hai (garbage in,
+        garbage through).<br>
+        <strong>Use case:</strong> Document processing pipeline — Agent A raw PDF se structured data extract
+        kare, Agent B usse ek executive summary mein convert kare, Agent C summary ko target language mein
+        translate kare. Har step ka input/output contract clear hai, isliye pipeline shape natural fit hai.
+      </p>
+
+      <h2 id="swarm">4. Swarm / Peer-to-Peer Handoff</h2>
+      <p>
+        Koi central coordinator nahi hota — agents directly ek doosre ko control <strong>handoff</strong> kar
+        sakte hain jab unhe lage ki current query unke scope se bahar hai. Ye pattern OpenAI ke Swarm
+        (ab Agents SDK) framework ne popularize kiya — har agent ke paas ek "transfer_to_X" tool hota hai jo
+        conversation control ko doosre agent ko de deta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Swarm / Handoff — flow diagram (text)</div>
+        <pre><code><span class="tok-com">[User: "mera order cancel karna hai, aur refund bhi chahiye"]</span>
+<span class="tok-com">              |</span>
+<span class="tok-com">              v</span>
+<span class="tok-com">     [Triage Agent] -- "ye cancellation query hai" --> handoff</span>
+<span class="tok-com">              |</span>
+<span class="tok-com">              v</span>
+<span class="tok-com">   [Cancellation Agent] -- "refund bhi chahiye, uska scope nahi" --> handoff</span>
+<span class="tok-com">              |</span>
+<span class="tok-com">              v</span>
+<span class="tok-com">      [Refund Agent] -- final reply user ko</span>
+<span class="tok-com">   (koi central "supervisor" nahi — agents khud decide karte hain kab handoff karna hai)</span>
+</code></pre>
+      </div>
+      <p>
+        <strong>Pros:</strong> Decentralized, isliye naya specialist agent add karna easy hai (bas ek naya
+        handoff target); triage → specialist flow bahut natural feel hota hai jaise real support team mein
+        hota hai (reception se billing team ko transfer).<br>
+        <strong>Cons:</strong> Central visibility/control nahi hai — debugging harder ho sakta hai kyunki
+        control flow runtime pe decide hota hai, static diagram se predict nahi ho sakta; agents ke beech
+        "handoff loop" (A → B → A → B) ka risk hota hai agar prompts sahi se scoped na hon.<br>
+        <strong>Use case:</strong> Customer support triage — ek general "front-desk" agent pehle query sunta
+        hai, phir usse sahi specialist (sales, billing, technical) ko directly handoff kar deta hai, aur agar
+        beech mein scope change ho (billing se refund tak), specialist khud next specialist ko handoff kar
+        sakta hai bina wapas front-desk se guzre.
+      </p>
+
+      <h2 id="blackboard">5. Blackboard Pattern</h2>
+      <p>
+        Multiple agents ek shared state — <strong>"blackboard"</strong> — ko read/write karte hain. Koi
+        central controller nahi decide karta ki kaunsa agent kab chalega — har agent independently apna
+        contribution add karta hai jab bhi blackboard ki current state uske liye relevant lage. Ye loosely
+        coupled hai — agents ek doosre ko directly jaante tak nahi.
+      </p>
+      <div class="code-block">
+        <div class="code-title">Blackboard — flow diagram (text)</div>
+        <pre><code><span class="tok-com">                    +-------------------------+</span>
+<span class="tok-com">                    |     Shared Blackboard    |</span>
+<span class="tok-com">                    |  (partial findings state) |</span>
+<span class="tok-com">                    +-------------------------+</span>
+<span class="tok-com">                     ^     ^      ^      ^</span>
+<span class="tok-com">              read/write |  |      |      | read/write</span>
+<span class="tok-com">                    [Agent 1] [Agent 2] [Agent 3]</span>
+<span class="tok-com">                 (ek agent koi finding likhta hai,</span>
+<span class="tok-com">                  doosra usko dekh kar apna contribution add karta hai)</span>
+</code></pre>
+      </div>
+      <p>
+        <strong>Pros:</strong> Highly flexible — naye agents add karna easy hai bina existing flow todhe;
+        parallel exploration ke liye best fit hai jahan tumhe pata nahi kaunsa agent kab useful contribution
+        de sakta hai (jaise multiple diagnostic checks jo independently trigger ho sakte hain).<br>
+        <strong>Cons:</strong> Coordination overhead high hai — race conditions possible hain (do agents same
+        cheez pe simultaneously kaam karein); "kab task complete hua" decide karna hard hai kyunki koi central
+        authority nahi (aksar ek separate "monitor" agent chahiye hota hai jo blackboard dekh kar completion
+        detect kare).<br>
+        <strong>Use case:</strong> Complex diagnostic/research system — jaise ek incident-investigation agent
+        system jahan ek agent logs check karta hai, doosra metrics, teesra recent deploys — jo bhi anomaly
+        dhoondhta hai wo blackboard pe likh deta hai, aur baaki agents us finding ko dekh kar apni investigation
+        refine karte hain.
+      </p>
+
+      <h2 id="comparison">Comparison Table — Kaunsa Kab Use Karein</h2>
+      <table>
+        <thead>
+          <tr><th>Architecture</th><th>Coordination Style</th><th>Best For</th><th>Downsides</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Orchestrator-Worker</strong></td>
+            <td>Central planner, upfront task decomposition</td>
+            <td>Independent parallel sub-tasks (research, report generation)</td>
+            <td>Orchestrator = single point of failure; aggregation tricky</td>
+          </tr>
+          <tr>
+            <td><strong>Supervisor</strong></td>
+            <td>Central router, per-turn dispatch</td>
+            <td>Multi-turn conversations across specialist domains</td>
+            <td>Extra routing call har turn pe; misrouting risk</td>
+          </tr>
+          <tr>
+            <td><strong>Sequential Pipeline</strong></td>
+            <td>Fixed deterministic chain</td>
+            <td>Well-defined multi-stage transformations</td>
+            <td>No parallelism; early errors propagate downstream</td>
+          </tr>
+          <tr>
+            <td><strong>Swarm / Handoff</strong></td>
+            <td>Decentralized, peer-to-peer</td>
+            <td>Triage-then-specialist support flows</td>
+            <td>Low central visibility; possible handoff loops</td>
+          </tr>
+          <tr>
+            <td><strong>Blackboard</strong></td>
+            <td>Shared state, loosely coupled</td>
+            <td>Parallel exploration, uncertain agent relevance</td>
+            <td>Race conditions; unclear completion signal</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Har pattern ka ek common thread hai: <strong>N agents = N (ya zyada) LLM calls</strong> instead of 1.
+        Ye latency aur cost dono ko multiply karta hai, aur debugging complexity bhi badhti hai (ab tumhe
+        multiple prompts, multiple failure points, aur inter-agent communication trace karni padti hai).
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Multi-agent "silver bullet" nahi hai</div>
+        <p>
+          Ek naya pattern dekh kar excited hoke seedha multi-agent design mat jump karo. Har extra agent
+          apne saath latency (sequential agents ke liye especially) aur cost (har agent = apna LLM call, aur
+          agar har agent ke paas multiple tool-calling turns hain to cost multiply hi hota hai) dono badhata
+          hai. Ek 3-agent orchestrator-worker system jo sequentially chalta hai easily single-agent se 3-5x
+          slower ho sakta hai agar workers ko parallel run karne ka infra nahi hai.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Single-agent + good tools se shuru karo</div>
+        <p>
+          Production mein sabse common mistake ye hai ki team directly multi-agent architecture design karti
+          hai kyunki "ye sophisticated lagta hai", bina pehle verify kiye ki ek single, well-designed agent
+          (achhe tools, clean context management, focused system prompt) kaafi nahi tha. Multi-agent tab
+          justify hota hai jab: <strong>(a)</strong> tool count/context genuinely unmanageable ho gaya ho ek
+          single agent ke liye, ya <strong>(b)</strong> independent sub-work ko parallelize karke real
+          wall-clock time bachaya ja sakta ho (jaise 3 independent research streams). Agar dono conditions
+          mein se koi bhi true nahi hai, multi-agent sirf latency, cost, aur coordination bugs add karega
+          bina proportional benefit ke. Rule of thumb: pehle single agent ko iterate karo — better tool
+          descriptions, better context pruning, better prompt — tabhi split karo jab measurable evidence ho
+          ki single agent genuinely struggle kar raha hai.
+        </p>
+      </div>
+
+      <h2 id="code-example">Practical Code — Orchestrator-Worker Implementation</h2>
+      <p>
+        Neeche ek complete, minimal orchestrator-worker implementation hai Python mein — orchestrator user
+        task ko structured output ke through 2-3 subtasks mein todta hai, har subtask ek independent worker
+        LLM call ko dispatch hoti hai (focused prompt ke saath), aur last mein ek aggregation step sab worker
+        outputs ko final answer mein combine karta hai. <strong>Har single line commented hai.</strong>
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">orchestrator_worker.py — orchestrator-worker pattern end-to-end<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">import</span> json                                          <span class="tok-com"># subtask list ko structured JSON se parse karne ke liye</span>
+<span class="tok-kw">from</span> anthropic <span class="tok-kw">import</span> Anthropic                       <span class="tok-com"># Anthropic SDK client import karo</span>
+
+client = Anthropic()                                       <span class="tok-com"># client instantiate karo (ANTHROPIC_API_KEY env var se uthata hai)</span>
+MODEL = <span class="tok-str">"claude-sonnet-4-5"</span>                                <span class="tok-com"># saare agents (orchestrator + workers) is model ko use karenge</span>
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">plan_subtasks</span>(user_task: <span class="tok-fn">str</span>) -> <span class="tok-fn">list</span>[<span class="tok-fn">dict</span>]:            <span class="tok-com"># orchestrator step — task ko subtasks mein todta hai</span>
+    <span class="tok-str">"""Orchestrator: user task ko 2-3 focused subtasks mein decompose karta hai."""</span>  <span class="tok-com"># docstring — function ka purpose</span>
+    system_prompt = (                                       <span class="tok-com"># orchestrator ka system prompt — sirf planning karna hai, kaam khud nahi</span>
+        <span class="tok-str">"Tum ek task planner ho. User ka task lo aur usse 2-3 independent, "</span>  <span class="tok-com"># instruction: kaam ko todo</span>
+        <span class="tok-str">"focused subtasks mein todo. Har subtask ek worker agent ko diya jaayega. "</span>  <span class="tok-com"># instruction: har subtask ek worker ko jaayega</span>
+        <span class="tok-str">"Sirf JSON array return karo, koi extra text nahi. Format: "</span>  <span class="tok-com"># strict output format enforce karna</span>
+        <span class="tok-str">'[{"id": "t1", "goal": "..."}, {"id": "t2", "goal": "..."}]'</span>  <span class="tok-com"># exact JSON shape example de rahe hain (few-shot style)</span>
+    )                                                        <span class="tok-com"># system_prompt string yahin close hota hai</span>
+
+    response = client.messages.<span class="tok-fn">create</span>(                     <span class="tok-com"># orchestrator LLM call — subtask breakdown maangna</span>
+        model=MODEL,                                        <span class="tok-com"># kaunsa model use karna hai</span>
+        max_tokens=<span class="tok-num">512</span>,                                    <span class="tok-com"># planning response chhota hona chahiye, isliye low limit</span>
+        system=system_prompt,                               <span class="tok-com"># upar wala planning-only system prompt pass karo</span>
+        messages=[{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_task}],  <span class="tok-com"># actual user task ko user message ki tarah bhejo</span>
+    )                                                        <span class="tok-com"># API call yahin complete hota hai</span>
+
+    raw_text = response.content[<span class="tok-num">0</span>].text.strip()            <span class="tok-com"># response block se raw text nikaalo aur whitespace trim karo</span>
+    subtasks = json.<span class="tok-fn">loads</span>(raw_text)                        <span class="tok-com"># raw text ko JSON se Python list-of-dicts mein parse karo</span>
+    <span class="tok-kw">return</span> subtasks                                       <span class="tok-com"># parsed subtasks list orchestrator ko wapas do</span>
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">run_worker</span>(subtask: <span class="tok-fn">dict</span>) -> <span class="tok-fn">str</span>:                    <span class="tok-com"># worker step — ek focused subtask ko independently solve karta hai</span>
+    <span class="tok-str">"""Worker: ek single subtask ko apne khud ke focused LLM call se solve karta hai."""</span>  <span class="tok-com"># docstring</span>
+    worker_system = (                                       <span class="tok-com"># worker ka system prompt — sirf apna subtask, kuch aur nahi</span>
+        <span class="tok-str">"Tum ek focused worker agent ho. Sirf diya gaya subtask solve karo, "</span>  <span class="tok-com"># scope ko narrow rakhna — sirf ye ek subtask</span>
+        <span class="tok-str">"concise aur factual answer do. Bahar ka context tumhe nahi pata, "</span>  <span class="tok-com"># worker ko baaki subtasks ka pata nahi hona chahiye (isolation)</span>
+        <span class="tok-str">"isliye assumptions clearly state karo agar zaroorat pade."</span>  <span class="tok-com"># edge case handling instruction</span>
+    )                                                        <span class="tok-com"># worker_system string yahin close hota hai</span>
+
+    response = client.messages.<span class="tok-fn">create</span>(                     <span class="tok-com"># worker LLM call — is subtask ke liye independent call</span>
+        model=MODEL,                                        <span class="tok-com"># same model reuse kar rahe hain (chahe to alag/cheaper model bhi de sakte ho)</span>
+        max_tokens=<span class="tok-num">400</span>,                                    <span class="tok-com"># worker answer bhi concise rakhna hai, isliye limit chhota</span>
+        system=worker_system,                               <span class="tok-com"># worker-specific focused system prompt pass karo</span>
+        messages=[{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: subtask[<span class="tok-str">"goal"</span>]}],  <span class="tok-com"># subtask ka "goal" field hi worker ka poora input hai</span>
+    )                                                        <span class="tok-com"># API call yahin complete hota hai</span>
+
+    <span class="tok-kw">return</span> response.content[<span class="tok-num">0</span>].text.strip()             <span class="tok-com"># worker ka final text answer trim karke return karo</span>
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">aggregate_results</span>(user_task: <span class="tok-fn">str</span>, subtasks: <span class="tok-fn">list</span>[<span class="tok-fn">dict</span>], worker_outputs: <span class="tok-fn">list</span>[<span class="tok-fn">str</span>]) -> <span class="tok-fn">str</span>:  <span class="tok-com"># aggregation step</span>
+    <span class="tok-str">"""Orchestrator: sab worker outputs ko ek coherent final answer mein combine karta hai."""</span>  <span class="tok-com"># docstring</span>
+    combined_context = <span class="tok-str">""</span>                                <span class="tok-com"># empty string se shuru — yahaan sab subtask+output pairs jodenge</span>
+    <span class="tok-kw">for</span> subtask, output <span class="tok-kw">in</span> <span class="tok-fn">zip</span>(subtasks, worker_outputs):    <span class="tok-com"># har subtask ko uske corresponding worker output ke saath pair karo</span>
+        combined_context += <span class="tok-fn">f</span><span class="tok-str">"Subtask ({subtask['id']}): {subtask['goal']}\n"</span>  <span class="tok-com"># subtask ka goal likho</span>
+        combined_context += <span class="tok-fn">f</span><span class="tok-str">"Worker Result: {output}\n\n"</span>  <span class="tok-com"># uska worker result bhi neeche likho, blank line se separate</span>
+
+    aggregation_system = (                                  <span class="tok-com"># aggregation ke liye alag, focused system prompt</span>
+        <span class="tok-str">"Tum ek aggregator ho. Neeche diye gaye worker results ko dekh kar "</span>  <span class="tok-com"># instruction: worker results dekho</span>
+        <span class="tok-str">"original user task ka ek single, coherent final answer banao. "</span>  <span class="tok-com"># instruction: final unified answer banao</span>
+        <span class="tok-str">"Duplicate info hata do, contradictions flag karo agar ho."</span>  <span class="tok-com"># instruction: cleanup aur conflict-detection</span>
+    )                                                        <span class="tok-com"># aggregation_system string yahin close hota hai</span>
+
+    response = client.messages.<span class="tok-fn">create</span>(                     <span class="tok-com"># aggregation LLM call — final orchestrator call</span>
+        model=MODEL,                                        <span class="tok-com"># same model, final synthesis ke liye</span>
+        max_tokens=<span class="tok-num">800</span>,                                    <span class="tok-com"># final answer thoda lamba ho sakta hai, isliye limit badi rakhi</span>
+        system=aggregation_system,                          <span class="tok-com"># aggregation-specific system prompt pass karo</span>
+        messages=[{                                         <span class="tok-com"># user message mein original task + saara combined context bhejo</span>
+            <span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>,                                    <span class="tok-com"># role field — user turn hai</span>
+            <span class="tok-str">"content"</span>: <span class="tok-fn">f</span><span class="tok-str">"Original task: {user_task}\n\n{combined_context}"</span>,  <span class="tok-com"># original task + har worker ka context</span>
+        }],                                                  <span class="tok-com"># messages list yahin close hota hai</span>
+    )                                                        <span class="tok-com"># API call yahin complete hota hai</span>
+
+    <span class="tok-kw">return</span> response.content[<span class="tok-num">0</span>].text.strip()             <span class="tok-com"># final combined answer trim karke return karo</span>
+
+
+<span class="tok-kw">def</span> <span class="tok-fn">run_orchestrator_worker</span>(user_task: <span class="tok-fn">str</span>) -> <span class="tok-fn">str</span>:              <span class="tok-com"># top-level entrypoint — poora flow yahaan se drive hota hai</span>
+    <span class="tok-str">"""Poora orchestrator-worker flow: plan -> dispatch -> aggregate."""</span>  <span class="tok-com"># docstring</span>
+    subtasks = <span class="tok-fn">plan_subtasks</span>(user_task)                     <span class="tok-com"># step 1: orchestrator se subtasks ki list maango</span>
+    <span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"Planned {len(subtasks)} subtasks: {[t['id'] for t in subtasks]}"</span>)  <span class="tok-com"># debug visibility ke liye plan print karo</span>
+
+    worker_outputs = []                                     <span class="tok-com"># empty list — har worker ka output yahaan collect hoga</span>
+    <span class="tok-kw">for</span> subtask <span class="tok-kw">in</span> subtasks:                                  <span class="tok-com"># step 2: har subtask ke liye ek worker chalao</span>
+        <span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"Dispatching worker for: {subtask['id']}"</span>)   <span class="tok-com"># debug visibility ke liye kaunsa subtask chal raha hai batao</span>
+        output = <span class="tok-fn">run_worker</span>(subtask)                        <span class="tok-com"># is subtask ko worker function ko dispatch karo (sequential yahaan;</span>
+        worker_outputs.<span class="tok-fn">append</span>(output)                       <span class="tok-com"># asyncio.gather se parallel bhi kiya ja sakta hai independent subtasks ke liye)</span>
+
+    final_answer = <span class="tok-fn">aggregate_results</span>(user_task, subtasks, worker_outputs)  <span class="tok-com"># step 3: sab outputs ko ek final answer mein combine karo</span>
+    <span class="tok-kw">return</span> final_answer                                    <span class="tok-com"># final aggregated answer caller ko wapas do</span>
+
+
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:                                 <span class="tok-com"># script directly run hone pe hi ye block chalega</span>
+    task = <span class="tok-str">"Hamare product ke liye competitor analysis banao: pricing, features, reviews"</span>  <span class="tok-com"># example user task</span>
+    answer = <span class="tok-fn">run_orchestrator_worker</span>(task)                <span class="tok-com"># poora orchestrator-worker flow run karo</span>
+    <span class="tok-fn">print</span>(<span class="tok-str">"\n--- Final Answer ---\n"</span>)                    <span class="tok-com"># separator print karo readability ke liye</span>
+    <span class="tok-fn">print</span>(answer)                                        <span class="tok-com"># final aggregated answer console pe print karo</span>
+</code></pre>
+      </div>
+      <p>
+        Notice karo — is example mein orchestrator ka call <strong>1</strong>, workers ke calls <strong>N</strong>
+        (subtask count ke barabar), aur aggregation ka call <strong>1</strong> — total <strong>N+2 LLM calls</strong>
+        ek single task ke liye, jabki single-agent approach mein wahi task <strong>1 call</strong> (ya ek
+        multi-turn tool-loop) mein solve ho sakta tha. Ye exactly wo "cost/latency multiply hota hai" wala
+        trade-off hai jo upar discuss kiya — multi-agent tabhi worth hai jab parallelization ya specialization
+        ka benefit is extra cost se zyada ho.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Single-agent architecture tab tak sahi hai jab tak tool count, context growth, aur task
+        specialization manageable rahein — zyada tools se tool-selection confuse hota hai, aur context
+        unbounded badhta hai.</li>
+        <li><strong>Orchestrator-worker</strong> — central planner subtasks banata hai, specialized workers
+        unhe solve karte hain, orchestrator hi aggregate karta hai. Independent parallel sub-work ke liye best.</li>
+        <li><strong>Supervisor</strong> — har turn ko router centrally dispatch karta hai specialist sub-agents
+        ko; sub-agents ek dusre se directly nahi baat karte. Multi-domain conversations ke liye best.</li>
+        <li><strong>Sequential pipeline</strong> — deterministic assembly-line order (A→B→C); predictable
+        lekin no parallelism, aur early errors downstream propagate karte hain.</li>
+        <li><strong>Swarm/handoff</strong> — decentralized, agents khud control transfer karte hain (jaise
+        OpenAI Swarm); triage-then-specialist flows ke liye natural fit.</li>
+        <li><strong>Blackboard</strong> — shared state pe loosely-coupled agents read/write karte hain;
+        parallel exploration ke liye flexible, lekin coordination/completion detection hard hai.</li>
+        <li>Har multi-agent pattern latency aur cost ko multiply karta hai (N agents ≈ N+ LLM calls) — isliye
+        single-agent + good tools se hi shuru karo, aur multi-agent tabhi reach karo jab genuine evidence ho
+        ki single agent struggle kar raha hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions — AI/Agent Engineer</h2>
+
+      <p><strong>Q1. Single-agent architecture kab "break" hoti hai — kaunse specific signals dekh kar tum
+      multi-agent consider karoge?</strong></p>
+      <p>
+        Chaar signals: <strong>(1)</strong> tool count itna badh gaya ho (20-30+) ki model wrong-tool-call
+        karne lage kyunki similar tools confuse kar rahe hain; <strong>(2)</strong> context window
+        unbounded badh raha ho kyunki task lambi chain of tool calls maangta hai; <strong>(3)</strong> agent
+        ek single point of failure ban raha ho critical multi-step tasks mein; <strong>(4)</strong> task
+        genuinely distinct specializations maang raha ho (research vs code vs customer tone) jo ek single
+        system prompt mein cleanly fit nahi hote. Agar in mein se koi bhi measurable evidence ke saath present
+        ho, tabhi multi-agent justify hota hai — sirf "sophistication" ke liye nahi.
+      </p>
+
+      <p><strong>Q2. Orchestrator-worker aur supervisor architecture mein kya fundamental difference hai?</strong></p>
+      <p>
+        Orchestrator-worker mein task ko <em>upfront</em> ek baar mein subtasks mein decompose kiya jaata hai,
+        workers parallel/sequential chalte hain, aur ek aggregation step results ko combine karta hai — ye
+        single-task-completion ke liye design hota hai. Supervisor architecture <em>per-turn</em> routing
+        karta hai — har naya conversational turn independently ek specialist ko dispatch hota hai, koi upfront
+        decomposition nahi hoti, aur ye multi-turn, ongoing conversations ke liye design hota hai jahan
+        different turns different domains touch kar sakte hain.
+      </p>
+
+      <p><strong>Q3. Swarm/handoff pattern mein central coordinator na hone ka trade-off kya hai?</strong></p>
+      <p>
+        Benefit — decentralization se naye specialist agents add karna easy hota hai (bas ek naya handoff
+        target), aur triage-then-specialist flow bahut natural feel hota hai. Trade-off — central visibility
+        nahi hoti, isliye debugging harder hai kyunki control flow runtime pe dynamically decide hota hai,
+        static diagram se predict nahi ho sakta. Isse "handoff loops" ka risk bhi badhta hai (Agent A user ko
+        Agent B ko bhejta hai, jo wapas Agent A ko bhej deta hai) agar har agent ka scope clearly defined na ho.
+      </p>
+
+      <p><strong>Q4. Blackboard pattern mein "task kab complete hua" decide karna hard kyun hai, aur isse kaise
+      solve karte hain?</strong></p>
+      <p>
+        Kyunki koi central authority nahi hai jo track kare ki sab agents apna kaam kar chuke — har agent
+        independently blackboard pe contribute karta hai jab relevant lage, isliye koi single "orchestrator"
+        completion signal nahi bhej sakta. Common solution — ek separate lightweight "monitor" ya "arbiter"
+        agent/process add karna jo blackboard state ko periodically check kare (jaise "kya sab expected fields
+        populate ho gaye?" ya "kya N iterations ho chuki hain bina naye contributions ke") aur completion
+        declare kare.
+      </p>
+
+      <p><strong>Q5. Multi-agent architecture add karne se pehle, ek senior engineer kya evaluate karega?</strong></p>
+      <p>
+        Sabse pehle — kya single agent ko better tools, better context pruning, aur ek zyada focused prompt
+        deke fix kiya ja sakta hai, bina architecture change kiye. Agar nahi, to do specific conditions check
+        karega: <strong>(a)</strong> kya sub-tasks genuinely independent hain jinhe parallelize karke real
+        wall-clock time bachaya ja sake, ya <strong>(b)</strong> kya tool-set/context genuinely ek single
+        agent ke liye unmanageable ho gaya hai. Agar dono false hain, multi-agent sirf N× latency aur N× cost
+        (extra LLM calls) add karega bina proportional value ke, plus naye coordination bugs (misrouting,
+        aggregation conflicts, handoff loops) introduce karega jo debug karna single-agent se harder hota hai.
+      </p>
+
+      <div class="prevnext">
+        <a href="07-agent-fundamentals.html">
+          <div class="label">← Previous</div>
+          <div class="title">AI Agent Fundamentals</div>
+        </a>
+        <a class="next" href="09-agent-memory.html">
+          <div class="label">Next →</div>
+          <div class="title">Agent Memory Systems</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

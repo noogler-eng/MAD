@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tool/Function Calling — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link active" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 6</div>
+      <div class="progress-pill">6 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Function Calling · Tool Loop · Schemas</span>
+      <h1>Tool/Function Calling</h1>
+      <p class="subtitle">
+        Chapter 5 mein humne MCP dekha — jo tools ko <em>discover aur transport</em> karne ka protocol hai.
+        Ye chapter ek level neeche jaake dekhta hai: jab LLM ko ek tool available hota hai, andar se
+        <strong>mechanically kya hota hai</strong> jab wo usse "call" karta hai. Spoiler — LLM khud kabhi
+        code execute nahi karta. Ye poora chapter isi ek fact ke around ghoomta hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#mechanism">1. Function Calling Actually Kya Hai — LLM Code Execute Nahi Karta</a></li>
+          <li><a href="#cycle">2. Request/Response Cycle — Step by Step</a></li>
+          <li><a href="#schema">3. Tool Schema Design — Name, Description, Parameters</a></li>
+          <li><a href="#loop-code">4. Practical Multi-Step Tool Loop — Python Code</a></li>
+          <li><a href="#errors">5. Error Handling — Tool Fail Hone Pe Kya Karein</a></li>
+          <li><a href="#parallel">6. Parallel Tool Calls</a></li>
+          <li><a href="#takeaways">7. Key Takeaways</a></li>
+          <li><a href="#interview">8. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="mechanism">Function Calling Actually Kya Hai — LLM Code Execute Nahi Karta</h2>
+      <p>
+        Sabse common misconception ye hai ki "LLM ne weather API call kiya". <strong>Ye galat hai.</strong>
+        LLM ek text-prediction model hai — usko koi network access nahi hai, koi filesystem access nahi hai,
+        koi runtime execution capability nahi hai. Jab tum LLM ko tools "de dete ho" (API request mein tool
+        definitions bhejte ho), model sirf itna kar sakta hai: <strong>ek structured output generate karna
+        jo bolta hai "main function X ko in arguments ke saath call karna chahta hoon"</strong>.
+      </p>
+      <p>
+        Ye structured output ek JSON object hota hai (function name + arguments), text ki jagah. Model isse
+        return karta hai, aur <strong>tumhara code</strong> — tumhara Python/Node backend — actually us function
+        ko execute karta hai, result nikaalta hai, aur wo result wapas model ko ek naye message ke roop mein
+        bhejta hai taaki model final answer bana sake. Model sirf "decide" karta hai <em>kaunsa</em> tool
+        chahiye aur <em>kya arguments</em> — execution 100% tumhare control mein hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Isliye ye "function calling" hai, "function execution" nahi</div>
+        <p>
+          Ye distinction security ke liye bhi critical hai — LLM kabhi bhi tumhare database ko directly touch
+          nahi karta, koi file delete nahi karta, koi payment nahi banata. Har action ek middleman se guzarta
+          hai — <strong>tumhara execution code</strong> — jahan tum validation, permission checks, aur
+          rate-limiting laga sakte ho before actually kuch bhi run karne se pehle. LLM ek "request suggest
+          karne wala" hai, "executor" nahi.
+        </p>
+      </div>
+
+      <h2 id="cycle">Request/Response Cycle — Step by Step</h2>
+      <p>
+        Chalo poora cycle ek concrete example ke saath dekhte hain — user poochta hai "Delhi mein abhi weather
+        kaisa hai?" aur tumhare paas ek <code>get_weather(city)</code> tool available hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">tool-calling-cycle.txt — end-to-end flow<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// STEP 1 — User apna message bhejta hai + tumhara code tool definitions attach karta hai</span>
+<span class="tok-com">//   User: "Delhi mein abhi weather kaisa hai?"</span>
+<span class="tok-com">//   + tools=[{name: "get_weather", description: "...", parameters: {...}}]</span>
+
+<span class="tok-com">// STEP 2 — LLM decide karta hai ki koi tool chahiye, aur ek tool_call output karta hai</span>
+<span class="tok-com">//   LLM response (structured, text nahi):</span>
+<span class="tok-com">//   { type: "tool_use", name: "get_weather", input: { city: "Delhi" } }</span>
+<span class="tok-com">//   IMPORTANT: is point pe LLM ne kuch bhi execute NAHI kiya — sirf request output ki hai</span>
+
+<span class="tok-com">// STEP 3 — Tumhara code is response ko parse karta hai aur actual function call karta hai</span>
+<span class="tok-com">//   result = get_weather("Delhi")   # ye tumhara real Python function hai, LLM ka nahi</span>
+<span class="tok-com">//   result => { temp: 34, condition: "Sunny", humidity: 40 }</span>
+
+<span class="tok-com">// STEP 4 — Tumhara code result ko ek NAYE message ke roop mein history mein append karta hai</span>
+<span class="tok-com">//   messages.append({ role: "tool", tool_call_id: "...", content: result })</span>
+
+<span class="tok-com">// STEP 5 — Poori history (original question + tool_call + tool result) LLM ko dobara bhejo</span>
+<span class="tok-com">//   LLM ab final natural-language answer generate karta hai — is baar plain text</span>
+<span class="tok-com">//   LLM: "Delhi mein abhi 34°C hai, sunny hai, humidity 40% hai."</span>
+
+<span class="tok-com">// STEP 6 — Ye final text answer hi tumhare user ko dikhaya jaata hai</span>
+</code></pre>
+      </div>
+
+      <p>
+        Notice karo — ye <strong>do separate API calls</strong> hain LLM ko: pehli call mein model tool
+        maangta hai, dusri call mein (tool result ke saath) model final answer deta hai. Agar model ko
+        multiple tools chahiye (e.g. weather + time), ye cycle multiple baar repeat ho sakta hai before model
+        plain text return karta hai — isi wajah se production code mein iske liye ek <code>while</code> loop
+        chahiye hota hai, single if/else nahi.
+      </p>
+
+      <h2 id="schema">Tool Schema Design — Name, Description, Parameters</h2>
+      <p>
+        Model ko tool "samajhne" ke liye teen cheezein deni padti hain — ek JSON Schema ki tarah:
+      </p>
+      <ul>
+        <li><strong>name</strong> — tool ka unique identifier (e.g. <code>get_weather</code>), model isi naam se refer karta hai.</li>
+        <li><strong>description</strong> — plain English/natural language mein bataata hai tool <em>kya karta hai aur kab use karna hai</em>. Ye sabse important field hai — model isi text ko padhke decide karta hai ki current user query ke liye ye tool relevant hai ya nahi.</li>
+        <li><strong>parameters</strong> — ek JSON Schema object jo required aur optional arguments define karta hai, unke types, enums, aur descriptions ke saath.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Vague description = wrong tool selection</div>
+        <p>
+          Agar description sirf <code>"gets weather"</code> hai, model confuse ho sakta hai ki isse kab call
+          karna hai — kya "mujhe travel plan karna hai Delhi ke liye" jaisi query pe bhi ye trigger hoga? Aur
+          agar parameter description missing hai (sirf <code>city: string</code>, koi hint nahi ki full city
+          name chahiye ya airport code), model galat format mein arguments bhej sakta hai (e.g.
+          <code>"DEL"</code> ki jagah <code>"New Delhi, India"</code> expect karne wale API ko). Vague schema
+          seedha production mein wrong tool calls aur wrong arguments ki shakal mein dikhta hai — ye silent
+          failure hai, koi crash nahi hoga, bas galat data aayega.
+        </p>
+      </div>
+
+      <p>Best practices jo actually production mein farak daalte hain:</p>
+      <ul>
+        <li><strong>Description mein "when to use" explicitly likho</strong> — sirf "what it does" nahi, balki "use this when user asks about current weather conditions for a specific city" jaisa context bhi do.</li>
+        <li><strong>Enums use karo jahan bhi possible ho</strong> — agar parameter ki limited valid values hain (e.g. <code>unit: "celsius" | "fahrenheit"</code>), enum se model ko free-text guess karne ki zaroorat nahi padti, aur invalid values bilkul avoid ho jaate hain.</li>
+        <li><strong>Required vs optional clearly mark karo</strong> — agar ek parameter optional hai with a sensible default, usko required mat banao — model unnecessarily usko fill karne ki koshish karega (kabhi-kabhi galat value se) jab woh chahiye hi nahi tha.</li>
+        <li><strong>Tool names descriptive rakho, generic nahi</strong> — <code>get_weather</code> better hai <code>fetch_data</code> se, jab tumhare paas multiple tools hon jo alag-alag data fetch karte hain.</li>
+        <li><strong>Bahut zyada tools ek saath mat do</strong> — agar 50+ tools ek call mein pass karoge, model ki tool-selection accuracy degrade hoti hai (relevant description context window mein dilute ho jaata hai).</li>
+      </ul>
+
+      <h2 id="loop-code">Practical Multi-Step Tool Loop — Python Code</h2>
+      <p>
+        Ab ek real working example — do tools (<code>get_weather</code> aur <code>get_current_time</code>)
+        define karenge, user message bhejenge, aur ek <code>while</code> loop likhenge jo tab tak chalta rahe
+        jab tak model plain text final answer na de de.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">tool_loop.py — multi-step tool-calling loop<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># tool_loop.py — Anthropic Claude API ke saath ek real multi-step tool loop</span>
+<span class="tok-kw">import</span> json  <span class="tok-com"># tool arguments aur results ko JSON serialize/deserialize karne ke liye</span>
+<span class="tok-kw">import</span> anthropic  <span class="tok-com"># official Anthropic Python SDK</span>
+
+client = anthropic.Anthropic()  <span class="tok-com"># client banao — env var ANTHROPIC_API_KEY se key uthayega</span>
+
+<span class="tok-com"># --- ACTUAL PYTHON FUNCTIONS jo hum expose karna chahte hain (real implementation) ---</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">get_weather</span>(city: <span class="tok-kw">str</span>) -> <span class="tok-kw">dict</span>:  <span class="tok-com"># real weather function, city naam leta hai</span>
+    <span class="tok-com"># normally yahan ek real weather API (e.g. OpenWeatherMap) call hoga</span>
+    fake_db = {<span class="tok-str">"Delhi"</span>: 34, <span class="tok-str">"Mumbai"</span>: 30, <span class="tok-str">"Bangalore"</span>: 24}  <span class="tok-com"># demo ke liye hardcoded data</span>
+    <span class="tok-kw">if</span> city <span class="tok-kw">not in</span> fake_db:  <span class="tok-com"># agar city hamare fake DB mein nahi hai</span>
+        <span class="tok-kw">raise</span> <span class="tok-fn">ValueError</span>(<span class="tok-str">f"Unknown city: {city}"</span>)  <span class="tok-com"># explicit error raise karo, silently fail mat karo</span>
+    <span class="tok-kw">return</span> {<span class="tok-str">"city"</span>: city, <span class="tok-str">"temp_c"</span>: fake_db[city], <span class="tok-str">"condition"</span>: <span class="tok-str">"Sunny"</span>}  <span class="tok-com"># structured result return karo</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">get_current_time</span>(timezone: <span class="tok-kw">str</span>) -> <span class="tok-kw">dict</span>:  <span class="tok-com"># real time function, timezone naam leta hai</span>
+    <span class="tok-kw">import</span> datetime  <span class="tok-com"># yahi function ke andar import — sirf isi function ko chahiye</span>
+    <span class="tok-com"># demo ke liye hum bas UTC time return kar rahe hain (real code mein pytz/zoneinfo use karo)</span>
+    now = datetime.datetime.utcnow().isoformat()  <span class="tok-com"># current UTC time ko ISO string mein convert karo</span>
+    <span class="tok-kw">return</span> {<span class="tok-str">"timezone"</span>: timezone, <span class="tok-str">"utc_time"</span>: now}  <span class="tok-com"># structured result return karo</span>
+
+<span class="tok-com"># --- TOOL SCHEMAS jo model ko bataate hain in functions ke baare mein ---</span>
+
+TOOLS = [  <span class="tok-com"># list of tool definitions jo API request mein bhejenge</span>
+    {  <span class="tok-com"># pehla tool object — get_weather</span>
+        <span class="tok-str">"name"</span>: <span class="tok-str">"get_weather"</span>,  <span class="tok-com"># unique tool identifier</span>
+        <span class="tok-str">"description"</span>: <span class="tok-str">"Current weather ke liye use karo jab user kisi specific city ka weather poochhe."</span>,  <span class="tok-com"># kab use karein — explicit</span>
+        <span class="tok-str">"input_schema"</span>: {  <span class="tok-com"># JSON Schema jo valid arguments define karta hai</span>
+            <span class="tok-str">"type"</span>: <span class="tok-str">"object"</span>,  <span class="tok-com"># top-level argument object hai</span>
+            <span class="tok-str">"properties"</span>: {  <span class="tok-com"># individual parameters yahan define hote hain</span>
+                <span class="tok-str">"city"</span>: {<span class="tok-str">"type"</span>: <span class="tok-str">"string"</span>, <span class="tok-str">"description"</span>: <span class="tok-str">"Full city name, e.g. 'Delhi'"</span>}  <span class="tok-com"># city ek required string hai</span>
+            },  <span class="tok-com"># properties block band</span>
+            <span class="tok-str">"required"</span>: [<span class="tok-str">"city"</span>]  <span class="tok-com"># city ke bina tool call invalid hai</span>
+        }  <span class="tok-com"># input_schema band</span>
+    },  <span class="tok-com"># pehla tool object band</span>
+    {  <span class="tok-com"># dusra tool object — get_current_time</span>
+        <span class="tok-str">"name"</span>: <span class="tok-str">"get_current_time"</span>,  <span class="tok-com"># dusra tool — current time nikaalne ke liye</span>
+        <span class="tok-str">"description"</span>: <span class="tok-str">"Kisi bhi timezone ka current time nikaalne ke liye use karo."</span>,  <span class="tok-com"># kab use karein</span>
+        <span class="tok-str">"input_schema"</span>: {  <span class="tok-com"># is tool ka JSON Schema</span>
+            <span class="tok-str">"type"</span>: <span class="tok-str">"object"</span>,  <span class="tok-com"># object type schema</span>
+            <span class="tok-str">"properties"</span>: {  <span class="tok-com"># parameter definitions yahan se shuru</span>
+                <span class="tok-str">"timezone"</span>: {  <span class="tok-com"># timezone parameter definition</span>
+                    <span class="tok-str">"type"</span>: <span class="tok-str">"string"</span>,  <span class="tok-com"># string type</span>
+                    <span class="tok-str">"enum"</span>: [<span class="tok-str">"UTC"</span>, <span class="tok-str">"IST"</span>, <span class="tok-str">"PST"</span>],  <span class="tok-com"># enum — limited valid values, model ko free-text guess nahi karna padta</span>
+                    <span class="tok-str">"description"</span>: <span class="tok-str">"Timezone code."</span>  <span class="tok-com"># short but clear description</span>
+                }  <span class="tok-com"># timezone parameter definition band</span>
+            },  <span class="tok-com"># properties block band</span>
+            <span class="tok-str">"required"</span>: [<span class="tok-str">"timezone"</span>]  <span class="tok-com"># timezone bhi required hai</span>
+        }  <span class="tok-com"># input_schema band</span>
+    }  <span class="tok-com"># dusra tool object band</span>
+]  <span class="tok-com"># TOOLS list band</span>
+
+<span class="tok-com"># function name ko actual Python callable se map karne wala dictionary — dispatch table</span>
+FUNCTION_MAP = {<span class="tok-str">"get_weather"</span>: get_weather, <span class="tok-str">"get_current_time"</span>: get_current_time}  <span class="tok-com"># naam -> function reference</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">run_tool_loop</span>(user_message: <span class="tok-kw">str</span>) -> <span class="tok-kw">str</span>:  <span class="tok-com"># main entrypoint — user ka message leke final text answer deta hai</span>
+    messages = [{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_message}]  <span class="tok-com"># conversation history — pehla message user ka hai</span>
+
+    MAX_ITERATIONS = 5  <span class="tok-com"># infinite loop se bachne ke liye hard cap (senior note — neeche discuss hua hai)</span>
+    <span class="tok-kw">for</span> _ <span class="tok-kw">in</span> <span class="tok-fn">range</span>(MAX_ITERATIONS):  <span class="tok-com"># while True ki jagah bounded for loop — safety guard</span>
+        response = client.messages.create(  <span class="tok-com"># model ko call karo — poori history + tools ke saath</span>
+            model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># model id</span>
+            max_tokens=1024,  <span class="tok-com"># output tokens ki limit</span>
+            tools=TOOLS,  <span class="tok-com"># model ko available tools batao</span>
+            messages=messages  <span class="tok-com"># poori conversation history bhejo (context ke liye zaroori)</span>
+        )  <span class="tok-com"># client.messages.create call band</span>
+
+        <span class="tok-kw">if</span> response.stop_reason != <span class="tok-str">"tool_use"</span>:  <span class="tok-com"># agar model ne tool maangna band kar diya</span>
+            <span class="tok-com"># response.content mein plain text block hoga — usko extract karke return karo</span>
+            <span class="tok-kw">return</span> <span class="tok-str">""</span>.join(block.text <span class="tok-kw">for</span> block <span class="tok-kw">in</span> response.content <span class="tok-kw">if</span> block.type == <span class="tok-str">"text"</span>)  <span class="tok-com"># final answer</span>
+
+        <span class="tok-com"># model ne tool_use bola hai — pehle assistant ka response history mein daalo (raw content block ke saath)</span>
+        messages.append({<span class="tok-str">"role"</span>: <span class="tok-str">"assistant"</span>, <span class="tok-str">"content"</span>: response.content})  <span class="tok-com"># exact response history mein append</span>
+
+        tool_results = []  <span class="tok-com"># is turn ke saare tool results yahan collect karenge</span>
+        <span class="tok-kw">for</span> block <span class="tok-kw">in</span> response.content:  <span class="tok-com"># response mein multiple content blocks ho sakte hain</span>
+            <span class="tok-kw">if</span> block.type != <span class="tok-str">"tool_use"</span>:  <span class="tok-com"># sirf tool_use blocks process karo, text blocks skip</span>
+                <span class="tok-kw">continue</span>  <span class="tok-com"># next block pe jaao</span>
+
+            fn = FUNCTION_MAP.get(block.name)  <span class="tok-com"># requested tool ka actual Python function dhoondo</span>
+            <span class="tok-kw">try</span>:  <span class="tok-com"># execution ko try/except mein wrap karo — errors crash nahi honi chahiye</span>
+                <span class="tok-kw">if</span> fn <span class="tok-kw">is</span> <span class="tok-kw">None</span>:  <span class="tok-com"># agar model ne koi unknown tool naam maanga</span>
+                    <span class="tok-kw">raise</span> <span class="tok-fn">ValueError</span>(<span class="tok-str">f"Unknown tool: {block.name}"</span>)  <span class="tok-com"># explicit error raise karo</span>
+                result = fn(**block.input)  <span class="tok-com"># model ke diye arguments ke saath actual function call karo</span>
+                content_str = json.dumps(result)  <span class="tok-com"># result ko JSON string mein serialize karo</span>
+                is_error = <span class="tok-kw">False</span>  <span class="tok-com"># success flag</span>
+            <span class="tok-kw">except</span> <span class="tok-fn">Exception</span> <span class="tok-kw">as</span> e:  <span class="tok-com"># koi bhi error pakdo (validation, network, unknown tool, etc.)</span>
+                content_str = json.dumps({<span class="tok-str">"error"</span>: <span class="tok-fn">str</span>(e)})  <span class="tok-com"># error ko bhi structured JSON banao</span>
+                is_error = <span class="tok-kw">True</span>  <span class="tok-com"># error flag — model ko batayenge ki ye fail hua</span>
+
+            tool_results.append({  <span class="tok-com"># is tool call ka result message format mein taiyar karo</span>
+                <span class="tok-str">"type"</span>: <span class="tok-str">"tool_result"</span>,  <span class="tok-com"># block type jo API expect karta hai</span>
+                <span class="tok-str">"tool_use_id"</span>: block.id,  <span class="tok-com"># original tool_use call se match karne ke liye id</span>
+                <span class="tok-str">"content"</span>: content_str,  <span class="tok-com"># actual result (ya error) JSON string</span>
+                <span class="tok-str">"is_error"</span>: is_error  <span class="tok-com"># model ko batata hai ki ye ek error result hai</span>
+            })  <span class="tok-com"># tool_results.append call band</span>
+
+        messages.append({<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: tool_results})  <span class="tok-com"># saare tool results ek "user" message ke roop mein history mein daalo</span>
+
+    <span class="tok-kw">return</span> <span class="tok-str">"Max tool-call iterations reached — could not resolve request."</span>  <span class="tok-com"># safety fallback agar loop MAX_ITERATIONS tak chala gaya</span>
+
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:  <span class="tok-com"># script directly run hone par hi ye chale</span>
+    answer = <span class="tok-fn">run_tool_loop</span>(<span class="tok-str">"Delhi ka weather aur UTC time dono batao."</span>)  <span class="tok-com"># dono tools trigger karne wala query</span>
+    <span class="tok-fn">print</span>(answer)  <span class="tok-com"># final natural-language answer print karo</span>
+</code></pre>
+      </div>
+
+      <p>
+        Is loop mein important cheezein — <code>MAX_ITERATIONS</code> se infinite loop guard, tool results
+        JSON-serialized hoke wapas <code>messages</code> history mein jaate hain (role <code>"user"</code>
+        ke saath, kyunki API perspective se ye "user turn" ka data hai), aur poori history — original
+        question, tool call, tool result — <em>har</em> next API call mein dobara bheji jaati hai (LLM ke
+        paas koi persistent memory nahi hai, har call stateless hai).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Infinite tool-call loops production mein real risk hain</div>
+        <p>
+          Agar tum <code>MAX_ITERATIONS</code> guard nahi lagate aur seedha <code>while True</code> chalate
+          ho, ek buggy schema, ambiguous user query, ya model ka koi edge-case reasoning failure tumhe
+          endless loop mein daal sakta hai — model baar-baar tool call karta rahega, kabhi plain text return
+          nahi karega. Ye seedha tumhara API bill explode kar dega (har iteration ek paid API call hai) aur
+          user request timeout ho jaayegi. Production mein hamesha ek hard iteration cap rakho (typically
+          3-10, use-case pe depend karta hai), aur cap hit hone pe user ko ek graceful fallback message do
+          ("main ye abhi resolve nahi kar paaya, dobara try karo ya support contact karo") — silent
+          infinite retry se kahin better hai.
+        </p>
+      </div>
+
+      <h2 id="errors">Error Handling — Tool Fail Hone Pe Kya Karein</h2>
+      <p>
+        Real world mein tools fail hote hain — network timeout, invalid arguments jo model ne galat bheje,
+        third-party API down hai, rate limit hit hua. Naive approach ye hoga ki exception uncaught chhod do
+        aur poora request crash ho jaaye — lekin ye bahut brittle hai.
+      </p>
+      <p>
+        Better pattern (jo upar wale code mein bhi use hua) — <strong>error ko bhi ek structured tool result
+        ki tarah model ko wapas bhejo</strong>, crash karne ki jagah. Model ko pata chal jaata hai ki tool
+        fail hua, aur wo intelligently react kar sakta hai — retry kar sakta hai different arguments ke
+        saath, user ko explain kar sakta hai "abhi weather data available nahi hai", ya koi alternate tool
+        try kar sakta hai. Ye human customer-support agent jaisa hi hota hai — agar ek system down hai, wo
+        crash nahi karta, wo user ko batata hai aur alternative dhoondta hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">error_pattern.py — structured error jo model ko wapas jaata hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># structured error pattern — real network call ke case mein</span>
+<span class="tok-kw">try</span>:  <span class="tok-com"># tool execution ko try block mein wrap karo</span>
+    result = call_external_weather_api(city)  <span class="tok-com"># actual network call jo fail ho sakta hai</span>
+<span class="tok-kw">except</span> TimeoutError:  <span class="tok-com"># specific exception type catch karo — generic catch-all se better</span>
+    result = {<span class="tok-str">"error"</span>: <span class="tok-str">"timeout"</span>, <span class="tok-str">"message"</span>: <span class="tok-str">"Weather service timed out, try again"</span>}  <span class="tok-com"># model-readable structured error</span>
+<span class="tok-kw">except</span> KeyError:  <span class="tok-com"># agar city hi invalid thi (model ne galat naam bheja)</span>
+    result = {<span class="tok-str">"error"</span>: <span class="tok-str">"invalid_city"</span>, <span class="tok-str">"message"</span>: <span class="tok-str">"City not recognized, ask user for a valid city name"</span>}  <span class="tok-com"># model ko retry-hint bhi do</span>
+</code></pre>
+      </div>
+
+      <p>
+        Notice karo — error message mein <em>hint</em> bhi diya gaya hai ("try again", "ask user for a valid
+        city name") — ye model ko batata hai next step kya hona chahiye, sirf "kuch fail hua" nahi. Ye chhota
+        sa detail retry-loops ko zyada intelligent banata hai.
+      </p>
+
+      <h2 id="parallel">Parallel Tool Calls</h2>
+      <p>
+        Modern models (Claude included) ek hi turn mein <strong>multiple tool calls simultaneously request
+        kar sakte hain</strong> — jaise agar user poochhe "Delhi aur Mumbai dono ka weather batao", model
+        ek hi response mein do <code>tool_use</code> blocks bhej sakta hai (<code>get_weather("Delhi")</code>
+        aur <code>get_weather("Mumbai")</code> dono ek saath), sequential do turns lene ke bajaye.
+      </p>
+      <p>
+        Engineering implication — agar tumhara execution code sequentially har tool ko ek-ek karke chalata
+        hai (for loop mein synchronous calls), tum unnecessary latency add kar rahe ho. Independent tool
+        calls ko <strong>concurrently execute karna chahiye</strong> — Python mein <code>asyncio.gather</code>
+        se, ya thread pool se agar tools I/O-bound hain (network calls). Upar wale example mein hamara
+        <code>for block in response.content</code> loop sequential tha (simplicity ke liye) — production
+        mein agar ek turn mein 3+ independent tool calls aate hain, unhe async gather karke total latency
+        significantly kam ki ja sakti hai, especially jab har tool call ek slow external API hit karta ho.
+      </p>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>LLM khud kabhi code execute nahi karta — wo sirf ek structured "call this function with these arguments" request output karta hai; actual execution tumhare code ki responsibility hai.</li>
+        <li>Poora cycle do (ya zyada) separate API calls mein hota hai — pehli call mein model tool maangta hai, execution ke baad dusri call mein model final text answer deta hai.</li>
+        <li>Tool schema quality directly accuracy affect karti hai — clear "when to use" description, enums for constrained values, aur correct required/optional marking se wrong tool selection aur wrong arguments avoid hote hain.</li>
+        <li>Production tool loop ek bounded loop hona chahiye (<code>while</code>/<code>for</code> with a max-iteration cap), infinite <code>while True</code> nahi — cost aur latency dono risk mein hain.</li>
+        <li>Tool errors ko crash karne ki jagah structured error result ke roop mein model ko wapas bhejo — model retry ya graceful explanation de sakta hai.</li>
+        <li>Models ek turn mein multiple tools ek saath request kar sakte hain — independent tool calls ko concurrently execute karo (asyncio.gather) taaki unnecessary sequential latency na ho.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. "Function calling" mein LLM actually kya karta hai — kya wo khud API call karta hai?</strong></p>
+      <p>
+        Nahi. LLM sirf ek structured output generate karta hai jo bolta hai "main function X ko in
+        arguments ke saath call karna chahta hoon" — ye ek JSON object hota hai, text ki jagah. Actual
+        execution (network call, DB query, etc.) hamesha application ke apne code mein hota hai. LLM ka role
+        sirf "decide karna" hai ki kaunsa tool chahiye aur kya arguments — "run karna" nahi.
+      </p>
+
+      <p><strong>Q2. Ek vague tool description production mein kya problems create kar sakti hai?</strong></p>
+      <p>
+        Do main problems — wrong tool selection (model confuse ho jaata hai ki current query ke liye ye tool
+        relevant hai ya nahi, isliye galat context mein bhi call kar sakta hai ya relevant hone par bhi call
+        nahi karta) aur wrong arguments (agar parameter descriptions missing/vague hain, model galat format
+        ya galat values bhej sakta hai — e.g. city code ki jagah full name, ya invalid enum value). Dono
+        silent failures hain, koi crash nahi hota, bas output galat aata hai jo debug karna mushkil hai.
+      </p>
+
+      <p><strong>Q3. Ek production tool-calling loop mein max-iteration guard kyun zaroori hai?</strong></p>
+      <p>
+        Bina bounded loop ke, edge-case reasoning failure ya ambiguous query model ko baar-baar tool calls
+        request karne pe majboor kar sakti hai bina kabhi plain text final answer diye — ye endless loop
+        banata hai jo API costs explode kar deta hai (har iteration ek paid call hai) aur request ko timeout
+        tak le jaata hai. Ek hard cap (e.g. 5-10 iterations) rakhna zaroori hai, saath mein cap hit hone pe
+        ek graceful fallback message.
+      </p>
+
+      <p><strong>Q4. Tool call fail ho jaaye (network error ya invalid arguments) to kya karna chahiye — crash ya kuch aur?</strong></p>
+      <p>
+        Crash nahi karna chahiye. Best practice — error ko bhi ek structured tool result ki tarah model ko
+        wapas bhejo (e.g. <code>{"error": "timeout", "message": "..."}</code>), taaki model intelligently
+        react kar sake — retry kar sakta hai, alternate approach try kar sakta hai, ya user ko clearly
+        explain kar sakta hai ki kya problem hui. Ye application ko resilient banata hai, ek single tool
+        failure poori conversation crash nahi karti.
+      </p>
+
+      <p><strong>Q5. Parallel tool calls kya hote hain, aur inka engineering implication kya hai?</strong></p>
+      <p>
+        Model ek hi response turn mein multiple independent tool calls request kar sakta hai (e.g. do
+        alag cities ka weather ek saath maangna). Agar execution code inhe sequentially, ek-ek karke chalata
+        hai, unnecessary latency add hoti hai. Sahi approach hai in independent calls ko concurrently execute
+        karna — Python mein <code>asyncio.gather</code> jaise tools se — taaki total wait time sabse slow
+        individual tool call jitna ho, sabke sum jitna nahi.
+      </p>
+
+      <div class="prevnext">
+        <a href="05-mcp-deep-dive.html">
+          <div class="label">← Previous</div>
+          <div class="title">MCP Deep-Dive</div>
+        </a>
+        <a class="next" href="07-agent-fundamentals.html">
+          <div class="label">Next →</div>
+          <div class="title">AI Agent Fundamentals</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design for AI Products — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link active" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 11</div>
+      <div class="progress-pill">11 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Architecture · API Gateway · Streaming</span>
+      <h1>System Design for AI Products</h1>
+      <p class="subtitle">
+        Ab tak humne pieces dekhe — prompting, RAG, MCP, tool calling, agents, memory, model selection.
+        Is chapter mein hum sab kuch ek saath jodenge: <strong>ek real AI product ka poora system design</strong>
+        kaisa dikhta hai, layer by layer, aur teen concrete worked examples (chatbot, RAG assistant, agentic
+        backend) ke through dekhenge ki architecture decisions kaise badalte hain jaise product complexity
+        badhti hai.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#reference-architecture">1. Reference Architecture — Generic LLM Product</a></li>
+          <li><a href="#design-1-chatbot">2. Design #1 — Simple Chatbot/Copilot</a></li>
+          <li><a href="#design-2-rag">3. Design #2 — RAG Document Q&A Assistant</a></li>
+          <li><a href="#design-3-agentic">4. Design #3 — Agentic Backend</a></li>
+          <li><a href="#statelessness">5. Statelessness Aur Idempotency</a></li>
+          <li><a href="#api-design">6. API Design — Streaming, Timeouts, Safe Retries</a></li>
+          <li><a href="#caching">7. Caching — System-Level View</a></li>
+          <li><a href="#takeaways">8. Key Takeaways</a></li>
+          <li><a href="#interview">9. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="reference-architecture">Reference Architecture — Generic LLM Product</h2>
+      <p>
+        Chahe tum chatbot bana rahe ho ya multi-agent system, almost har production AI product ek
+        similar layered shape follow karta hai. Ye reference architecture samajh lo to teeno worked
+        examples baad mein "isi shape ke variations" lagenge, kuch alag naya nahi.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Generic LLM-backed product — layered architecture<button class="copy-btn">Copy</button></div>
+        <pre><code>Client (Web / Mobile / Slack bot / CLI)
+      │  HTTPS request, ideally streaming-capable (SSE / WebSocket)
+      ▼
+API Gateway / Backend-for-Frontend
+      │  auth, rate limiting, request validation, routing
+      ▼
+Orchestration Layer   ◄──────────────┐
+      │  prompt building               │
+      │  RAG retrieval trigger         │  (calls out to:)
+      │  tool / agent invocation       │  ┌─ Vector DB (retrieval)
+      │  response streaming back       │  ├─ Cache layer (prompt/embed/tool cache)
+      ▼                                │  ├─ Tool/Agent execution service
+LLM Provider(s)                        │  └─ Observability/logging (traces, tokens, cost)
+  (OpenAI / Anthropic / self-hosted)   │
+      │  tokens stream back            │
+      ▼                                │
+Orchestration Layer  ──────────────────┘  (guardrails check response before it leaves)
+      │
+      ▼
+Client  (tokens rendered incrementally / final structured response)</code></pre>
+      </div>
+
+      <p>Har layer ki apni specific responsibility hai — inhe alag-alag samajhna zaroori hai kyunki inka scaling aur failure mode bhi alag hota hai:</p>
+
+      <ol>
+        <li>
+          <strong>Client</strong> — web app, mobile app, Slack/Teams bot, ya CLI. Ideally streaming-aware
+          hona chahiye (SSE ya WebSocket consume kar sake), kyunki LLM responses token-by-token aate hain
+          aur user ko turant kuch dikhna chahiye — 3-5 second ka blank loading spinner AI products mein
+          especially bura lagta hai kyunki users already "AI slow hota hai" expect karte hain.
+        </li>
+        <li>
+          <strong>API Gateway / Backend-for-Frontend</strong> — ye tumhara normal backend hai jo auth
+          verify karta hai, per-user/per-org rate limiting enforce karta hai, request payload validate
+          karta hai, aur request ko orchestration layer tak route karta hai. Ye layer LLM ke baare mein
+          kuch nahi jaanta — isko REST API ki tarah hi treat karo, koi special AI-specific cheez nahi hai
+          yahan.
+        </li>
+        <li>
+          <strong>Orchestration layer</strong> — ye asli "AI engineering" ka core hai. Ye layer decide
+          karta hai: konsa prompt banana hai (system prompt + user input + retrieved context), kya RAG
+          retrieval chalani hai, kya tool/agent loop invoke karna hai, aur LLM provider ko call karke
+          response ko stream back karna hai. Ye stateless service hona chahiye (detail #statelessness
+          section mein) taaki horizontally scale ho sake.
+        </li>
+        <li>
+          <strong>LLM provider(s)</strong> — Anthropic/OpenAI API, ya self-hosted model (vLLM/TGI ke
+          peeche). Production systems often multiple providers wire karte hain — primary model + fallback
+          model agar primary rate-limited ya down ho (chapter 13 mein detail).
+        </li>
+        <li>
+          <strong>Vector DB</strong> — agar RAG use ho raha hai, retrieval yahan se aata hai (Pinecone,
+          Weaviate, pgvector, etc — chapter 4 mein detail).
+        </li>
+        <li>
+          <strong>Cache layer</strong> — prompt→response cache, embedding cache, retrieval-result cache
+          (niche caching section mein detail).
+        </li>
+        <li>
+          <strong>Tool/Agent execution service</strong> — agar agent tools call kar raha hai (web search,
+          internal APIs, code execution), ye usually ek separate sandboxed service hota hai, orchestration
+          layer ke andar directly nahi (design #3 mein detail).
+        </li>
+        <li>
+          <strong>Observability/logging</strong> — har request ka full trace (prompt, retrieved chunks,
+          tool calls, tokens used, latency, cost) capture karna — bina iske production mein debug karna
+          impossible hai (chapter 13 mein poora coverage).
+        </li>
+        <li>
+          <strong>Guardrails</strong> — input validation (prompt injection detection) aur output validation
+          (PII leak check, toxicity check) — response client tak jaane se pehle ye check ho sakta hai
+          (chapter 13 mein detail).
+        </li>
+      </ol>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ye ek "reference", ek recipe nahi</div>
+        <p>
+          Har product ko har layer ki zaroorat nahi hoti — ek simple internal FAQ bot ko vector DB ya
+          tool execution service ki zaroorat nahi. Point ye hai ki jab tumhe koi naya requirement aaye
+          (retrieval, tools, multi-turn memory), tumhe pata ho ki wo kis layer mein fit hota hai, taaki
+          tum orchestration layer ko overload na karo ek "God service" bana ke.
+        </p>
+      </div>
+
+      <h2 id="design-1-chatbot">Design #1 — Simple Chatbot/Copilot</h2>
+      <p>
+        Scenario: ek internal support assistant jo company docs ke basis pe employees ke sawaalon ka
+        jawab deta hai, koi tools nahi, koi multi-step actions nahi — sirf conversational Q&A.
+      </p>
+      <p>
+        <strong>Key design decision — stateless per-request vs stateful session:</strong> conversation
+        history (previous turns) kahan store hoti hai? Do options hain:
+      </p>
+      <ul>
+        <li>
+          <strong>Client-side history</strong> — frontend har request ke saath poora conversation history
+          bhejta hai (ya at least last N turns). Backend service completely stateless rehta hai — koi
+          server-side session state nahi. Simple internal tools ke liye ye often sabse simple approach hai.
+        </li>
+        <li>
+          <strong>Server-side session (DB-backed)</strong> — session ID client ko milta hai, history ek DB
+          (Postgres/Redis) mein store hoti hai, backend service history ko session ID se fetch karta hai.
+          Zaroorat padti hai jab history bahut lambi ho jaaye (client payload size limit) ya multi-device
+          continuity chahiye ho (user phone pe shuru kare, laptop pe continue kare).
+        </li>
+      </ul>
+      <p>
+        Dono approaches mein backend <em>service</em> khud stateless rehta hai — state ya to client mein hai
+        ya ek external DB mein, kabhi bhi backend process ke memory mein nahi (isi wajah se agla request
+        kisi bhi server instance pe land ho sakta hai, load balancer round-robin kar sakta hai bina "sticky
+        session" ki zaroorat ke).
+      </p>
+      <p>
+        <strong>Streaming:</strong> response client ko SSE (Server-Sent Events) ya WebSocket ke through
+        token-by-token stream hoti hai — user ko turant "AI type kar raha hai" feel milta hai, poore
+        response ka wait nahi karna padta (jo 5-10 seconds tak ho sakta hai lambe answers ke liye).
+      </p>
+      <p>
+        <strong>Minimal infra:</strong> is design mein vector DB zaroori nahi (agar retrieval nahi chahiye),
+        tool execution service zaroori nahi, agent loop zaroori nahi. Bas: client → API gateway →
+        orchestration layer (prompt build karo, LLM call karo, stream back karo) → LLM provider. Simplest
+        possible AI product shape — but yahi shape hai jo already production mein 60-70% internal tools
+        cover kar leta hai.
+      </p>
+
+      <h2 id="design-2-rag">Design #2 — RAG Document Q&A Assistant</h2>
+      <p>
+        Scenario: ek assistant jo company ke internal documents (policies, wikis, PDFs) pe questions
+        answer karta hai, actual document content ko cite karke.
+      </p>
+      <p>
+        <strong>Core architectural insight — ingestion aur query path completely separate concerns hain,
+        alag services ki tarah design karo:</strong>
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th>Ingestion Pipeline</th><th>Query Path</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Trigger</td><td>Naya document upload/update hone pe</td><td>User ka question aane pe</td></tr>
+          <tr><td>Timing</td><td>Async, background job (queue-based)</td><td>Synchronous, request/response</td></tr>
+          <tr><td>Latency requirement</td><td>Kuch minutes bhi chalega — koi user isse directly wait nahi kar raha</td><td>Low-latency critical — user turant answer chahta hai</td></tr>
+          <tr><td>Steps</td><td>Parse → chunk → embed → vector DB mein upsert</td><td>Query embed → retrieve → rerank → prompt build → LLM call</td></tr>
+          <tr><td>Failure mode</td><td>Retry silently, alert on repeated failure — user ko pata bhi nahi chalta</td><td>User-facing error, graceful degradation zaroori</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Ye separation kyun zaroori hai? Agar ingestion aur query ek hi synchronous path mein mix ho jaayein
+        (jaise "document upload hote hi turant chunk+embed karo, request response wahi block ho jaaye"),
+        to ek bada PDF upload karne pe user ka request 30+ seconds tak hang ho sakta hai — bahut bura UX.
+        Isliye ingestion ko ek <strong>async job queue</strong> (SQS, Celery, BullMQ) ke peeche daalo —
+        upload endpoint turant "queued" response return karta hai, actual parsing/chunking/embedding ek
+        background worker mein hoti hai, alag se scale hoti hai (embedding-heavy workload, GPU/API-bound,
+        alag resource profile query path se).
+      </p>
+      <p>
+        Query path, uske contrast mein, hamesha low-latency optimized hona chahiye — user seedha wait
+        kar raha hai. Isme retrieval (vector DB lookup, usually 10-50ms), optional reranking (50-200ms),
+        aur LLM generation (streaming se perceived latency kam) shaamil hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — ingestion/query coupling ek real production mistake hai</div>
+        <p>
+          Maine ek team dekhi jinhone shuru mein document upload API ko synchronously chunk+embed karke
+          response return karne wala design kiya — chhote test docs ke saath fine chala. Production mein
+          jab users ne 200-page PDFs upload karna shuru kiya, upload endpoint 45+ second timeout hone laga,
+          aur load balancer requests drop karne laga. Fix ye tha ki upload endpoint ko turant "job queued,
+          ID: xyz" return karne wala banaya, aur client ko job status poll karne (ya websocket notification
+          milne) ke liye separate endpoint diya. Lesson: <strong>jo bhi operation ka duration unpredictable
+          ho aur user ke direct control mein na ho (LLM call, embedding batch, large file processing), use
+          hamesha async job ki tarah design karo</strong>, chahe shuru mein "abhi to fast hai" lage.
+        </p>
+      </div>
+
+      <p>
+        Baaki architecture design #1 jaisa hi hai (streaming response, stateless orchestration layer), bas
+        vector DB retrieval step add hota hai query path mein, aur ek poora naya async ingestion subsystem
+        parallel mein chalta hai.
+      </p>
+
+      <h2 id="design-3-agentic">Design #3 — Agentic Backend</h2>
+      <p>
+        Scenario: ek agent jo lookup kar sakta hai (search internal APIs, databases) aur multi-step actions
+        le sakta hai (create ticket, send notification, update record) — jaisa chapter 7-8 mein cover kiya.
+        Ye sabse complex design hai teeno mein.
+      </p>
+      <p>
+        Do naye architectural requirements aate hain jo pehle designs mein nahi the:
+      </p>
+      <ul>
+        <li>
+          <strong>Tool-execution sandbox/service layer</strong> — agent jo tools call karta hai (especially
+          code execution, ya external API calls jinke side effects hain) unhe orchestration layer ke andar
+          directly execute nahi karna chahiye. Ek alag, sandboxed tool-execution service hona chahiye jo:
+          permissions enforce kare (agent har internal API ko access nahi kar sakta), resource limits lagaaye
+          (timeout, memory cap agar code execution hai), aur audit log rakhe (kaunsa tool kab, kis input ke
+          saath call hua). Ye separation security ke liye critical hai — agent ka LLM-generated tool call
+          agar directly production DB ko hit kar sake bina kisi layer ke, ek prompt injection attack seedha
+          data-modifying action mein convert ho sakta hai.
+        </li>
+        <li>
+          <strong>Async job queue for long-running agent tasks vs synchronous request/response</strong> —
+          agent loops (ReAct-style, multi-step) 10 seconds se 10 minutes tak le sakte hain depending on kitne
+          tool calls chahiye. Ek simple synchronous HTTP request/response model isme fit nahi baithta — REST
+          timeouts (typically 30-60s) is duration ko handle nahi kar payenge. Isliye pattern ye hota hai:
+          request aata hai → job queue mein daala jaata hai → job ID turant return hota hai → agent
+          background mein multi-step loop chalata hai → client ko progress updates milte hain (niche dekho)
+          → final result ek terminal event ke saath deliver hota hai.
+        </li>
+      </ul>
+
+      <p>
+        <strong>Streaming intermediate "thinking"/progress to client:</strong> agar agent 5 tool calls
+        kar raha hai jisme har ek 3-5 seconds leta hai, poore 20-25 seconds tak agar UI blank/frozen dikhe,
+        user confuse ho jaayega — "kya ye hang ho gaya?" Isliye production agentic UIs SSE ya WebSocket
+        connection khula rakhte hain aur intermediate events stream karte hain jaise:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Agent progress events — SSE stream se client ko kya bhejna hai (conceptual)<button class="copy-btn">Copy</button></div>
+        <pre><code>event: agent_step
+data: {"step": "thinking", "text": "Checking user's recent order history..."}
+
+event: agent_step
+data: {"step": "tool_call", "tool": "get_order_history", "status": "running"}
+
+event: agent_step
+data: {"step": "tool_result", "tool": "get_order_history", "status": "done", "summary": "3 orders found"}
+
+event: agent_step
+data: {"step": "thinking", "text": "Order #4521 looks delayed, checking shipping status..."}
+
+event: agent_step
+data: {"step": "tool_call", "tool": "check_shipping_status", "status": "running"}
+
+event: final
+data: {"answer": "Aapka order #4521 delayed hai, expected delivery 3 din mein."}</code></pre>
+      </div>
+
+      <p>
+        Ye events UI ko ek "agent kaam kar raha hai, ye steps le raha hai" wali live progress dikhane
+        dete hain — chat interfaces mein aksar isko collapsible "thinking" section ki tarah render kiya
+        jaata hai jo agent ke complete hote hi collapse ho jaata hai aur final answer highlight hota hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Long-running agent jobs ke liye "fire and forget" mat karo</div>
+        <p>
+          Agar client disconnect ho jaaye (browser tab close, network drop) jab agent abhi bhi chal raha
+          hai — agent job ko kill mat karo. Job background mein continue hona chahiye (queue worker isolated
+          hai client connection se), aur result DB mein persist hona chahiye taaki client reconnect kar ke
+          (ya notification/email ke through) final result pa sake. Isko client connection se tightly couple
+          karna common mistake hai jo lambi-running agent tasks ko fragile bana deta hai.
+        </p>
+      </div>
+
+      <h2 id="statelessness">Statelessness Aur Idempotency</h2>
+      <p>
+        <strong>Backend LLM-calling services stateless kyun hone chahiye:</strong> agar orchestration layer
+        apni in-memory state mein conversation history ya agent state rakhta hai, to ek specific user ka agla
+        request usi specific server instance pe hi jaana zaroori ho jaata hai (sticky sessions) — isse
+        horizontal scaling badly limited ho jaati hai (load balancer flexibly traffic distribute nahi kar
+        sakta), aur agar wo instance crash ho jaaye, poori session state gum ho jaati hai. Isliye session/
+        conversation history/agent state hamesha ek external store (Postgres, Redis) mein rakho — koi bhi
+        server instance koi bhi request handle kar sake, state DB se fetch karke.
+      </p>
+      <p>
+        <strong>Idempotency for side-effecting tool calls:</strong> agent loops kabhi-kabhi retry karte hain
+        — LLM ne ek tool call generate kiya, network timeout hua, agent loop retry logic ne wahi tool call
+        dobara bheja. Agar wo tool call "read-only" hai (jaise search, lookup), retry bilkul safe hai. Lekin
+        agar wo tool "send email", "make payment", "create ticket" jaisa side-effecting action hai, ek retry
+        matlab <strong>duplicate action</strong> — user ko email do baar mil sakta hai, payment do baar ho
+        sakta hai.
+      </p>
+      <p>
+        Solution: har side-effecting tool call ko ek <strong>idempotency key</strong> ke saath design karo —
+        ek unique ID (agent turn ID + tool call ID se derive kiya hua) jo request ke saath bheja jaata hai.
+        Downstream service (payment API, email service) is key ko dekh kar decide karta hai "ye request maine
+        pehle already process kar li thi, same result wapas de do, dobara mat karo". Ye pattern already
+        standard hai payment APIs mein (Stripe idempotency keys), agentic systems mein isi pattern ko
+        tool-call level pe apply karna zaroori hai.
+      </p>
+
+      <div class="callout danger">
+        <div class="callout-title">🚨 Idempotency skip karna production incident bana sakta hai</div>
+        <p>
+          Ek agent jo "send refund confirmation email" tool call karta hai — agar orchestration layer ka
+          retry logic (network blip ki wajah se) isko 2 baar trigger kar de aur tool idempotent na ho,
+          customer ko duplicate refund confirmation emails milenge, ya worse, agar tool "issue refund" ho,
+          customer ko <strong>double refund</strong> mil sakta hai. Idempotency keys yahan optional
+          nice-to-have nahi hain, ye correctness ka basic requirement hain jaise hi koi tool "write"/
+          "mutate"/"send" karta hai.
+        </p>
+      </div>
+
+      <h2 id="api-design">API Design — Streaming, Timeouts, Safe Retries</h2>
+      <p>
+        Traditional REST API design assumptions AI products mein break ho jaate hain — kuch specific
+        adjustments zaroori hain:
+      </p>
+      <ul>
+        <li>
+          <strong>Streaming (SSE/WebSocket) vs polling for long tasks</strong> — simple chatbot responses
+          ke liye SSE ideal hai (unidirectional, HTTP-based, easy to implement, works through most
+          proxies). Agentic multi-step tasks ke liye bhi SSE kaafi hai agar connection lambe samay tak
+          khula rakh sakte ho; agar client mobile app hai jo background/foreground switch karta rehta hai,
+          polling (job status endpoint, client har few seconds poll kare) zyada resilient ho sakta hai kyunki
+          persistent connections mobile networks pe unreliable hote hain.
+        </li>
+        <li>
+          <strong>Request timeouts</strong> — typical REST APIs 5-30 second timeout assume karte hain.
+          LLM calls (especially agent loops with multiple tool calls) minutes tak le sakte hain. Load
+          balancers, reverse proxies (nginx), aur API gateways sab jagah timeout values explicitly LLM
+          workload ke hisaab se badhaane padte hain (ya streaming use karo jahan connection khula rehta
+          hai aur "timeout" concept differently apply hota hai — chunks continuously flow ho rahe hain).
+        </li>
+        <li>
+          <strong>Designing endpoints so retries are safe</strong> — client-side retry logic (network
+          failure pe automatic retry) common hai, lekin agar wo retry ek naya LLM call trigger kar de jo
+          paisa kharch karta hai aur potentially side effects create karta hai, ye mehenga aur risky hai.
+          Solution: request creation ko idempotent banao (client ek request ID generate kare, server usi
+          ID ke against dedupe kare) — taaki retry safe ho, duplicate LLM calls ya duplicate actions na ho.
+        </li>
+      </ul>
+
+      <h2 id="caching">Caching — System-Level View</h2>
+      <p>
+        Caching ka poora depth chapter 12 mein hai, lekin system design level pe teen jagah caching fit
+        hoti hai jo yaad rakhni chahiye jab architecture draw kar rahe ho:
+      </p>
+      <ol>
+        <li>
+          <strong>Prompt→response cache</strong> — agar exact same (ya semantically-similar) prompt repeat
+          hota hai (common FAQ-type queries), cached response return karo bina LLM call kiye — latency aur
+          cost dono bachte hain.
+        </li>
+        <li>
+          <strong>Retrieval results cache</strong> — RAG systems mein, agar same query (ya same query
+          embedding ke close) baar-baar aati hai, vector DB lookup skip karke cached chunks use karo.
+        </li>
+        <li>
+          <strong>Embedding cache</strong> — same text ko baar-baar embed karna wasteful hai (embedding
+          calls bhi paisa/latency lagte hain) — content hash ke against embedding cache karo taaki same
+          document chunk dobara embed na ho.
+        </li>
+      </ol>
+      <p>
+        Architecture diagram mein ye cache layer usually orchestration layer aur (LLM provider / vector DB)
+        ke beech ek "check cache first" step ki tarah baithta hai.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — teeno designs ko ek line mein yaad rakho</div>
+        <p>
+          <strong>Chatbot = simple pipe (client → orchestration → LLM), history client ya DB mein.
+          RAG assistant = do alag paths (async ingestion + low-latency query), kabhi mix mat karo.
+          Agentic backend = sandboxed tool layer + async job queue + streaming progress events</strong> —
+          teeno essentially same reference architecture ke different subsets hain, complexity badhti jaati
+          hai jaise-jaise product ki capability badhti hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Generic LLM product architecture: client → API gateway → orchestration layer (prompt build,
+        RAG, tools) → LLM provider → streaming response, plus vector DB, cache, observability, guardrails
+        as supporting infra.</li>
+        <li>Simple chatbot: stateless service, history client-side ya DB-backed session, streaming response,
+        minimal infra — no vector DB, no tools needed.</li>
+        <li>RAG assistant: ingestion (async, background job queue, latency-tolerant) aur query path (sync,
+        low-latency-critical) architecturally alag concerns hain — inhe mix karna production timeouts create
+        karta hai.</li>
+        <li>Agentic backend: tool execution ek alag sandboxed service hona chahiye (security), long tasks
+        async job queue mein chalte hain, intermediate progress SSE/WebSocket se stream hota hai taaki UI
+        frozen na lage.</li>
+        <li>Backend services stateless hone chahiye (session/history DB mein) for horizontal scaling; side-
+        effecting tool calls ko idempotency keys chahiye kyunki agent retries duplicate actions cause kar
+        sakte hain.</li>
+        <li>API design mein LLM-appropriate timeouts (minutes, seconds nahi), streaming/polling choice, aur
+        safe-retry-friendly endpoint design zaroori hai.</li>
+        <li>Caching teen jagah fit hoti hai: prompt→response, retrieval results, aur embeddings — sab
+        latency aur cost dono bachate hain.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. Design a RAG-based internal document assistant for a fintech company — walk through
+      your architecture, especially ingestion vs query path.</strong></p>
+      <p>
+        Do alag subsystems: (1) <strong>Ingestion pipeline</strong> — document upload endpoint turant
+        "queued" response deta hai, actual parse/chunk/embed/upsert-to-vector-DB kaam ek async job queue
+        (SQS/Celery) ke peeche background worker mein chalta hai — kyunki large PDFs minutes le sakte hain
+        aur user ko block nahi karna. (2) <strong>Query path</strong> — user question → embed query → vector
+        DB se top-k retrieve → optional rerank → prompt build with retrieved context → LLM call → streamed
+        response, sab kuch low-latency-optimized (target sub-2s to first token). Fintech-specific
+        considerations: PII/sensitive-doc access control per-user (RBAC on retrieval), audit logging (kaunsa
+        doc kis query ke liye retrieve hua), aur guardrails on output (compliance-sensitive answers flag
+        karna). Caching retrieval results aur embeddings latency/cost dono kam karta hai repeated queries pe.
+      </p>
+
+      <p><strong>Q2. Ek agent backend design karo jo customer support tickets create kar sake aur order
+      status check kar sake — kaise ensure karoge ki duplicate tickets na banein agar agent retry kare?</strong></p>
+      <p>
+        Root cause: agent loops network issues ya transient errors pe retry karte hain, agar "create ticket"
+        tool call idempotent nahi hai, retry duplicate ticket bana dega. Solution — har tool call ek
+        idempotency key ke saath jaaye (agent turn ID + tool call ID se derive), aur ticket-creation service
+        us key ko check kare: agar same key pehle process ho chuki hai, existing ticket ka result wapas do,
+        naya mat banao. "Order status check" jaisa read-only tool retry-safe hai by default, isliye sirf
+        write/side-effecting tools (ticket create, email send) ko explicit idempotency handling chahiye.
+      </p>
+
+      <p><strong>Q3. Ek multi-step agent 30+ seconds tak tool calls kar sakta hai — client ko is dauraan
+      UI frozen kaise nahi lagegi, aur agar client beech mein disconnect ho jaaye to kya hoga?</strong></p>
+      <p>
+        UI frozen na lage is liye backend SSE (ya WebSocket) connection khula rakhta hai aur intermediate
+        "agent_step" events stream karta hai — "thinking", "tool_call running", "tool_result done" — jo
+        client render kar sakta hai as a live progress trace, final "answer" event tak. Disconnect handle
+        karne ke liye — agent job ek async job queue mein chalta hai (client connection se decoupled), so
+        agar client disconnect ho jaaye, background worker job continue karta hai aur result DB mein persist
+        hota hai. Client reconnect karke (ya poll karke, ya notification se) final result fetch kar sakta hai
+        — job kabhi client connection ke upar dependent nahi hona chahiye.
+      </p>
+
+      <p><strong>Q4. Ek LLM-backed backend service ko stateless kyun design karna chahiye, aur agar session
+      history in-memory rakh di jaaye to kya problem hogi?</strong></p>
+      <p>
+        Agar conversation history ya agent state server instance ke in-memory mein rakhi jaaye, to user ke
+        saare requests usi specific instance pe route hone zaroori ho jaate hain (sticky sessions) — ye load
+        balancer ki flexibility kam kar deta hai aur horizontal scaling ko mushkil banata hai (new instances
+        add karne pe traffic evenly distribute nahi ho sakta jab tak state migrate na ho). Agar wo instance
+        crash ho jaaye, poori in-flight session state permanently gum ho jaati hai. Solution — state ko
+        hamesha ek external store (Postgres/Redis) mein rakho, service khud completely stateless rahe — koi
+        bhi instance koi bhi request handle kar sake, state ko DB se fetch/write kar ke.
+      </p>
+
+      <p><strong>Q5. LLM API calls ke liye request timeouts normal REST APIs se kaafi zyada lambe kyun rakhne
+      padte hain, aur ye kya practical problems create karta hai infra mein?</strong></p>
+      <p>
+        Typical REST endpoints 100ms-few seconds mein respond karte hain, isliye standard timeouts (load
+        balancer, reverse proxy, API gateway pe) 5-30 seconds set hote hain. LLM calls — especially agent
+        loops jisme multiple sequential tool calls hote hain — seconds se leke minutes tak le sakte hain.
+        Agar infra ke timeouts is duration ke hisaab se explicitly increase nahi kiye jaayein, requests
+        beech mein hi drop ho jaayengi chahe LLM abhi bhi kaam kar raha ho, aur client ko confusing error
+        milega jabki actual generation successfully complete ho sakta tha. Practical fix — streaming
+        responses use karo jahan possible ho (connection khula rehta hai, "timeout" ka matlab differently
+        apply hota hai kyunki data continuously flow ho raha hota hai), aur long-running agent tasks ke
+        liye synchronous request/response model chhodke async job + polling/streaming-progress model use
+        karo.
+      </p>
+
+      <div class="prevnext">
+        <a href="10-choosing-a-model.html">
+          <div class="label">← Previous</div>
+          <div class="title">Choosing a Model</div>
+        </a>
+        <a class="next" href="12-scaling-and-latency.html">
+          <div class="label">Next →</div>
+          <div class="title">Scaling & Latency</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choosing a Model — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link active" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 10</div>
+      <div class="progress-pill">10 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Model Comparison · Latency · Context Limits · Cost</span>
+      <h1>Choosing a Model</h1>
+      <p class="subtitle">
+        "Konsa model use karein" — ye probably sabse zyada bar poocha jaane wala AI engineering sawaal hai,
+        aur sabse zyada bar galat answer diya jaane wala bhi ("bas sabse bada/latest wala use karo"). Is
+        chapter mein hum ek proper <strong>decision framework</strong> banayenge — latency, context window,
+        cost, capability, rate limits, aur multimodality ke trade-offs ko samjhenge — taaki tum har task ke
+        liye sahi model tier choose kar sako, na ki hamesha sabse mehenga flagship model daal do.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#latency">1. Latency — Time-to-First-Token vs Total Generation</a></li>
+          <li><a href="#context">2. Context Window Size — Bigger Hamesha Better Nahi</a></li>
+          <li><a href="#cost">3. Cost Per Token — Input vs Output, Agent Loops Mein Compounding</a></li>
+          <li><a href="#capability">4. Capability/Reasoning Depth — Har Task Ko Flagship Nahi Chahiye</a></li>
+          <li><a href="#rate-limits">5. Rate Limits & Availability</a></li>
+          <li><a href="#multimodality">6. Multimodality — Vision/Audio Support</a></li>
+          <li><a href="#landscape">7. Model Landscape Overview — Family/Tier Se</a></li>
+          <li><a href="#ladder">8. Model Ladder Pattern — Routing/Fallback</a></li>
+          <li><a href="#self-hosted">9. Self-Hosted Open-Weight Models — Kab Sense Banta Hai</a></li>
+          <li><a href="#checklist">10. Practical Decision Checklist</a></li>
+          <li><a href="#takeaways">11. Key Takeaways</a></li>
+          <li><a href="#interview">12. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ye chapter "which model number" ke baare mein nahi hai</div>
+        <p>
+          Model names aur exact specs (context window numbers, pricing) har kuch mahine badalte hain — is
+          handbook likhte waqt jo "latest" tha, tumhare padhte waqt shayad outdated ho chuka ho. Isliye is
+          chapter ka goal ek <strong>timeless decision framework</strong> sikhana hai — kaunse axes pe sochna
+          hai, kaunse trade-offs matter karte hain — taaki tum khud current provider docs dekh ke informed
+          choice kar sako, chahe 2026 ho ya 2028.
+        </p>
+      </div>
+
+      <h2 id="latency">Latency — Time-to-First-Token vs Total Generation</h2>
+      <p>
+        Jab log "model X slow hai" kehte hain, actually do alag cheezein maapte hain jo confuse ho jaate hain:
+      </p>
+      <ul>
+        <li><strong>Time-to-First-Token (TTFT)</strong> — request bhejne se lekar pehla token wapas aane
+        tak ka time. Ye largely model ke "thinking/setup" overhead se decide hota hai — bada model, lamba
+        system prompt, bada context — sab TTFT badhate hain.</li>
+        <li><strong>Total generation time</strong> — poora response complete hone tak ka time. Ye
+        <code>output tokens × per-token generation speed</code> se roughly decide hota hai — agar model
+        1000 tokens generate kar raha hai aur uski speed 50 tokens/sec hai, total generation ~20 seconds
+        lega, TTFT alag se.</li>
+      </ul>
+      <p>
+        Practical implication — <strong>streaming</strong> (jahan tokens generate hote hi user ko dikhte
+        jaate hain, poora response complete hone ka wait nahi) TTFT ko user-perceived latency mein kaafi
+        hide kar deta hai, kyunki user ko lagta hai response "turant shuru ho gaya", chahe poora response
+        lambe samay tak generate ho raha ho. Lekin streaming <em>total</em> latency ko kam nahi karta — agar
+        tumhe poora structured JSON response chahiye pehle kisi downstream step ko trigger karne ke liye
+        (jaise ek tool call ya database write), tumhe poora generation complete hone tak wait karna hi
+        padega, streaming se koi fayda nahi.
+      </p>
+      <p>
+        Ek general rule — <strong>bade/zyada capable models generally slower hote hain</strong> kyunki unke
+        paas zyada parameters activate hote hain per-token (ya agar mixture-of-experts architecture hai to
+        bhi routing overhead hota hai), aur wo often lambe, zyada "thought-out" responses generate karte
+        hain. Isliye agar tumhara use-case latency-sensitive hai (real-time chat widget, voice assistant),
+        chhota/faster model tier consider karna zaroori hai, chahe wo thoda kam "smart" ho.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Latency budget pehle decide karo, phir model choose karo</div>
+        <p>
+          Model choose karne se pehle apne product ka <strong>latency budget</strong> likh ke rakho — jaise
+          "voice assistant ke liye TTFT 500ms se kam hona chahiye" ya "batch job ke liye latency matter
+          nahi karta, sirf throughput matter karta hai". Iske bina tum reverse order mein kaam karoge —
+          pehle "best" model pick karoge, phir latency problem discover karoge production mein, phir
+          scramble karoge downgrade karne ke liye. Latency requirement ek <em>input</em> honi chahiye model
+          selection process mein, ek <em>output</em> nahi.
+        </p>
+      </div>
+
+      <h2 id="context">Context Window Size — Bigger Hamesha Better Nahi</h2>
+      <p>
+        Context window batata hai model ek single request mein kitna input (system prompt + conversation
+        history + retrieved documents + user query) process kar sakta hai. Marketing mein "huge context
+        window" ek headline feature ban gaya hai, lekin practical engineering mein iska matlab hamesha
+        "better" nahi hota — teen reasons se:
+      </p>
+      <ul>
+        <li><strong>Cost scales with tokens</strong> — chahe context window 1 million tokens support kare,
+        agar tum har request mein 500K tokens bhejte ho, tum har request pe utne hi tokens ke liye pay bhi
+        kar rahe ho. "Available" context aur "should-use" context alag cheezein hain.</li>
+        <li><strong>"Lost in the middle" problem</strong> — research consistently dikhata hai ki bahut lambe
+        contexts mein, model context ke <em>beginning</em> aur <em>end</em> mein di gayi information ko
+        zyada reliably use karta hai, beech mein buried information ko often miss ya under-weight kar deta
+        hai. Matlab sirf isliye ki tumne 50 relevant documents context mein daal diye, model unme se sabko
+        equally acha use nahi karega — retrieval quality (kitne <em>relevant</em> chunks bheje, RAG chapter
+        dekho) matter karta hai zyada, raw quantity se.</li>
+        <li><strong>Latency bhi badhta hai</strong> — zyada input tokens process karne mein zyada time
+        lagta hai (TTFT badhta hai), especially agar prompt caching set up nahi hai.</li>
+      </ul>
+      <p>
+        Practical approach — apne task ke liye <em>realistically kitna context chahiye</em> ye estimate
+        karo (system prompt + relevant retrieved chunks + recent conversation turns), aur usi ballpark ke
+        liye size karo, sirf "zyada context window available hai to sab kuch bhar do" mat karo. RAG mein
+        aggressive reranking/filtering (chapter 4 dekho) ek chhota, high-precision context window aksar ek
+        bade, noisy context se better results deta hai.
+      </p>
+
+      <h2 id="cost">Cost Per Token — Input vs Output, Agent Loops Mein Compounding</h2>
+      <p>
+        Har provider input tokens aur output tokens ko <strong>alag rate pe charge</strong> karta hai, aur
+        output tokens generally input tokens se <strong>zyada mehenge</strong> hote hain (often 3-5x) —
+        kyunki output generation compute-intensive hai (har token sequentially generate hota hai, autoregressively),
+        jabki input tokens ek hi forward pass mein parallel process ho jaate hain.
+      </p>
+      <p>
+        Iska practical implication — agar tumhara task lambi, detailed responses generate karta hai (jaise
+        code generation, long-form writing), cost primarily <em>output</em> tokens se drive hoga. Agar
+        tumhara task chhota response generate karta hai lekin lamba context read karta hai (jaise RAG-based
+        Q&A jahan 10 documents context mein hain lekin answer 2 lines ka hai), cost primarily <em>input</em>
+        tokens se drive hoga.
+      </p>
+      <p>
+        Sabse important cost trap — <strong>agent loops mein cost compound hota hai fast</strong>. Ek single
+        agent task jo 5 tool-calling round-trips leta hai, matlab 5 alag LLM calls, aur har call mein
+        <em>poora conversation history</em> (pichle sab tool calls + results) context mein wapas bhejna
+        padta hai (chapter 7/9 dekho, agent loop aur memory management). Matlab N-th round-trip ka input
+        token count roughly N ke saath linearly badhta hai — ek 5-step agent loop ka total cost ek single
+        LLM call se kai guna zyada ho sakta hai, sirf isliye ki history repeatedly re-sent ho rahi hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Pricing/specs hamesha check karo, memorize mat karo</div>
+        <p>
+          Is chapter mein hum <strong>koi exact price ya token number quote nahi kar rahe</strong> — ye
+          har provider update ke saath badalte hain (naye models launch hote hain, prices drop hote hain,
+          context windows expand hote hain). Production mein model decision commit karne se pehle
+          <strong>hamesha current provider documentation check karo</strong> (OpenAI, Anthropic, Google,
+          ya jo bhi provider) — outdated pricing assumption pe cost estimate banana ek real production
+          risk hai, especially agar tum ek fintech jaisi cost-sensitive company mein kaam kar rahe ho.
+        </p>
+      </div>
+
+      <h2 id="capability">Capability/Reasoning Depth — Har Task Ko Flagship Nahi Chahiye</h2>
+      <p>
+        Ye sabse under-appreciated axis hai — engineers often reflexively sabse capable (aur sabse mehenga,
+        sabse slow) model use karte hain har task ke liye, jab ki actually zyada tasks simple hote hain:
+      </p>
+      <ul>
+        <li><strong>Classification / intent detection</strong> — "ye email spam hai ya nahi", "ye support
+        ticket kis category mein aata hai" — in tasks mein deep multi-step reasoning nahi chahiye, ek
+        chhota/fast model usually equally accurate hota hai, kaafi kam cost aur latency pe.</li>
+        <li><strong>Extraction</strong> — structured data nikalna (naam, date, amount) unstructured text
+        se — again, pattern-matching-heavy task hai, flagship-level reasoning ki zaroorat rarely hoti hai.</li>
+        <li><strong>Simple conversational responses</strong> — FAQ answering, basic customer support chat —
+        chhota model often sufficient hai agar prompt well-engineered hai.</li>
+        <li><strong>Complex multi-step reasoning</strong> — multi-hop analysis ("in 3 documents ko compare
+        karke conflicting clauses dhoondo"), <strong>code generation/debugging</strong>, ya agentic planning
+        jahan model ko decide karna hai "next step kya lena hai" — in tasks mein flagship-tier models
+        clearly better perform karte hain, kyunki inme deeper reasoning chains involve hoti hain jahan
+        chhote models galtiyan compound kar dete hain.</li>
+      </ul>
+      <p>
+        Rule of thumb — <strong>task ki actual reasoning depth ke hisaab se model choose karo</strong>, na
+        ki "safe side pe rehne ke liye sabse bada model daal do" ke hisaab se. Ye sirf cost-saving nahi hai
+        — chhote models often <em>faster</em> bhi hote hain, matlab better user experience bhi milta hai
+        simple tasks ke liye.
+      </p>
+
+      <h2 id="rate-limits">Rate Limits & Availability</h2>
+      <p>
+        Production reliability ke liye ek axis jo aksar tab tak ignore hota hai jab tak problem na ban jaaye
+        — <strong>rate limits</strong> (requests-per-minute, tokens-per-minute) aur <strong>availability</strong>
+        (provider ka uptime, regional latency). Ek naya/smaller provider ya naya model tier often tighter
+        rate limits ke saath launch hota hai jab tak capacity scale nahi hoti. High-traffic production
+        systems ke liye ye directly impact karta hai:
+      </p>
+      <ul>
+        <li>Peak traffic ke time requests queue/throttle ho sakte hain agar tum rate limit ke close chal
+        rahe ho — matlab user-facing latency spike.</li>
+        <li>Single-provider dependency ek availability risk hai — agar provider ka API down ho jaaye ya
+        degrade ho jaaye, tumhara poora product affected hota hai jab tak fallback na ho (production
+        hardening chapter 13 mein fallback patterns dekhenge).</li>
+        <li>Higher-tier/enterprise API plans usually higher rate limits aur SLAs offer karte hain — agar
+        production volume high hai, ye ek real consideration hai jab provider choose kar rahe ho.</li>
+      </ul>
+
+      <h2 id="multimodality">Multimodality — Vision/Audio Support</h2>
+      <p>
+        Agar product ko images, PDFs (visually), audio, ya video samajhna hai — jaise "is invoice screenshot
+        se amount nikaalo", ya "is customer call recording ko summarize karo" — model ka <strong>multimodal
+        support</strong> ek hard filter ban jaata hai, na ki ek nice-to-have. Sab models equally strong
+        multimodal capability nahi rakhte — kuch text-only hain, kuch vision support karte hain lekin audio
+        nahi, kuch dono support karte hain lekin varying quality levels pe. Agar tumhara use-case multimodal
+        hai, ye pehle filter karo model shortlist se pehle hi (latency/cost compare karne se pehle) — kyunki
+        agar model modality support hi nahi karta, baaki sab comparison irrelevant hai.
+      </p>
+
+      <h2 id="landscape">Model Landscape Overview — Family/Tier Se</h2>
+      <p>
+        Neeche wali table exact numbers ki jagah <strong>relative tiers</strong> pe focus karti hai —
+        kyunki exact context window sizes aur pricing frequently change hote hain. Goal ye samajhna hai ki
+        har family broadly kis trade-off zone mein operate karta hai.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Family</th><th>Type</th><th>Speed Tier</th><th>Context Tier</th><th>Cost Tier</th><th>Typical Strengths</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>OpenAI GPT class</td><td>Closed API</td><td>Flagship: slower · Mini: fast</td><td>Medium–Huge</td><td>Flagship: high · Mini: low</td><td>General-purpose reasoning, coding, broad ecosystem/tooling</td></tr>
+          <tr><td>Anthropic Claude class</td><td>Closed API</td><td>Opus: slower · Sonnet: balanced · Haiku: fast</td><td>Medium–Huge</td><td>Opus: high · Sonnet: mid · Haiku: low</td><td>Long-context reasoning, coding/agentic tool-use, instruction-following</td></tr>
+          <tr><td>Google Gemini class</td><td>Closed API</td><td>Pro: balanced · Flash: fast</td><td>Huge (often largest tier)</td><td>Pro: mid-high · Flash: low</td><td>Very large context windows, native multimodality (video/audio)</td></tr>
+          <tr><td>Meta Llama (open-weight)</td><td>Self-hostable</td><td>Depends on hosting infra</td><td>Medium–Large</td><td>Infra cost, not per-token</td><td>Full control, fine-tuning, data residency, no vendor token pricing</td></tr>
+          <tr><td>Mistral (open-weight + API)</td><td>Both</td><td>Fast for smaller sizes</td><td>Medium</td><td>Low (API) / infra cost (self-host)</td><td>Efficient smaller models, good cost-to-performance, EU-hosted options</td></tr>
+          <tr><td>DeepSeek (open-weight + API)</td><td>Both</td><td>Competitive</td><td>Medium–Large</td><td>Often aggressively low</td><td>Strong reasoning/coding benchmarks relative to cost, self-hostable</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Notice karo — <strong>Claude family ka Opus/Sonnet/Haiku tiering</strong> ek perfect example hai us
+        pattern ka jo har major provider deliberately banata hai: <em>ek hi provider ke andar</em> multiple
+        tiers jo quality-vs-speed-vs-cost ka ek explicit ladder banate hain. Opus sabse capable + slowest +
+        costliest, Haiku sabse fast + cheapest + "good enough for simple tasks", Sonnet beech mein balanced.
+        Ye koi accident nahi hai — providers jaanbujh kar ye ladder design karte hain taaki engineers apne
+        task ki complexity ke hisaab se right tier pick kar sakein, na ki hamesha ek hi (aksar overkill)
+        model use karein.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Ye table ek framework hai, price list nahi</div>
+        <p>
+          Upar wali table deliberately exact numbers avoid karti hai — "Sonnet ka context window X hai" ya
+          "Flash ka price Y hai" jaisi specifics is handbook ke likhe jaane ke kuch hi mahino mein stale ho
+          jaayengi. Production decision lene se pehle <strong>hamesha current official docs</strong> check
+          karo — OpenAI, Anthropic, Google, ya jo bhi provider consider kar rahe ho, unki pricing/models
+          page directly dekho. Is table ka use sirf ye samajhne ke liye karo ki <em>kis type ke trade-off ki
+          expect karni hai</em> har family se.
+        </p>
+      </div>
+
+      <h2 id="ladder">Model Ladder Pattern — Routing/Fallback</h2>
+      <p>
+        Ek real production cost-saving technique jo directly upar wale "capability" axis se nikalti hai —
+        <strong>model routing</strong>. Idea simple hai: har request ko blindly flagship model pe mat bhejo,
+        pehle ek chhota/fast <strong>router step</strong> (khud ek chhota model, ya even simpler — rule-based
+        heuristics) decide kare ki request kitni complex hai, phir uske hisaab se sahi tier ko route karo.
+      </p>
+      <p>
+        Example flow — ek customer support system socho jahan incoming messages pehle ek chhota/fast model
+        (jaise Haiku-tier) se classify hote hain: "simple FAQ" vs "complex/ambiguous query". Simple FAQs
+        turant usi chhote model se answer ho jaati hain (fast + cheap). Complex queries escalate hoti hain
+        bade model (Opus-tier) ko, jahan deeper reasoning available hai. Result — bulk of traffic (jo
+        usually simple hota hai) cheap/fast path se serve hota hai, aur expensive flagship model sirf tab
+        invoke hota hai jab actually zaroorat ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">modelRouter.js — task complexity ke hisaab se model tier choose karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// modelRouter.js — ek simple router jo request complexity dekh ke sahi model tier chunta hai</span>
+
+<span class="tok-com">// MODEL_TIERS — har tier ka naam aur uska "cost/capability level" (production mein real model IDs honge)</span>
+<span class="tok-kw">const</span> MODEL_TIERS = {
+  <span class="tok-com">// FAST — chhota/cheapest model, simple classification/FAQ ke liye</span>
+  FAST: <span class="tok-str">'fast-tier-model'</span>,
+  <span class="tok-com">// BALANCED — mid-tier model, moderate complexity ke liye</span>
+  BALANCED: <span class="tok-str">'balanced-tier-model'</span>,
+  <span class="tok-com">// FLAGSHIP — sabse capable/expensive model, complex reasoning ke liye</span>
+  FLAGSHIP: <span class="tok-str">'flagship-tier-model'</span>,
+};
+
+<span class="tok-com">// classifyComplexity — ek cheap heuristic jo bina LLM call ke bhi kaam kar sakta hai</span>
+<span class="tok-com">// (ya isko khud ek chhoti LLM call bhi bana sakte ho agar heuristics insufficient hon)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">classifyComplexity</span>(userMessage, context) {
+  <span class="tok-com">// agar message chhota hai aur koi multi-step keyword nahi hai, treat as simple</span>
+  <span class="tok-kw">const</span> isShort = userMessage.length < <span class="tok-num">200</span>;
+  <span class="tok-com">// complex reasoning tasks mein aksar ye words milte hain — "compare", "analyze", "why", etc.</span>
+  <span class="tok-kw">const</span> hasComplexSignal = <span class="tok-punc">/</span>compare<span class="tok-punc">|</span>analy<span class="tok-punc">|</span>why<span class="tok-punc">|</span>explain in detail<span class="tok-punc">|</span>debug<span class="tok-punc">/</span>i.<span class="tok-fn">test</span>(userMessage);
+  <span class="tok-com">// agar context mein pichle tool calls fail hue hain, escalate karna better hai</span>
+  <span class="tok-kw">const</span> hadPriorFailure = context?.priorToolFailures > <span class="tok-num">0</span>;
+
+  <span class="tok-com">// koi bhi complex signal ho to seedha FLAGSHIP tier pe jao</span>
+  <span class="tok-kw">if</span> (hasComplexSignal <span class="tok-punc">||</span> hadPriorFailure) <span class="tok-kw">return</span> <span class="tok-str">'complex'</span>;
+  <span class="tok-com">// chhota, simple-looking message ho to FAST tier ke liye eligible</span>
+  <span class="tok-kw">if</span> (isShort) <span class="tok-kw">return</span> <span class="tok-str">'simple'</span>;
+  <span class="tok-com">// baaki sab default BALANCED tier mein jaate hain</span>
+  <span class="tok-kw">return</span> <span class="tok-str">'moderate'</span>;
+}
+
+<span class="tok-com">// routeToModel — complexity label ko actual model tier mein map karta hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">routeToModel</span>(userMessage, context) {
+  <span class="tok-com">// pehle complexity classify karo</span>
+  <span class="tok-kw">const</span> complexity = <span class="tok-fn">classifyComplexity</span>(userMessage, context);
+
+  <span class="tok-com">// complexity label ke hisaab se sahi tier return karo</span>
+  <span class="tok-kw">if</span> (complexity === <span class="tok-str">'simple'</span>) <span class="tok-kw">return</span> MODEL_TIERS.FAST;
+  <span class="tok-kw">if</span> (complexity === <span class="tok-str">'moderate'</span>) <span class="tok-kw">return</span> MODEL_TIERS.BALANCED;
+  <span class="tok-com">// complex query ya prior tool failure — flagship model ko escalate karo</span>
+  <span class="tok-kw">return</span> MODEL_TIERS.FLAGSHIP;
+}
+
+<span class="tok-com">// usage — request handle karte waqt sahi model tier pehle decide karo, phir call karo</span>
+<span class="tok-kw">const</span> chosenModel = <span class="tok-fn">routeToModel</span>(incomingMessage, requestContext);
+<span class="tok-com">// chosenModel ab actual LLM API call mein use hoga — cost/latency dono save hote hain bulk traffic ke liye</span>
+</code></pre>
+      </div>
+      <p>
+        Ye pattern especially agent architectures mein powerful ban jaata hai (chapter 8 dekho) jahan har
+        step ek LLM call hai — agar orchestrator/planning steps ke liye bada model use karo lekin repetitive
+        worker/sub-task steps ke liye chhota model, overall cost significantly kam ho sakta hai without
+        quality loss on the parts that actually need deep reasoning.
+      </p>
+
+      <h2 id="self-hosted">Self-Hosted Open-Weight Models — Kab Sense Banta Hai</h2>
+      <p>
+        Open-weight models (Llama, Mistral, DeepSeek) tumhe apne infra pe self-host karne ka option dete
+        hain, hosted API ki jagah. Ye ek real trade-off hai, silver bullet nahi:
+      </p>
+      <p><strong>Self-hosting kab sense banta hai:</strong></p>
+      <ul>
+        <li><strong>Data residency/compliance</strong> — agar tum ek fintech jaisi regulated industry mein
+        ho jahan customer data kisi third-party provider ko bhejna compliance issue create karta hai, self-hosting
+        (apne VPC ke andar) ye concern eliminate kar deta hai.</li>
+        <li><strong>Very high volume</strong> — agar tumhara request volume itna high hai ki per-token API
+        cost infra cost se zyada ho jaaye, self-hosting cost amortize ho jaata hai scale pe (lekin ye
+        break-even point calculate karna zaroori hai, assume mat karo).</li>
+        <li><strong>Fine-tuning/customization</strong> — agar tumhe model weights khud modify karne hain
+        (domain-specific fine-tuning), open-weight models ye allow karte hain, closed APIs nahi.</li>
+      </ul>
+      <p><strong>Hosted APIs kab jeetein:</strong></p>
+      <ul>
+        <li><strong>No infra burden</strong> — GPU provisioning, scaling, model serving optimization
+        (batching, KV cache management — chapter 12 dekho) sab provider handle karta hai.</li>
+        <li><strong>Always latest model</strong> — hosted API providers continuously naye models release
+        karte hain, tumhe khud kuch update nahi karna padta.</li>
+        <li><strong>Elastic scaling</strong> — traffic spike ho to hosted API automatically scale karta
+        hai (rate limits ke andar), self-hosted infra ko tumhe khud provision/scale karna padta hai.</li>
+      </ul>
+      <p>
+        (Actual self-hosted deployment — GPU choice, serving frameworks jaise vLLM, quantization — is
+        chapter ka scope nahi hai; ye ek separate deployment topic hai. Yahan sirf "kab consider karo"
+        wala decision framework cover kiya hai.)
+      </p>
+
+      <h2 id="checklist">Practical Decision Checklist</h2>
+      <p>
+        Chalo teen concrete scenarios se dekhte hain ki upar wale axes practically kaise combine hote hain:
+      </p>
+      <ol>
+        <li>
+          <strong>Real-time customer chat widget</strong> (website pe live chat, users turant response
+          expect karte hain) → <strong>Fast/cheap tier</strong>. Latency-sensitive hai (TTFT matter karta
+          hai), high volume hai (matlab cost per-request bhi matter karta hai), aur zyadatar queries simple
+          FAQ-type hoti hain. Router pattern use karo — sirf genuinely complex/escalated queries ko bade
+          model tak bhejo.
+        </li>
+        <li>
+          <strong>Internal document analysis agent</strong> (multi-step reasoning — jaise legal/finance
+          documents ko cross-reference karke insights nikalna) → <strong>Flagship tier</strong>. Yahan
+          latency itni critical nahi hai (internal tool, users kuch seconds/minutes wait kar sakte hain),
+          lekin reasoning depth critical hai — galat conclusion nikalna (jaise fintech mein compliance
+          document misread karna) sasti model se bachaye gaye paison se zyada costly ho sakta hai.
+        </li>
+        <li>
+          <strong>Batch classification of thousands of support tickets</strong> (offline job, real-time
+          nahi) → <strong>Cheapest/fastest tier, aur self-hosting consider karo</strong> agar volume
+          genuinely large hai. Task simple hai (classification), latency matter nahi karta (batch job),
+          lekin volume high hai — matlab per-token cost total bill mein multiply hoke bahut bada number ban
+          sakta hai. High-volume, low-complexity, latency-insensitive — ye exactly wo combination hai jahan
+          self-hosted open-weight model economics favorable ban sakti hai.
+        </li>
+      </ol>
+      <p>
+        Har scenario mein pattern same hai — <strong>latency requirement + reasoning depth needed + expected
+        volume</strong> teeno ko pehle likho, phir in teeno ke intersection se model tier decide karo. Kabhi
+        bhi "default" model use mat karo bina in axes explicitly through karne ke.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — Ek line mein sab kuch</div>
+        <p>
+          <strong>"Har task ko flagship model mat do — task ki latency zaroorat, reasoning depth, aur
+          expected volume dekho, phir sabse chhota/sasta model choose karo jo wo kaam reliably kar sake,
+          aur zaroorat pade to router pattern se escalate karo."</strong> Ye ek baar sochne ki cheez nahi
+          hai, har naye feature/task ke liye repeat karne wali habit honi chahiye.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Latency ke do parts hain — TTFT aur total generation time. Streaming TTFT ko user-perceived
+        latency mein hide karta hai, lekin total generation time ko kam nahi karta.</li>
+        <li>Bigger context window hamesha better nahi hota — cost tokens ke saath scale karta hai, aur
+        "lost in the middle" ki wajah se bahut lambe contexts mein retrieval quality gir sakti hai.</li>
+        <li>Output tokens input tokens se generally mehenge hote hain, aur agent loops mein cost fast
+        compound hota hai kyunki har round-trip poora conversation history re-send karta hai.</li>
+        <li>Har task ko flagship model ki zaroorat nahi — classification/extraction/simple chat chhote,
+        fast models pe reliably chal sakte hain; complex reasoning/coding flagship se better perform karte
+        hain.</li>
+        <li>Rate limits aur availability production reliability ke liye real considerations hain, especially
+        high-traffic systems mein.</li>
+        <li>Model ladder pattern (jaise Claude ka Opus/Sonnet/Haiku) providers deliberately design karte
+        hain — routing/fallback se bulk traffic cheap tier pe serve karo, sirf complex requests escalate
+        karo.</li>
+        <li>Self-hosted open-weight models data residency, very high volume, aur fine-tuning needs ke liye
+        sense banate hain; hosted APIs infra-free, always-latest, elastic scaling ke liye jeetein.</li>
+        <li>Exact pricing/specs frequently badalte hain — production decision lene se pehle hamesha current
+        provider docs verify karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions — AI Engineer</h2>
+
+      <p><strong>Q1. TTFT aur total generation time mein kya difference hai, aur streaming kisko address
+      karta hai?</strong></p>
+      <p>
+        TTFT (Time-to-First-Token) request bhejne se pehla token aane tak ka time hai, largely model size
+        aur input context length se driven. Total generation time poora response complete hone tak ka time
+        hai, roughly output tokens × per-token speed. Streaming TTFT ko user-perceived latency mein hide
+        kar deta hai (user ko lagta hai response turant shuru ho gaya), lekin total generation time ko kam
+        nahi karta — agar downstream logic ko poora structured response chahiye (jaise ek JSON parse karke
+        tool call trigger karna), streaming ka latency benefit nahi milta wahan.
+      </p>
+
+      <p><strong>Q2. Kyun bada context window hamesha "better" nahi hota — do concrete reasons do.</strong></p>
+      <p>
+        Pehla — cost tokens ke saath directly scale karta hai, matlab zyada context bhejna hamesha zyada
+        expensive hai, chahe window support kare. Doosra — "lost in the middle" phenomenon, jahan model
+        context ke beginning/end mein di gayi information ko zyada reliably use karta hai, beech mein buried
+        information ko under-weight kar sakta hai — matlab sirf zyada documents context mein daalne se
+        answer quality automatically better nahi hoti, precise retrieval/reranking (kam but relevant chunks)
+        often ek bade noisy context se better result deta hai.
+      </p>
+
+      <p><strong>Q3. Ek agent loop mein cost kyun fast compound ho jaata hai, aur isko kaise control
+      karoge?</strong></p>
+      <p>
+        Har tool-calling round-trip ek naya LLM call hai jisme <em>poora pichla conversation history</em>
+        (pichle tool calls + results) input context mein wapas bhejna padta hai — matlab N-th round-trip
+        ka input token count roughly N ke saath badhta hai. Control karne ke tareeke — context/memory
+        management (chapter 9 mein discuss kiya — purani, irrelevant history ko summarize/prune karo),
+        aur model routing (chhote steps ke liye chhota model, sirf critical planning steps ke liye flagship
+        model use karo).
+      </p>
+
+      <p><strong>Q4. Model routing/ladder pattern kya hai, aur ise ek production system mein kaise
+      implement karoge?</strong></p>
+      <p>
+        Ye ek pattern hai jahan har request blindly flagship model ko nahi bheja jaata — pehle ek cheap
+        router step (chhota model ya heuristics) request ki complexity classify karta hai, phir uske hisaab
+        se sahi tier (fast/balanced/flagship) ko route karta hai. Example — customer support system mein
+        simple FAQs chhote/fast model se directly answer ho jaati hain, complex/ambiguous queries flagship
+        model ko escalate hoti hain. Ye bulk traffic (jo usually simple hota hai) ko cheap path se serve
+        karta hai, cost aur latency dono significantly reduce karta hai without quality loss on genuinely
+        complex requests.
+      </p>
+
+      <p><strong>Q5. Ek fintech company mein tumhe decide karna hai — hosted API use karein ya open-weight
+      model self-host karein customer support ticket classification ke liye jo daily 50,000 tickets process
+      karta hai. Kya factors consider karoge?</strong></p>
+      <p>
+        Pehle task complexity dekho — classification generally simple task hai, deep reasoning nahi
+        chahiye, matlab chhota model bhi sufficient hoga (flagship ki zaroorat nahi). Phir volume dekho —
+        50,000/day high volume hai, matlab per-token hosted API cost significant ho sakta hai scale pe,
+        self-hosting economics favorable ho sakti hain agar break-even calculation favorable aaye. Phir
+        compliance dekho — fintech mein customer data third-party API ko bhejna data residency/compliance
+        concern ho sakta hai, jo self-hosting (apne VPC ke andar) ke favor mein strong argument hai. Lekin
+        infra burden bhi weigh karo — self-hosting GPU provisioning, scaling, serving optimization ki team
+        capacity maangta hai. Agar team ke paas wo capacity hai aur volume+compliance dono self-hosting favor
+        karte hain, wo better choice hai; warna hosted API (jo elastic scaling aur zero infra burden deta
+        hai) safer starting point hai.
+      </p>
+
+      <p><strong>Q6 (bonus/context). Claude ka Opus/Sonnet/Haiku (ya GPT ka flagship/mini) tiering kis
+      engineering problem ko solve karta hai?</strong></p>
+      <p>
+        Ye deliberately ek quality-vs-speed-vs-cost ladder banata hai <em>ek hi provider ke andar</em>,
+        taaki engineers apne specific task ki complexity ke hisaab se sahi tier pick kar sakein — bina
+        provider switch kiye. Isse model routing pattern practically feasible ban jaata hai — ek hi API
+        family ke andar simple requests fast/cheap tier pe, complex requests capable tier pe route ki ja
+        sakti hain, consistent API interface ke saath.
+      </p>
+
+      <div class="prevnext">
+        <a href="09-agent-memory.html">
+          <div class="label">← Previous</div>
+          <div class="title">Agent Memory Systems</div>
+        </a>
+        <a class="next" href="11-system-design.html">
+          <div class="label">Next →</div>
+          <div class="title">System Design for AI Products</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

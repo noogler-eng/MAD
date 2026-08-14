@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Deep-Dive — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link active" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 4</div>
+      <div class="progress-pill">4 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Chunking · Vector DB · Reranking · End-to-End Pipeline</span>
+      <h1>RAG Deep-Dive</h1>
+      <p class="subtitle">
+        RAG (Retrieval-Augmented Generation) ka high-level idea sabko pata hai — "apna data LLM ko context
+        mein de do". Lekin production mein RAG fail hone ke 90% cases <em>engineering</em> decisions ki
+        wajah se hote hain — bad chunking, wrong embedding model, weak retrieval, koi reranking nahi. Is
+        chapter mein hum RAG training/ML angle se nahi, ek <strong>engineering pipeline</strong> ki tarah
+        dekhenge — har stage ke trade-offs, aur end mein ek full working code example.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#recap">1. RAG Recap — 3 Steps</a></li>
+          <li><a href="#chunking">2. Chunking Strategies</a></li>
+          <li><a href="#embeddings">3. Embeddings for Retrieval</a></li>
+          <li><a href="#vectordb">4. Vector Databases</a></li>
+          <li><a href="#reranking">5. Reranking — Top-K Se Aage</a></li>
+          <li><a href="#pipeline">6. End-to-End Practical Code</a></li>
+          <li><a href="#failures">7. Common Failure Modes Aur Fixes</a></li>
+          <li><a href="#when-not">8. Jab RAG Wrong Tool Hai</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="recap">RAG Recap — 3 Steps</h2>
+      <p>
+        RAG teen simple steps ka pipeline hai: <strong>(1) Retrieval</strong> — user ke query se related
+        documents/chunks apne knowledge base se dhoondo. <strong>(2) Augmentation</strong> — un retrieved
+        chunks ko prompt ke context mein inject karo. <strong>(3) Generation</strong> — LLM ko us augmented
+        prompt ke saath call karo taaki wo grounded, up-to-date answer de sake, bina apne parametric memory
+        pe purely depend kiye (jisme hallucination aur staleness dono risk hote hain).
+      </p>
+      <p>
+        Conceptually ye simple lagta hai, lekin production mein RAG quality 90% <em>retrieval</em> quality
+        pe depend karti hai — agar galat chunks retrieve hue, LLM chahe kitna bhi smart ho, wrong context
+        se wrong answer generate karega ("garbage in, garbage out"). Isliye is chapter ka focus retrieval
+        pipeline ki engineering pe hai, generation part (jo pehle se chapter 3 mein cover ho chuka hai)
+        pe nahi.
+      </p>
+
+      <h2 id="chunking">Chunking Strategies</h2>
+      <p>
+        Document ko chhote pieces ("chunks") mein todna pehla aur sabse underrated decision hai — chunk
+        size aur boundary galat hone se retrieval permanently kharab rehta hai, chahe embedding model
+        kitna bhi acha ho. Common strategies:
+      </p>
+      <ul>
+        <li><strong>Fixed-size chunking</strong> — har N characters/tokens pe cut karo (e.g. 500 tokens).
+        Simplest, but sentences/paragraphs ke beech mein cut ho sakta hai, jisse chunk ka meaning incomplete
+        ho jaata hai.</li>
+        <li><strong>Sentence/paragraph-aware chunking</strong> — natural boundaries (sentence ya paragraph
+        end) pe cut karo, taaki koi mid-sentence break na ho. Better semantic coherence, thoda zyada
+        implementation complexity.</li>
+        <li><strong>Semantic chunking</strong> — consecutive sentences ke embeddings compute karo, aur jahan
+        similarity drop hoti hai (topic shift) wahan chunk boundary banao. Sabse "smart" approach, lekin
+        compute-expensive hai (embedding calls chunking ke waqt hi lagte hain) aur harder to debug.</li>
+        <li><strong>Chunk overlap</strong> — consecutive chunks ke beech kuch tokens overlap rakho (e.g. 50
+        tokens), taaki agar koi important info chunk boundary pe split ho jaaye, wo dono neighbouring chunks
+        mein partially present rahe.</li>
+      </ul>
+
+      <table>
+        <thead>
+          <tr><th>Strategy</th><th>Pros</th><th>Cons</th><th>Kab use karo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Fixed-size</td><td>Simple, fast, predictable chunk count</td><td>Sentences beech mein cut ho sakte hain</td><td>Quick prototype, unstructured logs</td></tr>
+          <tr><td>Sentence/paragraph-aware</td><td>Semantic coherence better</td><td>Chunk sizes uneven ho sakte hain</td><td>Docs, articles, knowledge base — most common default</td></tr>
+          <tr><td>Semantic chunking</td><td>Topic-boundary-aware, best retrieval precision</td><td>Extra embedding calls, slower indexing</td><td>High-value corpora jahan retrieval quality critical hai</td></tr>
+          <tr><td>Chunk overlap (any strategy ke saath)</td><td>Boundary info loss kam hota hai</td><td>Index size aur storage cost badhta hai</td><td>Almost always thoda overlap (10-20%) rakhna safe default hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Chunk size ka trade-off samajh lo</div>
+        <p>
+          Bahut chhote chunks (e.g. 100 tokens) — precise retrieval milta hai lekin context incomplete
+          reh sakta hai (surrounding info miss ho jaata hai). Bahut bade chunks (e.g. 2000 tokens) — zyada
+          context milta hai lekin embedding "diluted" ho jaati hai (ek chunk mein multiple unrelated topics
+          mix ho jaate hain, jisse similarity search kam precise hoti hai). Sweet spot generally
+          <strong>300-800 tokens</strong> ke around hota hai, but hamesha apne document type aur query
+          patterns pe eval karke tune karo — koi universal "best" number nahi hai.
+        </p>
+      </div>
+
+      <h2 id="embeddings">Embeddings for Retrieval</h2>
+      <p>
+        Retrieval ke liye tumhe ek embedding <em>model</em> train nahi karna — bas ek existing embedding
+        <strong>API</strong> call karke text ko vector mein convert karna hai (e.g. OpenAI
+        <code>text-embedding-3-small</code>, Cohere <code>embed-v3</code>, ya open-source jaise
+        <code>BAAI/bge-small-en</code>). Har chunk ko embed karo, aur query ko bhi usi model se embed karo —
+        <strong>dono ko same embedding model se pass karna zaroori hai</strong>, kyunki alag models ka vector
+        space alag hota hai, unke beech similarity meaningless hoti hai.
+      </p>
+      <p>
+        Similarity typically <strong>cosine similarity</strong> se measure hoti hai — do vectors ke beech
+        ka angle, jitna chhota angle utni zyada similarity. Retrieval query ka embedding nikaal ke, vector DB
+        mein stored chunk embeddings ke saath cosine similarity compute karke top-k closest chunks return
+        kiye jaate hain.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Embedding model consistency — silent bug source</div>
+        <p>
+          Agar tumne apna index ek embedding model se banaya (e.g. <code>text-embedding-3-small</code>),
+          aur baad mein model version/provider switch kar diya bina re-indexing kiye — retrieval silently
+          degrade ho jaayega, koi error nahi aayega, bas results irrelevant lagne lagenge. Embedding model
+          change karna = <strong>poora index rebuild karna padega</strong>, ye ek migration event hai, casual
+          config change nahi.
+        </p>
+      </div>
+
+      <h2 id="vectordb">Vector Databases</h2>
+      <p>
+        Vector database ek specialized storage system hai jo high-dimensional vectors ko efficiently store
+        aur query karta hai — specifically "given a query vector, mujhe top-k nearest vectors do" (nearest
+        neighbor search). Naive approach — har stored vector ke saath query vector ko compare karo (brute
+        force) — millions of vectors ke saath bahut slow ho jaata hai. Isliye vector DBs
+        <strong>ANN (Approximate Nearest Neighbor)</strong> algorithms use karte hain (jaise HNSW — Hierarchical
+        Navigable Small World graphs) jo approximate lekin bahut fast results dete hain — thoda accuracy
+        trade-off karke massive speed gain milta hai.
+      </p>
+      <p>
+        Popular options: <strong>pgvector</strong> (Postgres extension — agar already Postgres use kar rahe
+        ho, no new infra), <strong>Pinecone</strong> (fully managed, easy setup), <strong>Qdrant</strong>
+        (open-source, self-hosted ya managed dono), <strong>Chroma</strong> (lightweight, local-first, great
+        for prototyping), <strong>Weaviate</strong> (open-source, built-in hybrid search support).
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Vector DB</th><th>Type</th><th>Kab pick karo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>pgvector</td><td>Self-hosted (Postgres extension)</td><td>Already Postgres use ho raha hai, extra infra avoid karna hai, moderate scale</td></tr>
+          <tr><td>Pinecone</td><td>Fully managed</td><td>Fast setup chahiye, scaling/infra khud manage nahi karni, budget available hai</td></tr>
+          <tr><td>Qdrant</td><td>Self-hosted or managed</td><td>Open-source chahiye but production-grade performance bhi, flexibility</td></tr>
+          <tr><td>Chroma</td><td>Self-hosted (local-first)</td><td>Prototyping, small-to-medium apps, simplicity priority</td></tr>
+          <tr><td>Weaviate</td><td>Self-hosted or managed</td><td>Built-in hybrid search (keyword + vector) chahiye out-of-the-box</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        General rule: <strong>managed (Pinecone) chuno</strong> jab team chhoti hai aur infra ops overhead
+        avoid karna hai — pay-per-use, koi scaling headache nahi. <strong>Self-hosted (pgvector/Qdrant)
+        chuno</strong> jab data residency/cost control zaroori hai, ya already relevant infra (Postgres)
+        exist karta hai jisme naya moving part add karna avoid karna hai.
+      </p>
+
+      <h2 id="reranking">Reranking — Top-K Se Aage</h2>
+      <p>
+        Vector similarity search (cosine similarity pe based top-k) ek <em>fast but approximate</em> filter
+        hai — embeddings semantic similarity capture karte hain, lekin hamesha "actual relevance to this
+        specific query" ka perfect proxy nahi hote. Top-k=20 mein aksar kuch chunks aise honge jo
+        superficially similar dikhte hain (same topic ke keywords) lekin query ka actual answer nahi rakhte.
+      </p>
+      <p>
+        <strong>Reranking</strong> ek second, zyada precise step hai — ek <strong>cross-encoder</strong> model
+        (jo query aur chunk ko <em>ek saath</em> input leke relevance score deta hai, unlike bi-encoder
+        embeddings jo query aur chunk ko independently embed karte hain) top-k candidates ko re-score karta
+        hai, aur sirf top-3/5 ko final context mein bheja jaata hai. Cross-encoders bi-encoders se slower
+        hote hain (isliye sabhi documents pe nahi chalaye ja sakte, sirf top-k candidates pe), lekin
+        significantly zyada accurate relevance judgment dete hain. Popular option — <strong>Cohere
+        Rerank API</strong>, ya open-source cross-encoder models (jaise <code>ms-marco-MiniLM</code>).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Retrieve-then-rerank ek standard production pattern hai</div>
+        <p>
+          Production RAG systems almost hamesha <strong>two-stage retrieval</strong> use karte hain:
+          Stage 1 — vector search se broad recall (top-20 ya top-50 candidates, fast, approximate). Stage 2
+          — cross-encoder rerank se precision (top-20 ko top-3/5 tak narrow karo, slower but accurate). Ye
+          classic information retrieval "recall then precision" pattern hai — agar sirf stage 1 (vector
+          search) use karte ho, tumhe recall to milega lekin precision compromise hogi, jisse LLM ko irrelevant
+          chunks context mein milte hain aur answer quality gir jaati hai. Reranking add karna aksar sabse
+          high-ROI single improvement hai jo tum ek RAG pipeline mein kar sakte ho.
+        </p>
+      </div>
+
+      <h2 id="pipeline">End-to-End Practical Code</h2>
+      <p>
+        Chalo ek complete, chhota lekin realistic RAG pipeline banate hain — document chunk karna, embed
+        karna, Chroma (local vector store) mein upsert karna, query ke liye top-k retrieve karna, simplified
+        rerank karna, aur phir LLM ko augmented context ke saath call karna. Reader ke explicit request pe —
+        <strong>har single line commented hai</strong>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">rag_pipeline.py — End-to-end RAG: chunk → embed → store → retrieve → rerank → generate<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># rag_pipeline.py — chhota lekin complete RAG pipeline, Chroma ko local vector store ki tarah use karke</span>
+
+<span class="tok-kw">import</span> chromadb  <span class="tok-com"># Chroma client — local, lightweight vector database</span>
+<span class="tok-kw">from</span> openai <span class="tok-kw">import</span> OpenAI  <span class="tok-com"># OpenAI SDK — embeddings aur chat completion dono ke liye</span>
+
+<span class="tok-com"># OpenAI client banao — env var OPENAI_API_KEY se automatically key uthayega</span>
+client = OpenAI()  <span class="tok-com"># client object — baaki saare API calls isi se honge</span>
+
+<span class="tok-com"># chunk_text — document ko fixed-size, overlap ke saath chunks mein todta hai</span>
+<span class="tok-kw">def</span> <span class="tok-fn">chunk_text</span>(text, chunk_size=<span class="tok-num">500</span>, overlap=<span class="tok-num">50</span>):
+    <span class="tok-com"># final chunks store karne ke liye empty list</span>
+    chunks = []
+    <span class="tok-com"># start pointer 0 se shuru karo</span>
+    start = <span class="tok-num">0</span>
+    <span class="tok-com"># jab tak poora text cover na ho jaaye, loop chalao</span>
+    <span class="tok-kw">while</span> start < <span class="tok-fn">len</span>(text):
+        <span class="tok-com"># end pointer — chunk_size characters aage</span>
+        end = start + chunk_size
+        <span class="tok-com"># text ka slice le lo start se end tak — ye ek chunk hai</span>
+        chunk = text[start:end]
+        <span class="tok-com"># chunk ko list mein add karo (leading/trailing whitespace strip karke)</span>
+        chunks.<span class="tok-fn">append</span>(chunk.<span class="tok-fn">strip</span>())
+        <span class="tok-com"># next start — end se overlap kam karke, taaki boundary info dono chunks mein aaye</span>
+        start = end - overlap
+    <span class="tok-com"># saare chunks ki list return karo</span>
+    <span class="tok-kw">return</span> chunks
+
+<span class="tok-com"># embed_texts — texts ki list leke, OpenAI embedding API se unke vectors nikaalta hai</span>
+<span class="tok-kw">def</span> <span class="tok-fn">embed_texts</span>(texts):
+    <span class="tok-com"># embeddings.create call karo — model aur input texts pass karke</span>
+    response = client.embeddings.<span class="tok-fn">create</span>(
+        model=<span class="tok-str">"text-embedding-3-small"</span>,  <span class="tok-com"># chhota, fast, sasta embedding model</span>
+        input=texts,  <span class="tok-com"># texts ki list — batch mein embed ho jaayenge</span>
+    )  <span class="tok-com"># API call close — response object mein sabhi embeddings aa jaate hain</span>
+    <span class="tok-com"># response.data list mein har item ka .embedding field hota hai — sabko extract karo</span>
+    <span class="tok-kw">return</span> [item.embedding <span class="tok-kw">for</span> item <span class="tok-kw">in</span> response.data]
+
+<span class="tok-com"># build_index — document ko chunk + embed karke Chroma collection mein upsert karta hai</span>
+<span class="tok-kw">def</span> <span class="tok-fn">build_index</span>(document_text, collection):
+    <span class="tok-com"># document ko chunks mein todo</span>
+    chunks = <span class="tok-fn">chunk_text</span>(document_text)
+    <span class="tok-com"># har chunk ka embedding vector nikaalo (ek hi batch API call mein)</span>
+    embeddings = <span class="tok-fn">embed_texts</span>(chunks)
+    <span class="tok-com"># har chunk ke liye ek unique ID banao (chunk-0, chunk-1, ...)</span>
+    ids = [<span class="tok-fn">f</span><span class="tok-str">"chunk-{i}"</span> <span class="tok-kw">for</span> i <span class="tok-kw">in</span> <span class="tok-fn">range</span>(<span class="tok-fn">len</span>(chunks))]
+    <span class="tok-com"># Chroma collection mein ek saath upsert karo — ids, embeddings, aur original text (documents)</span>
+    collection.<span class="tok-fn">upsert</span>(
+        ids=ids,  <span class="tok-com"># har chunk ka unique identifier</span>
+        embeddings=embeddings,  <span class="tok-com"># corresponding vector representations</span>
+        documents=chunks,  <span class="tok-com"># original chunk text — retrieval ke baad LLM ko dikhane ke liye</span>
+    )  <span class="tok-com"># upsert call close — Chroma collection ab query karne ke liye ready hai</span>
+    <span class="tok-com"># kitne chunks index hue, wo return kar do (logging/debugging ke liye)</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">len</span>(chunks)
+
+<span class="tok-com"># retrieve_top_k — query ko embed karke vector DB se top-k nearest chunks nikaalta hai</span>
+<span class="tok-kw">def</span> <span class="tok-fn">retrieve_top_k</span>(query, collection, k=<span class="tok-num">10</span>):
+    <span class="tok-com"># query ka embedding nikaalo (single-item list mein wrap karke embed_texts call kiya)</span>
+    query_embedding = <span class="tok-fn">embed_texts</span>([query])[<span class="tok-num">0</span>]
+    <span class="tok-com"># Chroma se query karo — top-k nearest neighbors chahiye query_embedding ke</span>
+    results = collection.<span class="tok-fn">query</span>(
+        query_embeddings=[query_embedding],  <span class="tok-com"># query vector, list mein wrapped (batch API hai)</span>
+        n_results=k,  <span class="tok-com"># kitne nearest chunks chahiye</span>
+    )  <span class="tok-com"># query call close — results ek dict hai jisme ids/documents/distances hote hain</span>
+    <span class="tok-com"># results['documents'] ek nested list hoti hai (per-query) — pehla query ka result nikaalo</span>
+    <span class="tok-kw">return</span> results[<span class="tok-str">"documents"</span>][<span class="tok-num">0</span>]
+
+<span class="tok-com"># simple_rerank — simplified cross-encoder-style rerank: LLM khud relevance score deta hai</span>
+<span class="tok-com"># (production mein isko Cohere Rerank API se replace karo — yahan concept dikhane ke liye simplified hai)</span>
+<span class="tok-kw">def</span> <span class="tok-fn">simple_rerank</span>(query, candidate_chunks, top_n=<span class="tok-num">3</span>):
+    <span class="tok-com"># scored chunks store karne ke liye list</span>
+    scored = []
+    <span class="tok-com"># har candidate chunk ke liye loop chalao</span>
+    <span class="tok-kw">for</span> chunk <span class="tok-kw">in</span> candidate_chunks:
+        <span class="tok-com"># chhota LLM call — chunk ko query ke against 0-10 relevance score do</span>
+        response = client.chat.completions.<span class="tok-fn">create</span>(
+            model=<span class="tok-str">"gpt-4o-mini"</span>,  <span class="tok-com"># sasta/fast model, sirf scoring ke liye</span>
+            messages=[
+                {<span class="tok-str">"role"</span>: <span class="tok-str">"system"</span>, <span class="tok-str">"content"</span>: <span class="tok-str">"Reply with only a number 0-10: relevance of the passage to the query."</span>},  <span class="tok-com"># strict output instruction</span>
+                {<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: <span class="tok-fn">f</span><span class="tok-str">"Query: {query}\nPassage: {chunk}"</span>},  <span class="tok-com"># query aur candidate chunk dono ek saath pass — cross-encoder jaisa behavior</span>
+            ],  <span class="tok-com"># messages list close — system + user, dono roles diye gaye</span>
+        )  <span class="tok-com"># chat.completions.create call close</span>
+        <span class="tok-com"># response se score text nikaalo aur float mein convert karo (fallback 0 agar parse fail ho)</span>
+        <span class="tok-kw">try</span>:  <span class="tok-com"># model kabhi non-numeric text bhi de sakta hai, isliye safe parsing</span>
+            score = <span class="tok-fn">float</span>(response.choices[<span class="tok-num">0</span>].message.content.strip())  <span class="tok-com"># raw text ko strip karke float mein convert karo</span>
+        <span class="tok-kw">except</span> ValueError:  <span class="tok-com"># agar conversion fail ho (model ne number nahi diya)</span>
+            score = <span class="tok-num">0.0</span>  <span class="tok-com"># agar model ne number nahi diya, safe default</span>
+        <span class="tok-com"># (chunk, score) tuple ko list mein add karo</span>
+        scored.<span class="tok-fn">append</span>((chunk, score))
+    <span class="tok-com"># score ke hisaab se descending sort karo (highest relevance pehle)</span>
+    scored.<span class="tok-fn">sort</span>(key=<span class="tok-kw">lambda</span> pair: pair[<span class="tok-num">1</span>], reverse=<span class="tok-kw">True</span>)
+    <span class="tok-com"># top_n sabse relevant chunks (sirf text, score chhod ke) return karo</span>
+    <span class="tok-kw">return</span> [chunk <span class="tok-kw">for</span> chunk, score <span class="tok-kw">in</span> scored[:top_n]]
+
+<span class="tok-com"># answer_with_context — reranked chunks ko context banake LLM se final answer generate karwata hai</span>
+<span class="tok-kw">def</span> <span class="tok-fn">answer_with_context</span>(query, context_chunks):
+    <span class="tok-com"># saare context chunks ko double newline se joinkar ek single context string banao</span>
+    context = <span class="tok-str">"\n\n"</span>.<span class="tok-fn">join</span>(context_chunks)
+    <span class="tok-com"># final generation call — system prompt mein grounding instruction, user prompt mein context + query</span>
+    response = client.chat.completions.<span class="tok-fn">create</span>(
+        model=<span class="tok-str">"gpt-4o"</span>,  <span class="tok-com"># final answer ke liye stronger model</span>
+        messages=[
+            {<span class="tok-str">"role"</span>: <span class="tok-str">"system"</span>, <span class="tok-str">"content"</span>: <span class="tok-str">"Answer only using the provided context. If the answer isn't in the context, say you don't know."</span>},  <span class="tok-com"># hallucination control — sirf context se answer do</span>
+            {<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: <span class="tok-fn">f</span><span class="tok-str">"Context:\n{context}\n\nQuestion: {query}"</span>},  <span class="tok-com"># augmented prompt — context + original query</span>
+        ],  <span class="tok-com"># messages list close</span>
+    )  <span class="tok-com"># chat.completions.create call close — response mein final generated answer hai</span>
+    <span class="tok-com"># generated answer text return karo</span>
+    <span class="tok-kw">return</span> response.choices[<span class="tok-num">0</span>].message.content
+
+<span class="tok-com"># --- pipeline chalane ka example ---</span>
+<span class="tok-kw">if</span> __name__ == <span class="tok-str">"__main__"</span>:  <span class="tok-com"># script directly run hone pe hi ye block chalega, import hone pe nahi</span>
+    <span class="tok-com"># Chroma ka in-memory (ephemeral) client banao — local prototyping ke liye</span>
+    chroma_client = chromadb.<span class="tok-fn">EphemeralClient</span>()  <span class="tok-com"># koi disk persistence nahi — process restart pe data gone</span>
+    <span class="tok-com"># ek collection banao (ya existing ko get karo) jisme chunks store honge</span>
+    collection = chroma_client.<span class="tok-fn">get_or_create_collection</span>(<span class="tok-str">"docs"</span>)
+
+    <span class="tok-com"># sample document text — real use case mein ye PDF/markdown parsing se aayega</span>
+    document = <span class="tok-str">"""Our refund policy allows returns within 30 days of purchase.
+    Refunds are processed within 5-7 business days. Digital products
+    are non-refundable once downloaded. Shipping costs are non-refundable
+    unless the item arrived damaged."""</span>
+
+    <span class="tok-com"># document ko index karo — chunk + embed + upsert</span>
+    num_chunks = <span class="tok-fn">build_index</span>(document, collection)
+    <span class="tok-com"># kitne chunks bane, print karo (sanity check)</span>
+    <span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"Indexed {num_chunks} chunks"</span>)
+
+    <span class="tok-com"># user ka query</span>
+    query = <span class="tok-str">"Can I get a refund on a digital product I already downloaded?"</span>
+    <span class="tok-com"># stage 1 — vector search se broad recall (top-10 candidates)</span>
+    candidates = <span class="tok-fn">retrieve_top_k</span>(query, collection, k=<span class="tok-num">10</span>)
+    <span class="tok-com"># stage 2 — rerank karke top-3 sabse relevant chunks nikaalo</span>
+    top_chunks = <span class="tok-fn">simple_rerank</span>(query, candidates, top_n=<span class="tok-num">3</span>)
+    <span class="tok-com"># final answer generate karo, reranked chunks ko context ki tarah use karke</span>
+    answer = <span class="tok-fn">answer_with_context</span>(query, top_chunks)
+    <span class="tok-com"># answer print karo</span>
+    <span class="tok-fn">print</span>(<span class="tok-fn">f</span><span class="tok-str">"Answer: {answer}"</span>)
+</code></pre>
+      </div>
+
+      <p>
+        Notice karo pipeline ka shape — <strong>index-time</strong> (chunk → embed → upsert, jo ek baar ya
+        periodically chalta hai) aur <strong>query-time</strong> (embed query → retrieve → rerank →
+        generate, jo har user request pe chalta hai) clearly separate hain. Ye separation production mein
+        important hai kyunki dono ka scaling/latency profile bahut different hota hai — indexing batch/async
+        ho sakta hai, query-time path latency-sensitive hai.
+      </p>
+
+      <h2 id="failures">Common Failure Modes Aur Fixes</h2>
+      <ul>
+        <li><strong>Irrelevant chunks retrieve ho rahe hain</strong> — usually bad chunking (boundaries
+        galat) ya embedding model domain-mismatch (e.g. generic embedding model legal/medical jargon pe
+        weak) ki wajah se. Fix — chunking strategy revisit karo, aur domain-specific ya fine-tuned embedding
+        model try karo.</li>
+        <li><strong>"Lost in the middle" problem</strong> — LLMs context window ke start aur end mein di
+        gayi information ko middle se better recall karte hain. Agar tumne 20 chunks context mein daal diye,
+        middle wale chunks ka info answer mein miss ho sakta hai chahe wo relevant ho. Fix — sirf top-k
+        (reranked, small — 3-5) chunks pass karo, bulk-dump mat karo; important-most chunk ko start ya end
+        ke paas rakho.</li>
+        <li><strong>Stale index</strong> — source documents update hote rehte hain, lekin agar vector index
+        ko re-index nahi kiya to retrieval outdated info return karega. Fix — ek re-indexing pipeline banao
+        (scheduled job ya event-driven — document update hote hi trigger), aur stale chunks ko delete/replace
+        karo, sirf append mat karte raho.</li>
+        <li><strong>Exact-match queries fail ho jaate hain</strong> — pure semantic/vector search exact
+        keywords, IDs, error codes, product SKUs jaisi cheezein miss kar sakta hai kyunki embeddings
+        "meaning" capture karte hain, "exact string" nahi. Fix — <strong>hybrid search</strong> use karo
+        (keyword/BM25 search + vector search dono, results ko combine/re-rank karo) — Weaviate aur Qdrant
+        jaise DBs isko built-in support karte hain.</li>
+      </ul>
+
+      <h2 id="when-not">Jab RAG Wrong Tool Hai</h2>
+      <p>
+        RAG har problem ka solution nahi hai. Do common cases jahan RAG overkill ya wrong fit hota hai:
+      </p>
+      <ul>
+        <li><strong>Document itna chhota hai ki context window mein fit ho jaaye</strong> — agar tumhara
+        knowledge base 5-10 pages hai, seedha poora document system prompt mein daal do. Retrieval pipeline
+        (chunking, embedding, vector DB) banane ka overhead is case mein unnecessary complexity hai.</li>
+        <li><strong>Real-time, single-fact lookup chahiye</strong> — jaise "aaj ka stock price kya hai" ya
+        "mera order kahan hai". Ye information kisi static indexed knowledge base mein nahi hoti, aur
+        constantly change hoti hai. Isके liye RAG nahi, ek <strong>tool/function call</strong> (live API hit
+        karna) sahi approach hai — ye chapter 6 mein detail mein cover hoga.</li>
+      </ul>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — Ek line mein sab kuch</div>
+        <p>
+          RAG ka core skill "LLM ko documents dikhana" nahi hai — core skill hai <strong>sahi documents
+          reliably retrieve karna</strong>. Chunking, embedding model choice, vector DB, aur reranking — ye
+          sab isi ek goal ki taraf point karte hain. Agar retrieval weak hai, generation kitna bhi acha
+          model use karo, output bhi weak hi rahega.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>RAG ke 3 steps (retrieval, augmentation, generation) simple hain, lekin production quality
+        <strong>retrieval engineering</strong> pe depend karti hai, generation model pe nahi.</li>
+        <li>Chunking strategy (fixed-size, sentence-aware, semantic) aur overlap directly retrieval precision
+        ko affect karte hain — koi universal "best" size nahi, apne corpus pe eval karo.</li>
+        <li>Query aur stored chunks <strong>same embedding model</strong> se embed hone chahiye — model
+        switch karna = full re-index required.</li>
+        <li>Vector DBs ANN search (jaise HNSW) use karte hain speed ke liye — managed (Pinecone) vs
+        self-hosted (pgvector/Qdrant/Chroma) choice team size aur infra control priorities pe depend karta hai.</li>
+        <li>Reranking (cross-encoder, e.g. Cohere Rerank) ek high-ROI second stage hai — top-k vector search
+        ke baad top-3/5 ko precisely re-score karke context quality significantly improve hoti hai.</li>
+        <li>Failure modes — irrelevant chunks (bad chunking/embedding mismatch), lost-in-the-middle (bahut
+        zyada chunks pass karna), stale index (re-indexing pipeline missing), exact-match misses (hybrid
+        search se fix hota hai).</li>
+        <li>RAG wrong tool hai jab document already chhota hai (seedha context mein daalo) ya jab real-time
+        single-fact chahiye (tool call use karo, chapter 6).</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions — AI Engineer</h2>
+
+      <p><strong>Q1. Chunk size choose karte waqt kya trade-offs consider karoge?</strong></p>
+      <p>
+        Bahut chhote chunks precise retrieval dete hain lekin context incomplete ho sakta hai — surrounding
+        info miss ho jaata hai. Bahut bade chunks zyada context dete hain lekin embedding "diluted" ho jaati
+        hai kyunki ek chunk mein multiple unrelated ideas mix ho jaate hain, jisse similarity search kam
+        precise hoti hai. Practical default 300-800 tokens ke around hai with some overlap (10-20%), lekin
+        final answer hamesha apne document type aur real query patterns pe eval karke tune karna chahiye —
+        koi universal number kaam nahi karega.
+      </p>
+
+      <p><strong>Q2. Vector similarity search (top-k cosine similarity) akela kyun sufficient nahi hota,
+      aur reranking kya solve karta hai?</strong></p>
+      <p>
+        Vector search bi-encoder embeddings use karta hai — query aur chunk independently embed hote hain,
+        jo fast hai but approximate. Top-k mein aksar superficially-similar-lekin-actually-irrelevant chunks
+        aa jaate hain. Reranking ek cross-encoder use karta hai jo query aur chunk ko <em>ek saath</em> input
+        leke sahi relevance score deta hai — slower hai (isliye sirf top-k candidates pe chalta hai, sabhi
+        documents pe nahi), lekin accuracy significantly better hoti hai. Ye "recall then precision" ka
+        classic two-stage retrieval pattern hai.
+      </p>
+
+      <p><strong>Q3. Managed vector DB (Pinecone) vs self-hosted (pgvector/Qdrant) — kaise decide karoge?</strong></p>
+      <p>
+        Managed chuno jab team chhoti hai, fast setup chahiye, aur infra ops overhead avoid karna hai — cost
+        thoda zyada hoga but operational simplicity milegi. Self-hosted (pgvector agar already Postgres use
+        ho raha hai, ya Qdrant agar dedicated open-source solution chahiye) chuno jab data residency/cost
+        control zaroori hai, ya existing infra mein naya managed service add karna avoid karna hai. Scale
+        aur compliance requirements bhi factor hote hain — bahut large scale ya strict data residency wale
+        cases mein self-hosted zyada control deta hai.
+      </p>
+
+      <p><strong>Q4. "Lost in the middle" problem kya hai, aur RAG pipeline design mein isse kaise avoid
+      karoge?</strong></p>
+      <p>
+        LLMs context window ke start aur end mein diye gaye information ko middle ke content se better
+        recall karte hain — agar bahut saare chunks (e.g. 15-20) ek saath context mein daal diye, middle
+        wale chunks ka info answer generation mein effectively "lost" ho sakta hai chahe wo relevant ho.
+        Fix — reranking se sirf sabse relevant top-3/5 chunks pass karo (bulk-dump avoid karo), aur agar
+        multiple chunks pass karne hi hain to sabse important chunk ko prompt ke start ya end ke paas
+        position karo.
+      </p>
+
+      <p><strong>Q5. Ek user complain karta hai ki RAG system exact product SKU/error-code queries pe
+      galat/irrelevant results deta hai jabki general questions pe theek kaam karta hai — kya ho raha hai
+      aur kaise fix karoge?</strong></p>
+      <p>
+        Pure vector/semantic search embeddings pe based hota hai jo "meaning" capture karta hai, exact
+        strings/IDs/codes nahi — isliye SKU ya error-code jaise exact-match queries pe weak hota hai
+        (semantically similar lekin wrong SKU wale chunks retrieve ho sakte hain). Fix — <strong>hybrid
+        search</strong> implement karo, keyword/BM25-based search (exact match ke liye strong) ko vector
+        search ke saath combine karo, aur dono ke results ko merge/rerank karo. Weaviate aur Qdrant jaise
+        vector DBs isko built-in support karte hain, jisse ek hi query dono retrieval modes se benefit
+        leti hai.
+      </p>
+
+      <div class="prevnext">
+        <a href="03-prompt-engineering.html">
+          <div class="label">← Previous</div>
+          <div class="title">Prompt Engineering & Structured Output</div>
+        </a>
+        <a class="next" href="05-mcp-deep-dive.html">
+          <div class="label">Next →</div>
+          <div class="title">MCP Deep-Dive</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

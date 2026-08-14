@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Engineering vs ML — MAD AI Engineering Docs (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link active" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 1</div>
+      <div class="progress-pill">1 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Role Clarity · Skill Map · Foundation Models</span>
+      <h1>AI Engineering vs ML</h1>
+      <p class="subtitle">
+        Sabse pehla confusion jo clear karna zaroori hai — "AI Engineer" aur "ML Engineer" alag roles hain,
+        alag skills chahiye, alag output banta hai. Is chapter mein hum bilkul precisely dekhenge ki tum
+        (ek product engineer, fintech mein kaam karne wale) actually kya seekhoge is poore handbook mein,
+        aur kya cheezein <strong>deliberately scope se bahar</strong> hain.
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#commodity">1. Foundation Model — Ek Commodity Ki Tarah</a></li>
+          <li><a href="#comparison">2. ML Engineer vs AI Engineer — Comparison Table</a></li>
+          <li><a href="#toolbox">3. AI Engineer Ka Actual Toolbox</a></li>
+          <li><a href="#day-in-life">4. Day in the Life — Fintech (Clear) Mein AI Engineer</a></li>
+          <li><a href="#skill-map">5. Skill Map — Is Handbook Ka Learning Path</a></li>
+          <li><a href="#takeaways">6. Key Takeaways</a></li>
+          <li><a href="#interview">7. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="commodity">Foundation Model — Ek Commodity Ki Tarah</h2>
+      <p>
+        Sabse important mental model shift jo tumhe karni hai — <strong>foundation model ko ek commodity/utility
+        ki tarah treat karo, ek research problem ki tarah nahi.</strong> Socho aisa: kahin ek company (Anthropic,
+        OpenAI, Google) ke paas ek massive <code>model.py</code> (architecture) aur ek <code>parameters.bin</code>
+        (trained weights, sainkdo billion numbers) already exist karta hai. Unhone months/years laga ke, crores
+        of dollars kharch karke, us model ko train kiya hai. Wo kaam ho chuka hai — tumhe wo dobara karne ki
+        <em>zaroorat hi nahi hai</em>, aur na hi is handbook mein kahin sikhaya jaayega.
+      </p>
+      <p>
+        Jo cheez tumhare paas hai, wo hai ek <strong>API endpoint</strong> — tum text bhejte ho, model text
+        wapas bhejta hai. Bas. Is API ke peeche kya ho raha hai (attention layers, gradient descent, loss
+        functions) — usse tumhe utna hi matlab hai jitna ek backend engineer ko matlab hota hai ki AWS ke
+        andar Postgres literally kaise disk pe bytes likhta hai. Tumhe interface pata hona chahiye, internals
+        ka high-level mental model hona chahiye (chapter 2 mein utna hi cover karenge), lekin implement karna
+        tumhara kaam nahi hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">mental-model.txt — "Black box" ke through sochna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ML Engineer ka world (is handbook ke scope se BAHAR)</span>
+raw_data.csv  <span class="tok-punc">--&gt;</span>  <span class="tok-fn">train</span>(architecture, hyperparams, GPUs, weeks)  <span class="tok-punc">--&gt;</span>  model.py + parameters.bin
+
+<span class="tok-com">// AI Engineer ka world (is poore handbook ka scope)</span>
+model.py + parameters.bin  <span class="tok-punc">==</span>  <span class="tok-str">"black box API"</span>
+                              <span class="tok-punc">|</span>
+                              v
+user_query  <span class="tok-punc">--&gt;</span>  <span class="tok-fn">prompt</span>(context, tools, memory)  <span class="tok-punc">--&gt;</span>  API call  <span class="tok-punc">--&gt;</span>  response  <span class="tok-punc">--&gt;</span>  product
+</code></pre>
+      </div>
+
+      <p>
+        Ye shift bilkul waisa hi hai jaisa databases ke saath hua tha decades pehle — bahut kam application
+        engineers ab B-tree indexing algorithm likhte hain ya query planner internals optimize karte hain;
+        wo Postgres/MySQL ko ek reliable black box ki tarah use karte hain aur apna energy schema design,
+        query optimization, aur application logic pe lagate hain. Foundation models ke saath bhi wahi ho
+        raha hai — <strong>tum GPT/Claude/Gemini/Llama ko "already built infrastructure" ki tarah treat
+        karoge, aur uske upar product banaoge.</strong>
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 "Commodity" ka matlab "sasta" ya "same" nahi hai</div>
+        <p>
+          Commodity treat karne ka matlab ye nahi ki sab models same hain — Claude, GPT, Gemini, Llama ke
+          beech reasoning quality, latency, cost, aur context window mein real differences hain (chapter 10
+          mein detail se cover karenge). "Commodity" ka matlab hai — <strong>tum unhe train nahi karte, tum
+          unhe select aur consume karte ho</strong>, jaise ek backend engineer database vendor select karta
+          hai (Postgres vs MongoDB) bina database engine khud likhe.
+        </p>
+      </div>
+
+      <h2 id="comparison">ML Engineer vs AI Engineer — Comparison Table</h2>
+      <p>
+        Ab role-level pe precisely dekhte hain — dono jobs "AI" word use karte hain, dono resumes pe similar
+        buzzwords dikhte hain, lekin day-to-day kaam, required skills, aur output artifact bilkul different
+        hain.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Dimension</th><th>ML Engineer / Researcher</th><th>AI Engineer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Kya banate hain</td>
+            <td>Model architecture, training pipelines, naye model checkpoints</td>
+            <td>Production features — chatbots, RAG pipelines, agents, copilots</td>
+          </tr>
+          <tr>
+            <td>Core skill</td>
+            <td>Linear algebra, statistics, PyTorch/JAX, distributed training</td>
+            <td>System design, prompting, API integration, evals, observability</td>
+          </tr>
+          <tr>
+            <td>Primary tools</td>
+            <td>GPUs/TPU clusters, training frameworks, dataset curation tools</td>
+            <td>LLM APIs, vector DBs, MCP/tool-calling frameworks, agent SDKs</td>
+          </tr>
+          <tr>
+            <td>Output artifact</td>
+            <td><code>parameters.bin</code> — trained weights, ek naya model</td>
+            <td>Ek deployed product feature jo existing model ko use karta hai</td>
+          </tr>
+          <tr>
+            <td>Iteration cycle</td>
+            <td>Days/weeks (training run + evaluation)</td>
+            <td>Minutes/hours (prompt tweak, deploy, measure)</td>
+          </tr>
+          <tr>
+            <td>"Quality" ka matlab</td>
+            <td>Loss curves, benchmark scores (MMLU, HumanEval, etc.)</td>
+            <td>User-facing eval pass rate, latency, cost-per-request, task success</td>
+          </tr>
+          <tr>
+            <td>Data ka role</td>
+            <td>Training data — architecture ko shape karta hai</td>
+            <td>Runtime context — RAG documents, tool outputs, conversation history</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Notice karo — <em>koi bhi row mein "better" ya "worse" nahi hai</em>, sirf different hai. Companies
+        jinke paas apna foundation model hai (Anthropic, OpenAI, Meta) unhe dono roles chahiye. Lekin ek
+        typical product company (jaise Clear, ek fintech) mein — jahan tum foundation model train nahi kar
+        rahe, existing models ko product mein integrate kar rahe ho — <strong>99% roles AI Engineer hain, ML
+        Engineer nahi.</strong> Yahi wajah hai ki ye poora handbook AI Engineering pe focused hai.
+      </p>
+
+      <h2 id="toolbox">AI Engineer Ka Actual Toolbox</h2>
+      <p>
+        Toh agar training/datasets scope se bahar hain, ek AI Engineer apna time actually kis pe kharch karta
+        hai? Yahan wo cheezein hain jo is handbook ke agle 12 chapters mein cover hongi:
+      </p>
+      <ul>
+        <li><strong>Prompting & structured output</strong> — model se reliably useful, parseable response
+        kaise nikalein (system prompts, few-shot examples, JSON schemas) — chapter 3.</li>
+        <li><strong>RAG (Retrieval-Augmented Generation)</strong> — model ko apne domain-specific data se
+        context dena bina retrain kiye (chunking, embeddings, vector search, reranking) — chapter 4.</li>
+        <li><strong>Tool/function calling aur MCP</strong> — model ko real actions perform karne dena (API
+        call, database query, file read) — chapter 5, 6.</li>
+        <li><strong>Agents</strong> — multi-step autonomous workflows design karna jahan model khud plan
+        karta hai, tools use karta hai, aur apne output pe iterate karta hai — chapter 7, 8, 9.</li>
+        <li><strong>Model selection</strong> — cost/latency/quality trade-offs samajhke sahi model choose
+        karna specific task ke liye — chapter 10.</li>
+        <li><strong>System design</strong> — poora AI product architecture design karna (API gateway,
+        streaming, state management) — chapter 11.</li>
+        <li><strong>Evals in production</strong> — ye continuously measure karna ki system actually kaam kar
+        raha hai ya nahi, sirf "vibes" pe trust nahi karna.</li>
+        <li><strong>Observability aur cost/latency optimization</strong> — production mein LLM calls trace
+        karna, KV cache samajhna, streaming, caching layers — chapter 12.</li>
+        <li><strong>Guardrails aur production hardening</strong> — prompt injection defense, rate limiting,
+        fallback models — chapter 13.</li>
+      </ul>
+      <p>
+        Ye poora toolbox <strong>software engineering ka extension hai, ML research ka nahi.</strong> Agar
+        tum already ek backend/product engineer ho, tumhare paas already 70% zaroori skills hain — APIs,
+        system design, debugging, production ops. Naya sirf itna hai ki ek naya "component" (LLM) tumhare
+        system mein add ho raha hai, jiska behavior thoda different hai (non-deterministic, probabilistic)
+        traditional components se.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — LLM ko ek "unreliable external service" ki tarah treat karo</div>
+        <p>
+          Sabse useful mental shortcut jo maine dekha hai — LLM API ko treat karo jaise tum kisi third-party
+          payment gateway ya flaky external microservice ko treat karte ho. Iska matlab: retries with
+          backoff, timeouts, output validation (kyunki response schema kabhi-kabhi break ho sakta hai),
+          fallback paths jab model down ho ya rate-limit hit ho, aur cost monitoring (kyunki har call paisa
+          kharch karta hai, database query jaisa free nahi hai). Jo engineers is analogy ko miss karte hain,
+          wo LLM calls ko "function call jitna reliable" treat kar lete hain — aur production mein silently
+          fail hote hain jab model ek malformed JSON return karta hai ya latency spike ho jaata hai. Isi wajah
+          se evals aur observability (chapter 12-13) is handbook mein "advanced topic" nahi, <strong>day-1
+          production requirement</strong> hain.
+        </p>
+      </div>
+
+      <h2 id="day-in-life">Day in the Life — Fintech (Clear) Mein AI Engineer</h2>
+      <p>
+        Chalo isko concrete banate hain. Ek fintech company jaise Clear mein (jahan tax filing, GST, invoicing,
+        compliance jaisi cheezein core product hain), AI Engineer ka kaam kuch aisa dikh sakta hai:
+      </p>
+      <ul>
+        <li><strong>Customer support agent banana</strong> — user "mera refund kahan hai" jaisa sawaal
+        poochta hai, agent uske account data, ticket history, aur FAQ knowledge base ko query karta hai
+        (tool calling + RAG), aur ek accurate, context-aware answer deta hai — bina ek human agent ko
+        involve kiye, jab tak escalation genuinely zaroori na ho.</li>
+        <li><strong>Document extraction RAG pipeline</strong> — users invoices, Form-16, bank statements
+        upload karte hain PDF/image format mein. System un documents se structured data (amount, date, GSTIN,
+        line items) extract karta hai aur use downstream tax-filing logic ke liye use karta hai — is chapter
+        ke scope mein ye "RAG + structured output" ka combination hai, ek naya OCR model train karna nahi.</li>
+        <li><strong>Internal copilot</strong> — support/ops team ke liye ek internal tool jo unhe naturally
+        poochne deta hai "is user ka last 3 filings ka status kya hai" aur system internal APIs/databases
+        query karke jawaab deta hai — agent architecture aur tool calling ka direct application.</li>
+        <li><strong>Compliance-sensitive output validation</strong> — fintech mein galat number ya galat
+        advice dena sirf "bad UX" nahi, regulatory/legal risk hai. Isliye har AI feature ke saath structured
+        output validation, guardrails, aur human-review fallback paths honi zaroori hain — production
+        hardening (chapter 13) yahan "nice to have" nahi, non-negotiable hai.</li>
+        <li><strong>Cost aur latency ka roz ka trade-off</strong> — ek support agent jo GPT-4-class model
+        use karta hai har simple FAQ query ke liye, expensive aur slow hoga. AI Engineer roz decide karta hai
+        — "is task ke liye chhota/tez model chalega, ya reasoning-heavy bada model chahiye" (chapter 10, 12).</li>
+      </ul>
+      <p>
+        Notice karo — in sabme <strong>kahin bhi model training nahi hai.</strong> Har cheez existing
+        foundation models (Claude, GPT, ya jo bhi company choose kare) ke upar built hai. Ye exactly wahi
+        kaam hai jo ye poora handbook tumhe sikhayega.
+      </p>
+
+      <h2 id="skill-map">Skill Map — Is Handbook Ka Learning Path</h2>
+      <p>
+        Is handbook ke 13 chapters random order mein nahi hain — wo ek deliberate learning path follow karte
+        hain jo AI engineering skills ko natural progression mein build karta hai:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Stage</th><th>Chapters</th><th>Kya seekhoge</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1. Foundations</td><td>1–2</td><td>Role clarity, aur LLM ka utna internal mechanism jitna engineer ke liye chahiye (tokenization, context window)</td></tr>
+          <tr><td>2. Model se baat karna</td><td>3</td><td>Prompting aur structured output — reliably useful response nikaalna</td></tr>
+          <tr><td>3. Model ko context dena</td><td>4–5</td><td>RAG aur MCP — model ko apne data se connect karna</td></tr>
+          <tr><td>4. Model ko actions dena</td><td>6</td><td>Tool/function calling — model ko real-world actions perform karne dena</td></tr>
+          <tr><td>5. Autonomy build karna</td><td>7–9</td><td>Agents — multi-step planning, architectures, memory systems</td></tr>
+          <tr><td>6. Sahi model choose karna</td><td>10</td><td>Market landscape — trade-offs samajhke model select karna</td></tr>
+          <tr><td>7. Production mein le jaana</td><td>11–13</td><td>System design, scaling/latency, aur production hardening</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Ye progression deliberately "building block" style hai — chapter 4 (RAG) chapter 3 (prompting) pe
+        depend karta hai, chapter 7 (agents) chapter 6 (tool calling) pe depend karta hai, aur chapter 11-13
+        (production) sab pichle concepts ko ek saath combine karte hain real system mein. Isliye recommend
+        yahi hai ki chapters ko order mein hi padho, especially pehli baar.
+      </p>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — Ek line mein sab kuch</div>
+        <p>
+          <strong>"ML Engineer model banata hai, AI Engineer us model se product banata hai."</strong> Agar
+          tumhe kabhi confuse ho jaaye ki ek topic is handbook ke scope mein aata hai ya nahi, ye ek line
+          test karke dekho — agar topic "model ko kaise train/fine-tune/evaluate-as-research karein" hai, wo
+          scope se bahar hai. Agar topic "already-trained model ko kaise reliably, fast, aur affordably
+          product mein use karein" hai, wo bilkul is handbook ka core hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>AI Engineering ML Engineering se fundamentally different role hai — foundation model ek already
+        trained "commodity"/black-box API hai, aur AI Engineer usse train nahi karta, use consume karta hai.</li>
+        <li>ML Engineer <code>parameters.bin</code> banata hai (training, research); AI Engineer us
+        <code>parameters.bin</code> ke upar production product banata hai (prompting, RAG, agents, system
+        design).</li>
+        <li>AI Engineer ka toolbox mostly existing software engineering skills ka extension hai — system
+        design, API integration, observability, cost/latency optimization — plus kuch LLM-specific naye
+        concepts (prompting, RAG, tool calling, agents).</li>
+        <li>LLM APIs ko ek "unreliable external service" ki tarah treat karo — retries, validation, fallback
+        paths, aur cost monitoring day-1 se production requirement hain, especially fintech jaise
+        compliance-sensitive domains mein.</li>
+        <li>Fintech (Clear-jaisi company) mein real AI Engineer kaam — support agents, document extraction
+        RAG pipelines, internal copilots — sab existing foundation models ke upar built hote hain, koi model
+        training involved nahi hoti.</li>
+        <li>Is handbook ke 13 chapters ek deliberate skill-building path follow karte hain: prompting → RAG/MCP
+        → tool calling → agents → model selection → production system design/scaling.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. Tumse pucha jaaye "AI Engineer aur ML Engineer mein kya farak hai" — kaise explain
+      karoge?</strong></p>
+      <p>
+        ML Engineer/Researcher model architecture design karta hai, data pe train karta hai, aur naye model
+        checkpoints (parameters.bin) produce karta hai — kaam heavily linear algebra, distributed training,
+        aur research-oriented hota hai. AI Engineer already-trained foundation model (GPT, Claude, Gemini
+        jaise) ko ek black-box API ki tarah leta hai aur uske upar real product features banata hai — prompting,
+        RAG, tool calling, agents, aur production infra (observability, cost/latency optimization). Dono roles
+        "AI" word share karte hain lekin skills, day-to-day kaam, aur output artifact bilkul different hote hain.
+      </p>
+
+      <p><strong>Q2. Agar tumhe koi task diya jaaye "hamare support bot ke jawaab better karo", tum us par ML
+      Engineer approach lagoge ya AI Engineer approach? Kyun?</strong></p>
+      <p>
+        AI Engineer approach — pehle diagnose karo ki problem kahan hai: prompt clarity, RAG retrieval
+        quality (wrong/incomplete documents fetch ho rahe hain), ya tool-calling errors. Fix mostly prompt
+        engineering, retrieval pipeline tuning, ya better structured output validation se hoga — model ko
+        retrain/fine-tune karna last resort hai aur zyadatar cases mein zaroorat hi nahi padti, especially
+        jab underlying foundation model already capable hai aur problem context/retrieval mein hai, model
+        capability mein nahi.
+      </p>
+
+      <p><strong>Q3. "Foundation model ek commodity hai" — is statement ka practical implication kya hai jab
+      tum system design karte ho?</strong></p>
+      <p>
+        Practical implication ye hai ki tumhara system model-agnostic design hona chahiye jahan possible ho —
+        model call ko ek swappable component ki tarah treat karo (jaise database vendor swap kar sakte ho),
+        taaki agar koi naya model better cost/latency/quality de raha hai, tum use switch kar sako bina
+        poora system redesign kiye. Isका matlab prompts, evals, aur abstractions ko provider-specific quirks
+        se decouple karke likhna, aur model selection (chapter 10) ko ek ongoing engineering decision ki
+        tarah treat karna, ek-baar-ka choice nahi.
+      </p>
+
+      <p><strong>Q4. Ek fintech (jaise Clear) mein AI feature build karte waqt, "production hardening" ko
+      itna important kyun treat kiya jaata hai, generic consumer app ke comparison mein?</strong></p>
+      <p>
+        Fintech mein galat output (galat tax amount, galat compliance advice) sirf bad UX nahi, regulatory
+        aur legal risk create karta hai. Isliye structured output validation, guardrails, aur human-review
+        fallback paths "nice to have polish" nahi hain, core requirement hain — LLM ko ek unreliable external
+        service ki tarah treat karke retries, timeouts, aur output-schema validation build karna zaroori hai,
+        taaki model ki inherent non-determinism kabhi directly user-facing financial decision tak na pahunche
+        bina validation ke.
+      </p>
+
+      <p><strong>Q5. Agar interviewer poochhe "tum LLM ko production system mein kaise treat karte ho — ek
+      normal function call ki tarah ya kuch aur?" — tum kya jawaab doge?</strong></p>
+      <p>
+        LLM ko ek normal deterministic function call ki tarah treat karna galat hai — better mental model hai
+        "unreliable external microservice/API" jaisa third-party payment gateway. Iska matlab production code
+        mein retries with backoff, timeouts, response schema validation (kyunki structured output kabhi-kabhi
+        malform ho sakta hai), fallback paths (rate limits, downtime ke liye), aur per-call cost monitoring
+        include karna — kyunki traditional function calls ke unlike, har LLM call latency aur dollar cost dono
+        carry karta hai, aur output probabilistic hota hai, guaranteed-correct nahi.
+      </p>
+
+      <div class="prevnext">
+        <a href="index.html">
+          <div class="label">← Previous</div>
+          <div class="title">Home</div>
+        </a>
+        <a class="next" href="02-llm-internals.html">
+          <div class="label">Next →</div>
+          <div class="title">LLM Internals for Engineers</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

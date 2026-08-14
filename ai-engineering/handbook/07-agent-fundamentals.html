@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Fundamentals — AI Engineering Handbook (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>AI Eng Docs</span></div>
+    <div class="tagline">AI Engineering — agents, RAG, MCP, system design, scaling. ML training/datasets NAHI, sirf production AI engineering.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-ai-engineering-vs-ml.html"><span class="num">1</span> AI Engineering vs ML</a>
+      <a class="nav-link" href="02-llm-internals.html"><span class="num">2</span> LLM Internals for Engineers</a>
+      <a class="nav-link" href="03-prompt-engineering.html"><span class="num">3</span> Prompt Engineering & Structured Output</a>
+      <a class="nav-link" href="04-rag-deep-dive.html"><span class="num">4</span> RAG Deep-Dive</a>
+      <a class="nav-link" href="05-mcp-deep-dive.html"><span class="num">5</span> MCP Deep-Dive</a>
+      <a class="nav-link" href="06-tool-function-calling.html"><span class="num">6</span> Tool/Function Calling</a>
+      <a class="nav-link active" href="07-agent-fundamentals.html"><span class="num">7</span> AI Agent Fundamentals</a>
+      <a class="nav-link" href="08-agent-architectures.html"><span class="num">8</span> Agent Architectures</a>
+      <a class="nav-link" href="09-agent-memory.html"><span class="num">9</span> Agent Memory Systems</a>
+      <a class="nav-link" href="10-choosing-a-model.html"><span class="num">10</span> Choosing a Model</a>
+      <a class="nav-link" href="11-system-design.html"><span class="num">11</span> System Design for AI Products</a>
+      <a class="nav-link" href="12-scaling-and-latency.html"><span class="num">12</span> Scaling & Latency</a>
+      <a class="nav-link" href="13-production-hardening.html"><span class="num">13</span> Production Hardening</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD AI Engineering Docs <span>›</span> Chapter 7</div>
+      <div class="progress-pill">7 / 13 topics ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Agent Loop · ReAct · Planning · Termination</span>
+      <h1>AI Agent Fundamentals</h1>
+      <p class="subtitle">
+        Chapter 6 mein humne dekha ki ek single LLM call multiple tools use kar sakti hai. Ab hum ek level
+        upar jaate hain — <strong>agent</strong> kya hota hai, ye ek fixed "workflow" se kaise fundamentally
+        different hai, aur ek working ReAct-style agent loop Python mein scratch se kaise banate hain
+        (kisi heavy framework ke bina, taaki andar ka mechanism poora saaf dikhe).
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#definition">1. Agent Kya Hota Hai — Precise Definition</a></li>
+          <li><a href="#agent-vs-workflow">2. Agentic vs Workflow — Control Flow Kaun Decide Karta Hai</a></li>
+          <li><a href="#react">3. ReAct Pattern — Reason → Act → Observe</a></li>
+          <li><a href="#react-trace">4. Step-by-Step Trace Example</a></li>
+          <li><a href="#planning">5. Planning — Single-Shot vs Interleaved Re-planning</a></li>
+          <li><a href="#stop-conditions">6. Stop Conditions — Agent Ko Rukna Kab Chahiye</a></li>
+          <li><a href="#code">7. Practical Code — Scratch Se ReAct Agent Loop</a></li>
+          <li><a href="#decision-table">8. Agent vs Workflow — Decision Table</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="definition">Agent Kya Hota Hai — Precise Definition</h2>
+      <p>
+        "Agent" word bahut loosely use hota hai — kabhi koi bas ek chatbot ko bhi "agent" bula deta hai.
+        Precisely define karte hain: <strong>ek agent ek system hai jahan LLM ko ek goal aur tools diye
+        jaate hain, aur LLM ek loop mein khud decide karta hai ki next kya karna hai — kaunsa tool call
+        karna hai, kya observe hua uske basis pe kya karna hai — jab tak goal achieve na ho jaaye ya koi
+        stop condition hit na ho.</strong>
+      </p>
+      <p>
+        Key phrase yahaan hai <strong>"loop mein khud decide karta hai"</strong>. Ek single prompt→response
+        call — chahe wo tool calling use kare — agent nahi hai agar developer ne already decide kar rakha
+        hai ki kaunsa tool kab call hoga. Agent tab banta hai jab LLM ka output khud decide karta hai ki
+        control flow mein aage kya hoga — kaunsa tool, kis order mein, kab rukna hai — runtime pe, execution
+        ke dauraan, na ki developer ne pehle se hardcode kiya ho.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Chapter 6 se connection</div>
+        <p>
+          Chapter 6 mein humne tool calling ka mechanism dekha — schema define karna, LLM ka tool-call
+          request parse karna, result wapas bhejna. Wo mechanism hi hai jo agent ka "Act" step possible
+          banata hai. Is chapter mein hum us mechanism ko ek <strong>loop</strong> ke andar daalte hain jahan
+          LLM khud decide karta hai kitni baar aur kaunse tools call karne hain — yehi difference hai ek
+          "tool-calling feature" aur ek "agent" ke beech.
+        </p>
+      </div>
+
+      <h2 id="agent-vs-workflow">Agentic vs Workflow — Control Flow Kaun Decide Karta Hai</h2>
+      <p>
+        Ye distinction production AI engineering mein sabse important architectural decision hai, aur
+        bahut log isse miss kar dete hain kyunki dono mein LLM calls involved hote hain. Fark control flow
+        mein hai:
+      </p>
+      <ul>
+        <li><strong>Workflow (fixed pipeline)</strong> — developer ne pehle se code mein decide kar rakha
+        hai ki steps kya hain aur kis order mein chalenge: "pehle summarize karo, phir translate karo, phir
+        classify karo". LLM sirf har step ka <em>output</em> generate karta hai — control flow (agla step
+        kaunsa hoga) hardcoded hai, if-else ya sequential function calls mein.</li>
+        <li><strong>Agentic (LLM-driven loop)</strong> — developer sirf goal aur available tools deta hai.
+        LLM khud runtime pe decide karta hai ki kaunsa tool call karna hai, kitni baar, aur kab rukna hai.
+        Control flow LLM ke output se emerge hota hai, code mein pehle se likha nahi hota.</li>
+      </ul>
+      <p>
+        Dono approaches LLM calls use karti hain — fark ye hai ki <strong>"agla step kya hoga" ye decision
+        kaun le raha hai</strong>: developer (workflow) ya LLM khud (agent), runtime pe.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior Dev Note — Kab kaunsa use karo</div>
+        <p>
+          <strong>Workflow use karo</strong> jab task predictable hai aur steps pehle se maloom hain — jaise
+          "resume parse karo → structured fields nikaalo → database mein save karo". Ye cheaper hai (fixed
+          number of LLM calls, koi wasted iteration nahi), zyada reliable/auditable hai (tum exactly bata
+          sakte ho ki har run mein kya hoga), aur debug karna easy hai. <strong>Agent use karo</strong> jab
+          task open-ended hai aur steps unpredictable hain — jaise "is customer complaint ko research karo,
+          relevant policy dhoondo, aur ek resolution propose karo" — jahan zaroori steps request se request
+          badalte hain aur pehle se hardcode nahi kiye ja sakte. Golden rule: <strong>agar tum confidently
+          ek flowchart draw kar sakte ho jo har case cover kare, workflow banao. Agar flowchart mein bahut
+          saare "??? depends on what happens" branches hain, agent zaroori hai.</strong> Production mein
+          zyadatar teams shuru mein overkill agents banate hain jab simple workflow kaafi hota — agent ka
+          extra flexibility latency, cost, aur unpredictability ki keemat pe aata hai, isliye pehle workflow
+          try karo, agent tab jab genuinely zaroorat ho.
+        </p>
+      </div>
+
+      <h2 id="react">ReAct Pattern — Reason → Act → Observe</h2>
+      <p>
+        Sabse popular agent loop pattern hai <strong>ReAct</strong> (Reasoning + Acting, 2022 paper se aaya
+        hai). Idea simple hai: agent har action se pehle explicitly <em>reason</em> karta hai (ek reasoning
+        trace generate karta hai — "mujhe X karna hoga kyunki Y"), phir ek <em>action</em> leta hai (tool
+        call), phir action ka result <em>observe</em> karta hai, aur is cycle ko repeat karta hai jab tak
+        answer na mil jaaye.
+      </p>
+      <p>
+        Ye "plain tool-calling loop" (bas tools call karte jaao jab tak done na ho) se better kyun hai?
+        Kyunki reasoning trace ko explicitly generate karwana model ko <strong>apna intent likhne pe majboor
+        karta hai</strong> — jo galat assumptions ko surface pe le aata hai before wo ek galat tool call ban
+        jaayein. Agar model directly action pe jump kare bina reasoning ke, wo aksar ambiguous cases mein
+        galat tool ya galat parameters choose kar leta hai. Explicit "Thought:" step model ko force karta hai
+        ki wo pehle plan articulate kare — jo empirically hallucination aur galat tool selection dono kam
+        karta hai, kyunki model apne hi likhe hue reasoning se consistent rehne ki koshish karta hai (yehi
+        chain-of-thought ka core benefit hai, ab tool use ke saath combine kiya hua).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Step</th><th>Kya hota hai</th><th>Kyun zaroori hai</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Reason (Thought)</strong></td><td>Model likhta hai ki abhi situation kya hai aur next kya karna chahiye</td><td>Intent explicit banata hai, galat assumptions ko early catch karta hai</td></tr>
+          <tr><td><strong>Act (Action)</strong></td><td>Model ek tool call karta hai (specific tool + arguments)</td><td>Reasoning ko concrete, executable step mein convert karta hai</td></tr>
+          <tr><td><strong>Observe (Observation)</strong></td><td>Tool ka result loop mein wapas feed hota hai</td><td>Model ko real-world data milta hai jo uske internal knowledge se accurate ho sakta hai</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="react-trace">Step-by-Step Trace Example</h2>
+      <p>
+        Query: <strong>"Eiffel Tower jahan hai wahan ka weather kaisa hai?"</strong> — ye query direct answer
+        nahi ho sakti kyunki model ko pehle location resolve karni hai, phir us location ka current weather
+        fetch karna hai (jo model apne training data se nahi jaan sakta — real-time data hai). Trace kuch is
+        tarah dikhega:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">react-trace.txt — agent ka internal reasoning trace<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">Thought 1: User ko Eiffel Tower ki location ka current weather chahiye. Mujhe</span>
+<span class="tok-com">           pehle pata karna hoga Eiffel Tower kis city/coordinates mein hai,</span>
+<span class="tok-com">           uske baad hi weather tool call kar sakta hoon (weather tool ko</span>
+<span class="tok-com">           city name ya lat/long chahiye, "Eiffel Tower" nahi).</span>
+Action 1:  search_location(query=<span class="tok-str">"Eiffel Tower"</span>)  <span class="tok-com"># Reason se decide hui tool call, place-name se location dhoondne ke liye</span>
+Observation 1: {city: <span class="tok-str">"Paris"</span>, country: <span class="tok-str">"France"</span>, lat: 48.8584, lon: 2.2945}  <span class="tok-com"># tool ka result loop mein wapas feed hua</span>
+
+<span class="tok-com">Thought 2: Location mil gayi — Paris, France (48.8584, 2.2945). Ab main</span>
+<span class="tok-com">           weather tool ko ye coordinates de sakta hoon current weather ke liye.</span>
+Action 2:  get_weather(lat=48.8584, lon=2.2945)  <span class="tok-com"># Observation 1 se mile coordinates ko yahaan use kiya</span>
+Observation 2: {temp_c: 19, condition: <span class="tok-str">"Partly cloudy"</span>, humidity: 62}  <span class="tok-com"># weather tool ka result — real-time data, model ke training se nahi</span>
+
+<span class="tok-com">Thought 3: Mujhe location aur weather dono data mil chuke hain. Ab main</span>
+<span class="tok-com">           final answer compose kar sakta hoon, aur koi tool call nahi chahiye.</span>
+Final Answer: Eiffel Tower Paris, France mein hai, jahan abhi 19°C aur partly  <span class="tok-com"># no tool call = stop condition #1 (natural finish)</span>
+              cloudy weather hai (humidity 62%).
+</code></pre>
+      </div>
+      <p>
+        Notice karo — agar agent directly "call weather tool" pe jump karta bina pehle location resolve kiye
+        (plain tool-loop jisme koi explicit reasoning nahi hota), wo galti se <code>get_weather("Eiffel
+        Tower")</code> jaisa invalid call kar sakta tha, ya worse — apni training data se Paris ka koordinate
+        "yaad" karke hallucinate kar sakta tha bina verify kiye. Explicit "Thought" step ne is dependency
+        (pehle location, phir weather) ko surface kiya before action lene se pehle.
+      </p>
+
+      <h2 id="planning">Planning — Single-Shot vs Interleaved Re-planning</h2>
+      <p>
+        ReAct loop mein har step pe reasoning hoti hai, lekin ek separate design decision hai:
+        <strong>agent poora plan pehle se bana le, ya step-by-step re-plan karta rahe?</strong>
+      </p>
+      <ul>
+        <li><strong>Single-shot planning</strong> — agent shuru mein hi ek complete plan likhta hai
+        ("Step 1: X karo, Step 2: Y karo, Step 3: Z karo") aur phir usi plan ko execute karta hai bina
+        beech mein reconsider kiye. <strong>Trade-off:</strong> cheap hai (planning ke liye ek hi LLM call),
+        predictable hai (tum plan ko upfront review/approve kar sakte ho — auditability), lekin
+        <strong>brittle</strong> hai — agar step 2 ka result unexpected nikla (jaise tool ne error diya, ya
+        data expected se different nikla), agent ke paas plan adapt karne ka built-in mechanism nahi hai jab
+        tak explicitly re-plan trigger na ho.</li>
+        <li><strong>Interleaved re-planning</strong> — agent har observation ke baad apna plan reconsider
+        karta hai (yehi ReAct loop naturally karta hai — har "Thought" ek chhota re-plan hai). <strong>Trade-off:</strong>
+        zyada adaptive hai — reality plan se diverge kare to agent turant adjust kar sakta hai (jaise ek tool
+        fail ho jaaye to alternative approach try kare) — lekin costlier hai (har step pe ek extra LLM call
+        ka reasoning overhead) aur latency zyada hoti hai kyunki agent sequentially step-by-step sochta hai
+        instead of ek baar mein pura plan generate karke parallel-executable steps nikaalna.</li>
+      </ul>
+      <p>
+        Practical middle ground bhi common hai: agent shuru mein ek rough high-level plan banaye (single-shot,
+        cheap), lekin har step ke baad us plan ko ek chhoti reasoning step se revise/confirm kare (interleaved) —
+        isse dono ke benefits milte hain, purely single-shot ki brittleness aur purely interleaved ka full
+        overhead dono avoid ho jaate hain.
+      </p>
+
+      <h2 id="stop-conditions">Stop Conditions — Agent Ko Rukna Kab Chahiye</h2>
+      <p>
+        Agent loop ek open-ended <code>while</code> loop hai — usse pata hona chahiye kab rukna hai, warna
+        wo infinitely tool calls karta reh sakta hai (cost aur latency dono ke liye disaster). Teen mechanisms
+        combine karke ye handle hota hai:
+      </p>
+      <ol>
+        <li><strong>Model khud final answer deta hai (no more tool calls)</strong> — jab model ka response
+        mein koi tool-call request nahi hoti, sirf plain text answer hota hai, ye natural signal hai ki
+        model ne decide kiya hai ki goal achieve ho gaya hai aur ab final answer de raha hai. Primary/expected
+        stop condition.</li>
+        <li><strong>Explicit "done"/"finish" tool</strong> — kuch designs mein ek dedicated tool hota hai
+        jaise <code>finish_task(answer=...)</code> jo model ko explicitly call karna hota hai jab wo done ho —
+        ye zyada structured hai kyunki loop ko exactly pata chalta hai "ye terminal action thi" (bajaye
+        heuristically detect karne ke ki response mein tool call hai ya nahi).</li>
+        <li><strong>Max iteration guard (safety net)</strong> — chapter 6 mein humne ye already dekha tha
+        tool-calling loop mein. Agent loop mein bhi zaroori hai — agar model kisi wajah se (ambiguous goal,
+        buggy tool, model confusion) endlessly tool calls karta rahe, ek hard cap (jaise <code>max_iterations
+        = 10</code>) loop ko force-terminate karta hai. Ye "normal" stop condition nahi hai, ye ek safety net
+        hai jo production mein runaway costs aur infinite loops se bachata hai.</li>
+      </ol>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Max iteration guard hamesha zaroori hai, chahe kitna bhi "smart" model ho</div>
+        <p>
+          Ye sochna galti hai ki "hamara model kaafi capable hai, wo khud hi ruk jaayega". Production mein
+          edge cases guaranteed aate hain — ek tool jo baar-baar retry-able error return karta hai, ek
+          ambiguous goal jiska koi clean stopping point nahi, ya model ka koi rare reasoning loop jahan wo
+          apne hi pichhle steps ko repeat karta hai. Max iteration guard bina exception ke non-negotiable
+          hai — isse graceful degradation milta hai (loop terminate hoke ek "I could not complete this task"
+          jaisa response deta hai) instead of silently runaway cost accumulate karne ke.
+        </p>
+      </div>
+
+      <h2 id="code">Practical Code — Scratch Se ReAct Agent Loop</h2>
+      <p>
+        Chalo ek minimal working ReAct agent loop banate hain Python mein — bina kisi heavy agent framework
+        (LangChain, LlamaIndex, etc.) ke, taaki underlying mechanism poora transparent ho. Ye wahi
+        <code>while</code> loop hai jo har production agent framework ke andar chhupa hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">react_agent.py — scratch se minimal ReAct agent loop<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># react_agent.py — ek minimal ReAct-style agent loop, kisi framework ke bina</span>
+<span class="tok-kw">import</span> json  <span class="tok-com"># tool arguments aur results ko JSON mein serialize/parse karne ke liye</span>
+<span class="tok-kw">from</span> anthropic <span class="tok-kw">import</span> Anthropic  <span class="tok-com"># Anthropic ka official Python SDK, LLM calls ke liye</span>
+
+client = Anthropic()  <span class="tok-com"># API client banaya — env var se API key uthaata hai automatically</span>
+
+<span class="tok-com"># --- Step 1: tools define karo jo agent use kar sakta hai ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">search_location</span>(query: <span class="tok-kw">str</span>) -> <span class="tok-kw">dict</span>:  <span class="tok-com"># pehla tool — place name se location resolve karta hai</span>
+    <span class="tok-com"># real implementation mein ye ek geocoding API (jaise OpenStreetMap Nominatim) call karega</span>
+    <span class="tok-com"># yahaan demo ke liye hardcoded response — production mein actual HTTP call hoga</span>
+    <span class="tok-kw">return</span> {<span class="tok-str">"city"</span>: <span class="tok-str">"Paris"</span>, <span class="tok-str">"lat"</span>: 48.8584, <span class="tok-str">"lon"</span>: 2.2945}  <span class="tok-com"># dict return, JSON-serializable hona chahiye</span>
+
+<span class="tok-kw">def</span> <span class="tok-fn">get_weather</span>(lat: <span class="tok-kw">float</span>, lon: <span class="tok-kw">float</span>) -> <span class="tok-kw">dict</span>:  <span class="tok-com"># doosra tool — coordinates se current weather fetch karta hai</span>
+    <span class="tok-com"># real implementation mein ye ek weather API (jaise OpenWeatherMap) call karega</span>
+    <span class="tok-kw">return</span> {<span class="tok-str">"temp_c"</span>: 19, <span class="tok-str">"condition"</span>: <span class="tok-str">"Partly cloudy"</span>}  <span class="tok-com"># demo response, production mein live data hoga</span>
+
+<span class="tok-com"># tool name se Python function tak mapping — Action step mein isse hi tool ko actually call karenge</span>
+TOOL_REGISTRY = {  <span class="tok-com"># dict literal khulta hai — naam-to-function mapping shuru</span>
+    <span class="tok-str">"search_location"</span>: search_location,  <span class="tok-com"># string name -> actual callable function</span>
+    <span class="tok-str">"get_weather"</span>: get_weather,  <span class="tok-com"># string name -> actual callable function</span>
+}  <span class="tok-com"># dict literal band — TOOL_REGISTRY ab ready hai lookup ke liye</span>
+
+<span class="tok-com"># --- Step 2: tool schemas define karo jo model ko diye jaayenge (API ke expected format mein) ---</span>
+TOOL_SCHEMAS = [  <span class="tok-com"># list of dicts — dono tools ke schemas, API ke expected shape mein</span>
+    {  <span class="tok-com"># pehla schema — search_location ke liye</span>
+        <span class="tok-str">"name"</span>: <span class="tok-str">"search_location"</span>,  <span class="tok-com"># model isi naam se tool ko refer karega apne response mein</span>
+        <span class="tok-str">"description"</span>: <span class="tok-str">"Kisi landmark/place ke naam se uski city aur coordinates dhoondo"</span>,  <span class="tok-com"># model isi se decide karta hai kab use karna hai</span>
+        <span class="tok-str">"input_schema"</span>: {  <span class="tok-com"># is tool ke expected arguments ka JSON Schema</span>
+            <span class="tok-str">"type"</span>: <span class="tok-str">"object"</span>,  <span class="tok-com"># input ek JSON object hoga</span>
+            <span class="tok-str">"properties"</span>: {<span class="tok-str">"query"</span>: {<span class="tok-str">"type"</span>: <span class="tok-str">"string"</span>, <span class="tok-str">"description"</span>: <span class="tok-str">"landmark ya place ka naam"</span>}},  <span class="tok-com"># ek required string field</span>
+            <span class="tok-str">"required"</span>: [<span class="tok-str">"query"</span>],  <span class="tok-com"># query field mandatory hai</span>
+        },  <span class="tok-com"># input_schema dict band</span>
+    },  <span class="tok-com"># search_location schema entry band</span>
+    {  <span class="tok-com"># doosra schema — get_weather ke liye</span>
+        <span class="tok-str">"name"</span>: <span class="tok-str">"get_weather"</span>,  <span class="tok-com"># dusra tool — weather fetch karne ke liye</span>
+        <span class="tok-str">"description"</span>: <span class="tok-str">"Diye gaye lat/lon coordinates ka current weather batao"</span>,  <span class="tok-com"># model isse samjhega ki ye coordinates leta hai, place-name nahi</span>
+        <span class="tok-str">"input_schema"</span>: {  <span class="tok-com"># is tool ke expected arguments ka JSON Schema</span>
+            <span class="tok-str">"type"</span>: <span class="tok-str">"object"</span>,  <span class="tok-com"># input ek JSON object hoga</span>
+            <span class="tok-str">"properties"</span>: {<span class="tok-str">"lat"</span>: {<span class="tok-str">"type"</span>: <span class="tok-str">"number"</span>}, <span class="tok-str">"lon"</span>: {<span class="tok-str">"type"</span>: <span class="tok-str">"number"</span>}},  <span class="tok-com"># do numeric fields</span>
+            <span class="tok-str">"required"</span>: [<span class="tok-str">"lat"</span>, <span class="tok-str">"lon"</span>],  <span class="tok-com"># dono coordinates mandatory hain</span>
+        },  <span class="tok-com"># input_schema dict band</span>
+    },  <span class="tok-com"># get_weather schema entry band</span>
+]  <span class="tok-com"># TOOL_SCHEMAS list band — model.create() ke tools= param mein isi ko pass karenge</span>
+
+<span class="tok-com"># --- Step 3: agent loop khud — ye hi core mechanism hai jo har agent framework ke andar chhupa hota hai ---</span>
+<span class="tok-kw">def</span> <span class="tok-fn">run_agent</span>(user_goal: <span class="tok-kw">str</span>, max_iterations: <span class="tok-kw">int</span> = 8) -> <span class="tok-kw">str</span>:  <span class="tok-com"># entry point — goal aur safety cap dono liye</span>
+    <span class="tok-com"># messages list — poore conversation ka accumulated history (system ke through user, assistant, tool results sab)</span>
+    messages = [{<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: user_goal}]  <span class="tok-com"># pehla message user ka goal hai</span>
+
+    <span class="tok-com"># max_iterations tak loop chalao — ye hamara safety-net stop condition hai (chapter 6 se pattern)</span>
+    <span class="tok-kw">for</span> iteration <span class="tok-kw">in</span> <span class="tok-fn">range</span>(max_iterations):  <span class="tok-com"># range(8) matlab max 8 reasoning+action cycles allowed</span>
+        <span class="tok-com"># LLM ko call karo — poori accumulated history + available tools ke saath</span>
+        response = client.messages.<span class="tok-fn">create</span>(  <span class="tok-com"># call khulta hai — arguments neeche</span>
+            model=<span class="tok-str">"claude-sonnet-4-5"</span>,  <span class="tok-com"># jo bhi current model version use karna hai</span>
+            max_tokens=1024,  <span class="tok-com"># response ki max length</span>
+            tools=TOOL_SCHEMAS,  <span class="tok-com"># model ko batate hain kaunse tools available hain</span>
+            messages=messages,  <span class="tok-com"># poori history bhejte hain taaki model ko context mile ki ab tak kya hua</span>
+        )  <span class="tok-com"># create() call band — response ab humare paas hai</span>
+
+        <span class="tok-com"># model ka response conversation history mein add karo (taaki agla call isse context mein dekh sake)</span>
+        messages.<span class="tok-fn">append</span>({<span class="tok-str">"role"</span>: <span class="tok-str">"assistant"</span>, <span class="tok-str">"content"</span>: response.content})  <span class="tok-com"># assistant turn save kiya</span>
+
+        <span class="tok-com"># check karo ki response mein koi tool-call request hai ya nahi</span>
+        tool_calls = [block <span class="tok-kw">for</span> block <span class="tok-kw">in</span> response.content <span class="tok-kw">if</span> block.type == <span class="tok-str">"tool_use"</span>]  <span class="tok-com"># sirf tool_use blocks filter kiye</span>
+
+        <span class="tok-com"># --- Stop condition #1: agar koi tool call nahi hai, model final answer de chuka hai ---</span>
+        <span class="tok-kw">if</span> <span class="tok-kw">not</span> tool_calls:  <span class="tok-com"># tool_calls empty list hai matlab model ne plain text answer diya</span>
+            final_text = <span class="tok-str">""</span>.<span class="tok-fn">join</span>(block.text <span class="tok-kw">for</span> block <span class="tok-kw">in</span> response.content <span class="tok-kw">if</span> block.type == <span class="tok-str">"text"</span>)  <span class="tok-com"># saare text blocks joda</span>
+            <span class="tok-kw">return</span> final_text  <span class="tok-com"># loop se exit — ye normal, expected termination hai</span>
+
+        <span class="tok-com"># --- Act step: har requested tool call ko actually execute karo ---</span>
+        tool_results = []  <span class="tok-com"># is iteration ke saare tool results yahaan collect honge</span>
+        <span class="tok-kw">for</span> call <span class="tok-kw">in</span> tool_calls:  <span class="tok-com"># model ek turn mein multiple tools bhi call kar sakta hai</span>
+            fn = TOOL_REGISTRY[call.name]  <span class="tok-com"># model ne diya tool-name registry mein lookup karke actual function nikaala</span>
+            <span class="tok-kw">try</span>:  <span class="tok-com"># tool call fail ho sakta hai (bad args, network error) — isliye guard kiya</span>
+                result = <span class="tok-fn">fn</span>(**call.input)  <span class="tok-com"># tool ko model ke diye gaye arguments ke saath call kiya</span>
+            <span class="tok-kw">except</span> <span class="tok-kw">Exception</span> <span class="tok-kw">as</span> e:  <span class="tok-com"># agar tool fail ho (bad input, network error, etc.)</span>
+                result = {<span class="tok-str">"error"</span>: <span class="tok-fn">str</span>(e)}  <span class="tok-com"># error ko bhi ek result ki tarah wapas bhejenge — crash nahi karenge</span>
+
+            <span class="tok-com"># --- Observe step: result ko tool_result block format mein wrap karo ---</span>
+            tool_results.<span class="tok-fn">append</span>({  <span class="tok-com"># is call ka result tool_results list mein joda ja raha hai</span>
+                <span class="tok-str">"type"</span>: <span class="tok-str">"tool_result"</span>,  <span class="tok-com"># API ko batata hai ye ek tool ka output hai</span>
+                <span class="tok-str">"tool_use_id"</span>: call.id,  <span class="tok-com"># model ke original tool-call se match karne ke liye ID</span>
+                <span class="tok-str">"content"</span>: json.<span class="tok-fn">dumps</span>(result),  <span class="tok-com"># result ko JSON string mein serialize kiya</span>
+            })  <span class="tok-com"># is tool result dict ka append() call band</span>
+
+        <span class="tok-com"># saare tool results ek "user" turn ki tarah history mein append karo (API convention)</span>
+        messages.<span class="tok-fn">append</span>({<span class="tok-str">"role"</span>: <span class="tok-str">"user"</span>, <span class="tok-str">"content"</span>: tool_results})  <span class="tok-com"># observations loop ke agle iteration ke liye context bante hain</span>
+        <span class="tok-com"># loop yahaan se wapas top pe jaata hai — model ab in observations ko dekhega aur agla Thought/Action banayega</span>
+
+    <span class="tok-com"># --- Stop condition #2: max_iterations exhaust ho gaye bina final answer ke ---</span>
+    <span class="tok-kw">return</span> <span class="tok-str">"Agent max iterations tak pahunch gaya bina final answer ke — task adhoora chhoda."</span>  <span class="tok-com"># safety-net exit, graceful degradation</span>
+
+<span class="tok-com"># --- Usage ---</span>
+answer = <span class="tok-fn">run_agent</span>(<span class="tok-str">"Eiffel Tower jahan hai wahan ka weather kaisa hai?"</span>)  <span class="tok-com"># agent ko goal diya</span>
+<span class="tok-fn">print</span>(answer)  <span class="tok-com"># final answer print karo — agent ne khud decide kiya kitne aur kaunse tool calls chahiye the</span>
+</code></pre>
+      </div>
+
+      <p>
+        Is code mein teeno cheezein clearly dikh rahi hain jo humne upar discuss ki: <strong>loop</strong>
+        (<code>for iteration in range(max_iterations)</code>), <strong>accumulated message history</strong>
+        (<code>messages</code> list jo har turn ke baad grow hoti hai), aur <strong>dono stop conditions</strong>
+        (no tool calls = natural finish, max_iterations exhausted = safety net). Notice karo ki
+        <code>run_agent</code> function ko bilkul nahi pata ki kitne steps lagenge ya kaunse tools kis order
+        mein call honge — ye sab LLM ke response se runtime pe decide hota hai. Yehi hai wo fundamental
+        difference jo ise ek "workflow" se agent banata hai.
+      </p>
+
+      <h2 id="decision-table">Agent vs Workflow — Decision Table</h2>
+      <table>
+        <thead>
+          <tr><th>Task Characteristic</th><th>Recommend</th><th>Kyun</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Steps pehle se predictable hain, order fixed hai</td><td>Workflow</td><td>Hardcoding cheap, fast, aur fully auditable hai</td></tr>
+          <tr><td>Required steps request-se-request badalte hain</td><td>Agent</td><td>Fixed pipeline har case cover nahi kar sakta</td></tr>
+          <tr><td>Cost/latency predictability critical hai (jaise real-time UI)</td><td>Workflow</td><td>Fixed number of LLM calls = predictable cost/latency</td></tr>
+          <tr><td>Task complete karne ke liye "research" ya multi-step exploration chahiye</td><td>Agent</td><td>Agent adapt kar sakta hai jaisa-jaisa naya data milta hai</td></tr>
+          <tr><td>Regulatory/compliance audit trail chahiye ("exactly kya hoga, hamesha")</td><td>Workflow</td><td>Deterministic sequence audit karna easy hai</td></tr>
+          <tr><td>Tool availability ya results unpredictable hain (external APIs flaky)</td><td>Agent</td><td>Agent runtime pe error dekh ke alternative approach try kar sakta hai</td></tr>
+          <tr><td>High-volume, low-complexity, repetitive task</td><td>Workflow</td><td>Agent ka reasoning overhead simple task ke liye wasteful hai</td></tr>
+          <tr><td>Open-ended user query jiska scope pehle se define nahi kiya ja sakta</td><td>Agent</td><td>Goal clear hai lekin path clear nahi — LLM ko flexibility chahiye</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout hinglish-tip">
+        <div class="callout-title">💡 Hinglish Tip — Ek line mein sab kuch</div>
+        <p>
+          <strong>Workflow mein developer control flow likhta hai, agent mein LLM control flow "likhta" hai
+          (apne output se, runtime pe).</strong> ReAct pattern isi control flow ko reliable banata hai kyunki
+          har action se pehle ek explicit reasoning step force karta hai. Planning ya to upfront (single-shot,
+          cheap-lekin-brittle) ho sakti hai ya interleaved (adaptive-lekin-costly). Aur agent ko rukna teen
+          tareekon se pata chalta hai — natural finish (no more tool calls), explicit done-tool, ya
+          max-iteration safety net — teeno production mein zaroori hain, sirf pehla wala kaafi nahi.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Agent ek system hai jahan LLM ko goal + tools milte hain aur wo ek <strong>loop</strong> mein khud
+        decide karta hai next kya karna hai — single prompt→response call agent nahi hai.</li>
+        <li><strong>Workflow</strong> mein control flow developer decide karta hai (predictable, cheaper,
+        auditable); <strong>agentic</strong> mein LLM runtime pe control flow decide karta hai (flexible,
+        open-ended tasks ke liye zaroori).</li>
+        <li><strong>ReAct</strong> pattern (Reason → Act → Observe) explicit reasoning trace force karta hai
+        har action se pehle — ye galat tool selection aur hallucination dono kam karta hai plain tool-loop
+        ke comparison mein.</li>
+        <li><strong>Single-shot planning</strong> cheap/predictable hai lekin brittle; <strong>interleaved
+        re-planning</strong> adaptive hai lekin costly (extra LLM calls, latency).</li>
+        <li>Agent ko teen tareekon se rukna chahiye: model khud final answer de (no tool calls), explicit
+        "done" tool call ho, ya <strong>max iteration guard</strong> hit ho (safety net, always required).</li>
+        <li>Scratch se ReAct agent loop ek simple <code>while</code>/<code>for</code> loop hai jo accumulated
+        message history ke saath LLM ko repeatedly call karta hai, tool calls execute karta hai, results
+        history mein append karta hai, jab tak stop condition hit na ho.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+
+      <p><strong>Q1. "Agent" aur "workflow" mein precisely kya fundamental difference hai — dono to LLM calls
+      use karte hain?</strong></p>
+      <p>
+        Fark ye hai ki <strong>control flow kaun decide karta hai</strong>. Workflow mein developer pehle se
+        code mein decide kar chuka hota hai ki steps kya hain aur kis order mein chalenge — LLM sirf har
+        step ka output generate karta hai. Agent mein developer sirf goal aur tools deta hai, aur LLM khud
+        runtime pe decide karta hai agla step kya hoga, kaunsa tool call karna hai, aur kab rukna hai. Dono
+        LLM calls involve karte hain, lekin agent mein "agla kya hoga" ye decision LLM ke output se emerge
+        hota hai, workflow mein wo pehle se hardcoded hota hai.
+      </p>
+
+      <p><strong>Q2. ReAct pattern mein explicit "Thought" step add karna kyun helpful hai — sirf directly
+      tool call kyun nahi karwa dete?</strong></p>
+      <p>
+        Explicit reasoning trace model ko force karta hai apna intent likhne ke liye before action lene se
+        pehle — jo ambiguous assumptions ko surface pe le aata hai jo warna silently ek galat tool call ban
+        jaate. Jaise Eiffel Tower weather example mein, "Thought" step ne explicitly identify kiya ki weather
+        tool ko coordinates chahiye, place-name nahi, isliye pehle location resolve karna zaroori hai. Bina
+        explicit reasoning ke, model directly (aur galat tareeke se) weather tool ko "Eiffel Tower" string
+        de sakta tha, ya apni training data se coordinates hallucinate kar sakta tha bina verify kiye.
+      </p>
+
+      <p><strong>Q3. Single-shot planning aur interleaved re-planning mein trade-off explain karo — ek
+      real scenario do jahan single-shot fail ho sakta hai.</strong></p>
+      <p>
+        Single-shot planning cheap aur predictable hai (ek hi upfront LLM call plan ke liye), lekin brittle
+        hai — agar reality plan se diverge kare, agent ke paas adapt karne ka built-in mechanism nahi hota.
+        Jaise agar plan ka step 2 ek external API call kare jo error return kare (rate limit, service down),
+        single-shot agent us error ko handle karne ka koi upfront-planned tareeka nahi rakhta. Interleaved
+        re-planning har observation ke baad plan reconsider karta hai, isliye wo turant alternative approach
+        try kar sakta hai — lekin cost/latency zyada hoti hai kyunki har step pe extra reasoning overhead hai.
+      </p>
+
+      <p><strong>Q4. Ek agent loop production mein infinite ho sakta hai kya, aur isse kaise prevent karte
+      ho?</strong></p>
+      <p>
+        Haan — agar model ambiguous goal, buggy tool response, ya koi rare reasoning loop ki wajah se
+        continuously tool calls karta rahe bina natural "final answer" pe pahunche, loop theoretically
+        infinite chal sakta hai, jo cost aur latency dono ke liye disaster hai. Prevention teen-layer hai:
+        primarily model khud final answer degi jab goal complete ho (no more tool calls), optionally ek
+        explicit "done" tool structured termination ke liye, aur non-negotiable <strong>max_iterations</strong>
+        guard jo hard cap enforce karta hai chahe upar wale dono na trigger hon — ye safety net hai jo
+        graceful degradation deta hai instead of runaway execution.
+      </p>
+
+      <p><strong>Q5. Ek PM tumse poochta hai "hum is feature ko agent banayein ya simple pipeline?" — kaise
+      decide karoge?</strong></p>
+      <p>
+        Sabse pehle poochunga: kya main confidently ek flowchart draw kar sakta hoon jo har realistic case
+        cover kare? Agar haan — steps predictable hain, order fixed hai, cost/latency predictability
+        important hai — to workflow banaunga, kyunki wo cheaper, faster, aur zyada auditable hoga. Agar
+        flowchart mein bahut saare "depends on what happens" branches hain — task open-ended hai, required
+        steps request-se-request badalte hain, ya external tool results unpredictable hain — to agent
+        zaroori hai kyunki uski runtime flexibility hi asli value hai. Main hamesha pehle simpler workflow
+        approach try karta hoon; agent tab introduce karta hoon jab genuinely evidence ho ki fixed pipeline
+        insufficient hai, kyunki agent ka overhead (latency, cost, unpredictability) free nahi hai.
+      </p>
+
+      <div class="prevnext">
+        <a href="06-tool-function-calling.html">
+          <div class="label">← Previous</div>
+          <div class="title">Tool/Function Calling</div>
+        </a>
+        <a class="next" href="08-agent-architectures.html">
+          <div class="label">Next →</div>
+          <div class="title">Agent Architectures</div>
+        </a>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
