@@ -55,6 +55,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _decrementCounter() {
+    if (_counter == 0) {
+      debugPrint('Counter is already at 0, cannot decrement further.');
+      return;
+    }
+
     setState(() {
       debugPrint('inside setState - Counter decremented to ${_counter - 1}');
       _counter--;
@@ -95,6 +100,8 @@ class _MyHomePageState extends State<MyHomePage> {
             tooltip: 'Increment',
             child: const Icon(Icons.add),
           ),
+          // Add some space between the buttons
+          const SizedBox(width: 16), 
           FloatingActionButton(
             onPressed: _decrementCounter,
             tooltip: 'Decrement',
