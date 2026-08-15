@@ -20,6 +20,24 @@ class Dog extends Animal {
 }
 
 
+// async / await downstreams
+// will make a network call, db queries, etc. and return a value after some time
+Future<String> fetchUsername() async {
+    await Future.delayed(Duration(seconds: 2));
+    return "my_name";
+}
+
+
+Stream<int> countStream() async* {
+    for (int i=1; i <= 5; i++ ){
+        await Future.delayed(Duration(seconds: 1));
+        // yield = "emit this value into the stream"
+        yield i;
+    }
+}
+
+
+
 // inline function, arrow syntax
 int add(int a, int b) => a + b;
 
@@ -35,7 +53,7 @@ void createUser({required String name, required int age, String? email}){
 }
 
 
-void main(){
+void main() async {
     var name = 'my_name';
     var age = 25;
 
@@ -98,4 +116,20 @@ void main(){
         for(var i=1; i<=5; i++) i*i,
     ];
     print(squares);
+
+
+    // await pauses execution of this function only until the Future resolves — 
+    // it does not block the whole app/UI thread. Other code (other widgets, 
+    // other event handling) keeps running while this one function waits
+    print('start');
+    var username = await fetchUsername();
+    print('Username: $username');
+    print('end');
+
+    // Streams — like a Future but for multiple values over time instead of one:
+    print('start stream');
+    await for (var value in countStream()){
+        print('Stream value: $value');
+    }
+    print('end stream');
 }
