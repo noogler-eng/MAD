@@ -44,10 +44,12 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       // no manual navigation here — main.dart's StreamBuilder reacts automatically
     } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException: ${e.message}');
       setState(() {
         _errorMessage = e.message;
       });
     } catch (e) {
+      print('Unexpected error: $e');
       setState(() {
         _errorMessage = 'An unexpected error occurred';
       });

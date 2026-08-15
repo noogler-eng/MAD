@@ -25,12 +25,15 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
 
+      // using StreamBuilder to listen to auth state changes and navigate accordingly
+      // comming from firebase - ConnectionState
       home: StreamBuilder<User?>(
         stream: AuthService().authStateChanges,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasData) {
+            print('User is logged in: ${snapshot.data!.email}');
             return const HomeScreen();
           } else {
             return const AuthScreen();
