@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  Future<void> _signOut() async {
+    await AuthService().signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,9 +17,7 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Center(
         child: ElevatedButton(
-          onPressed: () async {
-            await FirebaseAuth.instance.signOut();
-          },
+          onPressed: () async => await _signOut(),
           child: const Text('Sign Out'),
         ),
       ),
