@@ -1,3 +1,24 @@
+// class definition
+class Animal {
+    String name;
+    int age;
+
+    // default constructor
+    Animal(this.name, this.age);
+
+    // named constructor - allows you to create multiple constructors for a class with different names
+    Animal.baby(this.name) : age = 0;
+    void speak() => print('$name says hello!');
+}
+
+// inheritance - Dog class inherits from Animal class
+class Dog extends Animal {
+    Dog(super.name, super.age);
+
+    @override
+    void speak() => print('$name barks!');
+}
+
 
 // inline function, arrow syntax
 int add(int a, int b) => a + b;
@@ -8,6 +29,7 @@ String greet(String name, [String? title]){
 }
 
 // named parameters - wrapped in {}, called by name, order dones't matter, can be omitted when calling the function
+// by adding value here, we can make the parameter default if not provided when calling the function
 void createUser({required String name, required int age, String? email}){
     print('Creating user: $name, Age: $age, Email: ${email ?? 'Not provided'}');
 }
@@ -44,4 +66,15 @@ void main(){
     createUser(name: 'Charlie', age: 30);
     createUser(name: 'Diana', age: 28, email: 'diana@example.com');
     createUser(age: 22, name: 'Eve', email: 'eve@example.com');
+
+
+    Dog myDog = Dog('Buddy', 3);
+    myDog.speak();
+
+    Animal myAnimal = Animal('Generic Animal', 5);
+    myAnimal.speak();
+
+    // calling our constructor with named constructor
+    Animal babyAnimal = Animal.baby('Baby Animal');
+    babyAnimal.speak();
 }
