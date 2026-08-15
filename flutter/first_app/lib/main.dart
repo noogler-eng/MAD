@@ -23,6 +23,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+
+      // MyHomePage class is called
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -36,6 +38,7 @@ class MyHomePage extends StatefulWidget {
 
   final String title;
 
+  // createState() - creates the mutable state for this widget at a given location in the tree//
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -76,6 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
+          // making the x axis of the column to be centered, so that the children of the column 
+          // are centered in the middle of the screen
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('You have pushed the button this many times:'),

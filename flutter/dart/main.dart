@@ -77,4 +77,25 @@ void main(){
     // calling our constructor with named constructor
     Animal babyAnimal = Animal.baby('Baby Animal');
     babyAnimal.speak();
+
+    // making an list of strings and iterating through it using a for loop
+    List<String> fruits = ['Apple', 'Banana', 'Cherry'];
+    for (var fruit in fruits) {
+        print('Fruit: $fruit');
+    }
+
+    // spread operator - allows you to insert all the elements of a list into another list
+    List <String> a = ['a', 'b', ...fruits, 'c'];
+    print(a);
+
+    // collection if - allows you to conditionally include elements in a collection
+    bool includeFruits = true;
+    List<String> b = ['x', 'y', if (includeFruits) ...fruits, 'z'];
+    print(b);
+
+    // iterating loops int the list using for loop
+    List<int> squares = [
+        for(var i=1; i<=5; i++) i*i,
+    ];
+    print(squares);
 }
