@@ -19,7 +19,7 @@ class UserService {
 
   Future<void> updatePremiumStatus(String uid, bool isPremium) async {
     await _users.doc(uid).update({
-      'isPremium': true,
+      'isPremium': isPremium,
     });
   }
 
