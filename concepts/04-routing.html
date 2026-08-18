@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Routing — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link active" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 4</div>
+      <div class="progress-pill">4 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Route Matching · Path Params · Radix Tree · Precedence</span>
+      <h1>Routing</h1>
+      <p class="subtitle">
+        Request server tak pahunch gayi aur parse ho gayi — ab uske paas ek method (<code>GET</code>) aur ek path
+        (<code>/users/42/posts</code>) hai. Routing wo layer hai jo is jodi ko <strong>ek specific handler
+        function</strong> tak le jaati hai. Dekhne mein trivial lagta hai, par isme ek asli data-structure problem
+        chupi hui hai — aur uska solution samajhne se route conflicts, 404 mysteries, aur middleware ordering
+        sab clear ho jaate hain.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 6 —
+        <a href="https://www.youtube.com/watch?v=SubuU1iOC2s">What is Routing in Backend? How Requests Find Their Way Home</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#problem">1. Problem Kya Hai — Ek Dispatch Table</a></li>
+          <li><a href="#naive">2. Naive Approach Aur Uski Limit</a></li>
+          <li><a href="#tree">3. Radix Tree — Asli Routers Kaise Kaam Karte Hain</a></li>
+          <li><a href="#params">4. Params Ke Teen Alag Types</a></li>
+          <li><a href="#precedence">5. Precedence — Kaunsa Route Jeetega</a></li>
+          <li><a href="#nesting">6. Route Grouping Aur Mounting</a></li>
+          <li><a href="#pitfalls">7. Rozana Milne Wale Routing Bugs</a></li>
+          <li><a href="#takeaways">8. Key Takeaways</a></li>
+          <li><a href="#interview">9. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="problem">Problem Kya Hai — Ek Dispatch Table</h2>
+      <p>
+        Ch 3 se hume mila: ek <strong>method</strong> aur ek <strong>path</strong>. Ab ek application mein
+        sainkdon handlers hote hain. Router ka kaam ek sentence mein:
+      </p>
+      <div class="code-block">
+        <div class="code-title">router ka contract<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Input:  method + path</span>
+<span class="tok-com">// Output: ek handler function + URL se nikale gaye params</span>
+
+<span class="tok-fn">match</span>(<span class="tok-str">"GET"</span>, <span class="tok-str">"/users/42/posts"</span>)
+  <span class="tok-punc">--&gt;</span> { handler: getUserPosts, params: { userId: <span class="tok-str">"42"</span> } }
+
+<span class="tok-com">// Match na mile toh: 404 Not Found</span>
+<span class="tok-com">// Path mile par method na mile toh: 405 Method Not Allowed</span>
+<span class="tok-com">//   (+ Allow: GET, POST header — bahut kam log ye sahi karte hain)</span>
+</code></pre>
+      </div>
+      <p>
+        Do cheezein dhyan do. Pehla — <strong>method bhi key ka hissa hai</strong>. <code>GET /users</code> aur
+        <code>POST /users</code> do alag routes hain. Dusra — routing sirf lookup nahi hai, wo path se
+        <strong>data extract</strong> bhi karti hai (<code>42</code> → <code>userId</code>). Yahi wo cheez hai
+        jo isse ek simple hashmap se zyada complex banati hai.
+      </p>
+
+      <h2 id="naive">Naive Approach Aur Uski Limit</h2>
+      <p>Pehla instinct — ek hashmap:</p>
+      <div class="code-block">
+        <div class="code-title">approach 1 — exact match hashmap<button class="copy-btn">Copy</button></div>
+        <pre><code>routes = {
+  <span class="tok-str">"GET /users"</span>:    listUsers,
+  <span class="tok-str">"POST /users"</span>:   createUser,
+  <span class="tok-str">"GET /health"</span>:   healthCheck,
+}
+handler = routes[method + <span class="tok-str">" "</span> + path]   <span class="tok-com">// O(1) — bahut fast</span>
+</code></pre>
+        </div>
+      <p>
+        Static paths ke liye ye perfect hai — O(1), simple. Par <code>/users/42</code> pe ye phat jaata hai:
+        tum har possible user ID ko map mein nahi daal sakte. <strong>Dynamic segments</strong> chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">approach 2 — regex list (linear scan)<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// har route ko regex mein compile karo, aur ek-ek karke try karo</span>
+routes = [
+  { method: <span class="tok-str">"GET"</span>, re: <span class="tok-str">/^\/users$/</span>,                 h: listUsers },
+  { method: <span class="tok-str">"GET"</span>, re: <span class="tok-str">/^\/users\/([^/]+)$/</span>,        h: getUser,   keys: [<span class="tok-str">"id"</span>] },
+  { method: <span class="tok-str">"GET"</span>, re: <span class="tok-str">/^\/users\/([^/]+)\/posts$/</span>,  h: getPosts,  keys: [<span class="tok-str">"id"</span>] },
+]
+
+<span class="tok-com">// matching: pehla jo match kare, wahi jeeta</span>
+<span class="tok-kw">for</span> (r <span class="tok-kw">of</span> routes) {
+  <span class="tok-kw">if</span> (r.method !== method) <span class="tok-kw">continue</span>;
+  m = r.re.<span class="tok-fn">exec</span>(path);
+  <span class="tok-kw">if</span> (m) <span class="tok-kw">return</span> { handler: r.h, params: <span class="tok-fn">zip</span>(r.keys, m.<span class="tok-fn">slice</span>(<span class="tok-num">1</span>)) };
+}
+<span class="tok-kw">return</span> notFound;   <span class="tok-com">// O(n) — n = total routes</span>
+</code></pre>
+      </div>
+      <p>
+        Ye kaam karta hai, aur Express jaisi frameworks aaj bhi asal mein yahi karti hain. Problem
+        <strong>O(n)</strong> hai: 500 routes wali app mein har request pe upto 500 regex executions. Chhoti app
+        mein farq nahi padta; API gateway ya high-throughput service mein ye seedha latency mein dikhta hai.
+        Aur ek subtle issue — <em>declaration order matter karta hai</em>, jo ek poora bug class kholta hai
+        (neeche §5).
+      </p>
+
+      <h2 id="tree">Radix Tree — Asli Routers Kaise Kaam Karte Hain</h2>
+      <p>
+        Fast routers (Go ka <code>httprouter</code>/gin, Fastify, FastAPI ka Starlette, Rails ka journey) path ko
+        <strong>ek string ki tarah nahi, segments ke rooop mein</strong> dekhte hain aur ek
+        <strong>prefix tree (radix tree / trie)</strong> banate hain. Insight simple hai: bahut saare routes
+        prefix share karte hain — <code>/users</code>, <code>/users/:id</code>, <code>/users/:id/posts</code>
+        sab <code>users</code> se shuru hote hain. Toh <code>users</code> ko baar-baar match karne ki jagah,
+        <em>ek baar</em> match karo aur us subtree mein utar jao.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Radix tree of URL segments with static, param and wildcard children">
+          <defs>
+            <marker id="rt1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="316" y="16" width="108" height="38" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="370" y="36" class="ex-t">/  (root)</text>
+
+          <path d="M340,56 C280,74 220,86 168,102" class="ex-stroke" marker-end="url(#rt1)"/>
+          <path d="M400,56 C462,74 520,86 572,102" class="ex-stroke" marker-end="url(#rt1)"/>
+
+          <rect x="104" y="104" width="128" height="38" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="168" y="124" class="ex-t-sm">users</text>
+          <rect x="508" y="104" width="128" height="38" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="572" y="124" class="ex-t-sm">health</text>
+          <text x="572" y="162" class="ex-t-lbl">GET → healthCheck</text>
+
+          <text x="168" y="162" class="ex-t-lbl">GET → listUsers · POST → createUser</text>
+
+          <path d="M140,144 C112,166 96,186 82,208" class="ex-stroke" marker-end="url(#rt1)"/>
+          <path d="M168,144 C168,168 168,186 168,208" class="ex-stroke" marker-end="url(#rt1)"/>
+          <path d="M198,144 C230,166 250,186 268,208" class="ex-stroke" marker-end="url(#rt1)"/>
+
+          <rect x="24" y="210" width="116" height="38" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="82" y="230" class="ex-t-sm">"me"</text>
+          <text x="82" y="266" class="ex-t-lbl">static</text>
+          <text x="82" y="286" class="ex-t-sm">priority 1</text>
+
+          <rect x="152" y="210" width="116" height="38" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="210" y="230" class="ex-t-sm">:id</text>
+          <text x="210" y="266" class="ex-t-lbl">param</text>
+          <text x="210" y="286" class="ex-t-sm">priority 2</text>
+
+          <rect x="280" y="210" width="116" height="38" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="338" y="230" class="ex-t-sm">*rest</text>
+          <text x="338" y="266" class="ex-t-lbl">wildcard</text>
+          <text x="338" y="286" class="ex-t-sm">priority 3</text>
+
+          <path d="M210,250 C208,282 212,300 210,320" class="ex-stroke ex-stroke-p" marker-end="url(#rt1)"/>
+          <rect x="152" y="322" width="116" height="38" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="210" y="342" class="ex-t-sm">posts</text>
+          <text x="210" y="380" class="ex-t-lbl">GET → getUserPosts</text>
+
+          <!-- walkthrough -->
+          <rect x="430" y="196" width="290" height="196" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="575" y="220" class="ex-t">lookup: GET /users/42/posts</text>
+          <text x="575" y="248" class="ex-t-sm">segment "users" → static child mila</text>
+          <text x="575" y="272" class="ex-t-sm">segment "42"    → static? nahi</text>
+          <text x="575" y="292" class="ex-t-sm">                → param :id mila, id="42"</text>
+          <text x="575" y="316" class="ex-t-sm">segment "posts" → static child mila</text>
+          <text x="575" y="344" class="ex-t-lbl">3 comparisons, 500 nahi</text>
+          <text x="575" y="370" class="ex-t-sm">O(path ki lambai), routes ki ginti se azaad</text>
+        </svg>
+        <figcaption>
+          Lookup ka cost <strong>path ke segments</strong> pe depend karta hai, total routes pe nahi. 50 routes
+          ho ya 5000 — <code>/users/42/posts</code> hamesha 3 steps mein resolve hota hai. Aur har node pe
+          children ka ek fixed priority order hota hai: <em>static → param → wildcard</em>.
+        </figcaption>
+      </figure>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Yahi pattern tumne pehle bhi dekha hai</div>
+        <p>
+          Prefix tree pe lookup = database index pe lookup (ch 10 mein B-tree), = DNS ki hierarchical resolution
+          (ch 2). Teenon ek hi idea hain: <strong>data ko aise structure karo ki har step search space ko kaat
+          de</strong>, linear scan ki jagah. Jab bhi kahin "n cheezon mein se ek dhoondhni hai" dikhe, ye sawaal
+          poocho — kya inme shared structure hai jisse tree ban sakta hai?
+        </p>
+      </div>
+
+      <h2 id="params">Params Ke Teen Alag Types</h2>
+      <p>
+        "Params" ek hi shabd hai par teen bilkul alag cheezein iske naam se aati hain — aur inhe mix karna
+        beginners ka sabse common confusion hai:
+      </p>
+
+      <table>
+        <thead><tr><th>Type</th><th>Kahan se</th><th>Kis kaam ke liye</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Path params</strong></td>
+            <td>URL path ke andar, route pattern se extract</td>
+            <td>Resource ki <em>identity</em> — kaunsa resource</td>
+            <td><code>/users/<strong>42</strong></code> → <code>id=42</code></td>
+          </tr>
+          <tr>
+            <td><strong>Query params</strong></td>
+            <td><code>?</code> ke baad, key=value pairs</td>
+            <td>Resource ko <em>modify</em> karna — filter, sort, paginate</td>
+            <td><code>/users?<strong>page=2&amp;sort=name</strong></code></td>
+          </tr>
+          <tr>
+            <td><strong>Body params</strong></td>
+            <td>Request body (ch 5 mein deserialize hota hai)</td>
+            <td>Bheja gaya <em>data</em> — create/update payload</td>
+            <td><code>{"name":"Sharad"}</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Design rule jo 90% cases decide kar deta hai:</p>
+      <ul>
+        <li>Cheez <strong>kaunsi</strong> hai → path param. (<code>/orders/1234</code>)</li>
+        <li>Cheez <strong>kaisi</strong> chahiye → query param. (<code>/orders?status=paid&amp;limit=20</code>)</li>
+        <li>Cheez <strong>kya</strong> bhej rahe ho → body.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Path params hamesha strings hote hain</div>
+        <p>
+          <code>/users/42</code> se tumhe <code>"42"</code> milta hai, <code>42</code> nahi — URL mein types
+          exist hi nahi karte. Isliye <code>if (params.id === 42)</code> chupchaap <code>false</code> dega, aur
+          SQL query mein string bhejne se index skip ho sakta hai. Type coercion aur validation ek explicit
+          layer ka kaam hai, router ka nahi — wahi ch 7 hai. Yahi cheez query params pe bhi lagti hai:
+          <code>?active=false</code> mein <code>"false"</code> ek <em>truthy string</em> hai.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 URL encoding — ek chhoti par kaat-ne wali detail</div>
+        <p>
+          Path segment mein <code>/</code>, space, <code>?</code>, <code>#</code> jaise characters
+          percent-encoded hote hain (<code>%2F</code>, <code>%20</code>). Router decode <em>ke baad</em> match
+          karta hai, warna ek email jaisa ID (<code>/users/a%40b.com</code>) kabhi match hi nahi karta. Aur ek
+          security note: agar tum path param ko file path banane ke liye use kar rahe ho, toh
+          <code>%2e%2e%2f</code> (<code>../</code>) path traversal ka classic attack vector hai — ch 18.
+        </p>
+      </div>
+
+      <h2 id="precedence">Precedence — Kaunsa Route Jeetega</h2>
+      <p>
+        Do routes ek hi path pe match kar sakte hain. <code>/users/me</code> aur <code>/users/:id</code> —
+        request <code>GET /users/me</code> aaye toh kaun jeete? Iska jawab <strong>router ke type pe depend
+        karta hai</strong>, aur yahi sabse common routing bug ki jadd hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Router type</th><th>Rule</th><th>Framework</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Order-based</strong></td>
+            <td>Jo pehle <em>declare</em> hua, wo jeeta. Tumhari file ka order = behaviour</td>
+            <td>Express, Flask (mostly), Koa</td>
+          </tr>
+          <tr>
+            <td><strong>Specificity-based</strong></td>
+            <td>Tree pe fixed priority: <em>static &gt; param &gt; wildcard</em>. Order irrelevant</td>
+            <td>gin/httprouter, Fastify, Next.js app router</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">order-based router mein classic bug<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ GALAT — :id pehle declare hai</span>
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/users/:id"</span>, getUser);     <span class="tok-com">// "me" bhi ek valid :id hai!</span>
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/users/me"</span>,  getProfile);  <span class="tok-com">// ye kabhi chalega hi nahi — dead code</span>
+
+<span class="tok-com">// GET /users/me → getUser chalega, id = "me"</span>
+<span class="tok-com">// → DB mein WHERE id = 'me' → 404 ya type error. Ghanton debug hota hai.</span>
+
+<span class="tok-com">// ✅ SAHI — specific route pehle</span>
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/users/me"</span>,  getProfile);  <span class="tok-com">// exact match pehle try hota hai</span>
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/users/:id"</span>, getUser);     <span class="tok-com">// fallback</span>
+</code></pre>
+      </div>
+
+      <p>
+        Specificity-based router mein ye bug ho hi nahi sakta — tree khud <code>me</code> (static child) ko
+        <code>:id</code> (param child) se pehle try karta hai, chahe tumne kis order mein register kiya ho. Ye
+        ek accha example hai ki <strong>data structure ka choice ek poori bug class ko mita deta hai</strong>.
+      </p>
+
+      <h2 id="nesting">Route Grouping Aur Mounting</h2>
+      <p>
+        Bade apps mein routes flat list nahi rehte — wo groups mein organize hote hain, aur har group ka apna
+        prefix aur apni middleware chain hoti hai. Ye ch 8 (middleware) ka direct connection hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">grouping — prefix + shared middleware<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── admin sub-router: apna prefix, apni middleware ──────────</span>
+adminRouter = <span class="tok-fn">Router</span>();
+adminRouter.<span class="tok-fn">use</span>(requireAuth);              <span class="tok-com">// is group ki HAR route pe chalega</span>
+adminRouter.<span class="tok-fn">use</span>(<span class="tok-fn">requireRole</span>(<span class="tok-str">"admin"</span>));    <span class="tok-com">// authZ — ch 6</span>
+adminRouter.<span class="tok-fn">get</span>(<span class="tok-str">"/stats"</span>,   getStats);   <span class="tok-com">// final path: /admin/stats</span>
+adminRouter.<span class="tok-fn">delete</span>(<span class="tok-str">"/users/:id"</span>, deleteUser);
+
+<span class="tok-com">// ── public routes: koi auth nahi ────────────────────────────</span>
+publicRouter = <span class="tok-fn">Router</span>();
+publicRouter.<span class="tok-fn">post</span>(<span class="tok-str">"/login"</span>, login);
+
+<span class="tok-com">// ── mount: prefix yahan judta hai ───────────────────────────</span>
+app.<span class="tok-fn">use</span>(<span class="tok-str">"/admin"</span>, adminRouter);      <span class="tok-com">// tree mein "admin" ke neeche poora subtree</span>
+app.<span class="tok-fn">use</span>(<span class="tok-str">"/auth"</span>,  publicRouter);
+</code></pre>
+      </div>
+
+      <p>
+        Iska asli faayda security hai: auth check <em>ek jagah</em> group pe lagta hai, har handler mein
+        repeat nahi hota. Naya admin endpoint add karne wala developer auth lagana <strong>bhool hi nahi
+        sakta</strong> — wo structurally inherited hai. Ye "secure by default" ka ek chhota par powerful
+        example hai.
+      </p>
+
+      <h2 id="pitfalls">Rozana Milne Wale Routing Bugs</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Asli wajah</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Route hai par 404 aa raha hai</td>
+            <td>Trailing slash mismatch (<code>/users</code> vs <code>/users/</code>), ya router mount hi nahi hua</td>
+            <td>Router ka strict-slash setting check karo; redirect ya dono accept karo</td>
+          </tr>
+          <tr>
+            <td>Galat handler chal raha hai</td>
+            <td>Order-based router mein param route specific route se pehle declare hai</td>
+            <td>Specific pehle, param baad mein</td>
+          </tr>
+          <tr>
+            <td>405 ki jagah 404</td>
+            <td>Router method ko path se pehle match kar raha hai</td>
+            <td>Path match par method na mile → 405 + <code>Allow</code> header</td>
+          </tr>
+          <tr>
+            <td>CORS preflight fail</td>
+            <td><code>OPTIONS</code> route register hi nahi hai</td>
+            <td>CORS middleware ko routes se <em>pehle</em> mount karo</td>
+          </tr>
+          <tr>
+            <td>Middleware chal hi nahi rahi</td>
+            <td><code>app.use()</code> route registration ke <em>baad</em> likha hai</td>
+            <td>Middleware upar, routes neeche — chain top-to-bottom banti hai</td>
+          </tr>
+          <tr>
+            <td>Wildcard sab kuch kha raha hai</td>
+            <td><code>app.use("*")</code> ya catch-all specific routes se pehle hai</td>
+            <td>Catch-all hamesha sabse aakhir mein</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ ReDoS — routing ka security angle</div>
+        <p>
+          Agar router regex-based hai aur tum custom regex constraints likhte ho
+          (<code>/files/:name(.+)+</code> jaise nested quantifiers), toh ek specially-crafted URL catastrophic
+          backtracking trigger kar sakta hai — ek request CPU ko seconds tak jaam kar deti hai. Single-threaded
+          runtime (Node) mein iska matlab <em>poora server</em> block. Isliye route patterns simple rakho, aur
+          user input pe regex chalane se pehle length cap lagao. Detail ch 18, aur "ek request ne server block
+          kar diya" ka mechanism ch 21.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Router ka contract: <strong>(method, path) → handler + params</strong>. Method key ka hissa hai, sirf path nahi.</li>
+        <li>Static routes hashmap se O(1) match hote hain; dynamic segments ke liye regex list (O(n)) ya radix tree chahiye.</li>
+        <li><strong>Radix tree</strong> lookup ko path ki lambai pe depend karta hai, routes ki ginti pe nahi — 50 ho ya 5000, same cost.</li>
+        <li>Tree mein priority fixed hai: <strong>static &gt; param &gt; wildcard</strong> — isliye declaration order irrelevant ho jaata hai.</li>
+        <li>Order-based routers (Express) mein <code>/users/:id</code> ko <code>/users/me</code> se pehle likhna ek poora endpoint dead kar deta hai.</li>
+        <li>Path param = <em>kaunsa</em>, query param = <em>kaisa</em>, body = <em>kya</em>.</li>
+        <li>Params hamesha <strong>strings</strong> hote hain — coercion aur validation alag layer ka kaam hai (ch 7).</li>
+        <li>Grouping/mounting se auth structurally inherit hoti hai — naya endpoint likhne wala usse bhool nahi sakta.</li>
+        <li>Path match par method na mile toh <code>405 + Allow</code>, <code>404</code> nahi.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Router andar se kaise kaam karta hai? 5000 routes pe kaise fast rakhoge?"</div>
+        <p>
+          Naive: regex list, O(n) per request. Better: path ko segments mein todo aur ek <strong>radix
+          tree</strong> banao jahan common prefixes share hote hain — lookup O(segments), routes ki ginti se
+          independent. Har node pe children static → param → wildcard priority mein try hote hain. Method ke
+          liye ya toh per-node method map ho, ya alag tree per method.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "<code>/users/me</code> galat handler pe ja raha hai. Kya hua?"</div>
+        <p>
+          Order-based router mein <code>/users/:id</code> pehle declare hai, aur <code>"me"</code> ek valid
+          <code>:id</code> value hai — toh wahi match kar gaya. Fix: specific route pehle. Root cause samjhao:
+          Express order pe chalta hai, specificity pe nahi; gin/Fastify jaise tree-based routers mein ye bug
+          possible hi nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Path param vs query param — kab kaunsa?"</div>
+        <p>
+          Path param resource ki <em>identity</em> hai — uske bina resource define hi nahi hota
+          (<code>/orders/1234</code>). Query param collection ko <em>modify</em> karta hai — filter, sort,
+          pagination — aur optional hota hai (<code>/orders?status=paid&amp;page=2</code>). Test: param hatao,
+          agar URL ka matlab hi khatam ho gaya toh wo path param tha.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Ek endpoint pe auth check lagana bhool gaye — isse structurally kaise rokoge?"</div>
+        <p>
+          Per-handler auth call ki jagah <strong>route grouping</strong> — protected routes ek sub-router pe
+          mount ho jispe auth middleware group-level pe lagi ho. Naya route usi group mein add hoga toh auth
+          automatically inherited. Aur strong answer mein ek line aur: default deny — public routes ko
+          explicitly whitelist karo, protected ko nahi.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="05-serialization.html"><strong>Chapter 5 — Serialization & Deserialization</strong></a>:
+          handler mil gaya, par body abhi bhi raw bytes hai. Wo bytes tumhare language object mein kaise badalte
+          hain — aur wapas kaise jaate hain.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

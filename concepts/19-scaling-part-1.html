@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scaling & Performance I — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link active" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 19</div>
+      <div class="progress-pill">19 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Bottlenecks · Vertical vs Horizontal · Load Balancing · Stateless</span>
+      <h1>Scaling & Performance I</h1>
+      <p class="subtitle">
+        System correct hai (Phase 1), fast hai (Phase 2), aur production-ready hai (ch 14–18). Ab traffic
+        100× ho jaaye toh? Is chapter ka pehla aur sabse important sabak ye hai: <strong>scaling ek
+        measurement problem hai, ek architecture problem nahi.</strong> Zyadatar teams us cheez ko optimize
+        karti hain jo bottleneck hai hi nahi.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 21.1 —
+        <a href="https://www.youtube.com/watch?v=z7kt_p44rjs">Backend Scaling and Performance Engineering: Part-1</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#measure">1. Pehle Measure Karo — Warna Sirf Andaaza Hai</a></li>
+          <li><a href="#latency">2. Latency, Throughput, Aur Percentiles</a></li>
+          <li><a href="#little">3. Little's Law — Ek Formula Jo Sab Samjha Deta Hai</a></li>
+          <li><a href="#utilization">4. Utilization Curve — Sabse Important Graph</a></li>
+          <li><a href="#profiling">5. Profiling — Flame Graphs</a></li>
+          <li><a href="#bottleneck">6. Bottleneck Kaise Dhoondhein</a></li>
+          <li><a href="#vertical">7. Vertical vs Horizontal</a></li>
+          <li><a href="#stateless">8. Stateless Hona — Horizontal Scaling Ki Shart</a></li>
+          <li><a href="#lb">9. Load Balancing — Algorithms Aur Layers</a></li>
+          <li><a href="#autoscale">10. Autoscaling Aur Uske Traps</a></li>
+          <li><a href="#loadtest">11. Load Testing Theek Se</a></li>
+          <li><a href="#takeaways">12. Key Takeaways</a></li>
+          <li><a href="#interview">13. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="measure">Pehle Measure Karo — Warna Sirf Andaaza Hai</h2>
+      <p>
+        Scaling ki baat shuru hote hi log architecture diagram banane lagte hain — microservices, Kafka,
+        sharding. Par sabse pehla sawaal ye hona chahiye: <strong>abhi bottleneck kya hai?</strong> Aur uska
+        jawab measurement se aata hai, intuition se nahi — kyunki intuition performance mein
+        <em>lagbhag hamesha</em> galat hoti hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Amdahl's law — kyun "sab kuch optimize karna" bekaar hai</div>
+        <p>
+          Agar ek request ka 5% time tumhare code mein hai aur 95% DB wait mein, toh tumhara code
+          <strong>infinitely fast</strong> karne pe bhi total sirf 5% behtar hoga. Rewrite karne ka koi matlab
+          hi nahi — DB ko theek karo. Yahi wajah hai ki "Node se Go mein migrate karte hain, fast ho jayega"
+          aksar galat hota hai: agar time DB aur network mein ja raha hai, toh language badalne se kuch nahi
+          milta. <strong>Optimization ka faayda hamesha us hisse ke proportion se bandha hai jo wo hissa poore
+          time ka hai.</strong>
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">latency budget — pehle ye banao<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Trace se (ch 16) ek typical request ka breakdown nikalo:</span>
+POST /orders — p95: <span class="tok-num">840</span>ms
+  ├─ auth verify         <span class="tok-num">12</span>ms    <span class="tok-num">1</span>%
+  ├─ validation           <span class="tok-num">3</span>ms    <span class="tok-num">0</span>%
+  ├─ DB: fetch products  <span class="tok-num">45</span>ms    <span class="tok-num">5</span>%
+  ├─ payment API        <span class="tok-num">680</span>ms   <span class="tok-num">81</span>%   ← 🎯 yahan hai poora kaam
+  ├─ DB: insert order    <span class="tok-num">28</span>ms    <span class="tok-num">3</span>%
+  └─ queue publish        <span class="tok-num">8</span>ms    <span class="tok-num">1</span>%
+
+<span class="tok-com">// Ab decisions OBVIOUS ho gaye:</span>
+<span class="tok-com">// ❌ JSON serialization optimize karna → 0% faayda</span>
+<span class="tok-com">// ❌ aur instances add karna → latency wahi rahegi (throughput badhega)</span>
+<span class="tok-com">// ✅ payment call ko async karo (ch 12) → 840ms se ~100ms</span>
+<span class="tok-com">// ✅ ya usse parallel karo agar independent hai</span>
+</code></pre>
+      </div>
+
+      <h2 id="latency">Latency, Throughput, Aur Percentiles</h2>
+      <p>
+        Teen basic terms, aur inhe mila dena performance discussions ko bekaar kar deta hai:
+      </p>
+      <ul>
+        <li><strong>Latency</strong> — <em>ek</em> request ko kitna time laga. Units: milliseconds.</li>
+        <li><strong>Throughput</strong> — per second kitni requests handle ho rahi hain. Units: req/s.</li>
+        <li><strong>Utilization</strong> — resource kitna busy hai. Units: %.</li>
+      </ul>
+      <p>
+        Sabse important insight: <strong>latency aur throughput independent hain.</strong> Ek system 1000 req/s
+        handle kar sakta hai jisme har request 5 second leti ho (high throughput, high latency) — jaise ek
+        batch pipeline. Aur ek system 10 req/s handle kar sakta hai 1ms latency ke saath. Throughput badhana
+        latency ko theek nahi karta, aur latency theek karna aksar throughput <em>bhi</em> badha deta hai
+        (Little's Law — agli section).
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Average latency ek jhooth hai — aur "average user" exist hi nahi karta</div>
+        <p>
+          Ch 16 mein ye ek monitoring point tha; yahan wo ek <em>capacity</em> point hai. Latency distribution
+          <strong>normal (bell curve) nahi hoti</strong> — wo right-skewed hoti hai, ek lambi tail ke saath.
+          Isliye average tail ko chhupa deta hai. Aur ek aur baat jo log miss karte hain: agar tumhara p99
+          1 second hai aur ek page 20 API calls karta hai, toh <strong>~18% users</strong> ko kam se kam ek
+          1-second call milegi. Tail latency <em>average user ka</em> experience ban jaati hai, kyunki modern
+          apps ek page pe kai calls karti hain.
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">percentiles padhna<button class="copy-btn">Copy</button></div>
+        <pre><code>p50 (median) — aadhe users isse tez, aadhe isse dheere. "Typical" experience.
+p90          — 10 mein se 1 user isse kharab dekhta hai.
+p95          — normal SLO target.
+p99          — 100 mein se 1. Aksar tumhare SABSE ACTIVE users (zyada data, zyada calls).
+p99.9        — bade scale pe matter karta hai; aksar GC pauses, retries, cold caches.
+
+<span class="tok-com">// ⚠️ p99 users random nahi hote — wo aksar SYSTEMATICALLY khaas log hote hain:</span>
+<span class="tok-com">//    sabse purane accounts (sabse zyada data), sabse bade tenants,</span>
+<span class="tok-com">//    sabse zyada use karne wale. Matlab tumhare SABSE VALUABLE users ko</span>
+<span class="tok-com">//    sabse kharab experience mil raha hai. Isiliye p99 pe kaam karna business</span>
+<span class="tok-com">//    decision hai, sirf engineering vanity nahi.</span>
+
+<span class="tok-com">// ⚠️ Percentiles ADD nahi hote:</span>
+<span class="tok-com">//    service A ka p99 = 100ms, service B ka p99 = 100ms</span>
+<span class="tok-com">//    A→B chain ka p99 ≠ 200ms (wo zyada ho sakta hai)</span>
+</code></pre>
+      </div>
+
+      <h2 id="little">Little's Law — Ek Formula Jo Sab Samjha Deta Hai</h2>
+      <p>
+        Queueing theory ka ek chhota formula, par ye poore capacity planning ka base hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">L = λ × W<button class="copy-btn">Copy</button></div>
+        <pre><code>L (concurrent requests) = λ (arrival rate) × W (average time per request)
+
+<span class="tok-com">// Example: 1000 req/s aati hain, har request 200ms leti hai</span>
+L = <span class="tok-num">1000</span> × <span class="tok-num">0.2</span> = <span class="tok-num">200</span> concurrent requests system mein
+
+<span class="tok-com">// Ab isse teen kaam ke nateeje nikalte hain:</span>
+
+<span class="tok-com">// 1. LATENCY KAM KARO → CONCURRENCY KAM HOGI (capacity free milegi)</span>
+<span class="tok-com">//    200ms → 100ms  ⇒  L = 100. Aadhe resources chahiye, SAME traffic pe.</span>
+<span class="tok-com">//    Isiliye latency fix karna aksar instances add karne se SASTA hai.</span>
+
+<span class="tok-com">// 2. CAPACITY PLANNING</span>
+<span class="tok-com">//    Ek instance 50 concurrent requests handle kar sakta hai?</span>
+<span class="tok-com">//    200 / 50 = 4 instances chahiye. Andaaza nahi, ganit.</span>
+
+<span class="tok-com">// 3. Aur sabse important — LATENCY BADHNE PE CASCADE (ch 14)</span>
+<span class="tok-com">//    Downstream slow hua: W 200ms → 2s</span>
+<span class="tok-com">//    L = 1000 × 2 = 2000 concurrent — 10 GUNA</span>
+<span class="tok-com">//    Par tumhare paas sirf 200 ki capacity hai → sab kuch queue mein → collapse</span>
+<span class="tok-com">//    YEH hai wo formula jo cascading failure ko ganit mein samjha deta hai.</span>
+</code></pre>
+      </div>
+
+      <h2 id="utilization">Utilization Curve — Sabse Important Graph</h2>
+      <p>
+        Ye poore chapter ka sabse counter-intuitive aur sabse useful concept hai. Intuition kehti hai ki agar
+        server 50% busy hai toh usse 100% tak le jaana theek hai — poora paisa vasool. Queueing theory kehti hai
+        <strong>bilkul nahi</strong>.
+      </p>
+      <p>
+        Wajah <em>variability</em> hai. Requests uniform intervals pe nahi aati — wo bursts mein aati hain, aur
+        unka duration bhi alag-alag hota hai. Jab utilization badhta hai, ek naye burst ke aane pe server ke
+        "khali" hone ki sambhavna girti jaati hai — matlab queue banna shuru ho jaati hai. Aur queue mein wait
+        karna latency hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Latency versus utilization curve showing the knee around 70 to 80 percent">
+          <defs>
+            <marker id="ut1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="370" y="20" class="ex-t">Latency vs Utilization — hockey stick</text>
+
+          <path d="M80,320 C80,240 82,140 80,44" class="ex-stroke" marker-end="url(#ut1)"/>
+          <path d="M80,320 C240,322 480,318 700,320" class="ex-stroke" marker-end="url(#ut1)"/>
+          <text x="46" y="180" class="ex-t-sm" transform="rotate(-90 46 180)">latency</text>
+          <text x="390" y="348" class="ex-t-sm">utilization →</text>
+
+          <text x="140" y="336" class="ex-t-sm">0%</text>
+          <text x="300" y="336" class="ex-t-sm">50%</text>
+          <text x="460" y="336" class="ex-t-sm">75%</text>
+          <text x="560" y="336" class="ex-t-sm">90%</text>
+          <text x="660" y="336" class="ex-t-sm">100%</text>
+
+          <path d="M92,300 C220,294 340,284 452,262" class="ex-stroke ex-stroke-g"/>
+          <path d="M452,262 C520,238 560,190 592,132" class="ex-stroke"/>
+          <path d="M592,132 C614,92 626,70 636,48" class="ex-stroke"/>
+
+          <path d="M452,262 C452,278 452,290 452,304" class="ex-stroke ex-stroke-d"/>
+          <circle cx="452" cy="262" r="6" class="ex-fill-o ex-stroke"/>
+          <text x="452" y="238" class="ex-t-lbl">THE KNEE</text>
+
+          <rect x="96" y="60" width="240" height="112" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="216" y="82" class="ex-t-sm">0–70% — safe zone</text>
+          <text x="216" y="104" class="ex-t-sm">latency dheere-dheere badhti hai</text>
+          <text x="216" y="124" class="ex-t-sm">burst absorb ho jaata hai</text>
+          <text x="216" y="148" class="ex-t-lbl">yahan chalo</text>
+
+          <rect x="470" y="176" width="252" height="126" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="596" y="198" class="ex-t-sm">85%+ — danger zone</text>
+          <text x="596" y="220" class="ex-t-sm">10% aur load = 3× latency</text>
+          <text x="596" y="240" class="ex-t-sm">queue bhar rahi hai</text>
+          <text x="596" y="260" class="ex-t-sm">timeouts → retries → aur load</text>
+          <text x="596" y="284" class="ex-t-lbl">→ cascading failure (ch 14)</text>
+
+          <text x="370" y="378" class="ex-t-lbl">Formula (M/M/1): latency ∝ 1 / (1 − utilization)</text>
+          <text x="370" y="396" class="ex-t-sm">50% → 2× · 80% → 5× · 90% → 10× · 95% → 20× · 99% → 100×</text>
+        </svg>
+        <figcaption>
+          Wo mod (<strong>knee</strong>) ~70–80% pe aata hai. Uske aage latency <em>linearly nahi,
+          exponentially</em> badhti hai. Isiliye production systems ko <strong>70% se neeche</strong> chalaya
+          jaata hai — bacha hua 30% "waste" nahi hai, wo <em>burst absorb karne ki capacity</em> hai.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">ganit — kyun 100% utilization ek trap hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Simplest queueing model (M/M/1) ka nateeja:</span>
+average wait = service_time × ( utilization / (<span class="tok-num">1</span> − utilization) )
+
+<span class="tok-com">// service_time = 100ms maano:</span>
+utilization <span class="tok-num">50</span>%  →  wait = <span class="tok-num">100</span>ms      total <span class="tok-num">200</span>ms
+utilization <span class="tok-num">70</span>%  →  wait = <span class="tok-num">233</span>ms      total <span class="tok-num">333</span>ms
+utilization <span class="tok-num">80</span>%  →  wait = <span class="tok-num">400</span>ms      total <span class="tok-num">500</span>ms   ← knee ke aage
+utilization <span class="tok-num">90</span>%  →  wait = <span class="tok-num">900</span>ms      total <span class="tok-num">1000</span>ms
+utilization <span class="tok-num">95</span>%  →  wait = <span class="tok-num">1900</span>ms     total <span class="tok-num">2000</span>ms
+utilization <span class="tok-num">99</span>%  →  wait = <span class="tok-num">9900</span>ms     total <span class="tok-num">10000</span>ms  ← 100× kharab
+
+<span class="tok-com">// Dhyan do: 90% se 95% jaana — sirf 5% aur load —</span>
+<span class="tok-com">// latency DOUBLE kar deta hai. Yahi wo jagah hai jahan "sab theek tha,</span>
+<span class="tok-com">// phir achanak sab kharab ho gaya" wale incidents hote hain.</span>
+
+<span class="tok-com">// ⚠️ Ye sirf CPU pe nahi lagta — HAR queue pe lagta hai:</span>
+<span class="tok-com">//    • connection pool (ch 10) — pool 90% bhara = queries wait mein</span>
+<span class="tok-com">//    • thread pool</span>
+<span class="tok-com">//    • disk IO</span>
+<span class="tok-com">//    • task queue (ch 12)</span>
+<span class="tok-com">// Isiliye ch 16 mein bola tha: SATURATION sabse valuable signal hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Practical consequences — teen decisions jo isse badalte hain</div>
+        <p>
+          <strong>1. Autoscaling threshold 70% pe rakho, 90% pe nahi.</strong> 90% pe trigger karne ka matlab
+          hai ki jab tak naya instance aata hai (~2 min, ch 19), tum already curve ke bure hisse mein ho.<br>
+          <strong>2. "Server sirf 60% use ho raha hai, waste hai" — ye galat conclusion hai.</strong> Wo 40%
+          headroom hai, waste nahi. Cost bachane ke liye usse kaatna ek fragile system banata hai.<br>
+          <strong>3. Variability kam karo, utilization badhaane se pehle.</strong> Agar request durations bahut
+          alag-alag hain (kuch 5ms, kuch 5s), toh queue aur bhi jaldi banti hai — isliye slow endpoints ko alag
+          karna (bulkhead, ch 14) utilization headroom bhi deta hai.
+        </p>
+      </div>
+
+      <h2 id="profiling">Profiling — Flame Graphs</h2>
+      <p>
+        Tracing (ch 16) batata hai ki time <em>kis service ya kis hop</em> pe gaya. Profiling batata hai ki
+        time <em>tumhare code ki kis line</em> pe gaya. Dono chahiye — tracing bahar ke liye, profiling andar
+        ke liye.
+      </p>
+      <div class="code-block">
+        <div class="code-title">flame graph padhna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Profiler har few milliseconds pe stack trace ka SAMPLE leta hai.</span>
+<span class="tok-com">// Jo function zyada samples mein dikhta hai, wo zyada CPU kha raha hai.</span>
+
+handleRequest                                    <span class="tok-num">100</span>%  ████████████████████
+├─ parseBody                                       <span class="tok-num">5</span>%  █
+├─ validate                                        <span class="tok-num">3</span>%  ▌
+├─ buildQuery                                      <span class="tok-num">2</span>%  ▎
+└─ serializeResponse                              <span class="tok-num">88</span>%  █████████████████
+   └─ JSON.stringify                              <span class="tok-num">86</span>%  █████████████████  ← 🎯
+      └─ formatDate (har row pe naya Date object) <span class="tok-num">71</span>%  ██████████████
+
+<span class="tok-com">// Padhne ka tareeka:</span>
+<span class="tok-com">//   • X-axis TIME NAHI hai — wo alphabetical/grouped hai. Chaudai = kitna CPU.</span>
+<span class="tok-com">//   • Y-axis = call stack ki gehrai.</span>
+<span class="tok-com">//   • CHAUDE PLATEAUS dhoondho — wahi hotspots hain.</span>
+<span class="tok-com">//   • Patli spikes ignore karo, chahe wo kitni bhi gehri hon.</span>
+
+<span class="tok-com">// Upar wale example ka nateeja: problem DB nahi thi, JSON serialization thi —</span>
+<span class="tok-com">// aur uske andar bhi ek per-row date formatting. Ye baat ANDAAZE se kabhi</span>
+<span class="tok-com">// nahi pata chalti. (Aur ye ch 21 ka event-loop blocking bhi hai.)</span>
+
+<span class="tok-com">// Tools: Node → --cpu-prof, clinic.js, 0x · Python → py-spy, cProfile</span>
+<span class="tok-com">//        Go → pprof (built-in)  ·  Linux → perf</span>
+<span class="tok-com">// Production mein CONTINUOUS PROFILING (Pyroscope, Datadog) — low overhead,</span>
+<span class="tok-com">// aur incident ke waqt "pehle kaisa tha" ka comparison mil jaata hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 CPU profile vs wall-clock profile</div>
+        <p>
+          Default CPU profiler sirf wo time ginta hai jab CPU <em>chal raha</em> tha — matlab IO wait usme
+          dikhta hi nahi. IO-bound service (ch 21) mein wo profile lagbhag khali aayega, chahe request 800ms
+          le rahi ho. Uske liye <strong>wall-clock</strong> ya <em>off-CPU</em> profiling chahiye, ya phir
+          tracing (ch 16) — jo IO waits ko explicitly spans ki tarah dikhati hai. Ye galat tool chunne ka
+          sabse common example hai.
+        </p>
+      </div>
+
+      <h2 id="bottleneck">Bottleneck Kaise Dhoondhein</h2>
+      <p>
+        Har system mein <em>ek</em> bottleneck hota hai (ya ek waqt pe ek). Usse theek karo, toh bottleneck
+        agli jagah shift ho jaata hai. Ye ek recurring process hai, ek baar ka kaam nahi.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Finding the bottleneck across app, database, cache and external services">
+          <defs>
+            <marker id="sp1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="380" y="20" class="ex-t">Latency badh gayi — kahan dekhein</text>
+
+          <rect x="20" y="40" width="172" height="120" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="106" y="62" class="ex-t-sm">APP (CPU)</text>
+          <text x="106" y="86" class="ex-t-sm">CPU pegged?</text>
+          <text x="106" y="106" class="ex-t-sm">event loop lag? (ch 21)</text>
+          <text x="106" y="126" class="ex-t-sm">GC pauses?</text>
+          <text x="106" y="150" class="ex-t-lbl">→ horizontal scale</text>
+
+          <rect x="204" y="40" width="172" height="120" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="290" y="62" class="ex-t-sm">DATABASE</text>
+          <text x="290" y="86" class="ex-t-sm">slow queries? (ch 10)</text>
+          <text x="290" y="106" class="ex-t-sm">pool exhausted?</text>
+          <text x="290" y="126" class="ex-t-sm">lock contention?</text>
+          <text x="290" y="150" class="ex-t-lbl">→ index / pool / ch 20</text>
+
+          <rect x="388" y="40" width="172" height="120" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="474" y="62" class="ex-t-sm">CACHE</text>
+          <text x="474" y="86" class="ex-t-sm">hit rate gira?</text>
+          <text x="474" y="106" class="ex-t-sm">hot key? (ch 11)</text>
+          <text x="474" y="126" class="ex-t-sm">stampede?</text>
+          <text x="474" y="150" class="ex-t-lbl">→ ch 11</text>
+
+          <rect x="572" y="40" width="168" height="120" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="656" y="62" class="ex-t-sm">EXTERNAL</text>
+          <text x="656" y="86" class="ex-t-sm">3rd-party slow?</text>
+          <text x="656" y="106" class="ex-t-sm">timeout hai? (ch 14)</text>
+          <text x="656" y="126" class="ex-t-sm">retry storm?</text>
+          <text x="656" y="150" class="ex-t-lbl">→ async / breaker</text>
+
+          <path d="M380,168 C378,184 382,192 380,208" class="ex-stroke" marker-end="url(#sp1)"/>
+
+          <rect x="150" y="210" width="460" height="72" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="234" class="ex-t">Sabse pehla signal: SATURATION (ch 16)</text>
+          <text x="380" y="256" class="ex-t-sm">pool usage · queue depth · CPU · memory · event loop lag</text>
+          <text x="380" y="274" class="ex-t-lbl">jo 100% ke paas chipka hai — wahi bottleneck hai</text>
+
+          <path d="M380,290 C378,306 382,314 380,330" class="ex-stroke ex-stroke-g" marker-end="url(#sp1)"/>
+
+          <rect x="130" y="332" width="500" height="72" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="356" class="ex-t-sm">Fix karo → bottleneck AGLI jagah shift ho jayega</text>
+          <text x="380" y="378" class="ex-t-sm">app CPU theek kiya → ab DB bottleneck · DB theek kiya → ab network</text>
+          <text x="380" y="398" class="ex-t-lbl">ye ek loop hai, ek project nahi — har baar dobara measure karo</text>
+        </svg>
+        <figcaption>
+          Saturation metrics (ch 16) bottleneck ko sabse jaldi dikhate hain — jo resource 100% ke paas chipka
+          hai wahi limit hai. Aur bottleneck fix karne ke <em>baad</em> dobara measure karna zaroori hai, kyunki
+          wo hamesha kahin aur chala jaata hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="vertical">Vertical vs Horizontal</h2>
+      <table>
+        <thead><tr><th></th><th>Vertical (scale up)</th><th>Horizontal (scale out)</th></tr></thead>
+        <tbody>
+          <tr><td>Kya</td><td>Ek machine badi karo</td><td>Aur machines add karo</td></tr>
+          <tr><td>Code change</td><td>Kuch nahi</td><td>App stateless hona chahiye</td></tr>
+          <tr><td>Limit</td><td><strong>Hardware ki chhat</strong> — ek din khatam</td><td>Practically unlimited</td></tr>
+          <tr><td>Cost curve</td><td><strong>Super-linear</strong> — 2× machine 3–4× mehngi</td><td>Linear</td></tr>
+          <tr><td>Fault tolerance</td><td>Ek machine = single point of failure</td><td>Ek gira, baaki chalte hain</td></tr>
+          <tr><td>Downtime</td><td>Resize pe restart</td><td>Rolling, zero downtime (ch 17)</td></tr>
+          <tr><td>Complexity</td><td>Bahut kam</td><td>LB, sticky sessions, distributed state</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Practical: vertical se shuru karo — par usko permanent mat samjho</div>
+        <p>
+          Chhote scale pe vertical scaling <strong>sabse sasta option</strong> hai — kuch nahi badalna padta,
+          aur ek instance ka RAM double karna ek microservices migration se hazaaron guna sasta hai. Modern
+          machines bahut badi hain (128 cores, 1 TB RAM); zyadatar apps kabhi us chhat tak pahunchte hi nahi.
+          <strong>Par</strong> ek cheez din 1 se karo: <em>app ko stateless rakho</em> (§5). Tab jab horizontal
+          scaling ki zaroorat aayegi, wo ek config change hoga — ek rewrite nahi. Ye ek chhota discipline hai
+          jiska payoff bahut bada hota hai. Aur yaad rakho: vertical scaling <em>availability</em> nahi deti —
+          ek machine hamesha ek single point of failure hai.
+        </p>
+      </div>
+
+      <h2 id="stateless">Stateless Hona — Horizontal Scaling Ki Shart</h2>
+      <p>
+        Ch 3 mein HTTP ki statelessness dekhi thi; ab uska practical consequence. Horizontal scaling tabhi
+        kaam karti hai jab <strong>koi bhi request kisi bhi instance pe ja sake</strong>. Iska matlab hai ki
+        instance ki apni memory mein aisa kuch nahi hona chahiye jiski agli request ko zaroorat ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">stateful se stateless<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Process memory mein state — 1 instance pe chalta hai, 2 pe toot-ta hai</span>
+<span class="tok-kw">const</span> sessions   = <span class="tok-kw">new</span> <span class="tok-fn">Map</span>();   <span class="tok-com">// user instance B pe gaya → logged out (ch 6)</span>
+<span class="tok-kw">const</span> rateLimits = <span class="tok-kw">new</span> <span class="tok-fn">Map</span>();   <span class="tok-com">// limit N gunа ho gayi (ch 18)</span>
+<span class="tok-kw">const</span> cache      = <span class="tok-kw">new</span> <span class="tok-fn">Map</span>();   <span class="tok-com">// invalidation sirf ek instance pe (ch 11)</span>
+<span class="tok-kw">const</span> jobs       = [];           <span class="tok-com">// instance gira → jobs KHO gaye (ch 12)</span>
+fs.<span class="tok-fn">writeFile</span>(<span class="tok-str">"/tmp/upload"</span>);      <span class="tok-com">// agli request doosre instance pe → file nahi mili</span>
+
+<span class="tok-com">// ✅ State ko BAHAR nikalo</span>
+sessions   → Redis                     <span class="tok-com">// ch 6</span>
+rateLimits → Redis (atomic INCR)       <span class="tok-com">// ch 18</span>
+cache      → Redis                     <span class="tok-com">// ch 11</span>
+jobs       → queue/broker              <span class="tok-com">// ch 12</span>
+files      → S3 / object storage
+<span class="tok-com">// Instance ab sirf COMPUTE hai — usse maar do, replace kar do, koi farq nahi.</span>
+<span class="tok-com">// Yahi "cattle, not pets" ka matlab hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Sticky sessions ek band-aid hain</div>
+        <p>
+          Load balancer ko bola jaata hai ki ek user hamesha usi instance pe jaaye — taaki in-memory state kaam
+          karta rahe. Ye chalta hai, par teen cheezein todta hai: (1) wo instance gira toh us user ka state gaya;
+          (2) load <strong>unevenly</strong> distribute hota hai — ek instance heavy users se bhar jaata hai;
+          (3) deploy ke waqt har rolling restart users ko out kar deta hai (ch 17). Ye ek asli architecture
+          problem ka LB-level patch hai; asli fix state ko bahar nikalna hai.
+        </p>
+      </div>
+
+      <h2 id="lb">Load Balancing — Algorithms Aur Layers</h2>
+      <table>
+        <thead><tr><th>Algorithm</th><th>Kaise</th><th>Kab</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Round robin</strong></td><td>Baari-baari</td><td>Default — jab requests uniform hon</td></tr>
+          <tr><td><strong>Least connections</strong></td><td>Jispe sabse kam active</td><td>Jab request durations bahut alag hon — aksar behtar default</td></tr>
+          <tr><td><strong>Weighted</strong></td><td>Capacity ke hisaab se</td><td>Mixed instance sizes</td></tr>
+          <tr><td><strong>Consistent hashing</strong></td><td>Key se instance</td><td>Cache locality chahiye (ch 20 mein detail)</td></tr>
+          <tr><td><strong>Least response time</strong></td><td>Latency + connections</td><td>Sabse adaptive, par LB ko zyada state rakhni padti hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">L4 vs L7 load balancing<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// L4 (transport) — sirf IP:port dekhta hai, TCP forward kar deta hai</span>
+<span class="tok-com">// ✅ bahut fast, protocol-agnostic (kuch bhi chala lo)</span>
+<span class="tok-com">// ❌ path/header nahi dekh sakta, TLS terminate nahi karta</span>
+
+<span class="tok-com">// L7 (application) — HTTP samajhta hai (ch 2 ka nginx)</span>
+<span class="tok-com">// ✅ path/host se routing, TLS termination, retries, header manipulation</span>
+<span class="tok-com">// ✅ health checks HTTP level pe (ch 14, 17)</span>
+<span class="tok-com">// ❌ thoda slow, thoda mehnga</span>
+
+<span class="tok-com">// Health checks — LB ka sabse important kaam</span>
+<span class="tok-com">//   interval: 5s, failureThreshold: 2 → 10s mein unhealthy instance hat jaata hai</span>
+<span class="tok-com">//   /health/ready ko hit karo (ch 17), aur usme downstream dependencies</span>
+<span class="tok-com">//   check MAT karo (ch 14) — warna ek slow DB saare instances ko maar dega.</span>
+
+<span class="tok-com">// ⚠️ CONNECTION DRAINING — deploy pe zaroori (ch 17)</span>
+<span class="tok-com">//   deregistration_delay: instance hatane ke baad bhi in-flight requests</span>
+<span class="tok-com">//   ko poora hone ka time. App ke wait window se match karo.</span>
+</code></pre>
+      </div>
+
+      <h2 id="autoscale">Autoscaling Aur Uske Traps</h2>
+      <div class="code-block">
+        <div class="code-title">autoscaling — kis metric pe<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Sirf CPU pe scale karna — sabse common galti</span>
+<span class="tok-com">// IO-bound app (ch 21) mein CPU 20% pe rehta hai jabki wo request handle</span>
+<span class="tok-com">// karne mein struggle kar raha hota hai. Autoscaler kabhi trigger hi nahi hoga.</span>
+
+<span class="tok-com">// ✅ Behtar signals</span>
+<span class="tok-com">//   requests per instance (throughput)</span>
+<span class="tok-com">//   p95 latency</span>
+<span class="tok-com">//   queue depth (workers ke liye — ch 12)</span>
+<span class="tok-com">//   event loop lag (Node ke liye — ch 21)</span>
+
+<span class="tok-com">// ── Trap 1: SCALING LAG ────────────────────────────────────</span>
+<span class="tok-com">// metric spike → autoscaler notice kare (30s) → instance boot (60s)</span>
+<span class="tok-com">// → app ready (30s) → LB add kare (15s)  = ~2 MINUTE</span>
+<span class="tok-com">// Traffic spike 2 minute mein khatam ho jaata hai. Autoscaling flash</span>
+<span class="tok-com">// traffic ke liye kaam NAHI karti — uske liye headroom rakho ya pre-warm karo.</span>
+
+<span class="tok-com">// ── Trap 2: FLAPPING ───────────────────────────────────────</span>
+<span class="tok-com">// scale up → load ghata → scale down → load badha → scale up…</span>
+<span class="tok-com">// Fix: cooldown periods, aur scale-up ko aggressive + scale-down ko dheema rakho</span>
+<span class="tok-com">// (galat direction mein galti karne ka cost asymmetric hai).</span>
+
+<span class="tok-com">// ── Trap 3: DOWNSTREAM KO KUCHAL DENA ─────────────────────</span>
+<span class="tok-com">// 10 instances → 50 instances, har ek pool of 20 = 1000 DB connections.</span>
+<span class="tok-com">// max_connections=100 (ch 10). App scale ho gaya, DB gir gaya.</span>
+<span class="tok-com">// ✅ Fix: max instance count bound karo, aur PgBouncer lagao.</span>
+<span class="tok-com">// Autoscaling ka matlab hai ki tumhari DOWNSTREAM capacity bhi scale honi chahiye.</span>
+</code></pre>
+      </div>
+
+      <h2 id="loadtest">Load Testing Theek Se</h2>
+      <p>
+        Load test ka maksad "bada number" nikalna nahi hai — <strong>breaking point aur failure mode</strong>
+        dhoondhna hai.
+      </p>
+      <ul>
+        <li><strong>Realistic workload</strong> — ek hi endpoint hammer karna bekaar hai. Real traffic mix use
+        karo, aur real data distribution (ek hi user ID se test karne pe sab kuch cache mein hit hota hai).</li>
+        <li><strong>Ramp up karo</strong>, dheere-dheere — taaki wo point dikhe jahan latency phatt-ti hai.</li>
+        <li><strong>Latency percentiles dekho</strong> (ch 16), average nahi.</li>
+        <li><strong>Saturation dekho</strong> — pool usage, event loop lag, CPU — sirf throughput nahi.</li>
+        <li><strong>Breaking point tak jao</strong> — aur dekho system kaise toot-ta hai. Graceful degradation
+        (ch 14) ya cascading collapse?</li>
+        <li><strong>Production-jaisa environment</strong> — 1 CPU wale laptop pe test karke production ke liye
+        conclusions nikalna bekaar hai.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Coordinated omission — load testing ka sabse bada jhooth</div>
+        <p>
+          Zyadatar load tools <em>"pichli response aane ke baad"</em> agli request bhejte hain. Matlab jab
+          server slow hota hai, tool khud hi <strong>kam requests bhejta hai</strong> — aur wo exactly wo
+          requests hain jo sabse slow hoti. Result: tumhara p99 asli p99 se bahut behtar dikhta hai. Real users
+          aisa nahi karte — wo aate rehte hain chahe server slow ho. Isliye <strong>constant arrival
+          rate</strong> mode wale tools use karo (<code>k6</code> ka <code>constant-arrival-rate</code>,
+          <code>wrk2</code>), na ki closed-loop wale.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Scaling ek measurement problem hai</strong> — architecture badalne se pehle bottleneck measure karo.</li>
+        <li><strong>Amdahl's law</strong>: 5% wale hisse ko infinitely fast karne se bhi sirf 5% faayda. Language rewrite aksar isi wajah se bekaar hai.</li>
+        <li>Trace se ek <strong>latency budget</strong> banao — usse decisions obvious ho jaate hain.</li>
+        <li><strong>Little's Law (L = λ × W)</strong>: latency aadhi karna concurrency aadhi kar deta hai — aksar instances add karne se sasta.</li>
+        <li>Wahi formula cascading failure ko samjhata hai: W 200ms→2s ka matlab concurrency 10× — capacity se bahut aage.</li>
+        <li><strong>Latency aur throughput independent hain</strong> — ek badhana doosre ko theek nahi karta.</li>
+        <li>Latency distribution normal nahi, right-skewed hai — isliye average tail chhupa deta hai. p99 users <strong>random nahi</strong> hote; wo aksar tumhare sabse bade/purane accounts hain.</li>
+        <li><strong>Utilization curve</strong>: latency ∝ 1/(1−utilization). Knee ~70–80% pe hai; 90%→95% jaana latency <em>double</em> kar deta hai.</li>
+        <li>Bacha hua 30% headroom <strong>waste nahi hai</strong> — wo burst absorb karne ki capacity hai. Autoscale 70% pe karo, 90% pe nahi.</li>
+        <li>Ye curve har queue pe lagti hai — CPU, connection pool, thread pool, task queue.</li>
+        <li><strong>Tracing bahar ke liye, profiling andar ke liye.</strong> Flame graph mein chaude plateaus dhoondho, patli spikes nahi.</li>
+        <li>CPU profiler IO wait nahi dikhata — IO-bound service ke liye wall-clock profiling ya tracing chahiye.</li>
+        <li>Saturation metrics bottleneck sabse jaldi dikhate hain; fix ke baad wo <strong>agli jagah shift</strong> ho jaata hai — dobara measure karo.</li>
+        <li>Vertical scaling chhote scale pe sabse sasta hai, par uski ek chhat hai, cost super-linear hai, aur wo <strong>availability nahi deti</strong>.</li>
+        <li><strong>Din 1 se stateless raho</strong> — tab horizontal scaling ek config change hai, rewrite nahi.</li>
+        <li>State bahar nikalo: sessions/cache/rate-limits → Redis, jobs → queue, files → object storage.</li>
+        <li><strong>Sticky sessions ek band-aid hain</strong> — uneven load, deploy pe logout, instance gira toh state gaya.</li>
+        <li><strong>Least connections</strong> aksar round robin se behtar default hai jab request durations vary karte hain.</li>
+        <li>Health checks mein downstream dependencies mat daalo (ch 14); connection draining ko app ke wait window se match karo (ch 17).</li>
+        <li>Sirf CPU pe autoscale karna IO-bound apps ke liye bekaar hai — throughput, p95, queue depth, event loop lag dekho.</li>
+        <li><strong>Autoscaling lag ~2 minute</strong> hai — flash traffic ke liye wo kaam nahi karti; headroom rakho.</li>
+        <li>Autoscaling downstream ko kuchal sakti hai — 50 instances × pool 20 = 1000 DB connections. Max count bound karo.</li>
+        <li>Load testing mein <strong>coordinated omission</strong> se bacho — constant arrival rate use karo, warna p99 jhootha aata hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Traffic 10× hone wala hai. Kya karoge?"</div>
+        <p>
+          Pehle <strong>measure</strong> — trace se latency budget nikalo aur saturation metrics dekho, taaki
+          pata chale bottleneck kahan hai (app CPU, DB, cache, ya external). Phir Little's Law se capacity
+          plan karo. Aksar sabse sasta fix latency kam karna hota hai (slow query, external call ko async), na
+          ki instances add karna — L = λ × W. Uske baad: stateless verify karo, horizontal scale karo, aur
+          <em>downstream capacity</em> check karo (DB connections, ch 10). Aur load test karke breaking point
+          aur failure mode dekho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Vertical vs horizontal — kab kya?"</div>
+        <p>
+          Vertical simple aur sasta hai chhote scale pe — koi code change nahi — par uski ek hardware chhat hai,
+          cost super-linear badhti hai, aur sabse important: wo <strong>availability nahi deti</strong> (ek
+          machine = single point of failure). Horizontal unlimited hai aur fault tolerance deta hai, par app ko
+          stateless hona chahiye aur LB/distributed state ki complexity aati hai. Practical: vertical se shuru
+          karo <em>lekin din 1 se stateless raho</em>, taaki switch ek config change bane, rewrite nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "App ko stateless kaise banaoge?"</div>
+        <p>
+          Har wo cheez jo process memory ya local disk mein hai aur agli request ko chahiye, use bahar nikalo:
+          sessions aur cache → Redis, rate limit counters → Redis with atomic ops, background jobs → queue,
+          uploaded files → object storage, aur WebSocket state → shared pub/sub. Test: <em>"kya main kisi bhi
+          instance ko kabhi bhi maar sakta hoon?"</em> Agar haan, toh stateless hai. Sticky sessions is problem
+          ka LB-level band-aid hai, solution nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Autoscaling laga di hai, phir bhi spike pe requests fail hui. Kyun?"</div>
+        <p>
+          Sabse likely <strong>scaling lag</strong> — metric detect karna + instance boot + app ready + LB
+          registration mila ke ~2 minute lagta hai, aur spike usse pehle khatam ho jaata hai. Autoscaling
+          sustained load ke liye hai, flash traffic ke liye nahi — uske liye headroom, pre-warming, aur load
+          shedding (ch 14) chahiye. Doosri possibility: scaling metric galat hai (IO-bound app pe CPU kabhi
+          trigger nahi hota). Teesri: scale hua par <em>downstream</em> nahi — 50 instances ne DB connections
+          khatam kar diye.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Load test mein p99 achha aaya par production mein kharab hai. Kyun?"</div>
+        <p>
+          Sabse common wajah <strong>coordinated omission</strong>: closed-loop load tools pichli response ke
+          baad hi agli request bhejte hain, isliye server slow hone par tool khud load ghata deta hai — aur wahi
+          slow requests measurement se gayab ho jaati hain. Fix: constant arrival rate mode (k6, wrk2). Doosri
+          wajah: unrealistic workload — ek hi endpoint ya ek hi user ID se test karna sab kuch cache mein hit
+          kara deta hai (ch 11), jabki production mein cache miss aur data variety hoti hai.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Q6. "Server 60% pe chal raha hai — kya usse 90% tak le jaana chahiye? Paisa bachega."</div>
+        <p>
+          Nahi. Latency utilization ke saath linearly nahi badhti — <code>latency ∝ 1/(1−utilization)</code>.
+          Knee ~70–80% pe hai; 90% pe latency ~10× baseline hoti hai, aur 90% se 95% jaana usse
+          <em>double</em> kar deta hai. Wo bacha hua headroom waste nahi hai — wo bursts absorb karta hai,
+          kyunki traffic uniform nahi aata. 90% pe chalane ka matlab hai koi bhi chhota spike queue banayega,
+          timeouts denge, retries aayengi (ch 14), aur cascading failure ho jayega. Cost bachani hai toh pehle
+          <em>latency</em> kam karo (Little's Law se concurrency bhi ghategi) ya request-duration variability kam karo.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q7. "Endpoint slow hai. Tracing se pata nahi chal raha. Ab?"</div>
+        <p>
+          Tracing batati hai time kis <em>hop</em> pe gaya; agar sab spans ka total request time se kam hai, toh
+          time <em>tumhare code ke andar</em> ja raha hai — wahan <strong>profiling</strong> chahiye. Flame
+          graph lo aur chaude plateaus dhoondho (chaudai = CPU share, X-axis time nahi hai). Ek zaroori
+          caveat: default CPU profiler IO wait nahi ginta, toh IO-bound service ka profile lagbhag khali
+          aayega — uske liye wall-clock/off-CPU profiling ya tracing use karo. Production mein continuous
+          profiling rakhna sabse achha hai, kyunki incident ke waqt "pehle kaisa tha" ka comparison mil jaata hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="20-scaling-part-2.html"><strong>Chapter 20 — Scaling & Performance II</strong></a>: app
+          layer horizontally scale ho gayi. Par database abhi bhi ek hai — aur wahi asli mushkil hai. Read
+          replicas, sharding, partitioning, CDN, aur consistency ke trade-offs.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

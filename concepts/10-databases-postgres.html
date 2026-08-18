@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databases with Postgres — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link active" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 10</div>
+      <div class="progress-pill">10 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Storage · B-tree · Query Planner · ACID · MVCC · Pooling</span>
+      <h1>Databases with Postgres</h1>
+      <p class="subtitle">
+        Phase 2 shuru. Ab tak API <em>correct</em> thi; ab usse <em>fast</em> banana hai — aur latency ka sabse
+        bada hissa hamesha database mein hota hai. Ye handbook ka sabse lamba chapter hai kyunki isme wo cheezein
+        hain jinke bina "query slow hai" ka jawab hamesha andaaza rehta hai: <strong>disk pe data kaise
+        pada hai, index actually kya hai, planner kaise faisla karta hai, aur transactions concurrency mein
+        kaise behave karte hain.</strong>
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 12 —
+        <a href="https://www.youtube.com/watch?v=F7Vwp2Xo5Do">Mastering Databases with Postgres</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#storage">1. Disk Pe Data Kaise Pada Hai — Pages Aur Rows</a></li>
+          <li><a href="#btree">2. Index — B-tree Andar Se</a></li>
+          <li><a href="#indexrules">3. Index Ke Wo Rules Jo Sach Mein Kaam Aate Hain</a></li>
+          <li><a href="#planner">4. Query Planner Aur EXPLAIN Padhna</a></li>
+          <li><a href="#acid">5. Transactions Aur ACID</a></li>
+          <li><a href="#mvcc">6. MVCC — Postgres Ka Asli Raaz</a></li>
+          <li><a href="#isolation">7. Isolation Levels Aur Unke Anomalies</a></li>
+          <li><a href="#locks">8. Locking, Deadlocks, Aur Lock Ordering</a></li>
+          <li><a href="#pool">9. Connection Pooling — Ch 2 Ka Wada</a></li>
+          <li><a href="#nplus1">10. N+1 Aur Doosre Rozana Ke Killers</a></li>
+          <li><a href="#takeaways">11. Key Takeaways</a></li>
+          <li><a href="#interview">12. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="storage">Disk Pe Data Kaise Pada Hai — Pages Aur Rows</h2>
+      <p>
+        Sabse pehla mental model: <strong>database rows ko ek-ek karke nahi padhta.</strong> Disk (aur OS)
+        blocks mein kaam karte hain, isliye Postgres bhi <strong>pages</strong> mein kaam karta hai — default
+        <strong>8 KB</strong> ka ek page. Ek table disk pe pages ka ek sequence hai, aur har page mein kai rows
+        ("tuples") hoti hain.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Poore chapter ka base — I/O ki ginti</div>
+        <p>
+          Database performance ka 90% ek hi cheez hai: <strong>kitne pages disk se padhne padte hain.</strong>
+          Ek page read ki cost (SSD pe ~100µs, HDD pe ~10ms) CPU ke kaam se hazaaron guna zyada hai. Isliye
+          indexes, query plans, caching — sab ek hi goal ke liye hain: <em>kam pages chhuo</em>. Jab bhi koi
+          optimization samajh na aaye, ye poocho: "isse kitne pages kam padhne padenge?"
+        </p>
+      </div>
+
+      <p>
+        Postgres ke paas ek <strong>shared buffer pool</strong> hota hai — RAM ka ek hissa jahan haal ke pages
+        cache rehte hain. Ek query pehle wahan dekhti hai (cache hit, microseconds), na mile toh disk se laati
+        hai. Isliye ek hi query pehli baar 200ms aur doosri baar 2ms le sakti hai — data ab RAM mein hai.
+        <em>Benchmark karte waqt ye sabse common galti hai.</em>
+      </p>
+
+      <h2 id="btree">Index — B-tree Andar Se</h2>
+      <p>
+        Bina index ke <code>WHERE email = 'x@y.com'</code> ka matlab hai <strong>sequential scan</strong> —
+        har page padho, har row check karo. 10 lakh rows = poori table disk se. Index isko badal deta hai.
+      </p>
+      <p>
+        Postgres ka default index <strong>B-tree</strong> hai (actually B+tree) — ek balanced tree jisme saari
+        actual keys <em>leaf level</em> pe hoti hain, aur leaves aapas mein linked hoti hain.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="B-tree index structure with root, internal nodes and linked leaf pages pointing to heap tuples">
+          <defs>
+            <marker id="bt1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="380" y="18" class="ex-t">B-tree: 10 lakh rows mein lookup = 3–4 page reads</text>
+
+          <rect x="300" y="34" width="160" height="38" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="54" class="ex-t-sm">root:  [ 500 | 1500 ]</text>
+
+          <path d="M330,74 C270,92 210,102 168,116" class="ex-stroke" marker-end="url(#bt1)"/>
+          <path d="M380,74 C378,92 382,102 380,116" class="ex-stroke" marker-end="url(#bt1)"/>
+          <path d="M430,74 C490,92 550,102 592,116" class="ex-stroke" marker-end="url(#bt1)"/>
+
+          <rect x="96" y="118" width="144" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="168" y="136" class="ex-t-sm">[ 100 | 300 ]</text>
+          <rect x="308" y="118" width="144" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="380" y="136" class="ex-t-sm">[ 800 | 1100 ]</text>
+          <rect x="520" y="118" width="144" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="592" y="136" class="ex-t-sm">[ 2000 | 5000 ]</text>
+
+          <path d="M168,154 C166,172 170,182 168,198" class="ex-stroke" marker-end="url(#bt1)"/>
+          <path d="M380,154 C378,172 382,182 380,198" class="ex-stroke" marker-end="url(#bt1)"/>
+          <path d="M592,154 C590,172 594,182 592,198" class="ex-stroke" marker-end="url(#bt1)"/>
+
+          <!-- leaves -->
+          <rect x="40" y="200" width="180" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="130" y="216" class="ex-t-sm">leaf: 100…299</text>
+          <text x="130" y="232" class="ex-t-sm">key → ctid (page, offset)</text>
+
+          <rect x="290" y="200" width="180" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="380" y="216" class="ex-t-sm">leaf: 800…1099</text>
+          <text x="380" y="232" class="ex-t-sm">key → ctid</text>
+
+          <rect x="540" y="200" width="180" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="630" y="216" class="ex-t-sm">leaf: 2000…4999</text>
+          <text x="630" y="232" class="ex-t-sm">key → ctid</text>
+
+          <path d="M222,220 C250,218 264,222 288,220" class="ex-stroke ex-stroke-d"/>
+          <path d="M472,220 C500,218 514,222 538,220" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="258" class="ex-t-lbl">leaves aapas mein linked hain → RANGE scan aur ORDER BY free mein</text>
+
+          <path d="M380,268 C378,286 382,296 380,312" class="ex-stroke ex-stroke-p" marker-end="url(#bt1)"/>
+
+          <rect x="150" y="314" width="460" height="52" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="380" y="334" class="ex-t-sm">HEAP — asli table pages (8 KB each)</text>
+          <text x="380" y="354" class="ex-t-sm">ctid se seedha us page + offset pe jump</text>
+
+          <text x="380" y="392" class="ex-t-lbl">Tree ki height ~3–4 rehti hai kyunki har node mein sainkdon keys aati hain</text>
+          <text x="380" y="412" class="ex-t-sm">10 lakh rows → 4 page reads · 10 crore rows → 5 page reads (log scale)</text>
+        </svg>
+        <figcaption>
+          Yahi wajah hai ki index itna powerful hai: rows 100× badhne pe reads sirf <em>ek</em> badhta hai.
+          Aur note karo — index tumhe <code>ctid</code> deta hai, actual row nahi. Row lene ke liye heap pe ek
+          aur read lagti hai (isliye "index sirf tab jeetta hai jab wo rows filter kar de" — §4).
+        </figcaption>
+      </figure>
+
+      <h2 id="indexrules">Index Ke Wo Rules Jo Sach Mein Kaam Aate Hain</h2>
+
+      <h3>1. Composite index mein column ka <em>order</em> sab kuch hai</h3>
+      <div class="code-block">
+        <div class="code-title">leftmost prefix rule<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">CREATE INDEX</span> idx <span class="tok-kw">ON</span> orders (user_id, status, created_at);
+
+<span class="tok-com">-- Sochne ka tareeka: ye ek phone directory hai jo (sheher, mohalla, naam) se sorted hai.</span>
+
+<span class="tok-com">-- ✅ USE hoga (leftmost prefix match karta hai):</span>
+<span class="tok-kw">WHERE</span> user_id = <span class="tok-num">1</span>
+<span class="tok-kw">WHERE</span> user_id = <span class="tok-num">1</span> <span class="tok-kw">AND</span> status = <span class="tok-str">'paid'</span>
+<span class="tok-kw">WHERE</span> user_id = <span class="tok-num">1</span> <span class="tok-kw">AND</span> status = <span class="tok-str">'paid'</span> <span class="tok-kw">AND</span> created_at &gt; <span class="tok-str">'2026-01-01'</span>
+<span class="tok-kw">WHERE</span> user_id = <span class="tok-num">1</span> <span class="tok-kw">ORDER BY</span> status, created_at   <span class="tok-com">-- sort bhi free</span>
+
+<span class="tok-com">-- ❌ USE NAHI hoga (pehla column hi nahi hai):</span>
+<span class="tok-kw">WHERE</span> status = <span class="tok-str">'paid'</span>                <span class="tok-com">-- sheher jaane bina mohalla dhoondhna</span>
+<span class="tok-kw">WHERE</span> created_at &gt; <span class="tok-str">'2026-01-01'</span>
+
+<span class="tok-com">-- ⚠️ AADHA use hoga — index sirf user_id tak seek karega,</span>
+<span class="tok-com">--    phir baaki rows ko filter karega (status skip ho gaya)</span>
+<span class="tok-kw">WHERE</span> user_id = <span class="tok-num">1</span> <span class="tok-kw">AND</span> created_at &gt; <span class="tok-str">'2026-01-01'</span>
+
+<span class="tok-com">-- Rule of thumb column order ke liye:</span>
+<span class="tok-com">-- 1. Equality wale columns pehle (=)</span>
+<span class="tok-com">-- 2. Range wale baad mein (&gt;, &lt;, BETWEEN)</span>
+<span class="tok-com">-- 3. Sirf ORDER BY wale sabse aakhir</span>
+</code></pre>
+      </div>
+
+      <h3>2. Column pe function lagate hi index mar jaata hai</h3>
+      <div class="code-block">
+        <div class="code-title">sabse common index-killer<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- ❌ index bekaar — Postgres ke paas LOWER(email) ka index nahi hai</span>
+<span class="tok-kw">WHERE</span> <span class="tok-fn">LOWER</span>(email) = <span class="tok-str">'a@b.com'</span>
+<span class="tok-kw">WHERE</span> <span class="tok-fn">DATE</span>(created_at) = <span class="tok-str">'2026-08-17'</span>
+<span class="tok-kw">WHERE</span> user_id::text = <span class="tok-str">'42'</span>            <span class="tok-com">-- implicit cast bhi wahi karta hai</span>
+
+<span class="tok-com">-- ✅ Fix A: query ko re-write karo taaki column "naked" rahe</span>
+<span class="tok-kw">WHERE</span> created_at &gt;= <span class="tok-str">'2026-08-17'</span> <span class="tok-kw">AND</span> created_at &lt; <span class="tok-str">'2026-08-18'</span>
+
+<span class="tok-com">-- ✅ Fix B: expression index banao (jab function zaroori ho)</span>
+<span class="tok-kw">CREATE INDEX</span> idx_email_lower <span class="tok-kw">ON</span> users (<span class="tok-fn">LOWER</span>(email));
+
+<span class="tok-com">-- LIKE ka bhi wahi rule:</span>
+<span class="tok-kw">WHERE</span> name <span class="tok-kw">LIKE</span> <span class="tok-str">'shar%'</span>    <span class="tok-com">-- ✅ prefix — B-tree seek kar sakta hai</span>
+<span class="tok-kw">WHERE</span> name <span class="tok-kw">LIKE</span> <span class="tok-str">'%rad%'</span>    <span class="tok-com">-- ❌ leading wildcard — full scan</span>
+<span class="tok-com">--    ↑ yahi wo problem hai jiske liye full-text search chahiye (ch 13)</span>
+</code></pre>
+      </div>
+
+      <h3>3. Index muft nahi hain</h3>
+      <p>
+        Har index <strong>writes ko slow</strong> karta hai (INSERT/UPDATE/DELETE pe har index update hota hai),
+        disk leta hai, aur planner ke liye options badhata hai. Ek table pe 15 indexes ek anti-pattern hai.
+        Postgres mein <code>pg_stat_user_indexes</code> se dekho ki kaunse indexes kabhi
+        use hi nahi hue (<code>idx_scan = 0</code>) — un<span>hein</span> hata do.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">aur bhi index types — sirf jab zaroorat ho<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- PARTIAL index — sirf useful rows pe. Chhota = fast + kam write overhead.</span>
+<span class="tok-kw">CREATE INDEX</span> idx_active <span class="tok-kw">ON</span> orders (created_at) <span class="tok-kw">WHERE</span> status = <span class="tok-str">'pending'</span>;
+<span class="tok-com">-- 1 crore orders mein sirf 5000 pending hain? Index 5000 rows ka banega.</span>
+
+<span class="tok-com">-- COVERING index — INCLUDE se extra columns index mein hi rakho</span>
+<span class="tok-kw">CREATE INDEX</span> idx_cov <span class="tok-kw">ON</span> orders (user_id) <span class="tok-kw">INCLUDE</span> (total, status);
+<span class="tok-com">-- Ab query heap ko chhue bina jawab de sakti hai → "index-only scan"</span>
+
+<span class="tok-com">-- GIN — JSONB, arrays, full-text (ch 13)</span>
+<span class="tok-kw">CREATE INDEX</span> idx_meta <span class="tok-kw">ON</span> events <span class="tok-kw">USING GIN</span> (metadata);
+
+<span class="tok-com">-- Production mein index banate waqt HAMESHA:</span>
+<span class="tok-kw">CREATE INDEX CONCURRENTLY</span> idx_x <span class="tok-kw">ON</span> big_table (col);
+<span class="tok-com">-- ↑ CONCURRENTLY ke bina table pe WRITE LOCK lag jaata hai —</span>
+<span class="tok-com">--   bade table pe iska matlab hai minutes ka outage.</span>
+</code></pre>
+      </div>
+
+      <h2 id="planner">Query Planner Aur EXPLAIN Padhna</h2>
+      <p>
+        Postgres ka planner <strong>cost-based</strong> hai: wo statistics (<code>ANALYZE</code> se collected)
+        dekh ke andaaza lagata hai ki kitni rows aayengi, aur phir sabse sasta plan chunta hai. Isliye
+        <em>index hone ka matlab index use hona nahi hai</em> — agar planner ko lagta hai ki query aadhi table
+        return karegi, toh sequential scan actually <strong>tez</strong> hai (random I/O se sequential I/O
+        sasta hota hai).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">EXPLAIN ANALYZE — ye exact form use karo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">EXPLAIN</span> (<span class="tok-kw">ANALYZE</span>, BUFFERS)
+<span class="tok-kw">SELECT</span> * <span class="tok-kw">FROM</span> orders <span class="tok-kw">WHERE</span> user_id = <span class="tok-num">42</span> <span class="tok-kw">ORDER BY</span> created_at <span class="tok-kw">DESC</span> <span class="tok-kw">LIMIT</span> <span class="tok-num">20</span>;
+<span class="tok-com">-- ANALYZE = query sach mein chalao (asli timings)  ⚠️ writes pe transaction mein karo</span>
+<span class="tok-com">-- BUFFERS = kitne pages padhe — YAHI asli metric hai</span>
+
+Limit  (cost=<span class="tok-num">0.43</span>..<span class="tok-num">8.45</span> rows=<span class="tok-num">20</span>) (actual time=<span class="tok-num">0.031</span>..<span class="tok-num">0.058</span> rows=<span class="tok-num">20</span> loops=<span class="tok-num">1</span>)
+  Buffers: shared hit=<span class="tok-num">5</span>                      <span class="tok-com">-- 5 pages, sab cache se. Bahut accha.</span>
+  -&gt;  Index Scan <span class="tok-kw">using</span> idx_orders_user_created <span class="tok-kw">on</span> orders
+        Index Cond: (user_id = <span class="tok-num">42</span>)
+
+<span class="tok-com">-- ── Padhne ka tareeka ──────────────────────────────────────</span>
+<span class="tok-com">-- 1. ANDAR se BAHAR padho (sabse deep node pehle chalta hai)</span>
+<span class="tok-com">-- 2. estimated `rows=` vs `actual rows=` compare karo</span>
+<span class="tok-com">--    10x se zyada farq → statistics stale hain → ANALYZE chalao</span>
+<span class="tok-com">-- 3. `loops=` dekho — loops=500 matlab wo node 500 baar chala (N+1 ka signature!)</span>
+<span class="tok-com">-- 4. Buffers dekho: `read` = disk se, `hit` = cache se</span>
+</code></pre>
+      </div>
+
+      <table>
+        <thead><tr><th>Plan node</th><th>Matlab</th><th>Chinta ki baat?</th></tr></thead>
+        <tbody>
+          <tr><td><code>Seq Scan</code></td><td>Poori table padhi</td><td>Chhoti table pe theek; badi pe + selective WHERE = index missing</td></tr>
+          <tr><td><code>Index Scan</code></td><td>Index se seek, phir heap se row</td><td>Achha — selective queries ke liye ideal</td></tr>
+          <tr><td><code>Index Only Scan</code></td><td>Heap chhua hi nahi</td><td>Sabse achha</td></tr>
+          <tr><td><code>Bitmap Heap Scan</code></td><td>Bahut saari matching rows — pehle page list banayi</td><td>Normal jab kaafi rows match karti hain</td></tr>
+          <tr><td><code>Nested Loop</code></td><td>Har outer row pe inner lookup</td><td>Chhote outer set pe theek; bade pe disaster</td></tr>
+          <tr><td><code>Hash Join</code></td><td>Ek side ka hash table banaya</td><td>Bade joins ke liye normal</td></tr>
+          <tr><td><code>Sort</code> + <code>external merge Disk</code></td><td>Sort RAM mein nahi samaayi</td><td>❗ <code>work_mem</code> badhao ya index se sort karao</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="acid">Transactions Aur ACID</h2>
+      <p>
+        Transaction ka core idea: <strong>kai operations, ek atomic unit</strong>. Ya sab honge, ya kuch nahi.
+      </p>
+      <ul>
+        <li><strong>A — Atomicity</strong>: beech mein crash hua toh sab rollback. Aadha kaam nahi bachta.</li>
+        <li><strong>C — Consistency</strong>: constraints (FK, UNIQUE, CHECK) transaction ke end pe satisfy hone chahiye.</li>
+        <li><strong>I — Isolation</strong>: concurrent transactions ek doosre ko kitna dikhte hain — <em>ye sabse
+        subtle hai</em> (§7).</li>
+        <li><strong>D — Durability</strong>: COMMIT return hua matlab data disk pe hai, power cut pe bhi bacha
+        rahega. Ye WAL (write-ahead log) se aata hai — Postgres pehle change ko log mein likhta hai (sequential,
+        fast), phir aaram se data pages update karta hai.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Transaction ke andar external call kabhi mat karo</div>
+        <p>
+          <code>BEGIN → INSERT → await stripe.charge() → COMMIT</code> — ye ek classic outage generator hai.
+          Stripe 5 second le raha hai, matlab tumhara transaction 5 second tak <strong>locks pakde
+          baitha hai</strong> aur ek connection pool se block kiye hue hai. 100 concurrent orders =
+          pool khatam = poora app down. Rule: <strong>transactions chhote rakho, aur unme sirf DB kaam
+          karo.</strong> External call transaction ke bahar, ya behtar — queue mein (ch 12).
+        </p>
+      </div>
+
+      <h2 id="mvcc">MVCC — Postgres Ka Asli Raaz</h2>
+      <p>
+        Ek sawaal: agar A ek row update kar raha hai aur B usi row ko padh raha hai, toh B ko rukna padega?
+        Postgres mein <strong>nahi</strong> — aur uski wajah hai <strong>MVCC (Multi-Version Concurrency
+        Control)</strong>.
+      </p>
+      <p>
+        Mechanism: Postgres row ko <em>update</em> nahi karta. Wo ek <strong>nayi version</strong> likhta hai
+        aur purani ko "is transaction ID tak valid" mark kar deta hai. Har row ke saath do chhupe columns hote
+        hain: <code>xmin</code> (kis transaction ne banayi) aur <code>xmax</code> (kis ne mitayi).
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MVCC keeping multiple row versions so readers never block writers">
+          <defs>
+            <marker id="mv1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="370" y="20" class="ex-t">UPDATE users SET name='B' WHERE id=1</text>
+
+          <rect x="60" y="44" width="280" height="86" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="200" y="66" class="ex-t-sm">version 1  (purani)</text>
+          <text x="200" y="88" class="ex-t-sm">id=1, name='A'</text>
+          <text x="200" y="110" class="ex-t-lbl">xmin=100   xmax=105  ← ab mari hui</text>
+
+          <path d="M344,88 C362,86 378,90 396,88" class="ex-stroke" marker-end="url(#mv1)"/>
+
+          <rect x="400" y="44" width="280" height="86" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="540" y="66" class="ex-t-sm">version 2  (nayi)</text>
+          <text x="540" y="88" class="ex-t-sm">id=1, name='B'</text>
+          <text x="540" y="110" class="ex-t-lbl">xmin=105   xmax=null ← zinda</text>
+
+          <text x="370" y="156" class="ex-t-lbl">Dono versions ek saath heap mein maujood hain</text>
+
+          <rect x="40" y="176" width="320" height="94" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="200" y="198" class="ex-t-sm">Reader (txn 103, pehle shuru hua)</text>
+          <text x="200" y="220" class="ex-t-sm">"103 &lt; 105 → mujhe v2 dikhega hi nahi"</text>
+          <text x="200" y="242" class="ex-t-lbl">→ 'A' padhta hai, BINA RUKE</text>
+          <text x="200" y="262" class="ex-t-sm">readers writers ko block nahi karte</text>
+
+          <rect x="380" y="176" width="320" height="94" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="540" y="198" class="ex-t-sm">Cost — dead rows jama hote hain</text>
+          <text x="540" y="220" class="ex-t-sm">VACUUM unhe saaf karta hai (autovacuum)</text>
+          <text x="540" y="242" class="ex-t-lbl">lamba chalne wala txn vacuum ko ROKTA hai</text>
+          <text x="540" y="262" class="ex-t-sm">→ table bloat → sab slow</text>
+
+          <text x="370" y="300" class="ex-t-lbl">Isliye "ek idle-in-transaction connection" ek real production incident hai</text>
+          <text x="370" y="322" class="ex-t-sm">wo purane snapshot ko zinda rakhta hai, aur vacuum kuch bhi clean nahi kar paata</text>
+        </svg>
+        <figcaption>
+          MVCC ka faayda saaf hai — <strong>readers writers ko block nahi karte, writers readers ko nahi.</strong>
+          Cost ye hai ki purani versions jama hoti hain aur unhe <code>VACUUM</code> saaf karta hai. Lamba khula
+          transaction vacuum ko rok deta hai — yahi "DB dheere-dheere slow ho raha hai" ka sabse common cause hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="isolation">Isolation Levels Aur Unke Anomalies</h2>
+      <p>
+        Isolation level batata hai ki concurrent transactions ek doosre ka kaam kitna dekh sakte hain. Zyada
+        isolation = zyada correctness, kam concurrency.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Level</th><th>Dirty read</th><th>Non-repeatable read</th><th>Phantom read</th><th>Postgres mein</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Read Uncommitted</td><td>possible</td><td>possible</td><td>possible</td><td>exist hi nahi — Read Committed jaisa behave karta hai</td></tr>
+          <tr><td><strong>Read Committed</strong></td><td>❌</td><td>possible</td><td>possible</td><td><strong>DEFAULT</strong></td></tr>
+          <tr><td>Repeatable Read</td><td>❌</td><td>❌</td><td>❌*</td><td>Snapshot isolation — MVCC se</td></tr>
+          <tr><td>Serializable</td><td>❌</td><td>❌</td><td>❌</td><td>SSI — conflict pe error deta hai, retry karna padta hai</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e)">
+        * Postgres ka Repeatable Read phantom reads bhi rok deta hai (spec se strong), par
+        <em>write skew</em> ab bhi possible hai — uske liye Serializable chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">anomalies — concrete<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- NON-REPEATABLE READ (Read Committed mein possible)</span>
+<span class="tok-kw">BEGIN</span>;
+<span class="tok-kw">SELECT</span> balance <span class="tok-kw">FROM</span> accounts <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span>;   <span class="tok-com">-- 1000</span>
+   <span class="tok-com">-- … koi aur txn commit karta hai …</span>
+<span class="tok-kw">SELECT</span> balance <span class="tok-kw">FROM</span> accounts <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span>;   <span class="tok-com">-- 500 !! usi txn mein alag jawab</span>
+<span class="tok-kw">COMMIT</span>;
+
+<span class="tok-com">-- LOST UPDATE — ch 9 wali problem, DB level pe</span>
+<span class="tok-com">-- ❌ read-modify-write: dono ne 1000 padha, dono ne 1100 likha → ek update KHO gaya</span>
+<span class="tok-kw">SELECT</span> balance <span class="tok-kw">FROM</span> accounts <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span>;    <span class="tok-com">-- app mein +100 kiya</span>
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> balance = <span class="tok-num">1100</span> <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span>;
+
+<span class="tok-com">-- ✅ Fix 1: atomic update — DB khud padhta aur likhta hai</span>
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> balance = balance + <span class="tok-num">100</span> <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span>;
+
+<span class="tok-com">-- ✅ Fix 2: explicit row lock (jab beech mein logic chahiye)</span>
+<span class="tok-kw">SELECT</span> balance <span class="tok-kw">FROM</span> accounts <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span> <span class="tok-kw">FOR UPDATE</span>;  <span class="tok-com">-- doosra txn yahan rukega</span>
+
+<span class="tok-com">-- ✅ Fix 3: version column (ch 9 ka optimistic locking)</span>
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> balance=<span class="tok-num">1100</span>, version=version+<span class="tok-num">1</span>
+ <span class="tok-kw">WHERE</span> id=<span class="tok-num">1</span> <span class="tok-kw">AND</span> version=<span class="tok-num">12</span>;   <span class="tok-com">-- rowCount=0 → conflict → retry</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical rule — kab kaunsa level</div>
+        <p>
+          99% queries ke liye <strong>Read Committed (default) theek hai</strong> — bas
+          read-modify-write pattern se bacho (atomic update ya <code>FOR UPDATE</code> use karo). Jab ek
+          transaction mein <em>kai</em> reads ka consistent snapshot chahiye (report generate karna, balance
+          reconciliation) → <strong>Repeatable Read</strong>. Jab correctness ka koi aur tareeka na ho
+          (complex invariants, write skew) → <strong>Serializable</strong>, par tab tumhe
+          <code>serialization_failure</code> pe <strong>retry logic likhna hi padega</strong> — wo optional
+          nahi hai.
+        </p>
+      </div>
+
+      <h2 id="locks">Locking, Deadlocks, Aur Lock Ordering</h2>
+      <div class="code-block">
+        <div class="code-title">deadlock — kaise banta hai aur kaise rokte hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- Txn A                          -- Txn B</span>
+<span class="tok-kw">BEGIN</span>;                            <span class="tok-kw">BEGIN</span>;
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> … id=<span class="tok-num">1</span>;      <span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> … id=<span class="tok-num">2</span>;   <span class="tok-com">-- alag rows, koi problem nahi</span>
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> … id=<span class="tok-num">2</span>;      <span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> … id=<span class="tok-num">1</span>;   <span class="tok-com">-- ← A ko 2 chahiye, B ko 1</span>
+<span class="tok-com">-- DEADLOCK. Postgres ~1s baad detect karke EK txn ko maar deta hai.</span>
+
+<span class="tok-com">-- ✅ Fix: HAMESHA ek consistent order mein lock lo (jaise ID ke ascending order)</span>
+<span class="tok-kw">SELECT</span> * <span class="tok-kw">FROM</span> accounts <span class="tok-kw">WHERE</span> id <span class="tok-kw">IN</span> (<span class="tok-num">1</span>,<span class="tok-num">2</span>) <span class="tok-kw">ORDER BY</span> id <span class="tok-kw">FOR UPDATE</span>;
+<span class="tok-com">-- Ab dono transactions same order mein lock lenge → deadlock possible hi nahi.</span>
+<span class="tok-com">-- Money transfer code mein ye standard practice hai.</span>
+
+<span class="tok-com">-- Timeouts — production mein ye set karna ZAROORI hai</span>
+<span class="tok-kw">SET</span> lock_timeout = <span class="tok-str">'3s'</span>;                     <span class="tok-com">-- lock ke liye anant wait mat karo</span>
+<span class="tok-kw">SET</span> statement_timeout = <span class="tok-str">'30s'</span>;                <span class="tok-com">-- runaway query ko maar do</span>
+<span class="tok-kw">SET</span> idle_in_transaction_session_timeout = <span class="tok-str">'60s'</span>; <span class="tok-com">-- bhoola hua txn band karo (MVCC!)</span>
+</code></pre>
+      </div>
+
+      <h2 id="pool">Connection Pooling — Ch 2 Ka Wada</h2>
+      <p>
+        Ch 2 mein bola tha ki connection pooling wo cheez hai jo client-to-DB direct connection ko structurally
+        impossible banati hai. Ab uska mechanism.
+      </p>
+      <p>
+        Postgres mein <strong>har connection ek alag OS process hai</strong> (thread nahi) — ~5-10 MB RAM per
+        connection. Isliye <code>max_connections</code> typically 100–200 hota hai. Connection banane mein TCP
+        handshake + auth + session setup lagta hai (~10-50ms) — ek query se kahin zyada.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">pool sizing — counter-intuitive part<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> pool = <span class="tok-kw">new</span> <span class="tok-fn">Pool</span>({
+  max: <span class="tok-num">20</span>,                        <span class="tok-com">// 20 connections, sab requests inhe SHARE karti hain</span>
+  idleTimeoutMillis: <span class="tok-num">30000</span>,      <span class="tok-com">// idle connection 30s baad chhod do</span>
+  connectionTimeoutMillis: <span class="tok-num">5000</span>, <span class="tok-com">// pool khali hai → 5s baad FAIL karo, anant wait nahi</span>
+});
+
+<span class="tok-com">// ⚠️ Bada pool = fast NAHI hota. Ulta ho sakta hai.</span>
+<span class="tok-com">// 100 connections 4-core DB pe: sab context-switch karengi, lock contention</span>
+<span class="tok-com">// badhegi, aur throughput GIR jayega.</span>
+<span class="tok-com">// Rule of thumb: connections ≈ (CPU cores × 2) + effective_spindle_count</span>
+<span class="tok-com">// Ek 4-core DB ke liye ~10 connections aksar 100 se BEHTAR perform karta hai.</span>
+
+<span class="tok-com">// Aur math yaad rakho: 10 app instances × pool 20 = 200 connections DB pe.</span>
+<span class="tok-com">// max_connections=100 hai? Toh aadhe app instances connect hi nahi kar payenge.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Pool exhaustion" ka signature pehchano</div>
+        <p>
+          Symptom: latency <em>suddenly</em> phatt jaati hai (5ms → 30s), par DB ka CPU normal hai aur queries
+          apne aap mein fast hain. Wajah: requests <strong>connection ka intezaar</strong> kar rahi hain, query
+          ka nahi. Common causes — transaction ke andar external API call (§5), connection release na karna
+          (error path pe <code>finally</code> missing), ya ek slow query jo poora pool jaam kar rahi hai.
+          Diagnose: <code>SELECT state, count(*) FROM pg_stat_activity GROUP BY state;</code> —
+          <code>idle in transaction</code> zyada dikha toh yahi problem hai. Ye ch 1 ke Q2 ka jawab tha.
+        </p>
+      </div>
+
+      <p>
+        Serverless ya bahut saare instances wale setup mein app-level pool kaafi nahi hota — tab
+        <strong>PgBouncer</strong> (external pooler) lagta hai, jo hazaaron client connections ko chand actual
+        Postgres connections pe multiplex karta hai. Uska <code>transaction</code> mode sabse efficient hai, par
+        us mode mein session-level features (prepared statements, advisory locks, <code>SET</code>) toot-te
+        hain — ye trade-off jaan ke choose karna.
+      </p>
+
+      <h2 id="nplus1">N+1 Aur Doosre Rozana Ke Killers</h2>
+      <div class="code-block">
+        <div class="code-title">N+1 — sabse common performance bug<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ 1 + N queries — ORM ke saath ye BAHUT aasaani se ho jaata hai</span>
+<span class="tok-kw">const</span> orders = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT * FROM orders LIMIT 100"</span>);   <span class="tok-com">// 1 query</span>
+<span class="tok-kw">for</span> (<span class="tok-kw">const</span> o <span class="tok-kw">of</span> orders) {
+  o.user = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT * FROM users WHERE id=$1"</span>, [o.userId]);  <span class="tok-com">// 100 queries!</span>
+}
+<span class="tok-com">// 101 round trips. Har ek 1ms bhi ho toh 101ms — sirf network latency mein.</span>
+
+<span class="tok-com">// ✅ Fix 1: JOIN</span>
+<span class="tok-kw">SELECT</span> o.*, u.name <span class="tok-kw">FROM</span> orders o <span class="tok-kw">JOIN</span> users u <span class="tok-kw">ON</span> u.id = o.user_id <span class="tok-kw">LIMIT</span> <span class="tok-num">100</span>;
+
+<span class="tok-com">// ✅ Fix 2: batch load (2 queries — jab JOIN se duplicate rows aayein)</span>
+<span class="tok-kw">const</span> users = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT * FROM users WHERE id = ANY($1)"</span>, [userIds]);
+<span class="tok-kw">const</span> byId = <span class="tok-kw">new</span> <span class="tok-fn">Map</span>(users.<span class="tok-fn">map</span>(u =&gt; [u.id, u]));
+orders.<span class="tok-fn">forEach</span>(o =&gt; o.user = byId.<span class="tok-fn">get</span>(o.userId));
+
+<span class="tok-com">// EXPLAIN mein N+1 ka signature: `loops=100` wala node.</span>
+</code></pre>
+      </div>
+
+      <table>
+        <thead><tr><th>Anti-pattern</th><th>Kyun bura</th><th>Behtar</th></tr></thead>
+        <tbody>
+          <tr><td><code>SELECT *</code></td><td>Zyada bytes, index-only scan nahi ho paata, schema change pe toot-ta hai</td><td>Zaroori columns likho</td></tr>
+          <tr><td><code>OFFSET</code> deep pagination</td><td>Skip ki hui rows bhi padhni padti hain (ch 9)</td><td>Cursor/keyset pagination</td></tr>
+          <tr><td><code>COUNT(*)</code> bade table pe</td><td>MVCC ki wajah se poora scan — index se nahi milta</td><td>Approx count (<code>pg_class.reltuples</code>) ya <code>limit+1</code></td></tr>
+          <tr><td>Paisa <code>FLOAT</code> mein</td><td>Rounding errors (ch 5)</td><td><code>NUMERIC</code>, ya paise mein <code>BIGINT</code></td></tr>
+          <tr><td>Timestamps bina timezone</td><td><code>timestamp</code> DST/region pe toot-ta hai</td><td><code>timestamptz</code>, hamesha</td></tr>
+          <tr><td>Sab kuch JSONB mein</td><td>Constraints, FK, aur typed indexes kho jaate hain</td><td>Structured columns; JSONB sirf sach mein dynamic data ke liye</td></tr>
+          <tr><td>FK pe index na hona</td><td>Parent delete/update poori child table scan karta hai</td><td>Har FK column pe index banao</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Performance ka 90% ek sawaal hai: <strong>kitne 8KB pages padhne padte hain.</strong></li>
+        <li>Shared buffer pool ki wajah se ek hi query pehli baar 200ms aur doosri baar 2ms le sakti hai — benchmarking mein ye sabse badi galti hai.</li>
+        <li>B-tree ki height ~3–4 rehti hai; rows 100× badhne pe reads sirf 1 badhta hai.</li>
+        <li>Index tumhe <code>ctid</code> deta hai, row nahi — heap pe ek aur read lagti hai (jab tak index-only scan na ho).</li>
+        <li><strong>Composite index mein leftmost prefix rule</strong>: equality columns pehle, range baad mein, ORDER BY aakhir mein.</li>
+        <li>Column pe function/cast lagate hi index mar jaata hai — query rewrite karo ya expression index banao.</li>
+        <li>Har index writes slow karta hai; unused indexes (<code>pg_stat_user_indexes</code>) hata do. Production mein <code>CREATE INDEX CONCURRENTLY</code>.</li>
+        <li><code>EXPLAIN (ANALYZE, BUFFERS)</code>: estimated vs actual rows ka 10× farq = stale stats; <code>loops=N</code> = N+1 ka signature.</li>
+        <li>Index hone ka matlab index <em>use</em> hona nahi — bahut saari rows match karein toh seq scan sach mein tez hota hai.</li>
+        <li><strong>Transaction mein external API call kabhi nahi</strong> — wo locks aur pool connection pakde rehta hai.</li>
+        <li>MVCC: update nayi row version banata hai; readers writers ko block nahi karte. Cost = dead rows + VACUUM.</li>
+        <li><strong>Lamba khula transaction VACUUM ko rok deta hai</strong> → bloat → sab slow. <code>idle_in_transaction_session_timeout</code> set karo.</li>
+        <li>Read Committed default hai aur 99% ke liye theek — bas read-modify-write se bacho (atomic update ya <code>FOR UPDATE</code>).</li>
+        <li>Serializable use karo toh <code>serialization_failure</code> pe retry logic <strong>zaroori</strong> hai.</li>
+        <li>Deadlock ka fix: hamesha ek consistent order mein lock lo (<code>ORDER BY id FOR UPDATE</code>).</li>
+        <li>Har Postgres connection ek OS process hai. <strong>Bada pool fast nahi hota</strong> — ~(cores × 2) aksar behtar hai.</li>
+        <li>Pool exhaustion ka signature: latency phatti hai par DB CPU normal hai. <code>pg_stat_activity</code> mein <code>idle in transaction</code> dekho.</li>
+        <li>N+1 ka fix JOIN ya batch load (<code>WHERE id = ANY($1)</code>) hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Index kaise kaam karta hai? Har column pe kyun na bana dein?"</div>
+        <p>
+          B-tree ek balanced tree hai jiski leaves sorted keys + row pointers (<code>ctid</code>) rakhti hain,
+          height ~3–4 — isliye 10 lakh rows mein lookup 3–4 page reads mein ho jaata hai, poore scan ki jagah.
+          Har column pe isliye nahi kyunki har index <strong>writes ko slow</strong> karta hai (har
+          INSERT/UPDATE pe update hota hai), disk leta hai, aur planner ko confuse kar sakta hai. Indexes actual
+          query patterns dekh ke banaye jaate hain, andaaze se nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Index hai par query slow hai. Kya dekhoge?"</div>
+        <p>
+          <code>EXPLAIN (ANALYZE, BUFFERS)</code>. Common causes: (a) column pe function/cast lag raha hai
+          (<code>LOWER(email)</code>) toh index use hi nahi ho sakta; (b) composite index ka leftmost prefix
+          match nahi kar raha; (c) statistics stale hain — estimated vs actual rows mein bada farq, fix
+          <code>ANALYZE</code>; (d) query itni rows return kar rahi hai ki seq scan sach mein sasta hai;
+          (e) <code>loops=N</code> dikhe toh problem query nahi, N+1 hai; (f) <code>Sort … Disk</code> dikhe toh
+          <code>work_mem</code> kam hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "MVCC kya hai? VACUUM kyun chahiye?"</div>
+        <p>
+          Postgres row ko in-place update nahi karta — nayi version likhta hai, purani ko <code>xmax</code> se
+          mark karta hai. Har transaction apne snapshot ke hisaab se decide karta hai kaunsi version usse dikhegi,
+          isliye <strong>readers writers ko block nahi karte</strong>. Cost: dead row versions jama hote hain, aur
+          <code>VACUUM</code> unhe reclaim karta hai. Ek lamba khula transaction purane snapshot ko zinda rakhta
+          hai, isliye vacuum kuch clean nahi kar paata → table bloat → sab slow. Isiliye
+          <code>idle_in_transaction_session_timeout</code> production mein zaroori hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Do users ek saath balance update kar rahe hain. Lost update kaise rokoge?"</div>
+        <p>
+          Read-modify-write default (Read Committed) pe safe nahi hai. Teen options: (1) atomic update —
+          <code>SET balance = balance + 100</code>, DB khud padhta-likhta hai, sabse simple; (2)
+          <code>SELECT … FOR UPDATE</code> — row lock, jab beech mein logic chahiye; (3) version column
+          (optimistic locking) — <code>WHERE version = $n</code>, <code>rowCount=0</code> pe retry, ye ch 9 ka
+          ETag/If-Match ka DB-level version hai. Pehla sabse sasta hai; teesra tab jab conflicts kam ho aur user
+          ko batana ho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Connection pooling kyun? Pool bada karne se fast hoga?"</div>
+        <p>
+          Postgres mein har connection ek OS process hai (~5–10 MB) aur setup mein 10–50ms lagte hain — per-request
+          connect karna DB ko mar dega. Pool unhe reuse karta hai. Aur <strong>nahi</strong>, bada pool fast nahi
+          karta: 4-core DB pe 100 connections context switching aur lock contention badha ke throughput
+          <em>ghata</em> deti hain; ~(cores × 2) aksar behtar hai. Math bhi dekho — 10 instances × pool 20 = 200
+          connections, jo <code>max_connections=100</code> se zyada hai. Bahut instances hon toh PgBouncer.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q6. "Deadlock kaise hota hai aur kaise rokoge?"</div>
+        <p>
+          Do transactions ulte order mein locks lete hain: A ke paas row 1 hai aur usse 2 chahiye, B ke paas 2 hai
+          aur usse 1 chahiye. Postgres detect karke ek ko <code>deadlock detected</code> se maar deta hai.
+          Prevention: <strong>hamesha consistent order mein lock lo</strong> — jaise
+          <code>ORDER BY id FOR UPDATE</code>. Saath mein <code>lock_timeout</code> aur
+          <code>statement_timeout</code> set karo, aur transactions chhote rakho — lock jitni der pakda rahega,
+          collision ka chance utna hi zyada.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="11-caching.html"><strong>Chapter 11 — Caching</strong></a>: query optimize ho gayi, par
+          sabse fast query wo hai jo chalti hi nahi. Cache layers, invalidation, TTL, aur stampede.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

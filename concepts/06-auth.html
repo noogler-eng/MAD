@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentication & Authorization — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link active" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 6</div>
+      <div class="progress-pill">6 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Sessions · JWT · OAuth · RBAC · Cookies</span>
+      <h1>Authentication & Authorization</h1>
+      <p class="subtitle">
+        Do alag sawaal, do alag layers, aur inhe mix karna sabse common security bug hai.
+        <strong>Authentication (authN)</strong> = "tum kaun ho?" —  identity prove karna.
+        <strong>Authorization (authZ)</strong> = "tumhe iski permission hai?" — identity ke baad ka faisla.
+        Pehla ek baar hota hai, doosra <em>har request pe, har resource pe</em>.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 8 —
+        <a href="https://www.youtube.com/watch?v=A95rliroC8Q">Authentication and authorization for backend engineers</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#split">1. AuthN vs AuthZ — Line Kahan Hai</a></li>
+          <li><a href="#problem">2. Problem — HTTP Stateless Hai</a></li>
+          <li><a href="#sessions">3. Session-Based Auth — Mechanism</a></li>
+          <li><a href="#jwt">4. JWT — Mechanism Aur Uska Asli Trade-off</a></li>
+          <li><a href="#compare">5. Session vs JWT — Diagram Aur Decision</a></li>
+          <li><a href="#storage">6. Token Rakhein Kahan — Cookie vs localStorage</a></li>
+          <li><a href="#passwords">7. Passwords — Hashing Ka Sahi Tareeka</a></li>
+          <li><a href="#oauth">8. OAuth 2.0 — "Google Se Login" Andar Se</a></li>
+          <li><a href="#authz">9. AuthZ Models — RBAC, ABAC, Ownership</a></li>
+          <li><a href="#mistakes">10. Wo Galtiyan Jo Sach Mein Hoti Hain</a></li>
+          <li><a href="#takeaways">11. Key Takeaways</a></li>
+          <li><a href="#interview">12. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="split">AuthN vs AuthZ — Line Kahan Hai</h2>
+      <table>
+        <thead><tr><th></th><th>Authentication</th><th>Authorization</th></tr></thead>
+        <tbody>
+          <tr><td>Sawaal</td><td>Tum kaun ho?</td><td>Tum ye kar sakte ho?</td></tr>
+          <tr><td>Kab</td><td>Login pe ek baar, phir har request pe token verify</td><td>Har request pe, har resource pe alag</td></tr>
+          <tr><td>Input</td><td>Credentials ya token</td><td>Identity + resource + action</td></tr>
+          <tr><td>Fail code</td><td><code>401 Unauthorized</code></td><td><code>403 Forbidden</code></td></tr>
+          <tr><td>Client kya kare</td><td>Login ya token refresh</td><td>Kuch nahi — dobara try karna bekaar hai</td></tr>
+          <tr><td>Kahan lagta hai</td><td>Middleware — ek jagah, sabke liye</td><td>Middleware <em>+</em> service layer — data ke paas</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Sabse important line is chapter ki</div>
+        <p>
+          <strong>AuthN ek jagah lag sakta hai, authZ nahi.</strong> "Kya ye user logged in hai" ek global sawaal
+          hai — middleware mein ek baar. Par "kya <em>ye</em> user <em>is</em> order ko dekh sakta hai" ka jawab
+          us order ke bina diya hi nahi ja sakta — matlab wo check <em>data fetch karne ke baad</em> hota hai,
+          service layer mein. Jo log authZ ko sirf middleware mein daalte hain, wo <strong>IDOR</strong>
+          (§10) wala bug likhte hain.
+        </p>
+      </div>
+
+      <h2 id="problem">Problem — HTTP Stateless Hai</h2>
+      <p>
+        Ch 3 se yaad karo: HTTP stateless hai. Server ko request #2 ke waqt yaad nahi ki request #1 mein tumne
+        login kiya tha. Toh phir har request pe username/password bhejein? Nahi — teen wajah se: password baar-baar
+        network pe jayega, har request pe expensive hash verification hogi, aur client ko password memory mein
+        rakhna padega.
+      </p>
+      <p>
+        Solution: login ek baar karo, aur badle mein ek <strong>credential ka substitute</strong> lo — ek token
+        ya session ID. Uske baad har request wo substitute bhejti hai. Ab do design choices hain, aur poora
+        farq ek hi sawaal pe hai: <strong>state kahan rahegi?</strong>
+      </p>
+
+      <h2 id="sessions">Session-Based Auth — Mechanism</h2>
+      <p>
+        Server ek random, unguessable session ID banata hai, asli data apne paas (shared store mein) rakhta hai,
+        aur client ko sirf ID deta hai — cookie mein.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">session flow — step by step<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. LOGIN ────────────────────────────────────────────────</span>
+POST /auth/login  { email, password }
+
+user = db.users.<span class="tok-fn">findByEmail</span>(email);              <span class="tok-com">// user nikalo</span>
+ok   = <span class="tok-kw">await</span> bcrypt.<span class="tok-fn">compare</span>(password, user.passwordHash);
+<span class="tok-kw">if</span> (!ok) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">401</span>).<span class="tok-fn">json</span>({ error: <span class="tok-str">"invalid credentials"</span> });
+<span class="tok-com">// ↑ email galat ho ya password — MESSAGE SAME rakho (user enumeration rokne ke liye)</span>
+
+sid = crypto.<span class="tok-fn">randomBytes</span>(<span class="tok-num">32</span>).<span class="tok-fn">toString</span>(<span class="tok-str">"hex"</span>);   <span class="tok-com">// 256 bits — guess karna namumkin</span>
+<span class="tok-kw">await</span> redis.<span class="tok-fn">setex</span>(<span class="tok-str">`sess:${sid}`</span>, <span class="tok-num">86400</span>,               <span class="tok-com">// 24h TTL — expiry free mein</span>
+  JSON.<span class="tok-fn">stringify</span>({ userId: user.id, role: user.role }));  <span class="tok-com">// ASLI data server pe</span>
+
+res.<span class="tok-fn">cookie</span>(<span class="tok-str">"sid"</span>, sid, {
+  httpOnly: <span class="tok-kw">true</span>,    <span class="tok-com">// JS is cookie ko padh hi nahi sakta → XSS se churaya nahi ja sakta</span>
+  secure:   <span class="tok-kw">true</span>,    <span class="tok-com">// sirf HTTPS pe bheji jayegi</span>
+  sameSite: <span class="tok-str">"lax"</span>,   <span class="tok-com">// cross-site request pe apne aap nahi jayegi → CSRF defense</span>
+  maxAge:   <span class="tok-num">86400000</span>,
+});
+
+<span class="tok-com">// ── 2. HAR AGLI REQUEST ─────────────────────────────────────</span>
+<span class="tok-com">// browser cookie APNE AAP bhejta hai — client code ko kuch karna hi nahi</span>
+sess = <span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(<span class="tok-str">`sess:${req.cookies.sid}`</span>);   <span class="tok-com">// ← LOOKUP (network hop)</span>
+<span class="tok-kw">if</span> (!sess) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">401</span>).<span class="tok-fn">json</span>({ error: <span class="tok-str">"session expired"</span> });
+req.user = JSON.<span class="tok-fn">parse</span>(sess);                        <span class="tok-com">// context mein daalo (ch 8)</span>
+
+<span class="tok-com">// ── 3. LOGOUT ───────────────────────────────────────────────</span>
+<span class="tok-kw">await</span> redis.<span class="tok-fn">del</span>(<span class="tok-str">`sess:${sid}`</span>);   <span class="tok-com">// TURANT invalid. Ye JWT mein trivial nahi hai.</span>
+</code></pre>
+      </div>
+
+      <p>
+        Ch 3 ki statelessness yaad hai? Session store <strong>Redis mein</strong> hona zaroori hai, process ki
+        memory mein nahi — warna doosra instance add karte hi users random logout hone lagenge. Server abhi bhi
+        stateless hai; state ek <em>shared</em> jagah pe hai.
+      </p>
+
+      <h2 id="jwt">JWT — Mechanism Aur Uska Asli Trade-off</h2>
+      <p>
+        JWT (JSON Web Token) ulta approach hai: <strong>state client ke paas hi rakh do</strong>, par usse
+        cryptographically sign kar do taaki client usse chhed na sake. Server ko kuch store hi nahi karna padta.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">JWT ka structure — teen base64 hisse, dot se jude<button class="copy-btn">Copy</button></div>
+        <pre><code>eyJhbGciOiJIUzI1NiJ9 . eyJzdWIiOiI0MiIsInJvbGUiOiJhZG1pbiJ9 . 4f9a2b…
+└──── HEADER ────┘   └────────── PAYLOAD ──────────┘   └ SIGNATURE ┘
+
+<span class="tok-com">// HEADER — kaunsa algorithm</span>
+{ <span class="tok-str">"alg"</span>: <span class="tok-str">"HS256"</span>, <span class="tok-str">"typ"</span>: <span class="tok-str">"JWT"</span> }
+
+<span class="tok-com">// PAYLOAD — "claims". Ye sirf BASE64 hai, ENCRYPTED NAHI.</span>
+<span class="tok-com">// Koi bhi jwt.io pe paste karke padh sakta hai. Secret kabhi mat daalo.</span>
+{
+  <span class="tok-str">"sub"</span>:  <span class="tok-str">"42"</span>,          <span class="tok-com">// subject — kis user ka token</span>
+  <span class="tok-str">"role"</span>: <span class="tok-str">"admin"</span>,       <span class="tok-com">// custom claim</span>
+  <span class="tok-str">"iat"</span>:  <span class="tok-num">1755421200</span>,    <span class="tok-com">// issued at</span>
+  <span class="tok-str">"exp"</span>:  <span class="tok-num">1755424800</span>     <span class="tok-com">// expiry — SIRF yahi cheez token ko marti hai</span>
+}
+
+<span class="tok-com">// SIGNATURE — yahi asli security hai</span>
+HMACSHA256(base64(header) + <span class="tok-str">"."</span> + base64(payload), SERVER_SECRET)
+<span class="tok-com">// payload badla → signature match nahi karega → token reject</span>
+<span class="tok-com">// attacker signature bana hi nahi sakta kyunki SECRET uske paas nahi hai</span>
+</code></pre>
+      </div>
+
+      <p>
+        Verification mein <strong>koi database lookup nahi</strong> — server sirf signature recompute karta hai
+        aur <code>exp</code> check karta hai. Microseconds. Yahi JWT ka asli faayda hai: verification stateless
+        aur fast hai, isliye har service independently verify kar sakti hai bina ek central session store pe
+        depend kiye.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ JWT ka fundamental trade-off — revocation</div>
+        <p>
+          Session delete karo → agli request pe user out. JWT ke saath <em>aisa kuch nahi hai</em>. Token
+          self-contained hai; server ke paas usko "mitane" ka koi tareeka nahi. User ka role admin se hata do —
+          uska purana token <code>exp</code> tak <strong>admin bana rehta hai</strong>. Isliye practical answer
+          ye hai: <strong>access token bahut short-lived rakho (5–15 min)</strong> aur uske saath ek
+          <strong>refresh token</strong> do jo lamba chalta hai <em>aur DB mein store hota hai</em> — matlab
+          revocable hota hai. Dhyan do: iska matlab hai ki tum stateless-ness wapas chhod rahe ho, bas kam
+          frequency pe.
+        </p>
+      </div>
+
+      <h2 id="compare">Session vs JWT — Diagram Aur Decision</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Session lookup in a shared store versus stateless JWT signature verification">
+          <defs>
+            <marker id="au1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="186" y="20" class="ex-t">Session — state server pe</text>
+          <text x="574" y="20" class="ex-t">JWT — state token ke andar</text>
+          <path d="M378,32 C382,150 374,280 378,384" class="ex-stroke ex-stroke-d"/>
+
+          <!-- session -->
+          <rect x="24" y="42" width="112" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="80" y="62" class="ex-t-sm">client</text>
+          <text x="80" y="100" class="ex-t-sm">cookie: sid=a7f3…</text>
+          <text x="80" y="120" class="ex-t-lbl">opaque — koi matlab nahi</text>
+
+          <path d="M138,62 C168,60 186,64 214,62" class="ex-stroke" marker-end="url(#au1)"/>
+
+          <rect x="216" y="42" width="118" height="40" rx="8" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="275" y="62" class="ex-t-sm">any server</text>
+
+          <path d="M275,84 C273,110 277,126 275,150" class="ex-stroke" marker-end="url(#au1)"/>
+          <text x="275" y="118" class="ex-t-lbl">lookup</text>
+
+          <rect x="204" y="152" width="142" height="56" rx="8" class="ex-fill-o ex-stroke"/>
+          <text x="275" y="172" class="ex-t-sm">Redis / DB</text>
+          <text x="275" y="192" class="ex-t-sm">sess:a7f3 → {id, role}</text>
+
+          <text x="186" y="248" class="ex-t-lbl">✅ logout = ek DELETE, turant</text>
+          <text x="186" y="272" class="ex-t-lbl">✅ role change turant lagta hai</text>
+          <text x="186" y="296" class="ex-t-lbl">✅ token chhota, data server pe</text>
+          <text x="186" y="322" class="ex-t-sm">❌ har request pe ek network hop</text>
+          <text x="186" y="344" class="ex-t-sm">❌ store ek shared dependency hai</text>
+          <text x="186" y="366" class="ex-t-sm">❌ store gira toh sab logged out</text>
+
+          <!-- jwt -->
+          <rect x="412" y="42" width="112" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="468" y="62" class="ex-t-sm">client</text>
+          <text x="468" y="100" class="ex-t-sm">Bearer eyJhbGci…</text>
+          <text x="468" y="120" class="ex-t-lbl">claims andar hi hain</text>
+
+          <path d="M526,62 C556,60 574,64 602,62" class="ex-stroke" marker-end="url(#au1)"/>
+
+          <rect x="604" y="42" width="132" height="40" rx="8" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="670" y="62" class="ex-t-sm">any server</text>
+
+          <path d="M670,84 C668,110 672,126 670,150" class="ex-stroke ex-stroke-g" marker-end="url(#au1)"/>
+          <rect x="592" y="152" width="156" height="56" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="670" y="172" class="ex-t-sm">HMAC verify (local)</text>
+          <text x="670" y="192" class="ex-t-lbl">koi DB hop NAHI</text>
+
+          <text x="574" y="248" class="ex-t-lbl">✅ verification microseconds mein</text>
+          <text x="574" y="272" class="ex-t-lbl">✅ koi shared store dependency nahi</text>
+          <text x="574" y="296" class="ex-t-lbl">✅ services independently verify karti hain</text>
+          <text x="574" y="322" class="ex-t-sm">❌ logout/revoke trivial nahi</text>
+          <text x="574" y="344" class="ex-t-sm">❌ role change exp tak nahi lagta</text>
+          <text x="574" y="366" class="ex-t-sm">❌ token bada, har request pe jaata hai</text>
+        </svg>
+        <figcaption>
+          Ek hi trade-off ke do sire: <strong>session = har request pe lookup ka cost, par turant control</strong>
+          vs <strong>JWT = koi lookup nahi, par control exp tak ke liye chhod diya</strong>. Ye poora chapter
+          isi ek line pe ghoomta hai.
+        </figcaption>
+      </figure>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical default — JWT hype se bacho</div>
+        <p>
+          Ek normal web app (ek backend, ek frontend) ke liye <strong>session + Redis simpler aur safer
+          hai</strong>. Redis lookup ~1ms hai, aur uske badle tumhe instant logout, instant role change, aur
+          "meri saari devices se logout karo" free mein milta hai. JWT tab जीतta hai jab tumhe
+          <em>stateless verification across many services</em> chahiye — microservices, third-party API access,
+          ya service-to-service auth. Bahut saari teams JWT isliye use karti hain kyunki wo "modern" lagta hai,
+          aur phir ek Redis blocklist bana leti hain — jisse JWT ka poora faayda khatam ho jaata hai.
+        </p>
+      </div>
+
+      <h2 id="storage">Token Rakhein Kahan — Cookie vs localStorage</h2>
+      <table>
+        <thead><tr><th></th><th>httpOnly cookie</th><th>localStorage</th></tr></thead>
+        <tbody>
+          <tr><td>XSS mein churaya ja sakta hai?</td><td><strong>Nahi</strong> — JS padh hi nahi sakta</td><td><strong>Haan</strong> — ek line JS kaafi hai</td></tr>
+          <tr><td>CSRF ka risk?</td><td>Haan — browser apne aap bhejta hai</td><td>Nahi — manually attach karna padta hai</td></tr>
+          <tr><td>CSRF ka fix</td><td><code>SameSite=Lax/Strict</code> + CSRF token</td><td>—</td></tr>
+          <tr><td>Cross-domain API</td><td>Mushkil (CORS + credentials setup)</td><td>Aasaan</td></tr>
+          <tr><td>Mobile app</td><td>Awkward</td><td>Natural (secure storage mein)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Default: httpOnly cookie</div>
+        <p>
+          Log kehte hain "cookie mein CSRF risk hai" — sahi hai, par <strong>CSRF ka ek solid, standard fix hai
+          (<code>SameSite</code> + CSRF token); XSS-se-token-chori ka koi fix nahi hai.</strong> Agar attacker
+          tumhare page pe JS chala paya, toh localStorage ka token gaya. Isliye web ke liye
+          <code>httpOnly; Secure; SameSite=Lax</code> cookie default hona chahiye. localStorage sirf tab jab
+          tum sach mein cross-domain ya mobile scenario mein ho.
+        </p>
+      </div>
+
+      <h2 id="passwords">Passwords — Hashing Ka Sahi Tareeka</h2>
+      <div class="code-block">
+        <div class="code-title">password storage — kya karna hai aur kya nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ plain text — kabhi nahi (leak = sab kuch gaya, aur users doosri sites pe bhi)</span>
+<span class="tok-com">// ❌ MD5 / SHA-1 / SHA-256 — ye FAST hash hain</span>
+<span class="tok-com">//    GPU pe billions/sec try ho sakte hain → brute force trivial</span>
+<span class="tok-com">// ❌ apna khud ka "clever" scheme</span>
+
+<span class="tok-com">// ✅ SLOW, salted, memory-hard hash: bcrypt / scrypt / Argon2id</span>
+hash = <span class="tok-kw">await</span> bcrypt.<span class="tok-fn">hash</span>(password, <span class="tok-num">12</span>);
+<span class="tok-com">// 12 = "cost factor" — 2^12 iterations. Har +1 se time DOUBLE.</span>
+<span class="tok-com">// Target: ~200-300ms per hash. Users ko farq nahi padta,</span>
+<span class="tok-com">// attacker ke liye brute force practically impossible ho jaata hai.</span>
+
+<span class="tok-com">// salt bcrypt khud generate karke hash ke ANDAR store karta hai:</span>
+<span class="tok-com">// $2b$12$N9qo8uLOickgx2ZMRZoMye....</span>
+<span class="tok-com">//  │   │  └ salt (22 ch)   └ hash</span>
+<span class="tok-com">//  │   └ cost                    ← isliye alag salt column ki zaroorat nahi</span>
+<span class="tok-com">//  └ algorithm</span>
+<span class="tok-com">// Salt ka kaam: do users ka same password → alag hash → rainbow table bekaar</span>
+
+<span class="tok-com">// verify — hamesha library ka compare use karo</span>
+ok = <span class="tok-kw">await</span> bcrypt.<span class="tok-fn">compare</span>(input, hash);
+<span class="tok-com">// ye CONSTANT-TIME comparison karta hai — timing attack se bachne ke liye</span>
+<span class="tok-com">// (naive === pehle mismatch pe return karta hai, jisse time se info leak hoti hai)</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Aur teen cheezein jo production mein zaroori hain</div>
+        <p>
+          <strong>Rate limiting</strong> login endpoint pe (ch 18) — warna slow hash bhi credential stuffing
+          nahi rokta. <strong>Same error message</strong> galat email aur galat password dono pe — warna attacker
+          pata kar leta hai ki kaunse emails registered hain. Aur <strong>login timing</strong> dono cases mein
+          similar rakho (user na mile tab bhi ek dummy hash chalao), warna response time hi bata deta hai.
+        </p>
+      </div>
+
+      <h2 id="oauth">OAuth 2.0 — "Google Se Login" Andar Se</h2>
+      <p>
+        OAuth ka asli maksad login nahi hai — wo <strong>delegated authorization</strong> hai: user apna password
+        diye bina, ek app ko doosri service pe <em>limited access</em> deta hai. "Google se login" actually
+        OIDC hai, jo OAuth ke upar ek identity layer hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OAuth 2.0 authorization code flow between user, app and provider">
+          <defs>
+            <marker id="oa1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="80" y="22" class="ex-t-sm">User</text>
+          <text x="370" y="22" class="ex-t-sm">Tumhara app</text>
+          <text x="660" y="22" class="ex-t-sm">Google</text>
+          <path d="M80,32 C78,160 84,290 80,376" class="ex-stroke ex-stroke-d"/>
+          <path d="M370,32 C368,160 374,290 370,376" class="ex-stroke ex-stroke-d"/>
+          <path d="M660,32 C658,160 664,290 660,376" class="ex-stroke ex-stroke-d"/>
+
+          <path d="M82,54 C180,56 280,52 366,56" class="ex-stroke" marker-end="url(#oa1)"/>
+          <text x="224" y="44" class="ex-t-sm">1 · "Google se login" click</text>
+
+          <path d="M372,88 C460,90 570,86 656,90" class="ex-stroke" marker-end="url(#oa1)"/>
+          <text x="514" y="78" class="ex-t-sm">2 · redirect: client_id, scope,</text>
+          <text x="514" y="106" class="ex-t-sm">redirect_uri, state, PKCE challenge</text>
+
+          <path d="M658,140 C480,142 240,138 84,142" class="ex-stroke ex-stroke-b" marker-end="url(#oa1)"/>
+          <text x="370" y="130" class="ex-t-sm">3 · Google ka consent screen — password YAHIN jaata hai</text>
+          <text x="370" y="160" class="ex-t-lbl">tumhara app user ka password kabhi dekhta hi nahi</text>
+
+          <path d="M82,192 C180,194 280,190 366,194" class="ex-stroke ex-stroke-g" marker-end="url(#oa1)"/>
+          <text x="224" y="182" class="ex-t-sm">4 · redirect back + CODE</text>
+
+          <path d="M372,232 C460,234 570,230 656,234" class="ex-stroke ex-stroke-g" marker-end="url(#oa1)"/>
+          <text x="514" y="222" class="ex-t-sm">5 · code + client_SECRET</text>
+          <text x="514" y="250" class="ex-t-lbl">back-channel — server se server</text>
+
+          <path d="M658,282 C570,284 460,280 372,284" class="ex-stroke ex-stroke-p" marker-end="url(#oa1)"/>
+          <text x="514" y="272" class="ex-t-sm">6 · access_token + id_token</text>
+
+          <rect x="180" y="308" width="380" height="72" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="370" y="330" class="ex-t-lbl">Code alag se kyun? Kyunki step 4 BROWSER se hota hai —</text>
+          <text x="370" y="352" class="ex-t-sm">URL history, logs, referrer mein dikh sakta hai. Code akela bekaar hai;</text>
+          <text x="370" y="372" class="ex-t-sm">usko token banane ke liye client_secret chahiye, jo sirf server ke paas hai.</text>
+        </svg>
+        <figcaption>
+          Ise <strong>Authorization Code flow</strong> kehte hain. Poora design ek hi cheez ke liye hai: token
+          kabhi browser ke URL se na guzre. Public clients (SPA, mobile) ke paas <code>client_secret</code> rakhne
+          ki jagah hi nahi hoti — unke liye <strong>PKCE</strong> hai, jo secret ki jagah ek per-request
+          challenge/verifier pair use karta hai.
+        </figcaption>
+      </figure>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ <code>state</code> parameter optional nahi hai</div>
+        <p>
+          <code>state</code> ek random value hai jo tum step 2 mein bhejte ho aur step 4 mein wapas milti hai —
+          match karna <em>zaroori</em> hai. Iske bina attacker apna authorization code victim ke browser mein
+          inject kar sakta hai, jisse victim ka account attacker ke Google account se link ho jaata hai (login
+          CSRF). Aur <code>redirect_uri</code> ko provider ke paas <strong>exact</strong> whitelist karo —
+          wildcard ya open redirect se code churaya ja sakta hai.
+        </p>
+      </div>
+
+      <h2 id="authz">AuthZ Models — RBAC, ABAC, Ownership</h2>
+      <p>Identity confirm ho gayi. Ab actual faisla — teen models, badhte hue complexity ke saath:</p>
+
+      <div class="code-block">
+        <div class="code-title">teen authZ models<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. RBAC — Role Based. Sabse common, sabse simple. ───────</span>
+<span class="tok-com">// user ka ek role hai, role ke paas permissions hain</span>
+roles = {
+  admin:  [<span class="tok-str">"user:read"</span>, <span class="tok-str">"user:write"</span>, <span class="tok-str">"user:delete"</span>],
+  editor: [<span class="tok-str">"user:read"</span>, <span class="tok-str">"user:write"</span>],
+  viewer: [<span class="tok-str">"user:read"</span>],
+};
+<span class="tok-fn">can</span>(user, <span class="tok-str">"user:delete"</span>)  <span class="tok-com">// → roles[user.role].includes(perm)</span>
+<span class="tok-com">// ✅ samajhna aasaan, audit karna aasaan</span>
+<span class="tok-com">// ❌ "sirf apni team ke users" jaisa rule express nahi kar sakta</span>
+
+<span class="tok-com">// ── 2. Ownership — sabse zyada zaroori, sabse zyada bhoola jaata hai ──</span>
+order = <span class="tok-kw">await</span> db.orders.<span class="tok-fn">findById</span>(id);
+<span class="tok-kw">if</span> (order.userId !== req.user.id) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">403</span>).<span class="tok-fn">end</span>();
+<span class="tok-com">// ↑ Ye check middleware mein ho hi NAHI sakta —</span>
+<span class="tok-com">//   order fetch kiye bina pata hi nahi chalega ki owner kaun hai.</span>
+
+<span class="tok-com">// Behtar: query mein hi ownership daal do — bhoolna structurally impossible</span>
+order = <span class="tok-kw">await</span> db.orders.<span class="tok-fn">findOne</span>({ id, userId: req.user.id });
+<span class="tok-kw">if</span> (!order) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">404</span>).<span class="tok-fn">end</span>();   <span class="tok-com">// 404 — 403 se existence leak hoti hai</span>
+
+<span class="tok-com">// ── 3. ABAC — Attribute Based. Flexible par heavy. ──────────</span>
+<span class="tok-fn">can</span>(user, action, resource, context)
+<span class="tok-com">// "manager apni department ke expenses approve kar sakta hai,</span>
+<span class="tok-com">//  ₹50,000 tak, sirf working hours mein"</span>
+<span class="tok-com">// → policy engine (OPA/Cedar) jab rules sach mein complex hon</span>
+</code></pre>
+      </div>
+
+      <h2 id="mistakes">Wo Galtiyan Jo Sach Mein Hoti Hain</h2>
+      <table>
+        <thead><tr><th>Galti</th><th>Kya hota hai</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>IDOR</strong> — sirf authN check kiya, ownership nahi</td>
+            <td><code>/orders/1235</code> se koi bhi logged-in user doosre ka order dekh leta hai</td>
+            <td>Ownership hamesha query mein; ya per-resource check service layer mein</td>
+          </tr>
+          <tr>
+            <td><code>alg: none</code> accept karna</td>
+            <td>Attacker signature hata ke koi bhi payload bhej deta hai</td>
+            <td>Expected algorithm explicitly pin karo; token ka <code>alg</code> mat maano</td>
+          </tr>
+          <tr>
+            <td>JWT secret weak ya code mein hardcoded</td>
+            <td>Koi bhi apne liye admin token bana sakta hai</td>
+            <td>Lamba random secret, env/secret manager se (ch 15)</td>
+          </tr>
+          <tr>
+            <td>Client se aaya <code>role</code> bharosa karna</td>
+            <td><code>{"role":"admin"}</code> body mein bhejo, admin ban jao</td>
+            <td>Role hamesha server-side session/token se lo, request body se kabhi nahi</td>
+          </tr>
+          <tr>
+            <td>Frontend mein button chhupa dena</td>
+            <td>API abhi bhi khuli hai — <code>curl</code> se sab chal jaata hai</td>
+            <td>UI ek convenience hai; enforcement hamesha server pe</td>
+          </tr>
+          <tr>
+            <td>401 aur 403 mila dena</td>
+            <td>Client infinite re-login loop mein fas jaata hai</td>
+            <td>401 = kaun ho pata nahi; 403 = pata hai, permission nahi</td>
+          </tr>
+          <tr>
+            <td>Login pe rate limit nahi</td>
+            <td>Credential stuffing chal jaati hai</td>
+            <td>Per-IP + per-account limit, badhta hua backoff (ch 18)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>AuthN = tum kaun ho (401)</strong>, <strong>authZ = tum ye kar sakte ho (403)</strong>. Alag layers, alag codes.</li>
+        <li>AuthN middleware mein ek jagah lag sakta hai; <strong>authZ nahi</strong> — resource-level check data fetch ke baad hi possible hai.</li>
+        <li>Session: state shared store mein, har request pe ~1ms lookup, par <strong>instant revoke</strong>.</li>
+        <li>JWT: state token ke andar, <strong>zero lookup</strong>, par <code>exp</code> tak revoke nahi hota.</li>
+        <li>JWT payload sirf <strong>base64 hai, encrypted nahi</strong> — koi bhi padh sakta hai.</li>
+        <li>Practical: short access token (5–15 min) + DB-backed refresh token; ye stateless-ness ko kam frequency pe chhodta hai.</li>
+        <li>Web ke liye default: <code>httpOnly; Secure; SameSite=Lax</code> cookie. CSRF ka fix hai, XSS-se-chori ka nahi.</li>
+        <li>Passwords: bcrypt/scrypt/Argon2id, cost ~200–300ms. SHA-256 <em>fast</em> hai — isliye galat hai.</li>
+        <li>OAuth ka poora design ek cheez ke liye: <strong>token browser URL se na guzre</strong>. <code>state</code> aur exact <code>redirect_uri</code> mandatory hain.</li>
+        <li>Ownership check ko <strong>query ke andar</strong> daalo — tab bhoolna structurally impossible ho jaata hai. Not-found pe 404 do, 403 nahi.</li>
+        <li>Client se aaya <code>role</code> kabhi bharosa nahi; UI mein button chhupana security nahi hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Authentication aur authorization mein farq?"</div>
+        <p>
+          AuthN identity establish karta hai ("tum kaun ho") — fail pe 401, client ko login/refresh karna chahiye.
+          AuthZ us identity ke saath permission decide karta hai ("tum ye kar sakte ho") — fail pe 403, dobara
+          try karna bekaar. Strong answer mein ye line add karo: <em>authN ek baar aur ek jagah ho sakta hai,
+          authZ har request pe aur har resource pe alag hota hai.</em>
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "JWT vs session — kya choose karoge aur kyun?"</div>
+        <p>
+          Ye ek trade-off hai, "better" wala sawaal nahi. Session: har request pe store lookup (~1ms), badle mein
+          instant revocation, instant role change, "sab devices se logout". JWT: zero lookup, services
+          independently verify karti hain, par revocation nahi — role change <code>exp</code> tak effective nahi
+          hota. Ek monolith ke liye main session chunoonga; multi-service ya third-party API access ke liye JWT
+          with short expiry + DB-backed refresh token.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "JWT ko turant revoke kaise karoge?"</div>
+        <p>
+          Poori tarah stateless rehte hue nahi kar sakte — yahi uska design trade-off hai. Practical options:
+          (a) access token bahut short rakho aur revocation ko refresh time pe enforce karo; (b) revoked token
+          IDs (<code>jti</code>) ki blocklist Redis mein rakho — par tab har request pe lookup wapas aa gaya,
+          matlab JWT ka faayda khatam; (c) user record mein ek <code>tokenVersion</code> rakho aur usse claim se
+          match karo — ye bhi ek lookup hai. Sahi answer trade-off naam se pehchanna hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Password DB mein kaise store karoge?"</div>
+        <p>
+          Slow, salted, memory-hard hash — bcrypt/scrypt/Argon2id, cost tuned to ~200–300ms. Salt per-user hota
+          hai (bcrypt use hash ke andar hi rakhta hai) taaki same password ka hash alag ho aur rainbow tables
+          bekaar ho jaayein. SHA-256 galat hai kyunki wo <em>fast</em> hai — GPU pe billions/sec. Verify ke liye
+          constant-time compare. Plus: login pe rate limit, aur galat-email/galat-password pe identical response.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "OAuth mein authorization code alag step kyun hai? Token seedha kyun nahi?"</div>
+        <p>
+          Kyunki redirect <em>browser ke through</em> hota hai — URL browser history, server logs, aur referrer
+          headers mein leak ho sakta hai. Code akela bekaar hai; usse token banane ke liye
+          <code>client_secret</code> chahiye jo sirf backend ke paas hai, aur wo exchange back-channel
+          (server-to-server) pe hota hai. Public clients ke paas secret nahi ho sakta, isliye unke liye PKCE —
+          ek per-request challenge/verifier pair. Aur <code>state</code> parameter login-CSRF rokta hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q6. "User A, user B ka order dekh pa raha hai. Kya galat hai?"</div>
+        <p>
+          Classic <strong>IDOR</strong> — authN check hua (logged in hai) par ownership check nahi hua. Fix
+          ownership ko query mein daalna: <code>findOne({ id, userId: req.user.id })</code>, taaki koi handler
+          usse bhool hi na sake. Aur not-found pe <code>404</code> do, <code>403</code> nahi — warna response se
+          hi confirm ho jaata hai ki wo order exist karta hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="07-validation.html"><strong>Chapter 7 — Validation & Transformation</strong></a>: user
+          authenticated hai aur usko permission bhi hai — par uska bheja hua data abhi bhi
+          <em>untrusted</em> hai. Trust boundary kahan hai, aur usko cross kaise karte hain.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

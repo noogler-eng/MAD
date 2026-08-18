@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logging, Monitoring, Observability — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link active" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 16</div>
+      <div class="progress-pill">16 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Structured Logs · Metrics · Traces · Percentiles · Alerting</span>
+      <h1>Logging, Monitoring, Observability</h1>
+      <p class="subtitle">
+        Pichle chapters mein system ko resilient (ch 14) aur theek se configured (ch 15) banaya. Par ek sawaal
+        baaki hai jo sabse zyada matter karta hai jab 3 baje raat ko kuch tootta hai: <strong>tumhe pata kaise
+        chalega — aur kyun toota, ye kaise pata karoge?</strong> Monitoring un sawaalon ka jawab deti hai jo
+        tumne <em>pehle se soche the</em>. Observability un sawaalon ka jo tumne nahi soche the.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 18 —
+        <a href="https://www.youtube.com/watch?v=5PEuwgLOQQM">Logging, Monitoring and Observability</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#pillars">1. Teen Pillars — Aur Har Ek Kis Sawaal Ka Jawab Deta Hai</a></li>
+          <li><a href="#logs">2. Structured Logging</a></li>
+          <li><a href="#levels">3. Log Levels — Kab Kya</a></li>
+          <li><a href="#metrics">4. Metrics Aur Percentiles Ka Jaal</a></li>
+          <li><a href="#golden">5. Kya Measure Karein — Golden Signals & RED</a></li>
+          <li><a href="#traces">6. Distributed Tracing</a></li>
+          <li><a href="#alerts">7. Alerting — Symptoms Pe, Causes Pe Nahi</a></li>
+          <li><a href="#debug">8. Ek Incident, Teeno Pillars Ke Saath</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="pillars">Teen Pillars — Aur Har Ek Kis Sawaal Ka Jawab Deta Hai</h2>
+      <p>
+        "Logs, metrics, traces" har jagah likha milta hai, par asli baat ye hai ki teeno
+        <strong>alag sawaal</strong> ke liye bane hain. Galat pillar se galat sawaal poochna hi
+        observability ki sabse badi barbaadi hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three pillars of observability: metrics, traces and logs, and the questions each answers">
+          <defs>
+            <marker id="ob1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="24" y="40" width="228" height="220" rx="12" class="ex-fill-o ex-stroke"/>
+          <text x="138" y="66" class="ex-t">METRICS</text>
+          <text x="138" y="90" class="ex-t-lbl">"kuch galat hai?"</text>
+          <text x="138" y="118" class="ex-t-sm">numbers over time</text>
+          <text x="138" y="138" class="ex-t-sm">aggregated, pre-defined</text>
+          <text x="138" y="164" class="ex-t-sm">✅ sasta — cardinality fixed</text>
+          <text x="138" y="184" class="ex-t-sm">✅ dashboards &amp; alerts</text>
+          <text x="138" y="210" class="ex-t-sm">❌ "kaunsi request" nahi bata sakta</text>
+          <text x="138" y="240" class="ex-t-lbl">yahan se shuru hota hai</text>
+
+          <path d="M254,150 C266,148 274,152 286,150" class="ex-stroke" marker-end="url(#ob1)"/>
+
+          <rect x="290" y="40" width="228" height="220" rx="12" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="404" y="66" class="ex-t">TRACES</text>
+          <text x="404" y="90" class="ex-t-lbl">"kahan slow/fail hua?"</text>
+          <text x="404" y="118" class="ex-t-sm">ek request ka poora safar</text>
+          <text x="404" y="138" class="ex-t-sm">services ke aar-paar</text>
+          <text x="404" y="164" class="ex-t-sm">✅ latency kis hop pe gayi — dikhta hai</text>
+          <text x="404" y="184" class="ex-t-sm">✅ N+1 aur serial calls pakadta hai</text>
+          <text x="404" y="210" class="ex-t-sm">❌ code ke andar "kyun" nahi batata</text>
+          <text x="404" y="240" class="ex-t-lbl">jagah dhoondhta hai</text>
+
+          <path d="M520,150 C532,148 540,152 552,150" class="ex-stroke" marker-end="url(#ob1)"/>
+
+          <rect x="556" y="40" width="180" height="220" rx="12" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="646" y="66" class="ex-t">LOGS</text>
+          <text x="646" y="90" class="ex-t-lbl">"actually kya hua?"</text>
+          <text x="646" y="118" class="ex-t-sm">discrete events</text>
+          <text x="646" y="138" class="ex-t-sm">poora context</text>
+          <text x="646" y="164" class="ex-t-sm">✅ sabse zyada detail</text>
+          <text x="646" y="184" class="ex-t-sm">✅ exact error, exact input</text>
+          <text x="646" y="210" class="ex-t-sm">❌ mehnga, volume bada</text>
+          <text x="646" y="240" class="ex-t-lbl">detail deta hai</text>
+
+          <rect x="120" y="286" width="520" height="72" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="308" class="ex-t">Debugging ka natural flow</text>
+          <text x="380" y="332" class="ex-t-sm">alert (metric) → kaunsi request slow thi (trace) → us request mein kya hua (log)</text>
+          <text x="380" y="352" class="ex-t-lbl">teeno ko jodne wali cheez: requestId / traceId</text>
+        </svg>
+        <figcaption>
+          Teeno alag-alag bekaar hain — inki <strong>value connection mein hai</strong>. Ek
+          <code>traceId</code> jo metric exemplar se trace tak, aur trace se us request ke saare logs tak le
+          jaaye — yahi asli observability hai. Isiliye ch 8 mein request context banate waqt
+          <code>requestId</code> sabse bahar wali middleware mein set kiya tha.
+        </figcaption>
+      </figure>
+
+      <h2 id="logs">Structured Logging</h2>
+      <p>
+        Sabse pehla practical change jo har codebase mein hona chahiye: <strong>logs text nahi, JSON hone
+        chahiye.</strong> Wajah simple hai — logs machines padhti hain, insaan nahi. Production mein tum
+        <code>tail -f</code> nahi kar rahe hote; tum 20 instances ke 50 lakh log lines mein
+        <em>query</em> kar rahe hote ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">unstructured vs structured<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Unstructured — insaan ke liye theek, machine ke liye bekaar</span>
+console.<span class="tok-fn">log</span>(<span class="tok-str">`User ${userId} created order ${orderId} for ₹${total}`</span>);
+<span class="tok-com">// "user 42 ke saare orders dikhao jo ₹5000 se upar the" → regex likhna padega</span>
+<span class="tok-com">// Aur message format badla toh saari dashboards/queries toot gayi.</span>
+
+<span class="tok-com">// ✅ Structured — har field query-able hai</span>
+logger.<span class="tok-fn">info</span>({
+  event:     <span class="tok-str">"order.created"</span>,   <span class="tok-com">// stable event name — ISPE query karo, message pe nahi</span>
+  orderId, userId,
+  totalPaise: <span class="tok-num">499900</span>,          <span class="tok-com">// number, formatted string nahi (ch 5)</span>
+  itemCount: <span class="tok-num">3</span>,
+  durationMs: <span class="tok-num">142</span>,
+  requestId: req.ctx.requestId,  <span class="tok-com">// ← sab kuch isse judta hai (ch 8)</span>
+}, <span class="tok-str">"order created"</span>);
+
+<span class="tok-com">// Ab ye sab possible hai:</span>
+<span class="tok-com">//   event="order.created" AND totalPaise &gt; 500000</span>
+<span class="tok-com">//   avg(durationMs) by event</span>
+<span class="tok-com">//   requestId="req_8f3a" → us ek request ki poori kahani</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">production logger setup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">const</span> logger = <span class="tok-fn">pino</span>({
+  level: config.LOG_LEVEL,          <span class="tok-com">// ch 15 se — validated</span>
+
+  <span class="tok-com">// REDACTION — ch 15 ka secrets rule yahan enforce hota hai</span>
+  redact: [<span class="tok-str">"req.headers.authorization"</span>, <span class="tok-str">"req.headers.cookie"</span>,
+           <span class="tok-str">"*.password"</span>, <span class="tok-str">"*.token"</span>, <span class="tok-str">"*.cardNumber"</span>, <span class="tok-str">"*.otp"</span>],
+
+  <span class="tok-com">// har log line mein base fields — filtering ke liye zaroori</span>
+  base: { service: <span class="tok-str">"orders-api"</span>, version: process.env.GIT_SHA, env: config.NODE_ENV },
+});
+<span class="tok-com">// version/GIT_SHA kyun? Kyunki incident ke waqt sabse pehla sawaal hota hai</span>
+<span class="tok-com">// "kya ye naye deploy ke baad shuru hua?" — usse filter karke turant pata chalta hai.</span>
+
+<span class="tok-com">// Child logger — request ke saare logs mein context apne aap aa jaata hai</span>
+req.log = logger.<span class="tok-fn">child</span>({ requestId: req.ctx.requestId, userId: req.ctx.user?.id });
+req.log.<span class="tok-fn">info</span>({ event: <span class="tok-str">"payment.started"</span> });   <span class="tok-com">// requestId apne aap included</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Logs mein kya kabhi nahi jaana chahiye</div>
+        <p>
+          Passwords, tokens, card numbers, OTP, poore request bodies (usme sab kuch ho sakta hai), aur PII bina
+          soche-samjhe. Logs aksar teesre-parties (Datadog, CloudWatch) ko jaate hain, lambe samay tak store
+          hote hain, aur unka access control application se kahin dheela hota hai. <strong>Ek log line ek data
+          breach ban sakti hai.</strong> Redaction ko logger config mein enforce karo — har call site pe yaad
+          rakhne ke bharose mat chhodo.
+        </p>
+      </div>
+
+      <h2 id="levels">Log Levels — Kab Kya</h2>
+      <table>
+        <thead><tr><th>Level</th><th>Matlab</th><th>Kya karna hai</th><th>Prod mein on?</th></tr></thead>
+        <tbody>
+          <tr><td><code>fatal</code></td><td>Process zinda nahi reh sakta</td><td>Alert + restart (ch 14)</td><td>Haan</td></tr>
+          <tr><td><code>error</code></td><td>Operation fail hua, human attention chahiye</td><td>Alert (rate pe)</td><td>Haan</td></tr>
+          <tr><td><code>warn</code></td><td>Kuch anokha hua par handle ho gaya (retry, fallback, 4xx)</td><td>Dekho, alert nahi</td><td>Haan</td></tr>
+          <tr><td><code>info</code></td><td>Business events — order created, payment done</td><td>Audit trail</td><td>Haan</td></tr>
+          <tr><td><code>debug</code></td><td>Developer detail</td><td>Debugging</td><td>Nahi (ya sampled)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 <code>error</code> ka matlab "koi insaan dekhega"</div>
+        <p>
+          Sabse common galti: har 404 aur har validation failure ko <code>error</code> pe log karna. Wo
+          <em>expected</em> hain (ch 14) — <code>warn</code> ya <code>info</code> hain. Jab
+          <code>error</code> level mein normal traffic ka shor bhar jaata hai, toh asli errors usme kho jaate
+          hain aur log level apna matlab hi kho deta hai. Test: <strong>"kya main chahta hoon ki koi is line
+          pe kaam kare?"</strong> Nahi → <code>error</code> nahi hai.
+        </p>
+      </div>
+
+      <h2 id="metrics">Metrics Aur Percentiles Ka Jaal</h2>
+      <p>Chaar basic metric types, aur unka sahi use:</p>
+      <div class="code-block">
+        <div class="code-title">metric types<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// COUNTER — sirf badhta hai (requests, errors, jobs processed)</span>
+http_requests_total{method=<span class="tok-str">"POST"</span>, route=<span class="tok-str">"/orders"</span>, status=<span class="tok-str">"201"</span>}
+<span class="tok-com">// query mein rate() lagta hai: rate(http_requests_total[5m])</span>
+
+<span class="tok-com">// GAUGE — upar-neeche jaata hai (memory, queue depth, active connections)</span>
+db_pool_active_connections     <span class="tok-com">// ch 10 ka pool exhaustion yahan dikhta hai</span>
+queue_depth{queue=<span class="tok-str">"emails"</span>}       <span class="tok-com">// ch 12</span>
+
+<span class="tok-com">// HISTOGRAM — distribution (latency, payload size) → percentiles isse nikalte hain</span>
+http_request_duration_seconds{route=<span class="tok-str">"/orders"</span>}
+
+<span class="tok-com">// ⚠️ CARDINALITY — sabse mehnga metrics mistake</span>
+<span class="tok-com">// ❌ label mein userId/orderId mat daalo</span>
+http_requests_total{userId=<span class="tok-str">"42"</span>}   <span class="tok-com">// 10 lakh users = 10 lakh time series → system phat jayega</span>
+<span class="tok-com">// ✅ labels bounded hone chahiye: method, route TEMPLATE, status</span>
+http_requests_total{route=<span class="tok-str">"/orders/:id"</span>}  <span class="tok-com">// :id, actual ID nahi</span>
+<span class="tok-com">// High-cardinality data logs aur traces ka kaam hai, metrics ka nahi.</span>
+</code></pre>
+      </div>
+
+      <p>
+        Ab sabse important cheez is section ki — <strong>average latency ek jhooth hai.</strong>
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">percentiles kyun<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 100 requests: 99 requests 10ms, 1 request 5000ms</span>
+average = (<span class="tok-num">99</span>×<span class="tok-num">10</span> + <span class="tok-num">5000</span>) / <span class="tok-num">100</span> = <span class="tok-num">60</span>ms
+<span class="tok-com">// Dashboard: "60ms — sab theek hai!" 😊</span>
+<span class="tok-com">// Haqiqat: ek user 5 second baitha raha. Average ne usse CHHUPA diya.</span>
+
+p50 = <span class="tok-num">10</span>ms      <span class="tok-com">// aadhe users ka experience</span>
+p95 = <span class="tok-num">10</span>ms      <span class="tok-com">// 95% users theek hain</span>
+p99 = <span class="tok-num">5000</span>ms    <span class="tok-com">// ← YAHAN problem dikhti hai</span>
+
+<span class="tok-com">// Aur p99 chhota nahi hai:</span>
+<span class="tok-com">// 1% requests slow = 10 lakh requests/day pe 10,000 kharab experiences.</span>
+<span class="tok-com">// Aur ek page 20 API calls karta hai? Toh ~18% chance hai ki user ko</span>
+<span class="tok-com">// KAM SE KAM ek p99 call mile. Tail latency user-facing hai.</span>
+
+<span class="tok-com">// ⚠️ Percentiles ko average mat karo!</span>
+<span class="tok-com">// avg(p99 across 10 instances) mathematically MEANINGLESS hai.</span>
+<span class="tok-com">// Histogram buckets ko add karke phir percentile nikalo</span>
+<span class="tok-com">// (Prometheus: histogram_quantile(0.99, sum(rate(...)) by (le)))</span>
+</code></pre>
+      </div>
+
+      <h2 id="golden">Kya Measure Karein — Golden Signals & RED</h2>
+      <p>
+        Sab kuch measure karne ki koshish mat karo — do chhote frameworks 90% cover kar dete hain:
+      </p>
+      <table>
+        <thead><tr><th>Google's 4 Golden Signals</th><th>Kya batata hai</th><th>Example metric</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Latency</strong></td><td>Kitna time lag raha hai (successful aur failed alag!)</td><td>p50/p95/p99 duration</td></tr>
+          <tr><td><strong>Traffic</strong></td><td>Kitna load aa raha hai</td><td>requests/sec</td></tr>
+          <tr><td><strong>Errors</strong></td><td>Kitne fail ho rahe hain</td><td>5xx rate</td></tr>
+          <tr><td><strong>Saturation</strong></td><td>Resources kitne bhare hain — <em>ye future batata hai</em></td><td>pool usage, queue depth, CPU, memory</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Services ke liye chhota version <strong>RED</strong> hai: <em>Rate, Errors, Duration</em>. Resources ke
+        liye <strong>USE</strong>: <em>Utilization, Saturation, Errors</em>.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Saturation sabse valuable signal hai</div>
+        <p>
+          Latency aur errors batate hain ki <em>abhi</em> kya galat hai. Saturation batata hai ki
+          <em>kya galat hone wala hai</em> — connection pool 85% pe hai, queue depth badh rahi hai, disk 90%
+          bhar chuka hai. Yahi ek signal hai jo tumhe incident se <strong>pehle</strong> react karne deta hai.
+          Ch 10 ka pool exhaustion aur ch 12 ka queue backlog — dono saturation metrics hain, aur dono ke alerts
+          hone chahiye.
+        </p>
+      </div>
+
+      <h2 id="traces">Distributed Tracing</h2>
+      <p>
+        Ek request 5 services se guzarti hai aur 800ms leti hai. <em>Kahan</em> gaye 800ms? Logs alag-alag
+        services mein bikhre hain; metrics per-service aggregate hain. Trace hi wo cheez hai jo poori
+        request ko <strong>ek picture</strong> mein dikhati hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">trace ka structure<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// TRACE = ek request ka poora safar. SPAN = us safar ka ek kaam.</span>
+Trace: 4bf92f3577b34da6   [ POST /orders — 842ms ]
+│
+├─ span: auth.verify              12ms   ▓
+├─ span: validate                  3ms   ▏
+├─ span: db.products.findByIds    45ms   ▓▓
+├─ span: payment.charge          680ms   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  ← YAHAN hai
+│   └─ span: http POST stripe    675ms
+├─ span: db.orders.insert         28ms   ▓
+└─ span: queue.publish             8ms   ▏
+
+<span class="tok-com">// Ek nazar mein pata chal gaya: 80% time Stripe pe gaya.</span>
+<span class="tok-com">// Ye baat 5 services ke logs padh ke pata karna ghanton ka kaam hai.</span>
+
+<span class="tok-com">// Traces do aur patterns turant pakadte hain:</span>
+<span class="tok-com">//   • N+1 → same span 100 baar repeat (ch 10)</span>
+<span class="tok-com">//   • Serial calls jo parallel ho sakte the → seedhi seedhi staircase</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">context propagation — poora raaz yahi hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Trace tabhi juda rehta hai jab har hop trace context AAGE bheje.</span>
+<span class="tok-com">// W3C standard header:</span>
+traceparent: <span class="tok-num">00</span>-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-<span class="tok-num">01</span>
+             │  └── trace ID (poore safar ke liye ek) ──┘ └ parent span ┘ └ flags</span>
+
+<span class="tok-com">// Service A → Service B</span>
+<span class="tok-kw">await</span> fetch(url, { headers: { traceparent: <span class="tok-fn">currentContext</span>() } });
+<span class="tok-com">// B naya span banata hai LEKIN wahi trace ID rakhta hai → ek hi picture</span>
+
+<span class="tok-com">// ⚠️ Ek jagah bhi propagation toota → trace do tukdon mein bat jaata hai</span>
+<span class="tok-com">// Sabse common toot: QUEUE ke aar-paar (ch 12). Producer ko trace context</span>
+<span class="tok-com">// message ke andar daalna padta hai, aur worker ko usse resume karna padta hai —</span>
+<span class="tok-com">// warna background jobs trace mein dikhte hi nahi.</span>
+
+<span class="tok-com">// SAMPLING — 100% traces mehnge hote hain</span>
+<span class="tok-com">// Head-based: shuru mein hi decide (1% rakho) — simple par slow requests miss ho sakti hain</span>
+<span class="tok-com">// Tail-based: poora trace jama karke decide — SAARI slow/failed requests rakho + 1% baaki</span>
+<span class="tok-com">// Tail-based behtar hai kyunki interesting traces wahi hain jo slow ya failed hain.</span>
+</code></pre>
+      </div>
+
+      <h2 id="alerts">Alerting — Symptoms Pe, Causes Pe Nahi</h2>
+      <p>
+        Alerting ka sabse bada dushman <strong>alert fatigue</strong> hai. Jab 50 alerts roz aate hain aur
+        49 bekaar hote hain, toh 50<sup>th</sup> — jo asli hota hai — bhi ignore ho jaata hai. Isliye alerts kam
+        aur meaningful hone chahiye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">causes vs symptoms<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ CAUSE-based alerts — bahut zyada, aksar harmless</span>
+<span class="tok-com">// "CPU &gt; 80%"          → toh? shayad sab theek hai, ya autoscaling chal rahi hai</span>
+<span class="tok-com">// "Memory &gt; 70%"       → normal ho sakta hai</span>
+<span class="tok-com">// "Ek pod restart hua" → k8s ka normal kaam</span>
+
+<span class="tok-com">// ✅ SYMPTOM-based — user ko sach mein farq pad raha hai</span>
+<span class="tok-com">// "5xx error rate &gt; 1% for 5 min"</span>
+<span class="tok-com">// "p99 latency &gt; 2s for 10 min"</span>
+<span class="tok-com">// "checkout success rate &lt; 95%"       ← business metric, best alert</span>
+<span class="tok-com">// "queue ka oldest message &gt; 15 min"  ← ch 12</span>
+
+<span class="tok-com">// Har alert ke saath ye teen cheezein honi chahiye:</span>
+<span class="tok-com">//   1. Kya toota hai (user ki bhasha mein)</span>
+<span class="tok-com">//   2. Runbook link — ab kya karna hai</span>
+<span class="tok-com">//   3. Dashboard/trace link — kahan dekhna hai</span>
+<span class="tok-com">// Bina inke alert sirf ghabrahat hai, information nahi.</span>
+
+<span class="tok-com">// ⚠️ "for 5 min" wala hissa zaroori hai — instant alerts har spike pe bajte hain.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 SLI, SLO, aur error budget</div>
+        <p>
+          <strong>SLI</strong> = ek measurement ("successful requests ka %"). <strong>SLO</strong> = uska target
+          ("99.9% over 30 days"). Aur <strong>error budget</strong> = jo bacha hua hai: 99.9% ka matlab hai 30
+          din mein ~43 minute downtime <em>allowed</em> hai. Ye framing bahut practical hai — budget bacha hai
+          toh team tez chal sakti hai, naye features deploy kar sakti hai; budget khatam ho gaya toh focus
+          reliability pe shift karna chahiye. Ye "100% uptime" wale unrealistic goal se kahin behtar hai, aur
+          product vs reliability ki bahas ko ek <em>number</em> bana deta hai.
+        </p>
+      </div>
+
+      <h2 id="debug">Ek Incident, Teeno Pillars Ke Saath</h2>
+      <p>
+        Poora chapter ek concrete flow mein — ye wahi hop-thinking hai jo ch 2 mein shuru hui thi:
+      </p>
+      <ol>
+        <li><strong>Alert (metric)</strong>: "p99 latency &gt; 2s on <code>/orders</code> for 10 min."</li>
+        <li><strong>Dashboard (metrics)</strong>: error rate normal hai, traffic normal hai — matlab load spike
+        nahi. Par <em>saturation</em> dekho: <code>db_pool_active_connections</code> max pe chipka hua hai.
+        Ch 10 ka pool exhaustion ka signature.</li>
+        <li><strong>Deploy check</strong>: logs ko <code>version</code> se filter karo — kya ye naye GIT_SHA ke
+        baad shuru hua? (Isliye <code>base</code> mein version daala tha.)</li>
+        <li><strong>Trace</strong>: ek slow request ka trace kholo. Dikha ki <code>payment.charge</code> span
+        680ms le raha hai, aur uske andar Stripe call. Ya phir 100 identical DB spans — N+1.</li>
+        <li><strong>Log</strong>: us trace ke <code>requestId</code> se saare logs nikalo — exact error, exact
+        input, retry attempts.</li>
+        <li><strong>Fix</strong>: root cause ke hisaab se — Stripe pe timeout + circuit breaker (ch 14), ya
+        N+1 ko batch load (ch 10), ya transaction se external call bahar (ch 10).</li>
+      </ol>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Observability ko incident ke waqt "add" nahi kiya ja sakta</div>
+        <p>
+          Ye ek build-time investment hai, run-time nahi. Jab production jal raha hai, tab tum
+          <code>requestId</code> propagate karna, structured logging lagana, ya tracing instrument karna
+          <em>nahi</em> kar sakte — us waqt sirf wahi kaam aata hai jo pehle se laga hua hai. Isiliye ch 8 mein
+          request context, ch 14 mein error context, aur yahan structured logs — ye sab din 1 se lagti hain,
+          incident ke din nahi.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Monitoring</strong> = pehle se soche gaye sawaalon ke jawab. <strong>Observability</strong> = jo sawaal tumne nahi soche, unke jawab nikaal pana.</li>
+        <li>Teen pillars alag sawaalon ke liye: <strong>metrics</strong> "kuch galat hai?", <strong>traces</strong> "kahan?", <strong>logs</strong> "kya hua?".</li>
+        <li>Inki value <strong>connection</strong> mein hai — ek <code>requestId</code>/<code>traceId</code> jo teeno ko jode.</li>
+        <li>Logs <strong>structured (JSON)</strong> hone chahiye, stable <code>event</code> names ke saath — message text pe query mat karo.</li>
+        <li>Logger ke <code>base</code> mein <code>service</code> + <code>version (GIT_SHA)</code> daalo — incident ka pehla sawaal "kya ye naye deploy se hai?" turant answer hota hai.</li>
+        <li><strong>Redaction logger config mein enforce karo</strong> — ek log line ek data breach ban sakti hai.</li>
+        <li><code>error</code> level ka matlab "koi insaan kaam karega". 404 aur validation failures <code>warn</code>/<code>info</code> hain.</li>
+        <li>Metrics mein <strong>cardinality</strong> bounded rakho — userId/orderId labels metrics system ko phaad dete hain. High-cardinality data logs/traces ka kaam hai.</li>
+        <li><strong>Average latency ek jhooth hai</strong> — p50/p95/p99 dekho. 1% slow = 10 lakh req/day pe 10,000 kharab experiences.</li>
+        <li>Percentiles ko average mat karo — histogram buckets add karke percentile nikalo.</li>
+        <li>Golden signals: latency, traffic, errors, <strong>saturation</strong>. Saturation hi batata hai ki kya <em>hone wala</em> hai.</li>
+        <li>Trace = poora safar, span = ek kaam. Trace N+1 aur serial-calls turant dikha deta hai.</li>
+        <li>Context propagation (<code>traceparent</code>) ek jagah toota toh trace tukdon mein bat jaata hai — <strong>queue ke aar-paar</strong> sabse common toot hai.</li>
+        <li>Tail-based sampling behtar hai — interesting traces wahi hain jo slow ya failed hain.</li>
+        <li>Alerts <strong>symptoms pe, causes pe nahi</strong>: "5xx &gt; 1% for 5 min", "CPU &gt; 80%" nahi. Har alert ke saath runbook + dashboard link.</li>
+        <li><strong>Error budget</strong> product-vs-reliability ki bahas ko ek number bana deta hai.</li>
+        <li>Observability ek <strong>build-time</strong> investment hai — incident ke waqt add nahi ho sakti.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Logs, metrics, traces — teeno kyun chahiye?"</div>
+        <p>
+          Alag sawaal, alag cost profile. Metrics sasti aur aggregated hain — "kuch galat hai?" ka jawab dete
+          hain aur alerts/dashboards inhi pe bante hain, par wo nahi bata sakte ki <em>kaunsi</em> request kharab
+          thi. Traces ek request ka poora safar dikhate hain — "kahan slow/fail hua". Logs sabse zyada detail
+          dete hain — "actually kya hua", par mehnge hain. Debugging ka flow: alert → trace → log, aur teeno ko
+          <code>traceId</code>/<code>requestId</code> jodta hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Average latency 60ms hai, sab theek hai?"</div>
+        <p>
+          Nahi — average distribution chhupa deta hai. 99 requests 10ms aur 1 request 5000ms ka average bhi 60ms
+          hai. Percentiles dekho: p50 (typical user), p95, aur p99 (tail). Aur tail chhoti baat nahi hai — 1%
+          slow ka matlab 10 lakh requests/day pe 10,000 kharab experiences, aur agar ek page 20 API calls karta
+          hai toh ~18% chance hai ki user ko kam se kam ek p99 call mile. Bonus point: percentiles ko instances
+          ke across average mat karo — histogram buckets add karke nikalo.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Distributed tracing kaise kaam karti hai?"</div>
+        <p>
+          Entry point pe ek <strong>trace ID</strong> generate hoti hai; har operation ek <strong>span</strong>
+          banata hai (parent span ID ke saath), aur trace context har hop pe aage bheja jaata hai —
+          HTTP mein <code>traceparent</code> header (W3C). Sab spans ek collector pe jaate hain aur waterfall
+          ban jaata hai. Do gotchas: propagation ek jagah bhi toota toh trace do tukdon mein bat jaata hai
+          (sabse common toot <strong>queues ke aar-paar</strong> — trace context message mein daalna padta hai),
+          aur sampling — tail-based better hai kyunki wo saari slow/failed requests rakhta hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Alert kis cheez pe lagaoge?"</div>
+        <p>
+          <strong>Symptoms pe, causes pe nahi.</strong> "CPU &gt; 80%" ek cause hai aur aksar harmless — usse
+          user ko farq pad hi nahi raha ho sakta. Symptom alerts: 5xx rate &gt; 1% for 5 min, p99 &gt; 2s,
+          checkout success rate &lt; 95%, queue ka oldest message &gt; 15 min. Duration window ("for 5 min")
+          zaroori hai warna har spike pe bajega. Har alert ke saath runbook aur dashboard link ho. Reason:
+          <strong>alert fatigue</strong> — 49 bekaar alerts 50<sup>th</sup> asli wale ko bhi ignore kara dete hain.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "SLI, SLO, error budget kya hain?"</div>
+        <p>
+          SLI ek measurement hai ("successful requests ka %"), SLO uska target ("99.9% over 30 days"), aur error
+          budget wo allowed failure jo bacha hai — 99.9% = 30 din mein ~43 min. Iska practical use ye hai ki
+          product vs reliability ki bahas ek number ban jaati hai: budget bacha hai toh tezi se ship karo,
+          khatam ho gaya toh reliability pe focus karo. Aur ye "100% uptime" jaise unrealistic goal se behtar
+          hai — 100% ka matlab hoga har change rok dena.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="17-graceful-shutdown.html"><strong>Chapter 17 — Graceful Shutdown</strong></a>: ab tumhe
+          dikhta hai ki kya ho raha hai. Ek aisi jagah jahan ye visibility turant kaam aati hai — deploy ke
+          waqt, jab process marta hai aur in-flight requests ka kya hota hai.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

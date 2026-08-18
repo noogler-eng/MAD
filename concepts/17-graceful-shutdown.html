@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graceful Shutdown — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link active" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 17</div>
+      <div class="progress-pill">17 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">SIGTERM · Draining · Readiness · Kubernetes Lifecycle</span>
+      <h1>Graceful Shutdown</h1>
+      <p class="subtitle">
+        Ek chhota sa chapter, ek chhoti si window — 10–30 second — aur us window ka ek hi sawaal:
+        <strong>jab process marta hai, tab jo requests beech mein chal rahi thi unka kya hota hai?</strong>
+        Ye ek roz-ka event hai (har deploy, har autoscale, har pod reschedule), aur agar ye galat hai toh
+        tumhare "successful" deploys chupchaap users ko 502 de rahe hain.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 19 —
+        <a href="https://www.youtube.com/watch?v=6rfBgphiCWM">Graceful Shutdown</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#problem">1. Problem — Ek Deploy Mein Kya Toot-ta Hai</a></li>
+          <li><a href="#signals">2. Signals — SIGTERM vs SIGKILL</a></li>
+          <li><a href="#sequence">3. Sahi Sequence (Diagram)</a></li>
+          <li><a href="#code">4. Implementation</a></li>
+          <li><a href="#lb">5. Sabse Bada Gotcha — Load Balancer Ko Pata Nahi Hai</a></li>
+          <li><a href="#k8s">6. Kubernetes Lifecycle</a></li>
+          <li><a href="#workers">7. Workers Aur Cron Jobs</a></li>
+          <li><a href="#pitfalls">8. Common Mistakes</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="problem">Problem — Ek Deploy Mein Kya Toot-ta Hai</h2>
+      <p>
+        Deploy ka matlab hai: purana process marta hai, naya chalu hota hai. Us "marne" ke lamhe pe server ke
+        andar kya-kya adhoora pada hai:
+      </p>
+      <ul>
+        <li>Requests jo abhi handle ho rahi hain — DB query chal rahi hai, response likha ja raha hai.</li>
+        <li>Ek <strong>khula transaction</strong> jo commit hone wala tha (ch 10).</li>
+        <li>Ek payment ka external call jiska response aa raha tha (ch 14).</li>
+        <li>Ek worker jo message process kar chuka hai par <strong>ack nahi kiya</strong> (ch 12).</li>
+        <li>Keep-alive connections jo clients ne khule rakhe hain (ch 3).</li>
+      </ul>
+      <p>
+        Bina graceful shutdown ke ye sab beech mein katt jaate hain: users ko 502, aadhe likhe hue responses,
+        aur worst case — <strong>aadha kaam</strong> jo na complete hai na retry hoga.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Ye "kabhi-kabhi" wala nahi, "har baar" wala event hai</div>
+        <p>
+          Har deploy pe hota hai. Har autoscale-down pe. Har node drain pe, har spot instance reclaim pe, har
+          OOM restart pe. Ek active service mein ye <strong>din mein dozens baar</strong> hota hai. Isliye ye
+          "edge case" nahi hai — ye normal operation hai. Aur iska nuksaan chhupa rehta hai kyunki deploy
+          "successful" dikhta hai; error rate ka chhota spike deploy ke shor mein kho jaata hai (ch 16 —
+          isliye <code>version</code> label se filter karna kaam aata hai).
+        </p>
+      </div>
+
+      <h2 id="signals">Signals — SIGTERM vs SIGKILL</h2>
+      <table>
+        <thead><tr><th>Signal</th><th>Kya hai</th><th>Catch kar sakte ho?</th><th>Kab aata hai</th></tr></thead>
+        <tbody>
+          <tr><td><code>SIGTERM</code> (15)</td><td>"Please band ho jao" — polite request</td><td><strong>Haan</strong></td><td>Deploy, <code>docker stop</code>, k8s pod delete</td></tr>
+          <tr><td><code>SIGINT</code> (2)</td><td>Ctrl+C</td><td>Haan</td><td>Local development</td></tr>
+          <tr><td><code>SIGKILL</code> (9)</td><td>"Abhi maro" — OS turant maar deta hai</td><td><strong>Nahi</strong></td><td>Grace period khatam, OOM killer, <code>kill -9</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        Poora graceful shutdown <strong>SIGTERM aur SIGKILL ke beech ki window</strong> mein hota hai. Default
+        grace period Docker mein 10s hai, Kubernetes mein 30s. Us window mein cleanup pura na hua toh SIGKILL
+        aata hai aur sab kuch waise hi katt jaata hai jaise pehle katta tha.
+      </p>
+
+      <h2 id="sequence">Sahi Sequence</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graceful shutdown timeline from SIGTERM through draining to exit">
+          <defs>
+            <marker id="gs1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <path d="M40,44 C260,42 520,46 730,44" class="ex-stroke" marker-end="url(#gs1)"/>
+          <text x="700" y="30" class="ex-t-sm">time</text>
+
+          <path d="M60,36 C58,50 62,58 60,70" class="ex-stroke"/>
+          <text x="60" y="26" class="ex-t-lbl">SIGTERM</text>
+
+          <rect x="60" y="72" width="180" height="70" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="150" y="94" class="ex-t-sm">1 · readiness FAIL</text>
+          <text x="150" y="114" class="ex-t-sm">/ready → 503</text>
+          <text x="150" y="132" class="ex-t-lbl">server abhi bhi chalu!</text>
+
+          <rect x="60" y="152" width="180" height="62" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="150" y="174" class="ex-t-sm">2 · WAIT ~5–15s</text>
+          <text x="150" y="194" class="ex-t-lbl">LB ko hatane do</text>
+
+          <text x="150" y="240" class="ex-t-sm">is dauraan nayi requests</text>
+          <text x="150" y="258" class="ex-t-sm">abhi bhi aa sakti hain —</text>
+          <text x="150" y="276" class="ex-t-sm">unhe normally serve karo</text>
+
+          <rect x="256" y="72" width="180" height="70" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="346" y="94" class="ex-t-sm">3 · server.close()</text>
+          <text x="346" y="114" class="ex-t-sm">naye connections band</text>
+          <text x="346" y="132" class="ex-t-lbl">purane chalte rahenge</text>
+
+          <rect x="256" y="152" width="180" height="62" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="346" y="174" class="ex-t-sm">4 · DRAIN</text>
+          <text x="346" y="194" class="ex-t-lbl">in-flight requests poori</text>
+
+          <rect x="452" y="72" width="180" height="70" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="542" y="94" class="ex-t-sm">5 · cleanup</text>
+          <text x="542" y="114" class="ex-t-sm">DB pool, redis, queue</text>
+          <text x="542" y="132" class="ex-t-lbl">logs flush</text>
+
+          <rect x="452" y="152" width="180" height="62" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="542" y="174" class="ex-t-sm">6 · exit(0)</text>
+          <text x="542" y="194" class="ex-t-lbl">saaf exit</text>
+
+          <path d="M660,36 C658,50 662,58 660,70" class="ex-stroke"/>
+          <text x="686" y="26" class="ex-t-lbl">SIGKILL</text>
+          <rect x="648" y="72" width="96" height="70" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="696" y="98" class="ex-t-sm">grace over</text>
+          <text x="696" y="118" class="ex-t-sm">force kill</text>
+
+          <text x="380" y="316" class="ex-t-lbl">Order hi sab kuch hai — step 1 aur 2 sabse zyada bhoole jaate hain</text>
+
+          <rect x="120" y="332" width="520" height="86" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="354" class="ex-t-sm">❌ Bina wait ke: server turant band → LB ab bhi traffic bhej raha hai → 502s</text>
+          <text x="380" y="378" class="ex-t-sm">❌ Bina drain ke: chalu requests katt gayi → aadhe responses, adhoore transactions</text>
+          <text x="380" y="402" class="ex-t-lbl">✅ Dono ke saath: zero-downtime deploy</text>
+        </svg>
+        <figcaption>
+          Sabse counter-intuitive step <strong>#2 — jaanbujh ke wait karna</strong> hai. SIGTERM ke turant baad
+          server band kar dena galat hai, kyunki load balancer ko abhi pata hi nahi chala ki ye instance ja raha
+          hai — aur wo agle kuch second traffic bhejta rahega.
+        </figcaption>
+      </figure>
+
+      <h2 id="code">Implementation</h2>
+
+      <div class="code-block">
+        <div class="code-title">graceful shutdown — poora code<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">let</span> isShuttingDown = <span class="tok-kw">false</span>;
+
+<span class="tok-com">// ── Health endpoints — do ALAG (ch 14) ────────────────────</span>
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/health/live"</span>, (req, res) =&gt; res.<span class="tok-fn">send</span>(<span class="tok-str">"ok"</span>));
+<span class="tok-com">// liveness: "kya process zinda hai" — shutdown ke dauraan bhi OK rehta hai,</span>
+<span class="tok-com">// warna k8s isse SIGKILL kar dega jabki hum saaf exit kar rahe hain</span>
+
+app.<span class="tok-fn">get</span>(<span class="tok-str">"/health/ready"</span>, (req, res) =&gt; {
+  <span class="tok-kw">if</span> (isShuttingDown) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">503</span>).<span class="tok-fn">send</span>(<span class="tok-str">"shutting down"</span>);
+  <span class="tok-kw">return</span> res.<span class="tok-fn">send</span>(<span class="tok-str">"ok"</span>);   <span class="tok-com">// readiness: "traffic bhejo" — YAHI LB dekhta hai</span>
+});
+
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">shutdown</span>(signal) {
+  <span class="tok-kw">if</span> (isShuttingDown) <span class="tok-kw">return</span>;      <span class="tok-com">// double SIGTERM se bachao</span>
+  isShuttingDown = <span class="tok-kw">true</span>;
+  logger.<span class="tok-fn">info</span>({ signal }, <span class="tok-str">"shutdown started"</span>);   <span class="tok-com">// ch 16 — ye log incident mein kaam aata hai</span>
+
+  <span class="tok-com">// SAFETY NET: agar drain atak gaya toh bhi exit karo.</span>
+  <span class="tok-com">// Ye grace period se KAM hona chahiye, warna SIGKILL pehle aa jayega.</span>
+  <span class="tok-kw">const</span> forceExit = <span class="tok-fn">setTimeout</span>(() =&gt; {
+    logger.<span class="tok-fn">error</span>(<span class="tok-str">"graceful shutdown timed out — forcing exit"</span>);
+    process.<span class="tok-fn">exit</span>(<span class="tok-num">1</span>);
+  }, <span class="tok-num">25_000</span>).<span class="tok-fn">unref</span>();   <span class="tok-com">// unref — ye timer khud process ko zinda na rakhe</span>
+
+  <span class="tok-kw">try</span> {
+    <span class="tok-com">// STEP 2 — LB ko readiness fail dekhne ka WAQT do</span>
+    <span class="tok-kw">await</span> <span class="tok-fn">sleep</span>(<span class="tok-num">10_000</span>);   <span class="tok-com">// = LB ka (check interval × failure threshold) + margin</span>
+    <span class="tok-com">// Is dauraan requests NORMALLY serve hoti rehti hain — ye important hai</span>
+
+    <span class="tok-com">// STEP 3+4 — naye connections band, purane poore hone do</span>
+    <span class="tok-kw">await</span> <span class="tok-kw">new</span> <span class="tok-fn">Promise</span>((resolve, reject) =&gt;
+      server.<span class="tok-fn">close</span>(err =&gt; err ? <span class="tok-fn">reject</span>(err) : <span class="tok-fn">resolve</span>()));
+    <span class="tok-com">// ⚠️ keep-alive idle connections close() ko rok sakte hain —</span>
+    <span class="tok-com">//    Node 18+ mein server.closeIdleConnections() bhi bulao</span>
+    logger.<span class="tok-fn">info</span>(<span class="tok-str">"http server drained"</span>);
+
+    <span class="tok-com">// STEP 5 — cleanup, DEPENDENCY ORDER mein (jo pehle chahiye wo baad mein bandh)</span>
+    <span class="tok-kw">await</span> worker.<span class="tok-fn">close</span>();     <span class="tok-com">// chalu job poora karo, naya mat lo (ch 12)</span>
+    <span class="tok-kw">await</span> redis.<span class="tok-fn">quit</span>();       <span class="tok-com">// quit() pending commands complete karta hai, disconnect() nahi</span>
+    <span class="tok-kw">await</span> pool.<span class="tok-fn">end</span>();         <span class="tok-com">// DB pool — SABSE AAKHIR mein (in-flight queries ko chahiye tha)</span>
+    <span class="tok-kw">await</span> logger.<span class="tok-fn">flush</span>?.();   <span class="tok-com">// buffered logs — warna aakhri log lines KHO jaati hain</span>
+
+    <span class="tok-fn">clearTimeout</span>(forceExit);
+    logger.<span class="tok-fn">info</span>(<span class="tok-str">"shutdown complete"</span>);
+    process.<span class="tok-fn">exit</span>(<span class="tok-num">0</span>);
+  } <span class="tok-kw">catch</span> (err) {
+    logger.<span class="tok-fn">error</span>({ err }, <span class="tok-str">"error during shutdown"</span>);
+    process.<span class="tok-fn">exit</span>(<span class="tok-num">1</span>);
+  }
+}
+
+process.<span class="tok-fn">on</span>(<span class="tok-str">"SIGTERM"</span>, () =&gt; <span class="tok-fn">shutdown</span>(<span class="tok-str">"SIGTERM"</span>));
+process.<span class="tok-fn">on</span>(<span class="tok-str">"SIGINT"</span>,  () =&gt; <span class="tok-fn">shutdown</span>(<span class="tok-str">"SIGINT"</span>));
+</code></pre>
+      </div>
+
+      <h2 id="lb">Sabse Bada Gotcha — Load Balancer Ko Pata Nahi Hai</h2>
+      <p>
+        Ye wo cheez hai jo log sabse zyada miss karte hain, aur jiske bina baaki sab kuch bekaar ho jaata hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">timing — do alag systems, koi coordination nahi<button class="copy-btn">Copy</button></div>
+        <pre><code>t=0.0s   SIGTERM aaya
+t=0.0s   ❌ server.close() turant kar diya
+t=0.1s   LB ko abhi tak KUCH pata nahi — uska agla health check t=5s pe hai
+t=0.2s   LB ne ek request bheji → connection refused → 502 user ko
+t=0.5s   LB ne aur requests bheji → aur 502s
+t=5.0s   LB ko readiness fail dikha
+t=15.0s  LB ne (3 consecutive failures ke baad) instance ko hataya
+<span class="tok-com">// → 15 second tak 502s. Har deploy pe. Har instance pe.</span>
+
+<span class="tok-com">// ✅ Sahi timing</span>
+t=0.0s   SIGTERM → readiness = 503, par server CHALU hai
+t=0.2s   LB ki request aayi → NORMALLY serve hui ✅
+t=5.0s   LB ka health check fail hua (1/3)
+t=10.0s  fail (2/3)
+t=15.0s  fail (3/3) → LB ne instance hataya, ab traffic aana BAND
+t=15.0s  ab server.close() — koi nayi request aa hi nahi rahi
+t=17.0s  in-flight requests poori hui → drained
+t=18.0s  cleanup → exit(0)                    <span class="tok-com">// ZERO 502s</span>
+
+<span class="tok-com">// Wait duration ka formula:</span>
+<span class="tok-com">//   (health check interval × failure threshold) + network margin</span>
+<span class="tok-com">//   AWS ALB default: 30s interval × 2 = 60s+ (ise kam karo, jaise 5s × 2)</span>
+<span class="tok-com">//   k8s: readinessProbe periodSeconds × failureThreshold</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Grace period wait + drain se lamba hona chahiye</div>
+        <p>
+          Agar tumhara wait 10s hai aur drain 5s le sakta hai, toh total 15s+ chahiye — par Kubernetes ka
+          default <code>terminationGracePeriodSeconds</code> <strong>30s</strong> hai aur Docker ka
+          <strong>10s</strong>. Docker default pe tumhara process wait ke beech hi SIGKILL ho jayega — matlab
+          tumne graceful shutdown likha toh hai, par wo kabhi complete hi nahi hota. Ye budget ch 14 ke timeout
+          budget jaisa hi hai: <strong>bahar wali seema andar wale sab kaamon se badi honi chahiye.</strong>
+        </p>
+      </div>
+
+      <h2 id="k8s">Kubernetes Lifecycle</h2>
+      <div class="code-block">
+        <div class="code-title">k8s pod termination — aur ek race condition<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Pod delete hone pe k8s DO KAAM SAATH-SAATH karta hai (koi order guarantee nahi):</span>
+<span class="tok-com">#   A. Pod ko Service endpoints se hataya jaata hai (kube-proxy/ingress update)</span>
+<span class="tok-com">#   B. Container ko SIGTERM bheja jaata hai</span>
+<span class="tok-com"># Endpoint propagation mein time lagta hai → SIGTERM ke BAAD bhi traffic aa sakta hai.</span>
+<span class="tok-com"># Isiliye app ke andar wala wait (step 2) zaroori hai — ya preStop hook.</span>
+
+spec:
+  terminationGracePeriodSeconds: <span class="tok-num">45</span>   <span class="tok-com"># SIGTERM se SIGKILL tak. wait+drain se BADA</span>
+  containers:
+    - name: api
+      lifecycle:
+        preStop:
+          exec:
+            command: [<span class="tok-str">"sh"</span>, <span class="tok-str">"-c"</span>, <span class="tok-str">"sleep 10"</span>]
+      <span class="tok-com"># preStop SIGTERM se PEHLE chalta hai aur block karta hai —</span>
+      <span class="tok-com"># endpoint propagation ka time yahan mil jaata hai.</span>
+      <span class="tok-com"># ⚠️ preStop ka time bhi grace period ke ANDAR se hi jaata hai.</span>
+
+      readinessProbe:
+        httpGet: { path: /health/ready, port: <span class="tok-num">3000</span> }
+        periodSeconds: <span class="tok-num">5</span>
+        failureThreshold: <span class="tok-num">2</span>       <span class="tok-com"># 10s mein hat jayega</span>
+
+      livenessProbe:
+        httpGet: { path: /health/live, port: <span class="tok-num">3000</span> }
+        periodSeconds: <span class="tok-num">10</span>
+        failureThreshold: <span class="tok-num">3</span>
+        <span class="tok-com"># ⚠️ liveness ko shutdown ke dauraan FAIL mat hone do —</span>
+        <span class="tok-com">#    warna k8s container ko restart/kill kar dega beech mein hi</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 PID 1 problem — Docker mein ek classic</div>
+        <p>
+          Container mein tumhara process PID 1 hota hai, aur Linux mein PID 1 ke liye default signal handlers
+          <em>nahi</em> chalte — agar tumne explicitly handler register nahi kiya toh SIGTERM chupchaap ignore
+          ho jaata hai aur 10s baad SIGKILL aata hai. Aur agar tum <code>CMD npm start</code> likhte ho, toh
+          <code>npm</code> PID 1 banta hai aur wo signals apne child (tumhare node process) ko
+          <strong>forward nahi karta</strong>. Fix: <code>CMD ["node", "server.js"]</code> (exec form) use karo,
+          aur <code>docker run --init</code> ya <code>tini</code> ko init process ki tarah lagao. Ye bug bilkul
+          silent hota hai — tumhara shutdown code kabhi chalta hi nahi.
+        </p>
+      </div>
+
+      <h2 id="workers">Workers Aur Cron Jobs</h2>
+      <p>
+        HTTP server ke liye "drain" ka matlab saaf hai. Workers (ch 12) ke liye thoda alag hai — aur unke liye
+        ye <em>zyada</em> important hai, kyunki wahan kaam adhoora rah sakta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">worker shutdown<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">shutdownWorker</span>() {
+  <span class="tok-com">// 1. Naye messages lena BAND karo (poll loop rok do)</span>
+  worker.<span class="tok-fn">pause</span>();
+
+  <span class="tok-com">// 2. Chalu jobs ko poora hone do — bounded wait ke saath</span>
+  <span class="tok-kw">await</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">race</span>([
+    worker.<span class="tok-fn">waitForActiveJobs</span>(),
+    <span class="tok-fn">sleep</span>(<span class="tok-num">20_000</span>),
+  ]);
+
+  <span class="tok-com">// 3. Jo abhi bhi chal rahe hain unhe ACK MAT karo —</span>
+  <span class="tok-com">//    broker visibility timeout ke baad unhe dobara deliver karega,</span>
+  <span class="tok-com">//    aur idempotent worker (ch 12) usse safely handle kar lega.</span>
+  <span class="tok-kw">await</span> worker.<span class="tok-fn">close</span>();
+}
+<span class="tok-com">// YAHI wajah hai ki at-least-once + idempotency non-negotiable hai:</span>
+<span class="tok-com">// shutdown ke waqt duplicate delivery ek NORMAL cheez hai, exception nahi.</span>
+
+<span class="tok-com">// Long-running jobs (2 ghante wala import) grace period mein poore ho hi nahi sakte.</span>
+<span class="tok-com">// Solution: unhe chhote chunks mein todo (ch 12) taaki progress bache aur</span>
+<span class="tok-com">// restart ke baad wahin se continue ho.</span>
+</code></pre>
+      </div>
+
+      <h2 id="pitfalls">Common Mistakes</h2>
+      <table>
+        <thead><tr><th>Galti</th><th>Nateeja</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>SIGTERM handle hi nahi kiya</td><td>Har deploy pe requests katt-ti hain</td><td>Handler register karo</td></tr>
+          <tr><td>Wait ke bina turant close</td><td>LB abhi bhi traffic bhej raha hai → 502s</td><td>Readiness fail karo, phir wait</td></tr>
+          <tr><td>Grace period wait+drain se chhota</td><td>SIGKILL beech mein — shutdown code kabhi complete nahi hota</td><td>Grace &gt; wait + drain + cleanup</td></tr>
+          <tr><td><code>CMD npm start</code></td><td>Signals node tak pahunchte hi nahi</td><td>Exec form + <code>--init</code>/tini</td></tr>
+          <tr><td>Liveness bhi fail kar diya</td><td>k8s beech mein hi container maar deta hai</td><td>Sirf readiness fail karo</td></tr>
+          <tr><td>Logs flush nahi kiye</td><td>Shutdown ke aakhri logs kho jaate hain — jahan asli wajah hoti hai</td><td>Exit se pehle flush</td></tr>
+          <tr><td>DB pool pehle band kar diya</td><td>In-flight queries fail — ulta nuksaan</td><td>Pool sabse aakhir mein</td></tr>
+          <tr><td>Keep-alive connections bhoole</td><td><code>server.close()</code> kabhi resolve nahi hota</td><td><code>closeIdleConnections()</code></td></tr>
+          <tr><td>Shutdown kabhi test hi nahi kiya</td><td>Code hai par kaam nahi karta</td><td>Local pe <code>kill -TERM</code> + load</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Test karo — warna ye code sirf dikhawa hai</div>
+        <p>
+          Graceful shutdown ek aisa code hai jo <em>likhna aasaan hai aur galat hona bahut aasaan hai</em>,
+          kyunki wo normal testing mein kabhi chalta hi nahi. Simple test: load generator chalao
+          (<code>hey -z 60s http://localhost:3000/orders</code>), beech mein
+          <code>kill -TERM &lt;pid&gt;</code> maaro, aur dekho — <strong>zero non-2xx responses aane
+          chahiye</strong>, aur logs mein "shutdown complete" dikhna chahiye. Agar 502 dikha, ya
+          "shutdown timed out" dikha, toh kuch galat hai. Ye 5 minute ka test har service ke liye ek baar karna
+          zaroori hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Shutdown ek <strong>roz ka event</strong> hai — har deploy, autoscale, node drain, spot reclaim pe.</li>
+        <li>Poora kaam <strong>SIGTERM aur SIGKILL ke beech</strong> ki window mein hota hai (Docker 10s, k8s 30s default).</li>
+        <li>Sahi order: <strong>readiness fail → wait → server.close() → drain → cleanup → exit(0)</strong>.</li>
+        <li>Step 2 (<strong>jaanbujh ke wait</strong>) sabse zyada bhoola jaata hai — LB ko abhi pata hi nahi ki instance ja raha hai.</li>
+        <li>Wait duration = (health check interval × failure threshold) + margin.</li>
+        <li><strong>Liveness fail mat karo</strong> shutdown ke dauraan — sirf readiness. Warna orchestrator beech mein hi maar dega.</li>
+        <li>Grace period <strong>wait + drain + cleanup se bada</strong> hona chahiye, warna shutdown code kabhi complete hi nahi hoga.</li>
+        <li>Cleanup <strong>dependency order</strong> mein: worker → redis → <strong>DB pool sabse aakhir</strong> → logs flush.</li>
+        <li>Force-exit timeout ek safety net hai (grace period se kam), aur <code>.unref()</code> ke saath.</li>
+        <li><strong>PID 1 problem</strong>: <code>CMD npm start</code> signals forward nahi karta; exec form + <code>--init</code>/tini use karo. Ye bug bilkul silent hota hai.</li>
+        <li>k8s endpoint removal aur SIGTERM <strong>saath-saath</strong> hote hain — koi order guarantee nahi. <code>preStop: sleep</code> ya app-level wait chahiye.</li>
+        <li>Workers: pause → active jobs poore hone do → baaki ko <strong>ack mat karo</strong> (broker redeliver karega, idempotency bacha legi — ch 12).</li>
+        <li>Graceful shutdown ko <strong>test karo</strong>: load ke beech <code>kill -TERM</code>, aur zero non-2xx expect karo.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Graceful shutdown kaise implement karoge?"</div>
+        <p>
+          SIGTERM/SIGINT pe: (1) readiness probe ko 503 karo <em>par server chalu rakho</em>; (2) LB ko instance
+          hatane ka time do (health check interval × failure threshold + margin) — is dauraan requests normally
+          serve karo; (3) <code>server.close()</code> — naye connections band, purane chalu; (4) in-flight
+          requests drain hone do; (5) cleanup dependency order mein (worker → redis → DB pool → logs flush);
+          (6) <code>exit(0)</code>. Saath mein ek force-exit timeout safety net, jo grace period se kam ho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Deploy ke waqt users ko 502 mil rahe hain. Kyun?"</div>
+        <p>
+          Sabse likely: process SIGTERM pe turant band ho raha hai, par load balancer ko abhi pata nahi chala —
+          uska agla health check kuch second baad hai, aur usse pehle wo traffic bhejta rehta hai → connection
+          refused → 502. Fix wo <em>wait</em> window hai: pehle readiness fail karo, phir LB ke hatane tak
+          normally serve karte raho, uske baad close karo. Doosri possibility: <code>CMD npm start</code> ki
+          wajah se SIGTERM node tak pahunch hi nahi raha, aur 10s baad SIGKILL aa raha hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "SIGTERM aur SIGKILL mein farq?"</div>
+        <p>
+          SIGTERM (15) polite request hai — process usse catch karke cleanup kar sakta hai. SIGKILL (9) OS
+          level pe turant maarta hai, catch ho hi nahi sakta, koi cleanup nahi. Orchestrator pehle SIGTERM
+          bhejta hai aur grace period deta hai; us window mein exit na hua toh SIGKILL. Isliye poora graceful
+          shutdown us window ke andar fit hona chahiye — warna wo likha hone ke bawajood kabhi complete nahi
+          hoga.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Shutdown ke waqt worker ka chalu job kya hoga?"</div>
+        <p>
+          Pehle naye messages lena band karo (pause), phir chalu jobs ko bounded time tak poora hone do. Jo
+          us waqt tak poore nahi hue unhe <strong>ack mat karo</strong> — broker visibility timeout ke baad
+          unhe dobara deliver kar dega. Isi wajah se at-least-once + idempotent worker (ch 12) zaroori hai:
+          shutdown ke waqt duplicate delivery normal hai, exception nahi. Lambe jobs ko chhote chunks mein todo
+          taaki wo grace period mein fit ho jaayein aur progress bache.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Container mein SIGTERM ignore ho raha hai. Kya problem hai?"</div>
+        <p>
+          PID 1 problem. Container mein tumhara process PID 1 hota hai, aur PID 1 ke liye Linux default signal
+          handlers nahi chalata — handler register na ho toh SIGTERM ignore ho jaata hai. Aur
+          <code>CMD npm start</code> (shell form) mein npm/shell PID 1 banta hai aur signals apne child ko
+          forward nahi karta. Fix: exec form <code>CMD ["node", "server.js"]</code>, aur
+          <code>docker run --init</code> ya <code>tini</code> ko init process banao.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="18-security.html"><strong>Chapter 18 — Backend Security</strong></a>: ab tak ki har layer
+          mein security ke threads bikhre hue the — CORS (ch 2), cookies (ch 6), mass assignment (ch 7),
+          IDOR (ch 6), SQL injection (ch 8), secrets (ch 15). Ab wo sab ek jagah, attack surface ke saath.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

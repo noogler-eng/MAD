@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concurrency &amp; Parallelism — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link active" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 21</div>
+      <div class="progress-pill">21 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">IO vs CPU · Event Loop · Threads · Processes · GIL</span>
+      <h1>Concurrency &amp; Parallelism</h1>
+      <p class="subtitle">
+        Aakhri chapter, aur ye poore handbook ke neeche wali layer hai. Ab tak humne machines add ki (ch 19–20).
+        Ab andar jhaankte hain: <strong>ek process ke andar kaam actually saath-saath hota kaise hai?</strong>
+        Aur ek distinction jo har scaling decision badal deti hai — <strong>IO-bound vs CPU-bound</strong>.
+        Ye galat samajhne se log Node ko CPU work de dete hain aur Python mein threads laga dete hain, aur dono
+        jagah phans jaate hain.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 22 —
+        <a href="https://www.youtube.com/watch?v=bs9MEYRTA30">Concurrency &amp; Parallelism: IO Bound vs CPU Bound</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#difference">1. Concurrency ≠ Parallelism</a></li>
+          <li><a href="#bound">2. IO-bound vs CPU-bound — Central Distinction</a></li>
+          <li><a href="#models">3. Teen Concurrency Models</a></li>
+          <li><a href="#eventloop">4. Event Loop — Andar Se</a></li>
+          <li><a href="#blocking">5. Event Loop Block Hona</a></li>
+          <li><a href="#statemachine">6. Async/Await Andar Se — State Machines</a></li>
+          <li><a href="#green">7. Goroutines Aur Virtual Threads</a></li>
+          <li><a href="#gil">8. Python Ka GIL</a></li>
+          <li><a href="#choose">9. Sahi Model Kaise Chunein</a></li>
+          <li><a href="#hazards">10. Shared State Ke Khatre</a></li>
+          <li><a href="#sync">11. Locks, Mutexes, Aur Channels</a></li>
+          <li><a href="#takeaways">12. Key Takeaways</a></li>
+          <li><a href="#interview">13. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="difference">Concurrency ≠ Parallelism</h2>
+      <p>
+        Ye do shabd roz mila diye jaate hain, par inka matlab bilkul alag hai — aur ye farq baaki poore chapter
+        ki neev hai.
+      </p>
+      <ul>
+        <li><strong>Concurrency</strong> = kai kaam <em>ek saath chalu</em> hain (progress mein). Zaroori nahi
+        ki wo ek hi lamhe mein execute ho rahe hon.</li>
+        <li><strong>Parallelism</strong> = kai kaam <em>literally ek hi lamhe</em> mein execute ho rahe hain.
+        Iske liye <strong>multiple CPU cores</strong> chahiye — ye ek hardware zaroorat hai.</li>
+      </ul>
+      <p>
+        Rob Pike ki mashhoor line ka saar: concurrency bahut saari cheezon ko <em>sambhalne</em> ke baare mein
+        hai, parallelism unhe <em>ek saath karne</em> ke baare mein. Ek single-core machine
+        <strong>concurrent</strong> ho sakti hai (task switch karke), par <strong>parallel</strong> nahi.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Ek cook wali analogy</div>
+        <p>
+          Ek cook (single core) do dishes bana raha hai: chawal gas pe chadha diya, aur jab tak wo pak raha hai
+          wo sabzi kaat raha hai. Ye <strong>concurrency</strong> hai — dono kaam chalu hain, par wo ek waqt mein
+          ek hi cheez kar raha hai; usne bas <em>waiting time</em> ka istemal kar liya. Do cooks (do cores) do
+          dishes saath banayein — wo <strong>parallelism</strong> hai. Aur yahi is chapter ka core hai:
+          <em>IO-bound kaam mein wait bahut hai, isliye ek cook kaafi hai. CPU-bound kaam mein wait hai hi nahi,
+          isliye zyada cooks hi ek matra raasta hai.</em>
+        </p>
+      </div>
+
+      <h2 id="bound">IO-bound vs CPU-bound — Central Distinction</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IO-bound work spends most time waiting while CPU-bound work keeps the processor busy">
+          <text x="186" y="20" class="ex-t">IO-BOUND</text>
+          <text x="574" y="20" class="ex-t">CPU-BOUND</text>
+          <path d="M376,32 C380,150 372,270 376,364" class="ex-stroke ex-stroke-d"/>
+
+          <text x="186" y="44" class="ex-t-sm">ek typical API request — 200 ms</text>
+          <rect x="26" y="56" width="14" height="26" rx="3" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <rect x="42" y="56" width="150" height="26" rx="3" class="ex-stroke ex-stroke-d"/>
+          <rect x="194" y="56" width="10" height="26" rx="3" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <rect x="206" y="56" width="112" height="26" rx="3" class="ex-stroke ex-stroke-d"/>
+          <rect x="320" y="56" width="14" height="26" rx="3" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="186" y="98" class="ex-t-sm">▓ CPU (~5 ms)    ░ WAIT (~195 ms)</text>
+
+          <text x="186" y="128" class="ex-t-lbl">CPU 97% time KHALI baitha hai</text>
+          <text x="186" y="152" class="ex-t-sm">DB query · HTTP call · disk · queue</text>
+
+          <rect x="26" y="176" width="308" height="96" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="180" y="198" class="ex-t-sm">Us khali time mein kya karein?</text>
+          <text x="180" y="222" class="ex-t-lbl">DOOSRI REQUEST!</text>
+          <text x="180" y="246" class="ex-t-sm">ek thread hazaaron connections</text>
+          <text x="180" y="264" class="ex-t-sm">handle kar sakta hai</text>
+
+          <text x="180" y="300" class="ex-t-lbl">→ event loop / async IO ideal</text>
+          <text x="180" y="324" class="ex-t-sm">→ concurrency chahiye, parallelism nahi</text>
+          <text x="180" y="348" class="ex-t-sm">→ scale: aur connections, aur instances</text>
+
+          <text x="574" y="44" class="ex-t-sm">image resize / PDF / crypto — 200 ms</text>
+          <rect x="414" y="56" width="308" height="26" rx="3" class="ex-fill-o ex-stroke"/>
+          <text x="568" y="98" class="ex-t-sm">▓ CPU 100% — koi wait NAHI</text>
+
+          <text x="574" y="128" class="ex-t-lbl">core poore time BUSY hai</text>
+          <text x="574" y="152" class="ex-t-sm">hashing · compression · parsing · ML</text>
+
+          <rect x="414" y="176" width="308" height="96" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="568" y="198" class="ex-t-sm">Khali time hai hi nahi</text>
+          <text x="568" y="222" class="ex-t-lbl">async se KUCH nahi milta</text>
+          <text x="568" y="246" class="ex-t-sm">ek core = ek kaam at a time</text>
+          <text x="568" y="264" class="ex-t-sm">baaki sab QUEUE mein</text>
+
+          <text x="568" y="300" class="ex-t-lbl">→ processes / worker threads chahiye</text>
+          <text x="568" y="324" class="ex-t-sm">→ asli PARALLELISM chahiye</text>
+          <text x="568" y="348" class="ex-t-sm">→ scale: aur cores, aur machines</text>
+        </svg>
+        <figcaption>
+          Poora chapter is ek diagram mein hai. IO-bound kaam mein CPU 97% time <em>khali</em> baitha hai —
+          isliye ek thread hazaaron requests sambhal sakta hai. CPU-bound mein khali time hai hi nahi — isliye
+          async wahan <strong>kuch nahi</strong> deta; sirf aur cores dete hain.
+        </figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th></th><th>IO-bound</th><th>CPU-bound</th></tr></thead>
+        <tbody>
+          <tr><td>Time kahan jaata hai</td><td>Wait mein (network, disk)</td><td>Computation mein</td></tr>
+          <tr><td>Examples</td><td>API endpoints, DB queries, proxies, webhooks</td><td>Image/video processing, PDF, crypto, compression, bade JSON parse</td></tr>
+          <tr><td>Async se faayda</td><td><strong>Bahut zyada</strong></td><td><strong>Zero</strong></td></tr>
+          <tr><td>Sahi model</td><td>Event loop / async IO</td><td>Multi-process / worker threads</td></tr>
+          <tr><td>Scale kaise</td><td>Aur concurrency, aur instances</td><td>Aur cores; ya queue mein daalo (ch 12)</td></tr>
+          <tr><td>Bottleneck signal</td><td>Pool saturation, event loop lag</td><td>CPU 100%</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ch 19 se connection</div>
+        <p>
+          Yahi wajah thi ki ch 19 mein bola tha "sirf CPU pe autoscale karna galat hai". IO-bound app mein CPU
+          20% pe rehta hai jabki wo requests handle karne mein struggle kar raha hota hai — kyunki uski limit
+          CPU nahi, <em>concurrency</em> (connections, pool slots, event loop lag) hai. Autoscaling metric
+          workload ke type se match karna chahiye.
+        </p>
+      </div>
+
+      <h2 id="models">Teen Concurrency Models</h2>
+      <table>
+        <thead><tr><th>Model</th><th>Kaise</th><th>Memory</th><th>Achha kis mein</th><th>Kahan</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Process per request</strong></td>
+            <td>Har request ka apna process</td>
+            <td>Bahut zyada (10s of MB)</td>
+            <td>Isolation — ek crash doosre ko nahi chhuta</td>
+            <td>Purana CGI, PHP-FPM</td>
+          </tr>
+          <tr>
+            <td><strong>Thread per request</strong></td>
+            <td>Har request ka apna thread</td>
+            <td>~1 MB stack per thread</td>
+            <td>Simple blocking code likh sakte ho</td>
+            <td>Java, Rails; Go mein goroutines (bahut halke)</td>
+          </tr>
+          <tr>
+            <td><strong>Event loop</strong></td>
+            <td>Ek thread + async IO</td>
+            <td>Bahut kam (per-connection KBs)</td>
+            <td>Hazaaron concurrent connections</td>
+            <td>Node.js, Python asyncio, nginx</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 C10K problem — event loop kyun paida hua</div>
+        <p>
+          Thread-per-request mein 10,000 concurrent connections ka matlab hai 10,000 threads × ~1 MB stack =
+          <strong>10 GB RAM</strong>, aur uske upar OS ka context switching overhead — jo itne threads pe khud
+          ek bottleneck ban jaata hai. Par yaad karo ki wo saare threads kar kya rahe hain: <em>wait</em>. Toh
+          event loop ne ek badla hua sawaal poocha: <em>"agar sab wait hi kar rahe hain, toh ek hi thread se
+          sabka wait manage kyun na karein?"</em> Isiliye Node aur nginx dono <strong>ek</strong> thread pe
+          hazaaron connections handle kar lete hain. Ye "Node fast hai" ka asli matlab hai — wo CPU pe fast
+          nahi hai, wo <em>waiting</em> pe efficient hai.
+        </p>
+      </div>
+
+      <h2 id="eventloop">Event Loop — Andar Se</h2>
+      <div class="code-block">
+        <div class="code-title">event loop ka core<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Concept mein event loop bas ye hai:</span>
+<span class="tok-kw">while</span> (<span class="tok-kw">true</span>) {
+  <span class="tok-kw">const</span> ready = <span class="tok-fn">poll</span>(pendingIO);              <span class="tok-com">// OS se poocho: kaunsa IO ready hai?</span>
+  <span class="tok-kw">for</span> (<span class="tok-kw">const</span> e <span class="tok-kw">of</span> ready) <span class="tok-fn">runCallback</span>(e);      <span class="tok-com">// uska callback chalao</span>
+}
+<span class="tok-com">// Ye poll() OS ke epoll (Linux) / kqueue (BSD) pe khada hai — jo hazaaron</span>
+<span class="tok-com">// file descriptors ko ek saath efficiently watch kar sakta hai.</span>
+
+<span class="tok-com">// ── Non-blocking IO — yahan thread RUKTA NAHI ──────────────</span>
+<span class="tok-kw">const</span> rows = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT …"</span>);
+<span class="tok-com">// Andar kya hua:</span>
+<span class="tok-com">//   1. query socket pe likh di gayi</span>
+<span class="tok-com">//   2. callback register hua, aur ye function SUSPEND ho gaya</span>
+<span class="tok-com">//   3. event loop ne DOOSRI requests handle karni shuru kar di  ✅</span>
+<span class="tok-com">//   4. DB response aaya → OS ne loop ko bataya → callback resume hua</span>
+
+<span class="tok-com">// ⚠️ Ek nuance jo log miss karte hain: Node "single-threaded" hai —</span>
+<span class="tok-com">// par sirf TUMHARA JS single-threaded hai. Andar ek libuv threadpool</span>
+<span class="tok-com">// (default 4 threads) hai jo file IO, DNS lookups, aur kuch crypto</span>
+<span class="tok-com">// handle karta hai, kyunki wo operations OS level pe truly async nahi hain.</span>
+<span class="tok-com">// UV_THREADPOOL_SIZE se badhaya ja sakta hai.</span>
+</code></pre>
+      </div>
+
+      <h2 id="blocking">Event Loop Block Hona</h2>
+      <p>
+        Event loop ka poora model ek shart pe khada hai: <strong>har callback jaldi khatam hona chahiye</strong>.
+        Ek callback jo 2 second CPU khaata hai, us dauraan poore server ko rok deta hai —
+        <em>har</em> connection ke liye. Ye Node ka sabse bada failure mode hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">blocking — aur uske fix<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Ye poore server ko 2 second ke liye MAAR deta hai</span>
+app.<span class="tok-fn">post</span>(<span class="tok-str">"/thumbnail"</span>, (req, res) =&gt; {
+  <span class="tok-kw">const</span> out = sharp.<span class="tok-fn">resizeSync</span>(req.body.image);   <span class="tok-com">// CPU-heavy, synchronous</span>
+  res.<span class="tok-fn">send</span>(out);
+});
+<span class="tok-com">// Is dauraan: koi nayi request accept nahi hogi, koi callback nahi chalega,</span>
+<span class="tok-com">// aur health check bhi timeout hoga (ch 17) → LB instance ko unhealthy maar dega.</span>
+<span class="tok-com">// EK request ne POORA instance gira diya.</span>
+
+<span class="tok-com">// Doosre chhupe hue blockers:</span>
+JSON.<span class="tok-fn">parse</span>(hugeString);           <span class="tok-com">// 50 MB JSON ≈ 1s block (ch 5 ka size limit yaad karo)</span>
+crypto.<span class="tok-fn">pbkdf2Sync</span>(…);             <span class="tok-com">// password hashing — async version use karo (ch 6)</span>
+bigArray.<span class="tok-fn">sort</span>();                  <span class="tok-com">// 10 lakh items</span>
+<span class="tok-kw">const</span> re = <span class="tok-str">/(a+)+$/</span>;               <span class="tok-com">// catastrophic backtracking — ReDoS (ch 4, ch 18)</span>
+<span class="tok-kw">while</span> (<span class="tok-fn">Date</span>.<span class="tok-fn">now</span>() - t &lt; <span class="tok-num">1000</span>) {}   <span class="tok-com">// koi bhi busy loop</span>
+
+<span class="tok-com">// ✅ Fix 1: worker thread — CPU kaam alag thread mein</span>
+<span class="tok-kw">const</span> out = <span class="tok-kw">await</span> workerPool.<span class="tok-fn">run</span>(<span class="tok-str">"resize"</span>, req.body.image);
+<span class="tok-com">// main loop free rehta hai; kaam ek alag thread/core pe chalta hai</span>
+
+<span class="tok-com">// ✅ Fix 2 (aksar behtar): QUEUE mein daal do (ch 12)</span>
+<span class="tok-kw">await</span> queue.<span class="tok-fn">add</span>(<span class="tok-str">"thumbnail"</span>, { imageId });
+res.<span class="tok-fn">status</span>(<span class="tok-num">202</span>).<span class="tok-fn">json</span>({ jobId });   <span class="tok-com">// ch 12 ka 202 pattern</span>
+<span class="tok-com">// Worker alag process/machine pe — API instance CPU work karta hi nahi.</span>
+<span class="tok-com">// Aur ye ch 14 ka bulkhead bhi hai: CPU work API ko gira nahi sakta.</span>
+
+<span class="tok-com">// 📊 Event loop lag ko MONITOR karo (ch 16, ch 19) —</span>
+<span class="tok-com">// ye Node apps ka sabse important saturation metric hai.</span>
+<span class="tok-kw">const</span> h = <span class="tok-fn">monitorEventLoopDelay</span>(); h.<span class="tok-fn">enable</span>();
+<span class="tok-com">// h.p99 &gt; 100ms → kuch block kar raha hai. Alert lagao.</span>
+</code></pre>
+      </div>
+
+      <h2 id="statemachine">Async/Await Andar Se — State Machines</h2>
+      <p>
+        <code>async/await</code> jaadu jaisa lagta hai: code synchronous dikhta hai par blocking nahi karta.
+        Jaadu ye hai — <strong>compiler tumhare function ko ek state machine mein badal deta hai.</strong> Ye
+        samajhna do practical faayde deta hai: pata chalta hai ki "suspend" ka matlab kya hai, aur kyun
+        <code>await</code> ek race-condition ka darwaza hai (§10).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">tumne kya likha vs compiler ne kya banaya<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── Tumne likha ────────────────────────────────────────────</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">createOrder</span>(userId) {
+  <span class="tok-kw">const</span> user  = <span class="tok-kw">await</span> db.<span class="tok-fn">getUser</span>(userId);      <span class="tok-com">// suspend point 1</span>
+  <span class="tok-kw">const</span> items = <span class="tok-kw">await</span> db.<span class="tok-fn">getCart</span>(user.id);     <span class="tok-com">// suspend point 2</span>
+  <span class="tok-kw">return</span> db.<span class="tok-fn">insert</span>({ userId, items });
+}
+
+<span class="tok-com">// ── Compiler ne conceptually kya banaya ────────────────────</span>
+<span class="tok-kw">function</span> <span class="tok-fn">createOrder</span>(userId) {
+  <span class="tok-kw">let</span> state = <span class="tok-num">0</span>, user, items;         <span class="tok-com">// ← locals HEAP pe chale gaye</span>
+
+  <span class="tok-kw">function</span> <span class="tok-fn">step</span>(value) {
+    <span class="tok-kw">switch</span> (state) {
+      <span class="tok-kw">case</span> <span class="tok-num">0</span>:
+        state = <span class="tok-num">1</span>;
+        db.<span class="tok-fn">getUser</span>(userId).<span class="tok-fn">then</span>(step);   <span class="tok-com">// callback register karke RETURN kar do</span>
+        <span class="tok-kw">return</span>;                          <span class="tok-com">// ← thread FREE ho gaya ✅</span>
+      <span class="tok-kw">case</span> <span class="tok-num">1</span>:
+        user = value;                    <span class="tok-com">// resume: yahin se aage</span>
+        state = <span class="tok-num">2</span>;
+        db.<span class="tok-fn">getCart</span>(user.id).<span class="tok-fn">then</span>(step);
+        <span class="tok-kw">return</span>;
+      <span class="tok-kw">case</span> <span class="tok-num">2</span>:
+        items = value;
+        <span class="tok-kw">return</span> db.<span class="tok-fn">insert</span>({ userId, items });
+    }
+  }
+  <span class="tok-fn">step</span>();
+}
+<span class="tok-com">// Har `await` = ek state, ek resume point.</span>
+<span class="tok-com">// "Suspend" ka matlab: function ne RETURN kar diya aur baad mein resume hoga.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Isse teen cheezein saaf ho jaati hain</div>
+        <p>
+          <strong>1. Stack sasta hai.</strong> Thread ko ~1 MB stack chahiye kyunki wo <em>block</em> hota hai
+          aur uska poora stack bacha ke rakhna padta hai. Async function suspend hone pe sirf apne live
+          variables heap pe rakhta hai — kuch bytes. Yahi wajah hai ki ek process lakhon pending async
+          operations rakh sakta hai par 10,000 threads nahi.<br>
+          <strong>2. Colored functions.</strong> <code>async</code> function ko sirf <code>async</code> context
+          se hi <code>await</code> kar sakte ho — isliye ek sync function ko async banane pe uske saare callers
+          async banane padte hain. Ye "function coloring" async/await ki asli ergonomic keemat hai.<br>
+          <strong>3. <code>await</code> ek yield point hai.</strong> Wahan doosri request ghus sakti hai —
+          isiliye single-threaded Node mein bhi race conditions hoti hain (§10).
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">concurrency ka sabse common galat use<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ SERIAL — 3 independent calls, ek ke baad ek. 600ms.</span>
+<span class="tok-kw">const</span> user    = <span class="tok-kw">await</span> <span class="tok-fn">getUser</span>(id);      <span class="tok-com">// 200ms</span>
+<span class="tok-kw">const</span> orders  = <span class="tok-kw">await</span> <span class="tok-fn">getOrders</span>(id);    <span class="tok-com">// 200ms</span>
+<span class="tok-kw">const</span> reviews = <span class="tok-kw">await</span> <span class="tok-fn">getReviews</span>(id);   <span class="tok-com">// 200ms</span>
+
+<span class="tok-com">// ✅ PARALLEL — teenon ek saath. 200ms.</span>
+<span class="tok-kw">const</span> [user, orders, reviews] = <span class="tok-kw">await</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">all</span>([
+  <span class="tok-fn">getUser</span>(id), <span class="tok-fn">getOrders</span>(id), <span class="tok-fn">getReviews</span>(id),
+]);
+<span class="tok-com">// Trace (ch 16) mein serial calls ek SEEDHI SEEDHI staircase dikhti hai —</span>
+<span class="tok-com">// wo dekhte hi pata chal jaata hai ki yahan Promise.all lagna chahiye tha.</span>
+
+<span class="tok-com">// ⚠️ Promise.all mein ek fail = sab reject. Partial results chahiye toh:</span>
+<span class="tok-kw">const</span> results = <span class="tok-kw">await</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">allSettled</span>([...]);   <span class="tok-com">// ch 14 ka degradation</span>
+
+<span class="tok-com">// ⚠️ Aur unbounded parallelism bhi ek trap hai:</span>
+<span class="tok-kw">await</span> <span class="tok-fn">Promise</span>.<span class="tok-fn">all</span>(tenThousandIds.<span class="tok-fn">map</span>(fetchOne));
+<span class="tok-com">// → 10,000 ek saath: DB pool khatam (ch 10), downstream kuchal gaya (ch 14).</span>
+<span class="tok-com">// ✅ concurrency limit lagao (p-limit, semaphore) — jaise 20 at a time.</span>
+</code></pre>
+      </div>
+
+      <h2 id="green">Goroutines Aur Virtual Threads</h2>
+      <p>
+        Ek teesra raasta hai jo dono ke faayde deta hai: <strong>lightweight threads jo runtime manage karta
+        hai</strong> — Go mein goroutines, Java 21+ mein virtual threads, Erlang/Elixir mein processes.
+      </p>
+
+      <table>
+        <thead><tr><th></th><th>OS thread</th><th>Goroutine / virtual thread</th></tr></thead>
+        <tbody>
+          <tr><td>Kaun manage karta hai</td><td>OS kernel</td><td><strong>Language runtime</strong></td></tr>
+          <tr><td>Initial stack</td><td>~1 MB (fixed)</td><td>~2–8 KB (<strong>grow hota hai</strong>)</td></tr>
+          <tr><td>Kitne practical</td><td>Hazaaron</td><td><strong>Lakhon</strong></td></tr>
+          <tr><td>Context switch</td><td>Kernel — ~1–2 µs</td><td>User space — ~100 ns</td></tr>
+          <tr><td>Code kaisa dikhta hai</td><td>Blocking (simple)</td><td><strong>Blocking (simple)</strong></td></tr>
+          <tr><td>Function coloring</td><td>Nahi</td><td><strong>Nahi</strong> ✅</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">M:N scheduling — mechanism<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Runtime N goroutines ko M OS threads pe MULTIPLEX karta hai (M ≈ cores).</span>
+<span class="tok-com">// Jab ek goroutine IO pe block hoti hai, runtime usse HATA ke us OS thread pe</span>
+<span class="tok-com">// doosri goroutine chala deta hai — bilkul event loop jaisa,</span>
+<span class="tok-com">// par ye tumhare code se CHHUPA hua hai.</span>
+
+<span class="tok-com">// Go — dikhne mein blocking, andar se async</span>
+<span class="tok-kw">func</span> handler(w http.ResponseWriter, r *http.Request) {
+    user := db.GetUser(id)      <span class="tok-com">// "blocking" dikhta hai...</span>
+    orders := db.GetOrders(id)  <span class="tok-com">// ...par OS thread free hota hai</span>
+    json.NewEncoder(w).Encode(...)
+}
+<span class="tok-com">// Har request ek goroutine — 1 lakh concurrent requests bilkul normal hai.</span>
+<span class="tok-com">// Koi async/await nahi, koi function coloring nahi, koi callback nahi.</span>
+
+<span class="tok-com">// Java 21+ — bilkul wahi idea</span>
+Thread.startVirtualThread(() -> { ... });
+<span class="tok-com">// Purana thread-per-request code bina badle lakhon connections handle karne lagta hai.</span>
+
+<span class="tok-com">// ⚠️ Par ek cheez ye BHI nahi badalti: CPU-bound kaam.</span>
+<span class="tok-com">// Goroutines IO wait ko efficient banati hain. Ek CPU-heavy goroutine</span>
+<span class="tok-com">// abhi bhi ek core poora khaati hai — parallelism sirf cores se aati hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Yahi wajah hai ki Go backend ke liye popular hua</div>
+        <p>
+          Purana trade-off tha: <em>simple blocking code</em> (threads) <strong>ya</strong>
+          <em>high concurrency</em> (event loop) — dono ek saath nahi. Goroutines ne wo trade-off hi khatam kar
+          diya: code thread-per-request jaisa simple dikhta hai, par scale event-loop jaisa milta hai. Java ne
+          virtual threads se yahi 2023 mein kiya, aur uska sabse bada faayda ye hai ki <strong>purana blocking
+          code bina rewrite kiye</strong> fayda uthata hai — jabki async/await migration mein har caller badalna
+          padta hai (function coloring).
+        </p>
+      </div>
+
+      <h2 id="gil">Python Ka GIL</h2>
+      <p>
+        Python mein ek extra layer hai jo bahut confusion paida karti hai: <strong>Global Interpreter
+        Lock</strong>. GIL ek mutex hai jo guarantee karta hai ki ek waqt pe <em>ek hi thread</em> Python
+        bytecode chala sakta hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">GIL ka practical matlab<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># ❌ CPU-bound + threads = koi speedup NAHI</span>
+<span class="tok-com"># 4 threads, 4 cores — par GIL ki wajah se ek waqt pe ek hi chalega.</span>
+<span class="tok-com"># Ulta context switching ka overhead add ho jaata hai.</span>
+<span class="tok-kw">with</span> ThreadPoolExecutor(<span class="tok-num">4</span>) <span class="tok-kw">as</span> ex:
+    ex.map(cpu_heavy_function, items)      <span class="tok-com"># ~1x speed. Bekaar.</span>
+
+<span class="tok-com"># ✅ CPU-bound + processes = asli parallelism</span>
+<span class="tok-com"># Har process ka apna interpreter, apna GIL.</span>
+<span class="tok-kw">with</span> ProcessPoolExecutor(<span class="tok-num">4</span>) <span class="tok-kw">as</span> ex:
+    ex.map(cpu_heavy_function, items)      <span class="tok-com"># ~4x speed ✅</span>
+
+<span class="tok-com"># ✅ IO-bound + threads = THEEK hai!</span>
+<span class="tok-com"># Kyunki IO wait ke dauraan thread GIL CHHOD deta hai.</span>
+<span class="tok-kw">with</span> ThreadPoolExecutor(<span class="tok-num">50</span>) <span class="tok-kw">as</span> ex:
+    ex.map(fetch_url, urls)                <span class="tok-com"># achha speedup ✅</span>
+
+<span class="tok-com"># ✅ IO-bound + asyncio = sabse efficient (Node jaisa event loop)</span>
+<span class="tok-kw">await</span> asyncio.gather(*[fetch(u) <span class="tok-kw">for</span> u <span class="tok-kw">in</span> urls])
+
+<span class="tok-com"># Isiliye production Python servers (gunicorn) MULTIPLE WORKER PROCESSES</span>
+<span class="tok-com"># chalate hain — har process ka apna GIL, toh cores actually use hote hain.</span>
+<span class="tok-com"># gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app</span>
+<span class="tok-com">#          └ 4 processes  └ har process ke andar async event loop</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Yahi baat Node pe bhi lagti hai</div>
+        <p>
+          Node bhi ek process mein ek hi core use karta hai. Isliye production mein
+          <strong>cluster mode</strong> chalta hai — <code>PM2 -i max</code>, ya Kubernetes mein har pod ko
+          1 CPU dekar zyada pods. Rule dono jagah same hai: <strong>process count ≈ core count</strong>. Ek
+          8-core machine pe ek Node process chalana 7 cores barbaad karna hai.
+        </p>
+      </div>
+
+      <h2 id="choose">Sahi Model Kaise Chunein</h2>
+      <div class="code-block">
+        <div class="code-title">decision tree<button class="copy-btn">Copy</button></div>
+        <pre><code>Tumhara kaam kaisa hai?
+│
+├─ IO-BOUND (API, DB, external calls) — 90% backend kaam
+│   ├─ Node/Python  → async/await, event loop
+│   ├─ Go           → goroutines (runtime khud multiplex karta hai)
+│   ├─ Java         → virtual threads (Loom), ya reactive
+│   └─ Scale        → concurrency badhao, phir instances (ch 19)
+│
+├─ CPU-BOUND (image, PDF, crypto, ML)
+│   ├─ Chhota (&lt;50ms)  → worker thread theek hai
+│   ├─ Bada            → QUEUE + alag worker service (ch 12)  ← default choice
+│   └─ Scale           → aur cores, aur worker machines
+│
+└─ MIXED (asli duniya mein aksar yahi)
+    └─ ALAG KARO: API instances sirf IO karein,
+       CPU kaam queue ke through worker instances pe jaaye.
+       Ye ch 14 ka bulkhead hai — ek CPU spike API ko gira nahi sakta.
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Sabse practical rule</div>
+        <p>
+          <strong>API instances ko IO-only rakho.</strong> Jaise hi koi CPU-heavy kaam aaye — image resize, PDF,
+          report generation, bulk export — usse queue ke through ek alag worker fleet pe bhej do. Isse teen
+          faayde ek saath milte hain: API ki latency predictable rehti hai, dono cheezein alag-alag scale ho
+          sakti hain (worker fleet CPU-optimized, API memory-optimized), aur ek CPU spike API ko gira nahi sakta.
+          Ye ch 12 (queues), ch 14 (bulkhead), aur ch 19 (scaling) — teenon ka sangam hai, aur shayad is poore
+          handbook ka sabse zyada kaam aane wala single architectural rule.
+        </p>
+      </div>
+
+      <h2 id="hazards">Shared State Ke Khatre</h2>
+      <p>
+        Jaise hi asli parallelism aata hai (threads ya processes), shared mutable state ek problem ban jaati hai.
+        Node ka single-threaded model tumhe <em>zyadatar</em> se bachata hai — par poori tarah nahi:
+      </p>
+      <div class="code-block">
+        <div class="code-title">Node mein bhi race condition possible hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// JS ka har SYNCHRONOUS block atomic hai — koi usse beech mein nahi rok sakta.</span>
+<span class="tok-com">// Par `await` ek yield point hai: wahan doosri request ghus sakti hai.</span>
+
+<span class="tok-kw">let</span> balance = <span class="tok-num">100</span>;
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">withdraw</span>(amount) {
+  <span class="tok-kw">const</span> current = <span class="tok-kw">await</span> db.<span class="tok-fn">getBalance</span>();   <span class="tok-com">// ← YIELD POINT</span>
+  <span class="tok-kw">if</span> (current &lt; amount) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">"insufficient"</span>);
+  <span class="tok-kw">await</span> db.<span class="tok-fn">setBalance</span>(current - amount);   <span class="tok-com">// ← aur YIELD POINT</span>
+}
+<span class="tok-com">// Do concurrent withdraw(100) calls: dono ne 100 padha, dono ne check pass kiya,</span>
+<span class="tok-com">// dono ne 0 likha → 200 nikal gaye. Single-threaded hone ke BAWAJOOD.</span>
+
+<span class="tok-com">// ✅ Fix wahi hai jo ch 10 mein tha — atomicity DB se lo, code se nahi:</span>
+<span class="tok-kw">UPDATE</span> accounts <span class="tok-kw">SET</span> balance = balance - $<span class="tok-num">1</span>
+ <span class="tok-kw">WHERE</span> id = $<span class="tok-num">2</span> <span class="tok-kw">AND</span> balance &gt;= $<span class="tok-num">1</span>;   <span class="tok-com">// rowCount=0 → insufficient</span>
+<span class="tok-com">// ya SELECT … FOR UPDATE, ya version column (optimistic locking)</span>
+</code></pre>
+      </div>
+      <p>
+        Asli threads wale environments (Java, Go, Python threads) mein aur bhi khatre hain — data races,
+        deadlocks (ch 10 ka lock ordering yahan bhi lagta hai), aur non-atomic read-modify-write. Isliye
+        modern approach yahi hai: <strong>shared mutable state se bacho</strong> — immutable data, message
+        passing (Go channels, actor model), ya state ko ek shared store mein rakho jahan atomic operations hon
+        (Redis, DB).
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Poore handbook ka ek dohraya hua sabak</div>
+        <p>
+          Ch 7 (uniqueness check), ch 9 (idempotency key), ch 10 (lost update), ch 11 (cache lock), ch 18 (rate
+          limit) — <strong>paanchon jagah ek hi galti thi: check-then-act.</strong> Do steps ke beech koi aur
+          ghus sakta hai. Aur paanchon jagah fix bhi ek hi tha: operation ko <em>atomic</em> banao — DB
+          constraint, conditional <code>UPDATE</code>, <code>ON CONFLICT</code>, ya <code>SET NX</code>.
+          Concurrency ke baare mein sochna seekhne ka matlab hi ye pattern pehchanna hai.
+        </p>
+      </div>
+
+      <h2 id="sync">Locks, Mutexes, Aur Channels</h2>
+      <p>
+        Shared state ko safe banane ke do bilkul alag philosophies hain — aur inka farq samajhna concurrency ka
+        sabse valuable mental model hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">philosophy 1 — memory share karo, access ko lock karo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// MUTEX (mutual exclusion) — ek waqt pe ek hi "critical section" mein ja sakta hai</span>
+mu.<span class="tok-fn">Lock</span>()
+balance = balance - amount     <span class="tok-com">// critical section</span>
+mu.<span class="tok-fn">Unlock</span>()
+
+<span class="tok-com">// Variants:</span>
+<span class="tok-com">//   RWMutex   — kai readers saath, par writer akela (read-heavy ke liye)</span>
+<span class="tok-com">//   Semaphore — N tak concurrent allowed (rate/concurrency limiting)</span>
+<span class="tok-com">//   Atomic    — single variable pe lock-free operations (counters)</span>
+
+<span class="tok-com">// ⚠️ Locks ke teen classic khatre:</span>
+<span class="tok-com">//   1. DEADLOCK — ulte order mein locks (ch 10 ka lock ordering yahan bhi lagta hai)</span>
+<span class="tok-com">//   2. Bhoolna — ek code path Unlock() miss kar gaya → sab atak gaya</span>
+<span class="tok-com">//      (defer/RAII/finally use karo)</span>
+<span class="tok-com">//   3. CONTENTION — bahut saare threads ek hi lock pe → wo lock hi bottleneck</span>
+<span class="tok-com">//      ban jaata hai, aur parallelism ka faayda khatam</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">philosophy 2 — memory share hi mat karo, message bhejo<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Go ka mashhoor motto:</span>
+<span class="tok-com">//   "Don't communicate by sharing memory; share memory by communicating."</span>
+
+<span class="tok-com">// CHANNEL — ek typed pipe. Ek goroutine bhejti hai, doosri padhti hai.</span>
+<span class="tok-com">// Data ka OWNERSHIP transfer ho jaata hai — do jagah se ek saath</span>
+<span class="tok-com">// chhua hi nahi jaata, isliye lock ki zaroorat hi nahi.</span>
+ch := <span class="tok-fn">make</span>(<span class="tok-kw">chan</span> Order)
+<span class="tok-kw">go</span> <span class="tok-fn">producer</span>(ch)      <span class="tok-com">// bhejta hai</span>
+order := &lt;-ch       <span class="tok-com">// padhta hai — yahan tak koi shared mutable state nahi</span>
+
+<span class="tok-com">// Worker pool — ye pattern ch 12 ke queue jaisa hi hai, par process ke andar</span>
+jobs := <span class="tok-fn">make</span>(<span class="tok-kw">chan</span> Job, <span class="tok-num">100</span>)
+<span class="tok-kw">for</span> i := <span class="tok-num">0</span>; i &lt; <span class="tok-num">10</span>; i++ { <span class="tok-kw">go</span> <span class="tok-fn">worker</span>(jobs) }   <span class="tok-com">// 10 workers, bounded concurrency</span>
+
+<span class="tok-com">// Actor model (Erlang/Elixir, Akka) isi ka aur strict version hai:</span>
+<span class="tok-com">// har actor ka apna PRIVATE state, aur baat sirf messages se.</span>
+<span class="tok-com">// Shared mutable state exist hi nahi karta, isliye data race possible hi nahi.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical guidance — kaunsa kab</div>
+        <p>
+          <strong>Sabse pehla option: shared mutable state rakho hi mat.</strong> Backend mein ye aksar aasaan
+          hai — state DB/Redis mein hoti hai (ch 19 ka stateless rule), aur wahan atomicity DB deta hai
+          (<code>UPDATE … WHERE</code>, <code>ON CONFLICT</code>, <code>INCR</code>). Agar in-process state
+          zaroori hai: <em>ek simple counter</em> → atomic; <em>chhota critical section</em> → mutex; <em>ek
+          pipeline ya ownership transfer</em> → channel. Aur jo cheez lock se hamesha behtar hai wo hai
+          <strong>lock ki zaroorat hi khatam kar dena</strong> — immutable data structures, ya per-request state
+          jo share hi na ho.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Distributed lock ek alag (aur mushkil) cheez hai</div>
+        <p>
+          In-process mutex bharosemand hai. Par kai instances ke beech "lock" (jaise Redis
+          <code>SET NX</code> — ch 11) <strong>guarantee nahi</strong> hai: lock-holder GC pause mein atak
+          sakta hai, uska TTL expire ho sakta hai, aur do instances khud ko lock-holder samajh sakte hain. Isliye
+          distributed locks ko sirf <em>optimization</em> ki tarah use karo (jaise duplicate kaam kam karna —
+          cache stampede), <strong>correctness ke liye nahi</strong>. Correctness DB ke atomic operations ya
+          fencing tokens se aani chahiye — yahi ch 10 aur ch 12 ka bar-bar dohraya gaya point hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><strong>Concurrency</strong> = kai kaam progress mein; <strong>parallelism</strong> = kai kaam ek hi lamhe mein (multiple cores zaroori).</li>
+        <li><strong>IO-bound</strong> mein CPU 97% time khali hai — isliye ek thread hazaaron connections sambhal sakta hai.</li>
+        <li><strong>CPU-bound</strong> mein khali time hai hi nahi — async wahan <strong>zero</strong> faayda deta hai; sirf aur cores kaam aate hain.</li>
+        <li>Event loop C10K problem ka jawab tha: 10,000 threads = 10 GB RAM, jabki wo sab bas <em>wait</em> kar rahe the.</li>
+        <li>"Node fast hai" ka matlab CPU pe fast nahi — <em>waiting</em> pe efficient hai.</li>
+        <li>Node "single-threaded" sirf tumhare JS ke liye hai; libuv threadpool (default 4) file IO, DNS, crypto karta hai.</li>
+        <li>Ek blocking callback <strong>poore instance</strong> ko rok deta hai — health check bhi fail hota hai, aur LB use maar deta hai.</li>
+        <li>Chhupe blockers: bada <code>JSON.parse</code>, sync crypto, bade sorts, ReDoS regex, busy loops.</li>
+        <li><strong>Event loop lag</strong> Node apps ka sabse important saturation metric hai — usse monitor aur alert karo.</li>
+        <li><code>async/await</code> compiler ko function ko <strong>state machine</strong> mein badalne ko kehta hai — har <code>await</code> ek suspend/resume point, aur locals heap pe. Isliye async stack thread stack se hazaaron guna sasta hai.</li>
+        <li><strong>Function coloring</strong> async/await ki asli ergonomic keemat hai — ek function async karo toh saare callers async karne padte hain.</li>
+        <li>Independent awaits ko <code>Promise.all</code> se parallel karo — serial chain trace mein seedhi staircase dikhti hai. Par <strong>unbounded parallelism</strong> pool aur downstream dono ko kuchal deta hai; concurrency limit lagao.</li>
+        <li><strong>Goroutines / virtual threads</strong> purana trade-off khatam kar dete hain: blocking-jaisa simple code <em>aur</em> event-loop-jaisa scale. Runtime N goroutines ko M OS threads pe multiplex karta hai.</li>
+        <li>Par wo bhi CPU-bound kaam nahi bachate — parallelism sirf cores se aati hai.</li>
+        <li><strong>GIL</strong>: Python threads CPU-bound kaam ko tez nahi karte (processes chahiye), par IO-bound ke liye theek hain kyunki IO wait mein GIL chhod diya jaata hai.</li>
+        <li>Sync ke do philosophies: <strong>lock the memory</strong> (mutex, RWMutex, semaphore, atomic) vs <strong>share by communicating</strong> (channels, actors — ownership transfer, isliye lock hi nahi chahiye).</li>
+        <li>Locks ke teen khatre: deadlock (ordering — ch 10), <code>Unlock</code> bhoolna, aur contention (lock khud bottleneck ban jaata hai).</li>
+        <li><strong>Distributed locks correctness ke liye nahi hain</strong> — GC pause + TTL expiry se do holders ho sakte hain. Unhe optimization ki tarah use karo; correctness DB atomicity se lo.</li>
+        <li>Node aur Python dono mein production rule: <strong>process count ≈ core count</strong> (cluster mode / gunicorn workers).</li>
+        <li><strong>API instances ko IO-only rakho</strong>; CPU work queue ke through alag worker fleet pe. Handbook ka sabse kaam aane wala architectural rule.</li>
+        <li>Single-threaded hone ke bawajood <code>await</code> ek yield point hai — race conditions Node mein bhi hoti hain.</li>
+        <li><strong>Check-then-act</strong> hi wo dohraya hua bug hai jo ch 7, 9, 10, 11, aur 18 — paanchon mein tha. Fix hamesha atomicity hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Concurrency aur parallelism mein farq?"</div>
+        <p>
+          Concurrency ka matlab kai kaam <em>progress</em> mein hain — zaroori nahi ki ek hi lamhe mein chal rahe
+          hon; ek single core bhi task switch karke concurrent ho sakta hai. Parallelism ka matlab wo literally
+          ek hi lamhe mein execute ho rahe hain, jiske liye multiple cores chahiye. Practical asar: IO-bound
+          kaam ko sirf concurrency chahiye (wait ka istemal), CPU-bound ko asli parallelism chahiye.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Node single-threaded hai, phir wo hazaaron requests kaise handle karta hai?"</div>
+        <p>
+          Kyunki typical request ka 95%+ time <em>wait</em> mein jaata hai (DB, network), CPU mein nahi. Event
+          loop non-blocking IO use karta hai: request ka IO issue karke wo callback register karta hai aur
+          turant doosri request pe chala jaata hai; OS (epoll/kqueue) batata hai kab data ready hai. Isliye ek
+          thread hazaaron connections ka <em>wait</em> manage kar leta hai. Nuance: sirf tumhara JS
+          single-threaded hai — libuv ka threadpool file IO, DNS, aur kuch crypto alag threads pe karta hai. Aur
+          ye poora model tabhi kaam karta hai jab koi callback CPU ko lambe samay tak na roke.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Ek Node endpoint image resize karta hai. Kya problem hai?"</div>
+        <p>
+          CPU-heavy synchronous kaam event loop ko block kar deta hai — us dauraan <em>koi</em> request handle
+          nahi hoti, callbacks ruk jaate hain, aur health check bhi timeout hota hai, jiske baad LB instance ko
+          unhealthy mark kar deta hai. Ek request poore instance ko gira deti hai. Fix: chhote kaam ke liye
+          worker thread, par behtar hai queue mein daalna (ch 12) aur <code>202 Accepted</code> return karna,
+          taaki CPU work ek alag worker fleet pe chale. Ye bulkhead bhi hai (ch 14). Aur event loop lag ko
+          monitor karo.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Python ka GIL kya hai? Threads bekaar hain?"</div>
+        <p>
+          GIL ek mutex hai jo ek waqt pe sirf ek thread ko Python bytecode chalane deta hai. Iska matlab
+          CPU-bound kaam mein threads se koi speedup nahi milta — uske liye <code>ProcessPoolExecutor</code>
+          chahiye (har process ka apna GIL). Par threads <em>IO-bound</em> kaam ke liye bilkul theek hain,
+          kyunki IO wait ke dauraan thread GIL chhod deta hai — aur asyncio usse bhi efficient hai. Isiliye
+          production mein gunicorn multiple worker processes chalata hai, har ek ke andar async event loop.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Single-threaded Node mein race condition ho sakti hai?"</div>
+        <p>
+          Haan. Synchronous block atomic hota hai, par har <code>await</code> ek <strong>yield point</strong>
+          hai jahan doosri request ghus sakti hai. Classic example: <code>await getBalance()</code> → check →
+          <code>await setBalance()</code>. Do concurrent calls dono purana balance padh lengi aur dono check pass
+          kar jaayengi. Fix wahi hai jo ch 10 mein tha — atomicity DB se lo: conditional
+          <code>UPDATE … WHERE balance &gt;= $1</code>, <code>FOR UPDATE</code>, ya version column. Ye
+          check-then-act pattern poore handbook mein baar-baar aata hai.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Q6. "<code>async/await</code> andar se kaise kaam karta hai?"</div>
+        <p>
+          Compiler function ko ek <strong>state machine</strong> mein transform karta hai: har <code>await</code>
+          ek state ban jaata hai. <code>await</code> pe function callback register karke <em>return</em> kar
+          deta hai — thread free ho jaata hai — aur IO complete hone pe wo agli state se resume hota hai.
+          Locals stack ki jagah heap pe rakhe jaate hain, isliye ek suspended async operation kuch bytes leta
+          hai jabki ek blocked thread ~1 MB stack. Do consequences: <strong>function coloring</strong> (async
+          ko sirf async se await kar sakte ho) aur <strong><code>await</code> ek yield point hai</strong>, isliye
+          single-threaded runtime mein bhi race conditions possible hain.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q7. "Goroutines threads se kaise alag hain?"</div>
+        <p>
+          Goroutines <strong>runtime</strong> manage karta hai, OS nahi. Stack ~2–8 KB se shuru hoke grow hota
+          hai (thread ka ~1 MB fixed), context switch user space mein ~100ns (kernel switch ~1–2µs), aur runtime
+          N goroutines ko M OS threads pe multiplex karta hai — jab ek IO pe block hoti hai, us thread pe doosri
+          chal jaati hai. Isliye lakhon goroutines practical hain. Sabse bada faayda ergonomic hai: code
+          <em>blocking jaisa simple</em> dikhta hai par scale <em>event-loop jaisa</em> milta hai —
+          <strong>koi function coloring nahi</strong>. Java 21 ke virtual threads bilkul yahi hain. Par CPU-bound
+          kaam yahan bhi nahi bachta — uske liye cores hi chahiye.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q8. "Shared state ko safe kaise banaoge — mutex ya channel?"</div>
+        <p>
+          Pehla jawab: <strong>shared mutable state se bacho</strong>. Backend mein state aksar DB/Redis mein
+          honi chahiye (ch 19 stateless rule), aur wahan atomicity DB deta hai. In-process zaroori ho toh: simple
+          counter → atomic; chhota critical section → mutex; pipeline/ownership transfer → channel (Go ka "share
+          memory by communicating" — data ka ownership move hota hai, isliye lock hi nahi chahiye). Locks ke
+          khatre bata do: deadlock (consistent lock ordering se bacho), <code>Unlock</code> bhoolna, aur
+          contention. Aur ek strong closing point: <strong>Redis-jaise distributed locks correctness ke liye
+          bharosemand nahi hain</strong> — GC pause + TTL expiry do holders bana sakte hain.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">🎉 Handbook complete — 21 / 21</div>
+        <p>
+          Tumne ek request ka poora safar cover kar liya: browser se DNS, firewall, proxy, routing, parsing,
+          auth, validation, business logic, database, cache, queues, aur search — aur uske upar wo saara
+          production layer jo usse zinda rakhta hai: error handling, config, observability, shutdown, security,
+          scaling, aur concurrency. Ab wapas
+          <a href="01-first-principles-roadmap.html">chapter 1 ka stack diagram</a> dekho — ab usme har box ka
+          matlab pata hai. Agla step padhna nahi, <strong>banana</strong> hai: ek chhoti service lo aur usme
+          ye layers ek-ek karke add karo.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

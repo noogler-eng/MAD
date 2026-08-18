@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validation & Transformation — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link active" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 7</div>
+      <div class="progress-pill">7 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Trust Boundary · Schema · Coercion · Parse Don't Validate</span>
+      <h1>Validation & Transformation</h1>
+      <p class="subtitle">
+        User authenticated hai (ch 6) aur usko permission bhi hai. Par uska <em>data</em> abhi bhi
+        <strong>untrusted</strong> hai — kyunki authentication identity ke baare mein hai, content ke baare mein
+        nahi. Ye chapter ek hi line pe khada hai: <strong>ek jagah aisi honi chahiye jiske pehle data
+        "kuch bhi" ho sakta hai, aur jiske baad wo guaranteed sahi shape mein hai.</strong> Us jagah ka naam
+        trust boundary hai.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 9 —
+        <a href="https://www.youtube.com/watch?v=qedj_JjjL-U">Validations and transformations for backend engineers</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why">1. Parse Ho Gaya, Phir Validation Kyun</a></li>
+          <li><a href="#boundary">2. Trust Boundary — Diagram</a></li>
+          <li><a href="#layers">3. Validation Ke Teen Alag Levels</a></li>
+          <li><a href="#schema">4. Schema-First Approach — Zod Ke Saath</a></li>
+          <li><a href="#coercion">5. Coercion — Silent Killer</a></li>
+          <li><a href="#parse">6. "Parse, Don't Validate" — Sabse Bada Idea</a></li>
+          <li><a href="#transform">7. Transformation — Input, Domain, Output Alag Cheezein Hain</a></li>
+          <li><a href="#errors">8. Error Responses Jo Actually Kaam Aate Hain</a></li>
+          <li><a href="#where">9. Validation Kahan-Kahan Lagti Hai</a></li>
+          <li><a href="#takeaways">10. Key Takeaways</a></li>
+          <li><a href="#interview">11. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why">Parse Ho Gaya, Phir Validation Kyun</h2>
+      <p>
+        Ch 5 ke end pe ek line thi: <em>"parse safal ≠ data valid"</em>. Usko concrete karte hain.
+        <code>JSON.parse()</code> ke safal hone ka matlab sirf itna hai ki <strong>syntax</strong> theek tha —
+        braces balanced the, quotes band the. Uske baad bhi ye sab ek "valid" JSON hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">ye saara "valid JSON" hai — aur poora garbage bhi<button class="copy-btn">Copy</button></div>
+        <pre><code>POST /users
+{
+  <span class="tok-str">"name"</span>:    <span class="tok-str">""</span>,                  <span class="tok-com">// khali — DB mein NOT NULL hai par empty string allowed hai</span>
+  <span class="tok-str">"age"</span>:     <span class="tok-num">-5</span>,                  <span class="tok-com">// negative umar</span>
+  <span class="tok-str">"email"</span>:   <span class="tok-str">"hello"</span>,             <span class="tok-com">// @ hai hi nahi</span>
+  <span class="tok-str">"role"</span>:    <span class="tok-str">"admin"</span>,             <span class="tok-com">// ← privilege escalation ki koshish (ch 6)</span>
+  <span class="tok-str">"balance"</span>: <span class="tok-num">99999999</span>,            <span class="tok-com">// server-controlled field, client bhej raha hai</span>
+  <span class="tok-str">"bio"</span>:     <span class="tok-str">"&lt;script&gt;…&lt;/script&gt;"</span>, <span class="tok-com">// stored XSS payload (ch 18)</span>
+  <span class="tok-str">"tags"</span>:    [ … <span class="tok-num">50000</span> items … ]  <span class="tok-com">// memory / DB blow up</span>
+}
+<span class="tok-com">// JSON.parse() → ✅ safal. Har field "theek se" parse hui.</span>
+<span class="tok-com">// Business ke hisaab se → ❌ har ek line galat hai.</span>
+</code></pre>
+      </div>
+
+      <p>
+        Bina validation ke ye object seedha service layer mein, phir DB mein chala jaayega. Aur asli problem
+        ye hai ki nuksaan <em>turant nahi dikhta</em> — record ban jaata hai, aur mahine baad koi report ya
+        email job crash karti hai <code>age: -5</code> pe. <strong>Bad data ek delayed-action bug hai.</strong>
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Validation "extra safety" nahi hai — wo type system ka extension hai</div>
+        <p>
+          Tumhare code mein har function assume karta hai ki uske arguments sahi shape ke hain
+          (<code>user.email</code> ek email hai, <code>order.total</code> positive hai). Compiler ye assumption
+          <em>tumhare code ke andar</em> enforce karta hai. Par network se aane wale data pe compiler ka koi
+          zor nahi — wahan <code>any</code> aata hai. Validation layer wo jagah hai jahan
+          <strong><code>any</code> ko ek asli type mein badla jaata hai</strong>. Iske bina tumhara poora type
+          system ek jhooth hai.
+        </p>
+      </div>
+
+      <h2 id="boundary">Trust Boundary — Diagram</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Untrusted input crossing a validation boundary into trusted domain objects">
+          <defs>
+            <marker id="vb1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <!-- untrusted zone -->
+          <rect x="20" y="40" width="250" height="230" rx="12" class="ex-fill-o ex-stroke"/>
+          <text x="145" y="66" class="ex-t">UNTRUSTED zone</text>
+          <text x="145" y="96" class="ex-t-sm">req.body   · req.query</text>
+          <text x="145" y="118" class="ex-t-sm">req.params · req.headers</text>
+          <text x="145" y="140" class="ex-t-sm">webhooks   · queue messages</text>
+          <text x="145" y="162" class="ex-t-sm">3rd-party API responses</text>
+          <text x="145" y="184" class="ex-t-sm">file uploads · env vars</text>
+          <text x="145" y="216" class="ex-t-lbl">type yahan effectively `any` hai</text>
+          <text x="145" y="244" class="ex-t-sm">"logged-in user" bhi untrusted hai —</text>
+          <text x="145" y="262" class="ex-t-sm">authN identity hai, content nahi</text>
+
+          <!-- the wall -->
+          <path d="M300,26 C308,120 296,220 304,286" class="ex-stroke" style="stroke-width:3"/>
+          <text x="330" y="180" class="ex-t-lbl" transform="rotate(90 330 180)">VALIDATION BOUNDARY</text>
+
+          <path d="M272,120 C288,118 316,122 348,120" class="ex-stroke" marker-end="url(#vb1)"/>
+          <text x="310" y="102" class="ex-t-sm">parse</text>
+
+          <!-- trusted zone -->
+          <rect x="352" y="40" width="386" height="230" rx="12" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="545" y="66" class="ex-t">TRUSTED zone</text>
+
+          <rect x="376" y="86" width="160" height="52" rx="9" class="ex-stroke ex-stroke-g"/>
+          <text x="456" y="106" class="ex-t-sm">CreateUserInput</text>
+          <text x="456" y="126" class="ex-t-sm">(validated type)</text>
+
+          <path d="M540,112 C556,110 570,114 586,112" class="ex-stroke ex-stroke-g" marker-end="url(#vb1)"/>
+          <rect x="590" y="86" width="130" height="52" rx="9" class="ex-stroke ex-stroke-g"/>
+          <text x="655" y="106" class="ex-t-sm">service layer</text>
+          <text x="655" y="126" class="ex-t-sm">→ repository → DB</text>
+
+          <text x="545" y="172" class="ex-t-lbl">yahan ab koi `if (!x) return` check NAHI</text>
+          <text x="545" y="198" class="ex-t-sm">email hamesha valid email hai</text>
+          <text x="545" y="218" class="ex-t-sm">age hamesha 0–150 ka integer hai</text>
+          <text x="545" y="238" class="ex-t-sm">role field yahan hai hi nahi — strip ho gaya</text>
+          <text x="545" y="260" class="ex-t-sm">business logic sirf business dekhti hai</text>
+
+          <!-- rejection -->
+          <path d="M300,300 C298,318 302,330 300,346" class="ex-stroke" marker-end="url(#vb1)"/>
+          <rect x="170" y="348" width="266" height="40" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="303" y="368" class="ex-t-sm">fail → 422 + field-wise errors</text>
+          <text x="600" y="368" class="ex-t-lbl">galat data kabhi andar aata hi nahi</text>
+        </svg>
+        <figcaption>
+          Poora idea ek line mein: <strong>boundary ke andar koi defensive check nahi hona chahiye.</strong> Agar
+          service layer mein <code>if (!user.email) …</code> likhna pad raha hai, toh iska matlab boundary leak
+          kar rahi hai — check ko upar boundary pe le jao, wahan nahi.
+        </figcaption>
+      </figure>
+
+      <h2 id="layers">Validation Ke Teen Alag Levels</h2>
+      <p>
+        "Validation" ek shabd mein teen bahut alag cheezein aati hain, aur ye teenon <em>alag jagah</em> hoti
+        hain. Inko mila dena bahut common design galti hai:
+      </p>
+
+      <table>
+        <thead><tr><th>Level</th><th>Sawaal</th><th>Kahan</th><th>Kya chahiye</th><th>Fail code</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Syntactic</strong></td>
+            <td>Shape sahi hai? Field maujood hai? Type theek hai?</td>
+            <td>Boundary — schema</td>
+            <td>Sirf request</td>
+            <td><code>422</code></td>
+          </tr>
+          <tr>
+            <td><strong>2. Semantic</strong></td>
+            <td>Values apne aap mein sensible hain? (age 0–150, endDate &gt; startDate)</td>
+            <td>Boundary — schema refinements</td>
+            <td>Sirf request</td>
+            <td><code>422</code></td>
+          </tr>
+          <tr>
+            <td><strong>3. Business rules</strong></td>
+            <td>Ye action <em>abhi, is state mein</em> allowed hai?</td>
+            <td>Service layer (ch 8)</td>
+            <td><strong>DB access</strong></td>
+            <td><code>409</code> / <code>403</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">teeno ka farq ek example mein<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. SYNTACTIC — request akeli dekh ke pata chal jaata hai</span>
+email <span class="tok-kw">is</span> string?  quantity <span class="tok-kw">is</span> number?  productId maujood hai?
+
+<span class="tok-com">// 2. SEMANTIC — abhi bhi sirf request se, par values ka matlab check</span>
+quantity &gt; <span class="tok-num">0</span>?  email mein "@" hai?  deliveryDate future mein hai?
+
+<span class="tok-com">// 3. BUSINESS — DB ke bina jawab dena NAAMUMKIN hai</span>
+kya ye product exist karta hai?          <span class="tok-com">// → DB lookup</span>
+kya stock mein itni quantity hai?        <span class="tok-com">// → DB lookup</span>
+kya is user ka credit limit bacha hai?   <span class="tok-com">// → DB lookup</span>
+kya order pehle se cancel ho chuka hai?  <span class="tok-com">// → DB lookup</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Business rules ko schema mein mat ghusao</div>
+        <p>
+          Common galti: schema ke andar se DB call karna ("email unique hai kya?"). Isse do problem hoti hain —
+          validation layer ab DB pe depend karti hai (test karna mushkil, aur slow), aur ek
+          <strong>race condition</strong> paida hoti hai: check aur insert ke beech koi aur wahi email register
+          kar sakta hai. Uniqueness ka sahi enforcement <strong>DB constraint</strong> hai; tum insert try karo
+          aur unique-violation error ko pakad ke <code>409 Conflict</code> mein badlo. Check-then-act pattern
+          concurrency mein hamesha toot-ta hai (ch 10, ch 21).
+        </p>
+      </div>
+
+      <h2 id="schema">Schema-First Approach — Zod Ke Saath</h2>
+      <p>
+        Manual <code>if</code> checks likhna teen wajah se haar jaata hai: wo verbose hote hain, ek jagah update
+        karke doosri bhool jaate ho, aur wo <em>type</em> nahi dete — TypeScript ko abhi bhi nahi pata ki
+        <code>req.body</code> kya hai. Schema libraries dono ek saath deti hain: runtime check
+        <strong>aur</strong> static type.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">manual checks vs schema — same rules<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ MANUAL — 20 lines, aur TS ko ab bhi kuch pata nahi</span>
+<span class="tok-kw">if</span> (!req.body.email) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">400</span>).<span class="tok-fn">json</span>({ e: <span class="tok-str">"email required"</span> });
+<span class="tok-kw">if</span> (<span class="tok-kw">typeof</span> req.body.email !== <span class="tok-str">"string"</span>) <span class="tok-kw">return</span> …
+<span class="tok-kw">if</span> (!req.body.email.<span class="tok-fn">includes</span>(<span class="tok-str">"@"</span>)) <span class="tok-kw">return</span> …
+<span class="tok-kw">if</span> (<span class="tok-kw">typeof</span> req.body.age !== <span class="tok-str">"number"</span>) <span class="tok-kw">return</span> …
+<span class="tok-com">// … aur 16 lines. Ek naya field add karo → 4 aur lines, kahin bhoolne ka risk.</span>
+<span class="tok-com">// Aur sabse bada issue: ye pehle error pe ruk jaata hai —</span>
+<span class="tok-com">// user ko ek-ek karke 5 baar form bharna padega.</span>
+
+<span class="tok-com">// ✅ SCHEMA — declarative, aur type FREE mein milta hai</span>
+<span class="tok-kw">const</span> CreateUser = z.<span class="tok-fn">object</span>({
+  email: z.<span class="tok-fn">string</span>().<span class="tok-fn">email</span>().<span class="tok-fn">toLowerCase</span>().<span class="tok-fn">trim</span>(),  <span class="tok-com">// validate + normalize ek saath</span>
+  name:  z.<span class="tok-fn">string</span>().<span class="tok-fn">trim</span>().<span class="tok-fn">min</span>(<span class="tok-num">1</span>).<span class="tok-fn">max</span>(<span class="tok-num">100</span>),        <span class="tok-com">// min(1) — khali string reject</span>
+  age:   z.<span class="tok-fn">number</span>().<span class="tok-fn">int</span>().<span class="tok-fn">min</span>(<span class="tok-num">0</span>).<span class="tok-fn">max</span>(<span class="tok-num">150</span>),
+  tags:  z.<span class="tok-fn">array</span>(z.<span class="tok-fn">string</span>()).<span class="tok-fn">max</span>(<span class="tok-num">20</span>).<span class="tok-fn">default</span>([]),      <span class="tok-com">// upper bound = DoS defense</span>
+  bio:   z.<span class="tok-fn">string</span>().<span class="tok-fn">max</span>(<span class="tok-num">500</span>).<span class="tok-fn">optional</span>(),
+}).<span class="tok-fn">strict</span>();   <span class="tok-com">// ← CRITICAL: unknown fields pe ERROR do</span>
+
+<span class="tok-com">// TypeScript type schema se khud nikal aata hai — ek hi source of truth</span>
+<span class="tok-kw">type</span> CreateUserInput = z.infer&lt;<span class="tok-kw">typeof</span> CreateUser&gt;;
+<span class="tok-com">// { email: string; name: string; age: number; tags: string[]; bio?: string }</span>
+
+<span class="tok-com">// use karna</span>
+<span class="tok-kw">const</span> result = CreateUser.<span class="tok-fn">safeParse</span>(req.body);      <span class="tok-com">// throw nahi karta</span>
+<span class="tok-kw">if</span> (!result.success) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">422</span>).<span class="tok-fn">json</span>(<span class="tok-fn">format</span>(result.error));
+<span class="tok-kw">const</span> input = result.data;    <span class="tok-com">// ← ab ye CreateUserInput hai, `any` nahi</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ <code>.strict()</code> ya <code>.strip()</code> — ye choice security hai</div>
+        <p>
+          Default mein zyadatar libraries unknown fields ko chupchaap <strong>rehne deti hain ya
+          hata deti hain</strong>. Agar wo rehte hain aur tum <code>{...req.body}</code> DB mein daal dete ho,
+          toh client <code>{"role":"admin","balance":999999}</code> bhej ke apne aap ko upgrade kar sakta hai —
+          isko <strong>mass assignment</strong> vulnerability kehte hain (Rails, Django, Node — sab mein hua
+          hai). Do safe options: <code>.strict()</code> (unknown field = error, best for APIs) ya
+          <code>.strip()</code> (chupchaap hata do). <strong>Kabhi</strong> passthrough mat karo.
+        </p>
+      </div>
+
+      <h2 id="coercion">Coercion — Silent Killer</h2>
+      <p>
+        Ch 4 se yaad karo: <strong>URL mein types exist hi nahi karte</strong>. Query aur path params hamesha
+        strings hote hain. Isliye coercion (type conversion) ek explicit step hona chahiye — aur wo bahut
+        dhoke wala hota hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">coercion ke classic traps<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// GET /users?page=2&amp;limit=50&amp;active=false&amp;ids=1,2,3</span>
+req.query
+<span class="tok-com">// → { page: "2", limit: "50", active: "false", ids: "1,2,3" }  ← SAB strings</span>
+
+<span class="tok-com">// ── trap 1: boolean ─────────────────────────────────────────</span>
+<span class="tok-fn">Boolean</span>(<span class="tok-str">"false"</span>)      <span class="tok-com">// → true !! non-empty string hamesha truthy hai</span>
+<span class="tok-kw">if</span> (req.query.active) <span class="tok-com">// → hamesha chalega, chahe "false" ho</span>
+
+<span class="tok-com">// ── trap 2: number ──────────────────────────────────────────</span>
+<span class="tok-fn">parseInt</span>(<span class="tok-str">"12abc"</span>)     <span class="tok-com">// → 12   (silently kaat deta hai!)</span>
+<span class="tok-fn">Number</span>(<span class="tok-str">""</span>)            <span class="tok-com">// → 0    (khali string zero ban gayi)</span>
+<span class="tok-fn">Number</span>(<span class="tok-str">" "</span>)           <span class="tok-com">// → 0</span>
+<span class="tok-fn">parseInt</span>(<span class="tok-str">"abc"</span>)       <span class="tok-com">// → NaN  (aur NaN &gt; 0 → false, NaN === NaN → false)</span>
+
+<span class="tok-com">// ── trap 3: array — ek value vs kai values ──────────────────</span>
+<span class="tok-com">// ?tag=a       → "a"          (string)</span>
+<span class="tok-com">// ?tag=a&amp;tag=b → ["a","b"]    (array!)</span>
+<span class="tok-com">// tumhara .map() pehle case mein crash karega</span>
+
+<span class="tok-com">// ✅ Sahi: coercion ko schema mein explicit karo, bounds ke saath</span>
+<span class="tok-kw">const</span> ListQuery = z.<span class="tok-fn">object</span>({
+  page:   z.<span class="tok-fn">coerce</span>.<span class="tok-fn">number</span>().<span class="tok-fn">int</span>().<span class="tok-fn">min</span>(<span class="tok-num">1</span>).<span class="tok-fn">default</span>(<span class="tok-num">1</span>),
+  limit:  z.<span class="tok-fn">coerce</span>.<span class="tok-fn">number</span>().<span class="tok-fn">int</span>().<span class="tok-fn">min</span>(<span class="tok-num">1</span>).<span class="tok-fn">max</span>(<span class="tok-num">100</span>).<span class="tok-fn">default</span>(<span class="tok-num">20</span>),
+  <span class="tok-com">// ↑ max(100) zaroori hai — warna ?limit=999999999 se DB dump ho jayega</span>
+  active: z.<span class="tok-fn">enum</span>([<span class="tok-str">"true"</span>, <span class="tok-str">"false"</span>]).<span class="tok-fn">transform</span>(v =&gt; v === <span class="tok-str">"true"</span>).<span class="tok-fn">optional</span>(),
+  <span class="tok-com">// ↑ Boolean() kabhi mat use karo — enum se explicitly map karo</span>
+  ids:    z.<span class="tok-fn">string</span>().<span class="tok-fn">transform</span>(s =&gt; s.<span class="tok-fn">split</span>(<span class="tok-str">","</span>)).<span class="tok-fn">pipe</span>(z.<span class="tok-fn">array</span>(z.<span class="tok-fn">string</span>().<span class="tok-fn">uuid</span>()).<span class="tok-fn">max</span>(<span class="tok-num">50</span>)),
+});
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Pagination pe upper bound ek availability control hai</div>
+        <p>
+          <code>limit</code> pe <code>.max(100)</code> na lagana ek real production incident ka nuskha hai:
+          ek client (ya crawler) <code>?limit=1000000</code> bhejta hai, tumhari query poori table load karti
+          hai, memory bharti hai, aur poora process gir jaata hai — <em>ek hi request se</em>. Ye ch 19 ka
+          "one bad request can take down the service" wala pattern hai, aur iska fix yahan boundary pe hai.
+        </p>
+      </div>
+
+      <h2 id="parse">"Parse, Don't Validate" — Sabse Bada Idea</h2>
+      <p>
+        Ye is chapter ka sabse important mental model hai, aur ye sirf ek naam ka farq nahi hai — ye poore
+        codebase ka shape badal deta hai.
+      </p>
+      <ul>
+        <li><strong>Validate</strong> = data ko dekho, "theek hai" bolo, aur <em>wahi original data</em> aage
+        bhej do. Type nahi badla — toh downstream code ko pata hi nahi ki check hua tha, aur wo dobara check
+        karta hai.</li>
+        <li><strong>Parse</strong> = data ko dekho aur ek <em>naya, narrower type</em> return karo. Ab type
+        system khud guarantee karta hai — downstream code check kar hi nahi sakta, kyunki karne ki zaroorat
+        hi nahi.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">farq — aur wo farq downstream mein kya karta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── VALIDATE style ──────────────────────────────────────────</span>
+<span class="tok-kw">function</span> <span class="tok-fn">validateUser</span>(data: <span class="tok-kw">any</span>): <span class="tok-kw">boolean</span> { … }
+
+<span class="tok-kw">if</span> (!<span class="tok-fn">validateUser</span>(req.body)) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">422</span>).<span class="tok-fn">end</span>();
+<span class="tok-fn">createUser</span>(req.body);   <span class="tok-com">// type abhi bhi `any` hai</span>
+
+<span class="tok-kw">function</span> <span class="tok-fn">createUser</span>(data: <span class="tok-kw">any</span>) {
+  <span class="tok-kw">if</span> (!data.email) <span class="tok-kw">throw</span> …    <span class="tok-com">// ← defensive check DOBARA</span>
+  <span class="tok-com">// kyun? kyunki type kuch guarantee nahi karta.</span>
+  <span class="tok-com">// Ye check har layer mein repeat hoga, aur ek din koi bhool jayega.</span>
+}
+
+<span class="tok-com">// ── PARSE style ─────────────────────────────────────────────</span>
+<span class="tok-kw">function</span> <span class="tok-fn">parseUser</span>(data: <span class="tok-kw">unknown</span>): CreateUserInput { … }   <span class="tok-com">// naya TYPE return</span>
+
+<span class="tok-kw">const</span> input = <span class="tok-fn">parseUser</span>(req.body);   <span class="tok-com">// ab type CreateUserInput hai</span>
+<span class="tok-fn">createUser</span>(input);
+
+<span class="tok-kw">function</span> <span class="tok-fn">createUser</span>(input: CreateUserInput) {
+  input.email.<span class="tok-fn">toLowerCase</span>();   <span class="tok-com">// ✅ safe — compiler jaanta hai ye string hai</span>
+  <span class="tok-com">// koi defensive check NAHI. Invalid data yahan pahunch hi nahi sakta —</span>
+  <span class="tok-com">// kyunki wo is type ka ho hi nahi sakta.</span>
+}
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 "Make illegal states unrepresentable"</div>
+        <p>
+          Isko aur aage le jao: <code>string</code> ki jagah ek <code>Email</code> type banao jo sirf
+          <code>parseEmail()</code> se hi ban sakta ho. Ab galat email wala <code>Email</code> exist hi nahi kar
+          sakta — bug likhna <em>compile hi nahi hoga</em>. Ye TypeScript mein branded types se, Rust/Haskell
+          mein newtypes se hota hai. Ek chhota practical version: ID types ko alag rakho
+          (<code>UserId</code> vs <code>OrderId</code>), taaki galti se ek ki jagah doosra pass karna compile
+          error ban jaaye — ye ek surprisingly common bug hai.
+        </p>
+      </div>
+
+      <h2 id="transform">Transformation — Input, Domain, Output Alag Cheezein Hain</h2>
+      <p>
+        Validation ke saath hi doosra kaam hota hai: shape badalna. Beginners ek hi object ko poore stack mein
+        ghumate hain — aur wahi <strong>data leak</strong> ka sabse common source hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">teen alag models — teen alag zimmedariyan<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. INPUT model — client kya bhej SAKTA hai</span>
+<span class="tok-kw">type</span> CreateUserInput = { email: string; name: string; password: string };
+<span class="tok-com">// note: koi `id`, `role`, `createdAt` nahi — ye server decide karta hai</span>
+
+<span class="tok-com">// 2. DOMAIN model — DB mein / memory mein poora record</span>
+<span class="tok-kw">type</span> User = {
+  id: string; email: string; name: string;
+  passwordHash: string;      <span class="tok-com">// ← ye kabhi bahar nahi jaana chahiye</span>
+  role: <span class="tok-str">"user"</span> | <span class="tok-str">"admin"</span>;   <span class="tok-com">// ← server-controlled</span>
+  internalNotes: string;     <span class="tok-com">// ← support team ke liye, user ke liye nahi</span>
+  createdAt: Date;
+};
+
+<span class="tok-com">// 3. OUTPUT model — client ko kya DIKHNA chahiye</span>
+<span class="tok-kw">type</span> UserResponse = { id: string; name: string; createdAt: string };
+
+<span class="tok-com">// ✅ EXPLICIT mapping — allowlist, denylist nahi</span>
+<span class="tok-kw">function</span> <span class="tok-fn">toResponse</span>(u: User): UserResponse {
+  <span class="tok-kw">return</span> { id: u.id, name: u.name, createdAt: u.createdAt.<span class="tok-fn">toISOString</span>() };
+}
+<span class="tok-com">// Naya sensitive field DB mein add hua? Automatically leak NAHI hoga,</span>
+<span class="tok-com">// kyunki mapping explicit hai — usko yahan likhna padega.</span>
+
+<span class="tok-com">// ❌ GALAT — delete se fields hatana (denylist)</span>
+<span class="tok-kw">const</span> safe = { ...user }; <span class="tok-kw">delete</span> safe.passwordHash;
+<span class="tok-com">// Kal koi `ssn` column add karega aur wo CHUPCHAAP API mein aa jayega.</span>
+<span class="tok-com">// Denylist hamesha peeche reh jaati hai; allowlist nahi.</span>
+
+<span class="tok-com">// ❌ GALAT — poora object bhej dena</span>
+res.<span class="tok-fn">json</span>(user);   <span class="tok-com">// passwordHash, internalNotes, sab wire pe. Real breach.</span>
+</code></pre>
+      </div>
+
+      <h2 id="errors">Error Responses Jo Actually Kaam Aate Hain</h2>
+      <p>
+        Validation fail hona <em>expected</em> hai — ye error nahi, normal flow ka hissa hai. Response ka kaam
+        client ko <strong>theek karne layak</strong> banana hai: saari galtiyan ek saath, field ke naam ke
+        saath, machine-readable code ke saath.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">accha validation error response<button class="copy-btn">Copy</button></div>
+        <pre><code>HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/json
+
+{
+  <span class="tok-str">"error"</span>: <span class="tok-str">"validation_failed"</span>,     <span class="tok-com">// machine-readable — client isse branch karta hai</span>
+  <span class="tok-str">"message"</span>: <span class="tok-str">"Request validation failed"</span>,
+  <span class="tok-str">"details"</span>: [                        <span class="tok-com">// SAARI errors ek saath — pehli pe ruko mat</span>
+    { <span class="tok-str">"field"</span>: <span class="tok-str">"email"</span>,    <span class="tok-str">"code"</span>: <span class="tok-str">"invalid_format"</span>, <span class="tok-str">"message"</span>: <span class="tok-str">"Must be a valid email"</span> },
+    { <span class="tok-str">"field"</span>: <span class="tok-str">"age"</span>,      <span class="tok-str">"code"</span>: <span class="tok-str">"too_small"</span>,      <span class="tok-str">"message"</span>: <span class="tok-str">"Must be at least 0"</span> },
+    { <span class="tok-str">"field"</span>: <span class="tok-str">"tags.3"</span>,  <span class="tok-str">"code"</span>: <span class="tok-str">"invalid_type"</span>,   <span class="tok-str">"message"</span>: <span class="tok-str">"Expected string"</span> }
+    <span class="tok-com">//        ↑ nested path — frontend seedha us field pe error dikha sakta hai</span>
+  ],
+  <span class="tok-str">"requestId"</span>: <span class="tok-str">"req_8f3a2b"</span>          <span class="tok-com">// logs se jodne ke liye (ch 16)</span>
+}
+</code></pre>
+      </div>
+
+      <table>
+        <thead><tr><th>❌ Bura</th><th>Kyun</th></tr></thead>
+        <tbody>
+          <tr><td><code>400 "Bad Request"</code></td><td>Kaunsa field? Client guess karega</td></tr>
+          <tr><td>Ek baar mein ek hi error</td><td>User ko 5 baar form submit karna padega</td></tr>
+          <tr><td>Sirf English message, koi code nahi</td><td>Client message string pe branch karega — text badla toh toota</td></tr>
+          <tr><td><code>500</code> validation fail pe</td><td>Ye client ki galti hai; 5xx se alerts galat trigger honge (ch 3)</td></tr>
+          <tr><td>Stack trace / SQL error response mein</td><td>Internal structure leak — attacker ke liye map (ch 18)</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="where">Validation Kahan-Kahan Lagti Hai</h2>
+      <p>
+        Sabse common blind spot: log sirf <code>req.body</code> validate karte hain. Par
+        <strong>har jagah jahan bahar se data andar aata hai, wahan ek boundary chahiye</strong>:
+      </p>
+      <ul>
+        <li><strong>Request body, query, params, headers</strong> — obvious wala.</li>
+        <li><strong>Webhooks</strong> — koi bhi POST kar sakta hai. Payload validate karo <em>aur</em> signature
+        verify karo.</li>
+        <li><strong>Queue messages</strong> (ch 12) — purane format ka message queue mein pada ho sakta hai jab
+        producer already deploy ho chuka ho. Consumer ko validate karna hi padega.</li>
+        <li><strong>Third-party API responses</strong> — unka schema tumhare control mein nahi hai aur bina
+        bataye badal sakta hai. Jo bhi unse aaye, use parse karo.</li>
+        <li><strong>Environment variables</strong> (ch 15) — <em>boot pe</em> validate karo. Missing
+        <code>DATABASE_URL</code> ka pata deploy ke waqt chalna chahiye, 3 ghante baad pehli request pe nahi.</li>
+        <li><strong>File uploads</strong> — size, MIME type, aur actual content (extension jhooth bol sakti hai).</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Client-side validation security nahi hai</div>
+        <p>
+          Frontend validation ek <em>UX feature</em> hai — user ko turant feedback deti hai. Wo security nahi
+          hai, kyunki <code>curl</code> tumhare frontend se guzarta hi nahi. Rule ekdum simple:
+          <strong>client pe validate karo UX ke liye, server pe validate karo correctness ke liye</strong> —
+          aur server wali kabhi optional nahi hai. (Yahi baat ch 6 mein "button chhupana security nahi hai" ke
+          roop mein aayi thi.)
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>JSON.parse()</code> safal hona sirf <strong>syntax</strong> ki guarantee hai — <code>age: -5</code> aur <code>role: "admin"</code> dono "valid JSON" hain.</li>
+        <li>Validation type system ka extension hai: wo jagah jahan network ka <code>any</code> ek asli type banta hai.</li>
+        <li><strong>Boundary ke andar defensive checks nahi hone chahiye.</strong> Service layer mein <code>if (!x)</code> likhna pad raha hai = boundary leak kar rahi hai.</li>
+        <li>Teen levels: syntactic aur semantic boundary pe (<code>422</code>), <strong>business rules service layer mein</strong> (<code>409</code>/<code>403</code>) kyunki unhe DB chahiye.</li>
+        <li>Uniqueness ko schema mein mat check karo — wo race condition hai. DB constraint lagao aur violation ko <code>409</code> mein badlo.</li>
+        <li>Schema-first se runtime check <em>aur</em> static type ek hi source se milte hain.</li>
+        <li><code>.strict()</code>/<code>.strip()</code> zaroori hai — passthrough <strong>mass assignment</strong> vulnerability hai.</li>
+        <li>Query/path params hamesha strings hain. <code>Boolean("false") === true</code>, <code>parseInt("12abc") === 12</code>, <code>Number("") === 0</code>.</li>
+        <li><code>limit</code> pe upper bound ek availability control hai — uske bina ek request service gira sakti hai.</li>
+        <li><strong>Parse, don't validate</strong> — narrower type return karo, boolean nahi. Tab downstream check karna possible hi nahi rehta.</li>
+        <li>Input / domain / output — teen alag models. Output mapping <strong>allowlist</strong> ho, <code>delete</code> wali denylist nahi.</li>
+        <li>Validation error: <code>422</code>, saari errors ek saath, field path + machine-readable code ke saath.</li>
+        <li>Boundary sirf request pe nahi — webhooks, queue messages, 3rd-party responses, env vars, uploads sab pe.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Deserialization ke baad validation kyun chahiye?"</div>
+        <p>
+          Parsing sirf syntax check karti hai — braces balanced the. Semantics uska kaam hai hi nahi:
+          <code>{"age": -5, "role": "admin"}</code> perfectly valid JSON hai. Validation wo boundary hai jahan
+          untrusted <code>any</code> ek trusted domain type banta hai, taaki uske aage ka poora code apne
+          assumptions pe bharosa kar sake.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "'Parse, don't validate' ka matlab?"</div>
+        <p>
+          Validation function <code>boolean</code> return karta hai — data ka type nahi badalta, isliye har
+          downstream layer defensively dobara check karti hai aur ek din koi bhool jaata hai. Parsing ek
+          <em>naya narrower type</em> return karta hai (<code>unknown → CreateUserInput</code>) — ab guarantee
+          type system mein encode ho gayi hai, aur invalid data us type ka ho hi nahi sakta. Extreme version:
+          branded types, jahan galat state represent hi nahi ho sakti.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Mass assignment vulnerability kya hai?"</div>
+        <p>
+          Jab request body ko bina filter kiye seedha model/DB mein spread kar diya jaaye
+          (<code>User.create({...req.body})</code>). Attacker <code>{"role":"admin"}</code> ya
+          <code>{"balance":999999}</code> add kar deta hai aur wo persist ho jaata hai. Fix: schema pe
+          <code>.strict()</code>/<code>.strip()</code>, aur ek explicit input model jisme server-controlled
+          fields (<code>id</code>, <code>role</code>, <code>createdAt</code>) hain hi nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Email uniqueness kahan check karoge?"</div>
+        <p>
+          Schema mein nahi — wo ek business rule hai jise DB chahiye, aur check-then-insert ek race condition
+          hai (do concurrent requests dono check pass kar lenge). Sahi jawab: DB pe
+          <code>UNIQUE</code> constraint, insert try karo, aur unique-violation error ko catch karke
+          <code>409 Conflict</code> return karo. UX ke liye ek pre-check add kar sakte ho, par
+          <em>correctness</em> constraint se aati hai, check se nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "<code>?limit=1000000</code> aa gaya toh?"</div>
+        <p>
+          Bina upper bound ke wo query poori table memory mein le aayegi aur process gira degi — ek request se
+          full outage. Isliye schema mein <code>limit</code> pe <code>.max(100)</code> aur ek sensible
+          <code>.default(20)</code> hona chahiye. Ye validation ka availability wala pehlu hai, sirf
+          correctness ka nahi.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="08-layered-architecture.html"><strong>Chapter 8 — Controllers, Services, Repositories</strong></a>:
+          data ab trusted hai. Ab business logic <em>likhi kahan jaaye</em> — har layer ki exact zimmedari,
+          middleware chain, aur request context.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

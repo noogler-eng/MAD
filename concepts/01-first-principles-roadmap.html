@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First Principles & Roadmap — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link active" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 1</div>
+      <div class="progress-pill">1 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Learning Path · Mental Model · Layer Stack</span>
+      <h1>First Principles & Roadmap</h1>
+      <p class="subtitle">
+        Ye chapter koi technical concept nahi sikhata — ye <strong>seekhne ka order</strong> set karta hai.
+        Kyunki backend mein sabse badi problem knowledge ki kami nahi hoti, <em>galat order</em> mein seekhna
+        hoti hai: framework pehle, mechanism baad mein. Us ulte order ka nateeja ye hota hai ki tum kaam
+        chala lete ho par debug nahi kar paate.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source videos: 1, 2 & 4 —
+        <a href="https://www.youtube.com/watch?v=0Rwb4Xmlcwc">Roadmap</a> ·
+        <a href="https://www.youtube.com/watch?v=3qFjZbFRSAU">Walk the path</a> ·
+        <a href="https://www.youtube.com/watch?v=6fqZs5Z3k9A">Benefits of first principles</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#problem">1. Framework-First Seekhne Mein Kya Toot-ta Hai</a></li>
+          <li><a href="#what">2. "First Principles" Ka Operational Matlab</a></li>
+          <li><a href="#stack">3. Backend Ka Layer Stack — Ek Diagram Mein</a></li>
+          <li><a href="#order">4. Ye 21 Chapters Kis Order Mein Khade Hain</a></li>
+          <li><a href="#how">5. Har Chapter Ko Kaise Padho</a></li>
+          <li><a href="#takeaways">6. Key Takeaways</a></li>
+          <li><a href="#interview">7. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="problem">Framework-First Seekhne Mein Kya Toot-ta Hai</h2>
+      <p>
+        Zyadatar log backend aise shuru karte hain: ek framework uthao (Express, FastAPI, Spring, NestJS),
+        tutorial follow karo, ek CRUD API bana lo. Ye galat nahi hai — output milta hai, confidence aata hai.
+        Problem tab shuru hoti hai jab kuch <em>unexpected</em> hota hai:
+      </p>
+      <ul>
+        <li>Production mein request 30 second baad timeout ho rahi hai — par local pe 40ms leti hai. Kahan atki?</li>
+        <li>Browser console mein CORS error hai. <code>cors()</code> middleware laga diya, ab bhi aa raha hai. Kyun?</li>
+        <li>Load badhte hi database bol raha hai <code>too many connections</code>. Server toh scale kar diya tha.</li>
+        <li>Deploy ke waqt kuch requests 502 de rahi hain. Sirf deploy ke 10 second window mein.</li>
+      </ul>
+      <p>
+        In chaaron ka jawab framework ki documentation mein nahi hai. Ye <strong>layer-level</strong> sawaal
+        hain — DNS, TCP, reverse proxy, connection pool, process lifecycle. Framework ne un layers ko
+        <em>chhupaya</em> tha, hataya nahi tha. Jab tak sab theek chal raha hai, chhupana faayda hai; jab kuch
+        tootta hai, chhupana hi asli dushman ban jaata hai.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Framework abstraction ek loan hai</div>
+        <p>
+          <code>@app.post("/users")</code> ek line mein TCP accept, HTTP parse, route match, body read, JSON
+          deserialize, validate, aur handler dispatch — sab ho jaata hai. Wo sab kaam <em>gaya nahi</em>, bas
+          tumhare liye kisi aur ne likh diya. Us code ka mental model tumhare paas nahi hai — ye ek udhaar hai
+          jo production incident ke din <strong>interest ke saath</strong> wapas maangi jaati hai.
+        </p>
+      </div>
+
+      <h2 id="what">"First Principles" Ka Operational Matlab</h2>
+      <p>
+        Ye phrase aajkal buzzword ban chuka hai, toh isko concrete kar dete hain. Is handbook mein har concept
+        teen sawaalon ke through padhaya jaata hai, isi order mein:
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>#</th><th>Sawaal</th><th>Kya milta hai</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Problem kya thi?</strong> Ye cheez exist hi kyun karti hai — iske bina kya toot raha tha?</td>
+            <td>Motivation. Tumhe yaad rakhne ke liye ratna nahi padta, derive kar sakte ho.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Mechanism kya hai?</strong> Solution andar se literally kaam kaise karta hai — bytes, sockets, data structures ke level pe?</td>
+            <td>Debug karne ki power. Error message padh ke pata chalta hai kaunsi layer boli.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Trade-off kya hai?</strong> Ye solution kya cost leta hai, aur kab ye galat choice hai?</td>
+            <td>Design judgement. Interview aur real architecture dono mein yahi differentiate karta hai.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Framework ka syntax teeno ke <em>baad</em> aata hai, aur tab wo trivially easy lagta hai — kyunki tab wo
+        sirf ek naam hai us cheez ka jo tum pehle se samajh chuke ho. Ulta karo, aur syntax yaad rakhna padta hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ek chhota test</div>
+        <p>
+          Kisi bhi concept pe apne aap se poocho: <em>"agar ye feature framework mein na hota, toh main isko
+          haath se kaise banata?"</em> Agar jawab nahi aata, toh tumne concept nahi, API seekha hai. Ye test
+          har chapter ke end pe repeat karna.
+        </p>
+      </div>
+
+      <h2 id="stack">Backend Ka Layer Stack — Ek Diagram Mein</h2>
+      <p>
+        Poore handbook ka structure ek hi cheez follow karta hai: <strong>ek request ka safar</strong>. Neeche
+        wala diagram woh poora stack hai — bahar (network) se andar (data) tak. Har chapter is stack ki ek
+        horizontal slice hai, aur numbers batate hain ki kaunsa chapter kahan baithta hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Backend layer stack from network edge to data layer">
+          <defs>
+            <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <!-- client -->
+          <rect x="270" y="14" width="220" height="46" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="380" y="37" class="ex-t">Client — browser / mobile / service</text>
+
+          <path d="M380,62 C378,72 382,80 380,92" class="ex-stroke" marker-end="url(#ar1)"/>
+
+          <!-- edge -->
+          <rect x="60" y="96" width="640" height="80" rx="11" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="118" class="ex-t">Edge / Transport layer</text>
+          <text x="380" y="140" class="ex-t-sm">DNS  →  TCP handshake  →  TLS  →  firewall / security group  →  reverse proxy</text>
+          <text x="380" y="160" class="ex-t-lbl">ch 2 · ch 3</text>
+
+          <path d="M380,178 C378,188 382,196 380,208" class="ex-stroke" marker-end="url(#ar1)"/>
+
+          <!-- http pipeline -->
+          <rect x="60" y="212" width="640" height="122" rx="11" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="380" y="234" class="ex-t">HTTP request pipeline</text>
+          <rect x="82" y="250" width="140" height="40" rx="8" class="ex-stroke ex-stroke-g"/>
+          <text x="152" y="266" class="ex-t-sm">routing</text><text x="152" y="281" class="ex-t-lbl">ch 4</text>
+          <rect x="238" y="250" width="140" height="40" rx="8" class="ex-stroke ex-stroke-g"/>
+          <text x="308" y="266" class="ex-t-sm">deserialize</text><text x="308" y="281" class="ex-t-lbl">ch 5</text>
+          <rect x="394" y="250" width="140" height="40" rx="8" class="ex-stroke ex-stroke-g"/>
+          <text x="464" y="266" class="ex-t-sm">authN / authZ</text><text x="464" y="281" class="ex-t-lbl">ch 6</text>
+          <rect x="550" y="250" width="128" height="40" rx="8" class="ex-stroke ex-stroke-g"/>
+          <text x="614" y="266" class="ex-t-sm">validate</text><text x="614" y="281" class="ex-t-lbl">ch 7</text>
+          <text x="380" y="313" class="ex-t-sm">middleware chain + request context  ·  ch 8</text>
+
+          <path d="M380,336 C378,346 382,354 380,366" class="ex-stroke" marker-end="url(#ar1)"/>
+
+          <!-- application -->
+          <rect x="60" y="370" width="640" height="82" rx="11" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="380" y="392" class="ex-t">Application layer — business logic</text>
+          <text x="380" y="414" class="ex-t-sm">controller  →  service  →  repository   ·   REST contract design</text>
+          <text x="380" y="435" class="ex-t-lbl">ch 8 · ch 9</text>
+
+          <path d="M232,454 C230,466 234,476 232,490" class="ex-stroke" marker-end="url(#ar1)"/>
+          <path d="M528,454 C526,466 530,476 528,490" class="ex-stroke" marker-end="url(#ar1)"/>
+
+          <!-- data + async -->
+          <rect x="60" y="494" width="344" height="98" rx="11" class="ex-fill-o ex-stroke"/>
+          <text x="232" y="516" class="ex-t">Data layer</text>
+          <text x="232" y="538" class="ex-t-sm">Postgres  ·  cache (Redis)  ·  search index</text>
+          <text x="232" y="559" class="ex-t-lbl">ch 10 · ch 11 · ch 13</text>
+          <text x="232" y="578" class="ex-t-sm">connection pool, indexes, transactions</text>
+
+          <rect x="424" y="494" width="276" height="98" rx="11" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="562" y="516" class="ex-t">Async layer</text>
+          <text x="562" y="538" class="ex-t-sm">queue  →  worker  →  retries / DLQ</text>
+          <text x="562" y="559" class="ex-t-lbl">ch 12</text>
+          <text x="562" y="578" class="ex-t-sm">request se kaam bahar nikalna</text>
+
+          <!-- cross-cutting rail -->
+          <path d="M726,100 C736,240 734,420 726,588" class="ex-stroke ex-stroke-d"/>
+          <text x="742" y="344" class="ex-t-lbl" transform="rotate(90 742 344)">cross-cutting · ch 14–21</text>
+        </svg>
+        <figcaption>
+          Ek request bahar se andar jaati hai, response ulta wapas aata hai. Dotted rail pe jo cheezein hain —
+          error handling, config, observability, shutdown, security, scaling, concurrency — wo kisi ek layer ki
+          nahi, <strong>har layer ki</strong> zimmedari hain. Isiliye wo chapters last mein aate hain: unhe
+          samajhne ke liye pehle poora stack dikhna zaroori hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="order">Ye 21 Chapters Kis Order Mein Khade Hain</h2>
+      <p>
+        Order random nahi hai — har chapter apne se pehle wale pe <em>depend</em> karta hai. Teen phases hain:
+      </p>
+
+      <h3>Phase 1 — Ek request ka safar (ch 2–9)</h3>
+      <p>
+        Yahan tum ek single request ko end-to-end follow karte ho: wo tumhare server tak pahunchti kaise hai
+        (2, 3), sahi function tak jaati kaise hai (4), bytes se object kaise banti hai (5), kaun bhej raha hai
+        aur usko permission hai ya nahi (6), data bharosemand hai ya nahi (7), business logic kis structure mein
+        likhi jaati hai (8), aur poora API contract kaisa dikhna chahiye (9). Is phase ke baad tum ek correct
+        API design kar sakte ho — <em>fast ya resilient nahi, sirf correct.</em>
+      </p>
+
+      <h3>Phase 2 — Data aur time (ch 10–13)</h3>
+      <p>
+        Ab data. Postgres andar se kaise store aur retrieve karta hai (10), repeated reads ko sasta kaise banate
+        hain (11), aur jo kaam request ke andar nahi hona chahiye usko time mein aage kaise dhakelte hain (12),
+        aur "search" jo <code>LIKE '%query%'</code> se kabhi kaam nahi karega usko kaise banate hain (13). Is
+        phase ke baad tumhari API <em>fast</em> ho jaati hai.
+      </p>
+
+      <h3>Phase 3 — Production reality (ch 14–21)</h3>
+      <p>
+        Ab wo sab jo local pe kabhi dikhta hi nahi: cheezein fail hongi (14), config har environment mein alag
+        hogi (15), jab kuch tootega toh tumhe pata kaise chalega (16), deploy ke waqt in-flight requests ka kya
+        hoga (17), koi tumhe deliberately todne aayega (18), traffic 100× ho jayega (19, 20), aur ek process
+        ke andar kaam actually parallel hota kaise hai (21). Is phase ke baad tumhari API
+        <em>production-grade</em> hoti hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Senior note — yahi teen phases seniority ki definition hain</div>
+        <p>
+          Junior engineer phase 1 tak pahunchta hai: feature kaam karta hai. Mid-level phase 2 add karta hai:
+          feature scale pe kaam karta hai. Senior phase 3 add karta hai: feature <em>3 baje raat ko bhi</em>
+          kaam karta hai, aur jab nahi karta toh 5 minute mein pata chal jaata hai kyun. Interview mein bhi
+          levels isi tarah judge hote hain — question same hota hai, expected depth alag.
+        </p>
+      </div>
+
+      <h2 id="how">Har Chapter Ko Kaise Padho</h2>
+      <ol>
+        <li><strong>Pehle video dekho</strong> — 1x pe, notes liye bina. Speaker ka reasoning aur build-up
+        sunna zaroori hai; wo transcript mein flat ho jaata hai.</li>
+        <li><strong>Phir chapter padho</strong> — yahan wo cheezein expand ki gayi hain jo video mein jaldi
+        mein nikal gayi thi, aur diagram se poora model ek saath dikhta hai.</li>
+        <li><strong>Diagram ko dobara draw karo</strong> — copy nahi, memory se. Jahan atko wahi tumhara asli
+        gap hai. Ye single sabse high-leverage step hai.</li>
+        <li><strong>Interview questions attempt karo</strong> — bina scroll kiye. Answer bolke, likhke nahi.</li>
+      </ol>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Backend seekhne ki asli difficulty concepts nahi, <strong>order</strong> hai — mechanism pehle, framework baad mein.</li>
+        <li>Framework abstraction ek udhaar hai; production incident wo udhaar interest ke saath maangta hai.</li>
+        <li>Har concept teen sawaalon se kholo: <em>problem kya thi → mechanism kya hai → trade-off kya hai.</em></li>
+        <li>Poora handbook ek hi cheez ka expansion hai: <strong>ek request ka safar</strong>, bahar se andar tak.</li>
+        <li>Ch 14–21 (error, config, observability, shutdown, security, scaling, concurrency) kisi ek layer ke nahi — <strong>cross-cutting</strong> hain.</li>
+        <li>Test: "agar framework mein ye feature na hota, main haath se kaise banata?" — jawab na aaye toh concept nahi, API seekha hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Apne ek backend feature ka design bataiye."</div>
+        <p>
+          Interviewer level check kar raha hai. Junior answer: endpoints aur DB schema. Strong answer: request
+          ka safar layer-by-layer — auth kahan lagega, validation boundary kya hai, kaunsa kaam sync rahega aur
+          kaunsa queue mein jayega, failure mode kya hai, aur observe kaise karoge. <strong>Yahi stack diagram
+          bolke sunao.</strong>
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "API local pe 40ms leti hai, production mein kabhi-kabhi 30s. Debug kaise karoge?"</div>
+        <p>
+          Answer ko layers mein todo, guess mat karo: DNS/TLS resolution → LB/proxy timeout config → app-level
+          blocking call → DB connection pool exhaustion (pool wait, query time nahi) → downstream API bina
+          timeout ke. "Kabhi-kabhi" + "exactly 30s" ka shape strongly pool exhaustion ya missing downstream
+          timeout ki taraf ishara karta hai — ch 10, 14, 21 mein detail.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Aapne X framework use kiya — uske bina ye kaise karte?"</div>
+        <p>
+          Ye seedha first-principles test hai. Isliye har chapter mein mechanism pehle padha jaata hai: routing
+          = prefix tree pe lookup, auth middleware = handler se pehle chalne wala function jo context enrich
+          karta hai, ORM = SQL generator + connection pool ke upar ek mapping layer.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="02-what-is-a-backend.html"><strong>Chapter 2 — What Is a Backend</strong></a>: backend
+          exist hi kyun karta hai, aur ek request browser se tumhare <code>localhost:3001</code> tak
+          <em>literally kitne hops</em> mein pahunchti hai.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

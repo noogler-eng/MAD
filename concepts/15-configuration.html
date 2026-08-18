@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration Management — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link active" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 15</div>
+      <div class="progress-pill">15 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">12-Factor · Layering · Secrets · Boot Validation · Feature Flags</span>
+      <h1>Configuration Management</h1>
+      <p class="subtitle">
+        Ek hi code, teen environments — local, staging, production — aur teenon mein alag DB, alag API keys,
+        alag limits. Wo difference kahan rakha jaaye? Ye chapter dikhta hai chhota par ismein do cheezein
+        chupi hain jo real incidents banati hain: <strong>galat config ka pata deploy ke ghanton baad
+        chalna</strong>, aur <strong>secrets ka git mein chala jaana</strong>.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 17 —
+        <a href="https://www.youtube.com/watch?v=GR9NtirPXyc">Production-grade Configuration Management</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#what">1. Config Kya Hai — Aur Kya Nahi</a></li>
+          <li><a href="#layers">2. Layering — Precedence Ka Order</a></li>
+          <li><a href="#validate">3. Boot Pe Validate Karo — Sabse Important Rule</a></li>
+          <li><a href="#secrets">4. Secrets — Config Se Alag Cheez Hai</a></li>
+          <li><a href="#flags">5. Feature Flags — Runtime Config</a></li>
+          <li><a href="#antipatterns">6. Config Anti-patterns</a></li>
+          <li><a href="#takeaways">7. Key Takeaways</a></li>
+          <li><a href="#interview">8. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="what">Config Kya Hai — Aur Kya Nahi</h2>
+      <p>
+        12-Factor App ki definition sabse saaf hai: <strong>config wo hai jo environments ke beech badalta
+        hai.</strong> Ye test bahut practical hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">test: "kya ye staging aur production mein alag hoga?"<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ✅ CONFIG — environment ke saath badalta hai</span>
+DATABASE_URL         <span class="tok-com">// local: localhost, prod: RDS endpoint</span>
+REDIS_URL
+STRIPE_SECRET_KEY    <span class="tok-com">// test key vs live key</span>
+LOG_LEVEL            <span class="tok-com">// debug vs info</span>
+PORT
+RATE_LIMIT_PER_MIN   <span class="tok-com">// dev mein dheela, prod mein sakht</span>
+
+<span class="tok-com">// ❌ CONFIG NAHI — har environment mein same, ye CODE hai</span>
+MAX_RETRIES = <span class="tok-num">3</span>              <span class="tok-com">// business decision, environment ka nahi</span>
+DEFAULT_PAGE_SIZE = <span class="tok-num">20</span>
+routes ki list
+validation rules
+
+<span class="tok-com">// ⚠️ Boundary case: agar kabhi environment ke hisaab se tune karna pada</span>
+<span class="tok-com">// (jaise staging mein rate limit dheela), tab wo config ban jaata hai.</span>
+<span class="tok-com">// Par pehle se "sab kuch configurable" banane ki galti mat karo — har</span>
+<span class="tok-com">// config option ek aur cheez hai jo galat set ho sakti hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Litmus test — "kya ye repo open-source kar sakte ho?"</div>
+        <p>
+          Agar tum apna codebase public kar do, aur usme koi credential ya environment-specific value nahi
+          honi chahiye — <strong>toh config theek se separate hai</strong>. Agar <code>config/production.js</code>
+          mein real DB password hai, toh nahi hai. Ye ek line poore chapter ka sabse practical rule hai, aur
+          <code>if (env === "production")</code> jaise conditionals ko bhi pakad leta hai — wo bhi
+          environment-specific logic hai jo code mein ghus gayi hai.
+        </p>
+      </div>
+
+      <h2 id="layers">Layering — Precedence Ka Order</h2>
+      <p>
+        Config ek jagah se nahi aati — kai sources hoti hain, aur unka <em>order</em> fix hona chahiye. Neeche
+        wali upar wali ko override karti hai:
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Configuration source precedence from defaults up to command-line flags, then validation at boot">
+          <defs>
+            <marker id="cf1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="250" y="20" class="ex-t">Precedence — neeche wali jeetti hai</text>
+
+          <rect x="60" y="36" width="380" height="40" rx="8" class="ex-stroke ex-stroke-d"/>
+          <text x="250" y="52" class="ex-t-sm">1 · Code defaults</text>
+          <text x="250" y="68" class="ex-t-sm">sabse kam priority · safe fallbacks</text>
+
+          <rect x="60" y="84" width="380" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="250" y="100" class="ex-t-sm">2 · Config file (per environment)</text>
+          <text x="250" y="116" class="ex-t-sm">non-secret values · git mein commit hoti hai</text>
+
+          <rect x="60" y="132" width="380" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="250" y="148" class="ex-t-sm">3 · Environment variables</text>
+          <text x="250" y="164" class="ex-t-sm">deploy-time · secrets yahan inject hote hain</text>
+
+          <rect x="60" y="180" width="380" height="40" rx="8" class="ex-fill-o ex-stroke"/>
+          <text x="250" y="196" class="ex-t-sm">4 · CLI flags</text>
+          <text x="250" y="212" class="ex-t-sm">sabse zyada priority · debugging/one-off runs</text>
+
+          <path d="M462,196 C480,150 480,90 462,56" class="ex-stroke" marker-end="url(#cf1)"/>
+          <text x="510" y="128" class="ex-t-lbl" transform="rotate(90 510 128)">override direction</text>
+
+          <path d="M250,224 C248,244 252,254 250,272" class="ex-stroke" marker-end="url(#cf1)"/>
+
+          <rect x="60" y="274" width="380" height="52" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="250" y="294" class="ex-t">5 · VALIDATE — boot pe, ek baar</text>
+          <text x="250" y="314" class="ex-t-lbl">fail → process turant exit (§3)</text>
+
+          <path d="M250,330 C248,344 252,352 250,364" class="ex-stroke ex-stroke-g" marker-end="url(#cf1)"/>
+          <text x="250" y="376" class="ex-t-sm">frozen, typed config object → poore app mein</text>
+
+          <rect x="546" y="196" width="184" height="130" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="638" y="218" class="ex-t-sm">Kyun ye order?</text>
+          <text x="638" y="242" class="ex-t-sm">defaults = kaam chal jaaye</text>
+          <text x="638" y="262" class="ex-t-sm">file = team ke liye shared</text>
+          <text x="638" y="282" class="ex-t-sm">env = deploy-time, secrets</text>
+          <text x="638" y="302" class="ex-t-sm">flags = abhi, is ek run ke liye</text>
+        </svg>
+        <figcaption>
+          Har layer apne se upar wali ko override karti hai — general se specific ki taraf. Sabse neeche
+          <strong>validation</strong> hai, aur wo optional nahi hai: uske baad hi config app mein jaati hai.
+        </figcaption>
+      </figure>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Environment variables kyun default choice hain</div>
+        <p>
+          Wo har language aur har platform (Docker, Kubernetes, systemd, Heroku) mein same tareeke se kaam
+          karte hain, code mein commit nahi hote, aur deploy ke waqt inject ho sakte hain bina rebuild kiye.
+          Limitation: <strong>sab strings hote hain</strong> (bilkul query params ki tarah — ch 7), aur nested
+          structures unme achhe se fit nahi hote. Isliye env vars flat rakho aur unhe parse/validate karke ek
+          typed object banao.
+        </p>
+      </div>
+
+      <h2 id="validate">Boot Pe Validate Karo — Sabse Important Rule</h2>
+      <p>
+        Ye is chapter ka core hai. Config galat hone ka pata <strong>process start hote hi</strong> chalna
+        chahiye — 3 ghante baad us pehle request pe nahi jo us feature ko chhuti hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">❌ lazy access — ye pattern har codebase mein hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Jahan zaroorat hai wahan process.env padh lo</span>
+<span class="tok-kw">const</span> key = process.env.STRIPE_SECRET_KEY;
+<span class="tok-kw">await</span> stripe(key).charges.<span class="tok-fn">create</span>(…);
+
+<span class="tok-com">// Problems:</span>
+<span class="tok-com">// 1. Env var missing hai → `undefined` → app THEEK se start ho jaata hai</span>
+<span class="tok-com">//    aur pehle payment pe fail hota hai. Deploy safal dikhta hai.</span>
+<span class="tok-com">// 2. process.env.PORT hamesha STRING hai — "3000", 3000 nahi</span>
+<span class="tok-com">// 3. process.env.DEBUG = "false" → truthy string! (ch 7 wala coercion trap)</span>
+<span class="tok-com">// 4. Kaunse env vars chahiye — iski koi central list hi nahi hai</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">✅ ek config module — parse, validate, freeze<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// config.ts — poore app mein SIRF ye file process.env chhuti hai</span>
+<span class="tok-kw">import</span> { z } <span class="tok-kw">from</span> <span class="tok-str">"zod"</span>;
+
+<span class="tok-kw">const</span> Schema = z.<span class="tok-fn">object</span>({
+  NODE_ENV: z.<span class="tok-fn">enum</span>([<span class="tok-str">"development"</span>, <span class="tok-str">"test"</span>, <span class="tok-str">"production"</span>]),
+
+  <span class="tok-com">// coerce — env var string hai, humein number chahiye (ch 7)</span>
+  PORT: z.<span class="tok-fn">coerce</span>.<span class="tok-fn">number</span>().<span class="tok-fn">int</span>().<span class="tok-fn">min</span>(<span class="tok-num">1</span>).<span class="tok-fn">max</span>(<span class="tok-num">65535</span>).<span class="tok-fn">default</span>(<span class="tok-num">3000</span>),
+
+  <span class="tok-com">// .url() — typo turant pakda jayega, connect karte waqt nahi</span>
+  DATABASE_URL: z.<span class="tok-fn">string</span>().<span class="tok-fn">url</span>(),
+  REDIS_URL:    z.<span class="tok-fn">string</span>().<span class="tok-fn">url</span>(),
+
+  <span class="tok-com">// length check — galat/truncated key ab boot pe pakdi jayegi</span>
+  JWT_SECRET: z.<span class="tok-fn">string</span>().<span class="tok-fn">min</span>(<span class="tok-num">32</span>, <span class="tok-str">"JWT_SECRET must be ≥32 chars"</span>),
+  STRIPE_SECRET_KEY: z.<span class="tok-fn">string</span>().<span class="tok-fn">startsWith</span>(<span class="tok-str">"sk_"</span>),
+
+  <span class="tok-com">// boolean — "false" ko theek se handle karo</span>
+  ENABLE_METRICS: z.<span class="tok-fn">enum</span>([<span class="tok-str">"true"</span>,<span class="tok-str">"false"</span>]).<span class="tok-fn">default</span>(<span class="tok-str">"true"</span>).<span class="tok-fn">transform</span>(v =&gt; v === <span class="tok-str">"true"</span>),
+
+  LOG_LEVEL: z.<span class="tok-fn">enum</span>([<span class="tok-str">"debug"</span>,<span class="tok-str">"info"</span>,<span class="tok-str">"warn"</span>,<span class="tok-str">"error"</span>]).<span class="tok-fn">default</span>(<span class="tok-str">"info"</span>),
+})
+<span class="tok-com">// cross-field rules — production mein extra sakhti</span>
+.<span class="tok-fn">refine</span>(c =&gt; c.NODE_ENV !== <span class="tok-str">"production"</span> || c.STRIPE_SECRET_KEY.<span class="tok-fn">startsWith</span>(<span class="tok-str">"sk_live_"</span>), {
+  message: <span class="tok-str">"production mein test Stripe key nahi chalegi"</span>,
+});
+<span class="tok-com">// ↑ Ye ek REAL incident rokta hai: prod deploy test keys ke saath</span>
+
+<span class="tok-kw">const</span> parsed = Schema.<span class="tok-fn">safeParse</span>(process.env);
+
+<span class="tok-kw">if</span> (!parsed.success) {
+  <span class="tok-com">// SAARI galtiyan ek saath dikhao (ch 7) — ek-ek karke fix karana zulm hai</span>
+  console.<span class="tok-fn">error</span>(<span class="tok-str">"❌ Invalid configuration:"</span>);
+  <span class="tok-kw">for</span> (<span class="tok-kw">const</span> i <span class="tok-kw">of</span> parsed.error.issues)
+    console.<span class="tok-fn">error</span>(<span class="tok-str">`  ${i.path.join(".")}: ${i.message}`</span>);
+  process.<span class="tok-fn">exit</span>(<span class="tok-num">1</span>);   <span class="tok-com">// ← FAIL FAST. Half-configured app mat chalao.</span>
+}
+
+<span class="tok-kw">export</span> <span class="tok-kw">const</span> config = Object.<span class="tok-fn">freeze</span>(parsed.data);
+<span class="tok-com">// freeze — runtime pe koi galti se config mutate na kar de</span>
+<span class="tok-com">// Aur type bhi mil gaya: config.PORT number hai, string nahi.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Fail fast = ek achhi deploy strategy</div>
+        <p>
+          Config galat hone pe process ka <code>exit(1)</code> karna aggressive lagta hai, par ye actually
+          <em>safe</em> hai: Kubernetes ya koi bhi orchestrator naye pod ko crash-loop mein dekhega aur
+          <strong>rollout rok dega</strong> — purane healthy pods chalte rahenge. Agar app "theek se" start ho
+          jaata hai aur baad mein fail hota hai, toh rollout complete ho jaata hai, purane pods mar jaate hain,
+          aur tumhare paas ek toota hua production hai. <strong>Crash on boot ek feature hai.</strong>
+        </p>
+      </div>
+
+      <h2 id="secrets">Secrets — Config Se Alag Cheez Hai</h2>
+      <p>
+        Saare secrets config hain, par saari config secret nahi hai. <code>LOG_LEVEL</code> leak hona kuch nahi
+        hai; <code>DATABASE_URL</code> ka password leak hona sab kuch hai. Aur secrets ke apne alag requirements
+        hote hain:
+      </p>
+      <table>
+        <thead><tr><th>Requirement</th><th>Normal config</th><th>Secret</th></tr></thead>
+        <tbody>
+          <tr><td>Git mein commit</td><td>Theek hai</td><td><strong>Kabhi nahi</strong></td></tr>
+          <tr><td>Logs mein dikhna</td><td>Theek hai</td><td>Kabhi nahi — redact karo</td></tr>
+          <tr><td>Rotation</td><td>Zaroori nahi</td><td>Periodically, aur leak ke baad turant</td></tr>
+          <tr><td>Access control</td><td>Poori team</td><td>Least privilege — sirf jinhe chahiye</td></tr>
+          <tr><td>Audit trail</td><td>Nahi</td><td>Kisne kab access kiya — chahiye</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">secrets — practical rules<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ KABHI NAHI</span>
+<span class="tok-kw">const</span> JWT_SECRET = <span class="tok-str">"my-super-secret-key"</span>;   <span class="tok-com">// code mein hardcoded</span>
+<span class="tok-com">// .env file ko git mein commit karna</span>
+<span class="tok-com">// Slack/Jira pe secret paste karna</span>
+<span class="tok-com">// Frontend bundle mein secret bhejna (ch 2 — wo secret hai hi nahi)</span>
+
+<span class="tok-com">// ✅ Setup</span>
+<span class="tok-com">// .gitignore mein: .env, .env.local, *.pem</span>
+<span class="tok-com">// .env.example COMMIT karo — structure batata hai, values nahi:</span>
+DATABASE_URL=postgres://user:pass@localhost:5432/dbname
+JWT_SECRET=&lt;32+ random chars&gt;
+STRIPE_SECRET_KEY=sk_test_xxx
+<span class="tok-com">// ↑ Ye naye developer ke liye documentation ka kaam bhi karti hai</span>
+
+<span class="tok-com">// ✅ Production mein secret manager use karo</span>
+<span class="tok-com">//    AWS Secrets Manager / Vault / GCP Secret Manager / k8s Secrets</span>
+<span class="tok-com">//    Faayde: rotation, audit log, access control, encryption at rest</span>
+
+<span class="tok-com">// ✅ Logs mein REDACT karo — warna ek error log poora credential likh deta hai</span>
+logger = pino({
+  redact: [<span class="tok-str">"req.headers.authorization"</span>, <span class="tok-str">"req.headers.cookie"</span>,
+           <span class="tok-str">"*.password"</span>, <span class="tok-str">"*.token"</span>, <span class="tok-str">"*.secret"</span>, <span class="tok-str">"config.DATABASE_URL"</span>],
+});
+<span class="tok-com">// Ch 16 mein detail — par ye setup yahan config ke saath hi hona chahiye.</span>
+
+<span class="tok-com">// ✅ CI mein secret scanning lagao (gitleaks, trufflehog)</span>
+<span class="tok-com">// ⚠️ Aur yaad rakho: git se secret hatane ke liye commit revert KAAFI NAHI hai —</span>
+<span class="tok-com">//    wo history mein reh jaata hai. Agar push ho gaya, toh secret ROTATE karo.</span>
+</code></pre>
+      </div>
+
+      <h2 id="flags">Feature Flags — Runtime Config</h2>
+      <p>
+        Ab tak jo config dekhi wo <strong>boot-time</strong> thi — badalne ke liye restart chahiye. Kuch cheezein
+        <em>chalte hue</em> badalni hoti hain: ek feature band karna jo production mein phat gaya, ya naya
+        feature 5% users pe try karna. Ye <strong>feature flags</strong> hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">flags ke chaar kaam<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. KILL SWITCH — sabse valuable use case</span>
+<span class="tok-kw">if</span> (<span class="tok-kw">await</span> flags.<span class="tok-fn">enabled</span>(<span class="tok-str">"new-checkout-flow"</span>)) { … } <span class="tok-kw">else</span> { … }
+<span class="tok-com">// Feature phat gaya? Flag off karo — 5 second. Rollback deploy = 15 minute.</span>
+
+<span class="tok-com">// 2. GRADUAL ROLLOUT — 1% → 10% → 50% → 100%</span>
+<span class="tok-kw">if</span> (<span class="tok-kw">await</span> flags.<span class="tok-fn">enabled</span>(<span class="tok-str">"new-search"</span>, { userId })) { … }
+<span class="tok-com">// Bucketing DETERMINISTIC honi chahiye: hash(userId + flagName) % 100 &lt; pct</span>
+<span class="tok-com">// Warna ek hi user ko har request pe alag experience milega.</span>
+
+<span class="tok-com">// 3. TRUNK-BASED DEVELOPMENT — adhoora code merge karo, flag off rakho</span>
+<span class="tok-com">//    Lambi feature branches aur unke merge conflicts se bach jaate ho.</span>
+
+<span class="tok-com">// 4. A/B TESTING — do variants, metrics compare</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Flags technical debt hain — expiry ke saath aane chahiye</div>
+        <p>
+          Har flag ek <code>if/else</code> hai, matlab <strong>code paths double</strong> ho jaate hain. 50 flags
+          = 2⁵⁰ theoretical combinations, jinme se zyadatar kabhi test hi nahi hue. Isliye har flag ke saath ek
+          <em>owner</em> aur ek <em>removal date</em> rakho, aur 100% rollout ke baad usse code se hata do.
+          "Purane flags saaf karna" ek recurring task hona chahiye, warna 2 saal baad koi nahi jaanta ki
+          <code>enable_new_billing_v2_final</code> off karne se kya tootega.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Flag evaluation fail-safe hona chahiye</div>
+        <p>
+          Flag service down ho jaaye toh kya? <strong>Last known values cache rakho</strong> aur ek safe default
+          define karo — flag lookup fail hone se poora request fail nahi hona chahiye. Ye ch 14 ka graceful
+          degradation hai, aur flags ke case mein zaroori hai kyunki flag check har request ke critical path pe
+          hota hai.
+        </p>
+      </div>
+
+      <h2 id="antipatterns">Config Anti-patterns</h2>
+      <table>
+        <thead><tr><th>Anti-pattern</th><th>Kyun bura</th><th>Behtar</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>if (env === "production")</code> business logic mein</td>
+            <td>Production ka code path kabhi test hi nahi hota — dev mein wo branch chalti hi nahi</td>
+            <td>Behaviour ko ek config <em>value</em> banao, environment check nahi</td>
+          </tr>
+          <tr>
+            <td>Secrets git mein</td>
+            <td>History mein permanent; revert kaafi nahi</td>
+            <td><code>.gitignore</code> + secret manager + CI scanning</td>
+          </tr>
+          <tr>
+            <td><code>process.env</code> poore codebase mein</td>
+            <td>Koi central list nahi, koi types nahi, koi validation nahi</td>
+            <td>Ek <code>config</code> module — sirf wahi <code>process.env</code> chhue</td>
+          </tr>
+          <tr>
+            <td>Config bina validation ke</td>
+            <td>Galat value ka pata ghanton baad chalta hai</td>
+            <td>Boot pe schema validate + <code>exit(1)</code></td>
+          </tr>
+          <tr>
+            <td>Prod ke liye "safe" defaults</td>
+            <td><code>DATABASE_URL ?? "localhost"</code> — prod chupchaap galat DB pe chalega</td>
+            <td>Critical config ko <strong>required</strong> rakho, default mat do</td>
+          </tr>
+          <tr>
+            <td>Sab kuch configurable</td>
+            <td>Har option ek aur cheez hai jo galat set ho sakti hai; combinations test nahi hote</td>
+            <td>Sirf wo configurable jo sach mein environments mein badalta hai</td>
+          </tr>
+          <tr>
+            <td>Environment-specific code branches</td>
+            <td>Dev aur prod ka behaviour diverge karta hai — bugs sirf prod mein dikhte hain</td>
+            <td>Same code path, alag values</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Config = <strong>wo jo environments ke beech badalta hai</strong>. <code>MAX_RETRIES</code> config nahi, code hai.</li>
+        <li>Litmus test: <em>"kya ye repo public kar sakte ho?"</em> — nahi, toh config theek se separate nahi hai.</li>
+        <li>Precedence: defaults → config file → <strong>env vars</strong> → CLI flags. Neeche wali jeetti hai.</li>
+        <li>Env vars default choice hain (har platform pe same, commit nahi hote, rebuild ke bina inject), par <strong>sab strings hote hain</strong>.</li>
+        <li><strong>Boot pe validate karo</strong> — schema se parse, coerce, aur fail pe <code>exit(1)</code>. Saari errors ek saath dikhao.</li>
+        <li><code>exit(1)</code> ek feature hai: orchestrator crash-loop dekh ke <strong>rollout rok deta hai</strong>, purane healthy pods bache rehte hain.</li>
+        <li>Cross-field validation se real incidents rukte hain — jaise "production mein <code>sk_test_</code> key nahi chalegi".</li>
+        <li>Config object ko <strong>freeze</strong> karo, aur <code>process.env</code> ko sirf ek module chhue.</li>
+        <li>Critical config ko <strong>required</strong> rakho — <code>?? "localhost"</code> jaisa default prod ko chupchaap galat DB pe chala deta hai.</li>
+        <li>Secrets alag category hain: never in git, redact in logs, rotate, least privilege, audit.</li>
+        <li><code>.env.example</code> commit karo (structure, values nahi) — wo onboarding documentation bhi hai.</li>
+        <li>Git se secret hatane ke liye revert kaafi nahi — history mein reh jaata hai. Push ho gaya toh <strong>rotate karo</strong>.</li>
+        <li>Feature flags = runtime config. Sabse bada faayda <strong>kill switch</strong> — 5 second vs 15 minute rollback.</li>
+        <li>Flag bucketing deterministic honi chahiye (<code>hash(userId + flag)</code>), warna user ko har request pe alag experience milega.</li>
+        <li>Flags technical debt hain — owner aur removal date ke saath aayein, aur 100% ke baad hataye jaayein.</li>
+        <li><code>if (env === "production")</code> business logic mein mat likho — wo code path kabhi test nahi hota.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Config kahan rakhoge — file, env vars, ya database?"</div>
+        <p>
+          Layered: code defaults (safe fallbacks) → per-environment config file (non-secret, git mein) → env
+          vars (deploy-time, secrets yahan) → CLI flags (one-off). Env vars primary hain kyunki wo har platform
+          pe same kaam karte hain, commit nahi hote, aur rebuild ke bina inject ho sakte hain. Database/flag
+          service sirf us config ke liye jo <em>runtime pe</em> badalni ho — feature flags, kill switches.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Missing ya galat env var ko kaise handle karoge?"</div>
+        <p>
+          <strong>Boot pe validate karo aur fail fast.</strong> Ek config module ho jo <code>process.env</code>
+          ko ek schema se parse kare — types coerce kare (env vars strings hain), URLs/lengths/prefixes check
+          kare, aur fail hone pe saari errors ek saath print karke <code>process.exit(1)</code> kare. Ye
+          safe hai kyunki orchestrator crash-loop dekh ke rollout rok deta hai; agar app "start ho jaata" aur
+          baad mein fail hota, toh purane pods mar chuke hote aur production toota hua hota. Critical config ko
+          default mat do — required rakho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Secrets kaise manage karoge?"</div>
+        <p>
+          Kabhi git mein nahi (<code>.gitignore</code> + CI secret scanning), kabhi logs mein nahi (logger mein
+          redact paths). Production mein secret manager (Vault, AWS Secrets Manager, k8s Secrets) — rotation,
+          audit trail, aur least-privilege access ke liye. <code>.env.example</code> commit karo taaki structure
+          documented rahe. Aur ek important detail: agar secret push ho chuka hai toh commit revert kaafi nahi —
+          wo history mein hai, isliye secret <strong>rotate</strong> karna padega.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Feature flags kis liye? Unke saath kya dikkat hoti hai?"</div>
+        <p>
+          Chaar kaam: kill switch (sabse valuable — 5s mein feature band vs 15min rollback), gradual rollout,
+          trunk-based development (adhoora code flag ke peeche merge), aur A/B testing. Dikkat: har flag code
+          paths double karta hai, aur combinations kabhi test nahi hote — flags <strong>technical debt</strong>
+          hain. Isliye owner + removal date, aur 100% rollout ke baad cleanup. Saath mein flag evaluation
+          fail-safe hona chahiye (cached last-known value + safe default), warna flag service ka outage tumhara
+          outage ban jaata hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "<code>if (env === 'production')</code> mein kya problem hai?"</div>
+        <p>
+          Wo code path <strong>sirf production mein chalta hai</strong> — matlab wo kabhi test nahi hota, aur
+          uske bugs sirf production mein milte hain (jahan sabse mehnge hote hain). Aur ye dev/prod parity todta
+          hai. Behtar: behaviour ko ek config <em>value</em> banao — <code>config.RATE_LIMIT</code>,
+          <code>config.LOG_LEVEL</code> — taaki har environment mein <em>same code path</em> chale, bas values
+          alag hon. Tab tum staging mein production-jaisi values daal ke asli behaviour test kar sakte ho.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="16-observability.html"><strong>Chapter 16 — Logging, Monitoring, Observability</strong></a>:
+          system resilient hai aur theek se configured hai. Par jab kuch toot-ta hai, tumhe pata kaise chalega —
+          aur <em>kyun</em> toota, ye kaise pata karoge?
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

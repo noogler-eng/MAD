@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caching — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link active" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 11</div>
+      <div class="progress-pill">11 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Cache Layers · Invalidation · TTL · Stampede · Redis</span>
+      <h1>Caching</h1>
+      <p class="subtitle">
+        Ch 10 mein query ko fast banaya. Par sabse fast query wo hai <strong>jo chalti hi nahi</strong>. Caching
+        ka poora idea yahi hai — mehnga jawab ek baar nikaalo, aur usse baar-baar reuse karo. Problem ye hai ki
+        cache ek <em>duplicate copy</em> hai, aur duplicate copy ka matlab hai ki wo <strong>galat ho sakti
+        hai</strong>. Isliye ye chapter caching se zyada <em>invalidation</em> ke baare mein hai.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 13 —
+        <a href="https://www.youtube.com/watch?v=estH64OkwxU">Caching, the secret behind it all</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why">1. Kyun Kaam Karta Hai — Locality Aur Latency</a></li>
+          <li><a href="#layers">2. Cache Layers — Ek Request Ke Raaste Pe</a></li>
+          <li><a href="#patterns">3. Teen Patterns — Cache-Aside, Write-Through, Write-Behind</a></li>
+          <li><a href="#keys">4. Cache Keys — Design Rules</a></li>
+          <li><a href="#invalidation">5. Invalidation — Do Hard Problems Mein Se Ek</a></li>
+          <li><a href="#stampede">6. Cache Stampede Aur Uske Teen Fix</a></li>
+          <li><a href="#failures">7. Baaki Failure Modes</a></li>
+          <li><a href="#eviction">8. Eviction Policies Aur Memory</a></li>
+          <li><a href="#when">9. Kab Cache <em>Nahi</em> Karna Chahiye</a></li>
+          <li><a href="#takeaways">10. Key Takeaways</a></li>
+          <li><a href="#interview">11. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why">Kyun Kaam Karta Hai — Locality Aur Latency</h2>
+      <p>
+        Caching do observations pe khadi hai. Pehli — <strong>locality</strong>: real traffic uniform nahi hota.
+        1% products 50% views le jaate hain, ek viral post lakhon baar padha jaata hai, aur homepage har user ko
+        wahi dikhta hai. Doosri — <strong>latency ka pyramid</strong>: har layer neeche wali se ek order of
+        magnitude slow hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Kahan se</th><th>Approx latency</th><th>Comparison</th></tr></thead>
+        <tbody>
+          <tr><td>Process ki apni memory (in-process cache)</td><td>~100 ns</td><td>1×</td></tr>
+          <tr><td>Redis, same datacenter</td><td>~0.5–1 ms</td><td>~5,000×</td></tr>
+          <tr><td>Postgres, indexed query</td><td>~1–10 ms</td><td>~10,000×</td></tr>
+          <tr><td>Postgres, complex aggregate</td><td>~100 ms – 2 s</td><td>~10⁶×</td></tr>
+          <tr><td>External API call</td><td>~50–500 ms</td><td>~10⁶×</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Ek 800ms ka aggregate query jo 1ms ke Redis hit se replace ho jaaye — wo 800× improvement hai, aur
+        saath hi <strong>DB pe load bhi hatta hai</strong>. Ye doosra faayda aksar pehle se zyada important
+        hota hai: cache DB ko bachata hai, sirf user ko fast nahi karta.
+      </p>
+
+      <h2 id="layers">Cache Layers — Ek Request Ke Raaste Pe</h2>
+      <p>
+        "Cache" ek jagah nahi hai — ch 2 ke har hop pe ek cache baith sakti hai. Sahi layer chunna aadha kaam
+        hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cache layers from browser through CDN, application, Redis and database buffer pool">
+          <defs>
+            <marker id="ca1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="24" y="40" width="120" height="80" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="84" y="62" class="ex-t-sm">1 · Browser</text>
+          <text x="84" y="82" class="ex-t-sm">Cache-Control</text>
+          <text x="84" y="100" class="ex-t-sm">ETag (ch 3)</text>
+
+          <path d="M146,80 C160,78 168,82 182,80" class="ex-stroke" marker-end="url(#ca1)"/>
+
+          <rect x="184" y="40" width="120" height="80" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="244" y="62" class="ex-t-sm">2 · CDN</text>
+          <text x="244" y="82" class="ex-t-sm">static assets</text>
+          <text x="244" y="100" class="ex-t-sm">public GETs</text>
+
+          <path d="M306,80 C320,78 328,82 342,80" class="ex-stroke" marker-end="url(#ca1)"/>
+
+          <rect x="344" y="40" width="120" height="80" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="404" y="62" class="ex-t-sm">3 · In-process</text>
+          <text x="404" y="82" class="ex-t-sm">~100 ns</text>
+          <text x="404" y="100" class="ex-t-lbl">per-instance!</text>
+
+          <path d="M466,80 C480,78 488,82 502,80" class="ex-stroke" marker-end="url(#ca1)"/>
+
+          <rect x="504" y="40" width="120" height="80" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="564" y="62" class="ex-t-sm">4 · Redis</text>
+          <text x="564" y="82" class="ex-t-sm">~1 ms</text>
+          <text x="564" y="100" class="ex-t-lbl">shared</text>
+
+          <path d="M626,80 C640,78 648,82 662,80" class="ex-stroke" marker-end="url(#ca1)"/>
+
+          <rect x="664" y="40" width="76" height="80" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="702" y="70" class="ex-t-sm">5 · DB</text>
+          <text x="702" y="92" class="ex-t-sm">buffer</text>
+          <text x="702" y="108" class="ex-t-sm">pool</text>
+
+          <text x="380" y="152" class="ex-t-lbl">Har layer pe: HIT → turant wapas · MISS → agli layer</text>
+
+          <rect x="24" y="176" width="352" height="200" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="200" y="198" class="ex-t">In-process cache</text>
+          <text x="200" y="224" class="ex-t-lbl">✅ sabse fast — koi network nahi</text>
+          <text x="200" y="246" class="ex-t-sm">✅ serialization ka cost bhi nahi</text>
+          <text x="200" y="272" class="ex-t-sm">❌ har instance ki apni copy</text>
+          <text x="200" y="292" class="ex-t-sm">❌ 10 instances = 10 alag states</text>
+          <text x="200" y="312" class="ex-t-sm">❌ invalidate karna? sabko batana padega</text>
+          <text x="200" y="338" class="ex-t-lbl">theek hai: config, feature flags,</text>
+          <text x="200" y="358" class="ex-t-sm">reference data — jo kabhi-kabhi badle</text>
+
+          <rect x="392" y="176" width="348" height="200" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="566" y="198" class="ex-t">Redis (shared)</text>
+          <text x="566" y="224" class="ex-t-lbl">✅ ek hi truth, sab instances ke liye</text>
+          <text x="566" y="246" class="ex-t-sm">✅ invalidate ek jagah = sabke liye</text>
+          <text x="566" y="266" class="ex-t-sm">✅ TTL, atomic ops, pub/sub built-in</text>
+          <text x="566" y="292" class="ex-t-sm">❌ ek network hop (~1 ms)</text>
+          <text x="566" y="312" class="ex-t-sm">❌ ek aur cheez jo gir sakti hai</text>
+          <text x="566" y="338" class="ex-t-lbl">default choice hai — sessions,</text>
+          <text x="566" y="358" class="ex-t-sm">query results, rate limits, locks</text>
+        </svg>
+        <figcaption>
+          Sabse aam galti: <strong>in-process cache ko shared samajh lena</strong>. 3 instances chal rahe hain,
+          tumne ek pe invalidate kiya — baaki 2 purana data serve karte rahenge. "Kabhi-kabhi purana data dikhta
+          hai" wale bugs ka yahi sabse common source hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="patterns">Teen Patterns — Cache-Aside, Write-Through, Write-Behind</h2>
+
+      <div class="code-block">
+        <div class="code-title">1. Cache-aside (lazy loading) — 90% cases mein yahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">getProduct</span>(id) {
+  <span class="tok-kw">const</span> key = <span class="tok-str">`product:v1:${id}`</span>;
+
+  <span class="tok-com">// 1. cache dekho</span>
+  <span class="tok-kw">const</span> cached = <span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(key);
+  <span class="tok-kw">if</span> (cached !== <span class="tok-kw">null</span>) <span class="tok-kw">return</span> JSON.<span class="tok-fn">parse</span>(cached);   <span class="tok-com">// HIT</span>
+  <span class="tok-com">// ↑ `!== null` — `if (cached)` galat hai: cached "0" ya "" ho sakta hai</span>
+
+  <span class="tok-com">// 2. MISS → asli source</span>
+  <span class="tok-kw">const</span> product = <span class="tok-kw">await</span> db.products.<span class="tok-fn">findById</span>(id);
+  <span class="tok-kw">if</span> (!product) <span class="tok-kw">return</span> <span class="tok-kw">null</span>;
+
+  <span class="tok-com">// 3. cache mein daalo, TTL ke SAATH — TTL hamesha lagao</span>
+  <span class="tok-kw">await</span> redis.<span class="tok-fn">setex</span>(key, <span class="tok-num">300</span>, JSON.<span class="tok-fn">stringify</span>(product));
+  <span class="tok-kw">return</span> product;
+}
+<span class="tok-com">// ✅ Simple, aur cache gir jaaye toh app sirf slow hoga, TOOTEGA nahi</span>
+<span class="tok-com">// ❌ Har naye key pe pehli request slow (cold miss)</span>
+<span class="tok-com">// ❌ Write ke baad cache stale — isliye invalidation chahiye (§5)</span>
+</code></pre>
+      </div>
+
+      <table>
+        <thead><tr><th>Pattern</th><th>Write pe kya</th><th>Kab use karo</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Cache-aside</strong></td>
+            <td>DB likho, cache <em>delete</em> karo</td>
+            <td>Default — read-heavy, tolerable staleness</td>
+            <td>Cold miss; short race window</td>
+          </tr>
+          <tr>
+            <td><strong>Write-through</strong></td>
+            <td>DB aur cache dono likho</td>
+            <td>Jab cache hamesha warm chahiye</td>
+            <td>Write slow; wo data bhi cache hota hai jo shayad kabhi padha na jaaye</td>
+          </tr>
+          <tr>
+            <td><strong>Write-behind</strong></td>
+            <td>Cache likho, DB baad mein async</td>
+            <td>Bahut high write rate (counters, analytics)</td>
+            <td><strong>Cache gira toh data KHO gaya</strong> — durability nahi</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Write pe cache <em>delete</em> karo, <em>update</em> nahi</div>
+        <p>
+          Sochne mein lagta hai ki update karna behtar hai (cache warm rahega). Par do concurrent writes mein
+          order ulta ho sakta hai — A ne DB likha, B ne DB likha, phir B ne cache likha, phir A ne cache likha
+          → <strong>cache mein purani value permanently baithi hai</strong>. Delete karne se worst case sirf
+          ek extra DB read hai. <em>Simple aur galat</em> se <em>simple aur sahi</em> hamesha behtar hai.
+        </p>
+      </div>
+
+      <h2 id="keys">Cache Keys — Design Rules</h2>
+      <div class="code-block">
+        <div class="code-title">key design<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ✅ Structured, namespaced, versioned</span>
+<span class="tok-str">`product:v1:${id}`</span>
+<span class="tok-str">`user:v2:${userId}:orders:page:${cursor}`</span>
+<span class="tok-str">`search:v1:${sha256(normalizedQuery)}`</span>   <span class="tok-com">// lambi query → fixed-size hash</span>
+
+<span class="tok-com">// Version (`v1`) kyun? Kyunki cached object ka SHAPE badal sakta hai.</span>
+<span class="tok-com">// Deploy ke baad naya code purane shape ka JSON padhega aur crash karega.</span>
+<span class="tok-com">// Version badhao → poori purani cache automatically ignore ho jaati hai,</span>
+<span class="tok-com">// bina manual flush ke. Ye ek FREE migration strategy hai.</span>
+
+<span class="tok-com">// ⚠️ Per-user data ki key mein user ID HONA CHAHIYE</span>
+<span class="tok-str">`dashboard:${userId}`</span>     <span class="tok-com">// ✅</span>
+<span class="tok-str">`dashboard`</span>               <span class="tok-com">// ❌ ek user ka data doosre ko dikh jayega — REAL breach</span>
+<span class="tok-com">// Yahi galti CDN pe bhi hoti hai: personalized response pe `Cache-Control: public`</span>
+<span class="tok-com">// lagana matlab CDN use SABKO serve karega. `private` use karo (ch 3).</span>
+
+<span class="tok-com">// ⚠️ KEYS ya SCAN production mein mat chalao — Redis single-threaded hai,</span>
+<span class="tok-com">//    KEYS * poora server block kar deta hai. Prefix delete chahiye toh</span>
+<span class="tok-com">//    ya to ek "generation" counter use karo, ya alag Redis DB/namespace.</span>
+</code></pre>
+      </div>
+
+      <h2 id="invalidation">Invalidation — Do Hard Problems Mein Se Ek</h2>
+      <p>
+        Phil Karlton ka mashhoor quote hai ki computer science mein sirf do mushkil cheezein hain: cache
+        invalidation aur naming. Wajah ye hai ki tumhe <em>har</em> us jagah ka pata hona chahiye jahan wo data
+        badal sakta hai — API, admin panel, migration script, cron job, doosri service. Ek jagah bhool gaye,
+        toh stale data permanently baitha rahega.
+      </p>
+
+      <table>
+        <thead><tr><th>Strategy</th><th>Kaise</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>TTL (time-based)</strong></td>
+            <td>Har entry apne aap expire</td>
+            <td>Sabse simple, hamesha lagao. Par TTL tak stale data serve hota hai</td>
+          </tr>
+          <tr>
+            <td><strong>Explicit delete</strong></td>
+            <td>Write ke baad <code>DEL key</code></td>
+            <td>Turant fresh. Par har write path pe yaad rakhna padta hai</td>
+          </tr>
+          <tr>
+            <td><strong>Key versioning</strong></td>
+            <td>Key mein ek counter — <code>user:42:v{n}</code></td>
+            <td>Purani entries apne aap orphan; delete karne ki zaroorat hi nahi</td>
+          </tr>
+          <tr>
+            <td><strong>Event-driven</strong></td>
+            <td>DB change → event (ch 12) → subscribers invalidate karein</td>
+            <td>Har write path automatically covered. Par ek aur moving part</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">generation counter — prefix invalidation bina SCAN ke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Problem: user 42 ke SAARE cached pages invalidate karne hain,</span>
+<span class="tok-com">// par unki keys pata nahi (cursor har page pe alag hai).</span>
+
+<span class="tok-com">// Solution: ek generation number key ka HISSA bana do</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">ordersKey</span>(userId, cursor) {
+  <span class="tok-kw">const</span> gen = (<span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(<span class="tok-str">`gen:user:${userId}`</span>)) ?? <span class="tok-str">"0"</span>;
+  <span class="tok-kw">return</span> <span class="tok-str">`orders:${userId}:g${gen}:${cursor}`</span>;
+}
+
+<span class="tok-com">// Invalidate = sirf counter badhao. Ek O(1) operation.</span>
+<span class="tok-kw">await</span> redis.<span class="tok-fn">incr</span>(<span class="tok-str">`gen:user:${userId}`</span>);
+<span class="tok-com">// Ab saari purani keys (g5) kabhi generate hi nahi hongi — wo TTL pe apne aap</span>
+<span class="tok-com">// mar jayengi. Koi SCAN nahi, koi key list maintain karne ki zaroorat nahi.</span>
+</code></pre>
+      </div>
+
+      <h2 id="stampede">Cache Stampede Aur Uske Teen Fix</h2>
+      <p>
+        Sabse khatarnak cache failure. Ek popular key expire hoti hai. Us exact moment pe 5,000 concurrent
+        requests aati hain. Sab miss hoti hain. Sab <em>ek saath</em> DB pe jaati hain — wahi mehnga query,
+        5,000 baar. DB girta hai. Aur DB girne se aur requests fail hoti hain, jo retry hoti hain… ye ek
+        cascading failure hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cache stampede where many concurrent misses hit the database at once, and the single-flight fix">
+          <defs>
+            <marker id="st1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="180" y="20" class="ex-t">❌ Stampede</text>
+          <text x="556" y="20" class="ex-t">✅ Single-flight (lock)</text>
+          <path d="M366,32 C370,140 362,250 366,344" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="24" y="40" width="316" height="34" rx="8" class="ex-fill-o ex-stroke"/>
+          <text x="182" y="60" class="ex-t-sm">key expire hui — t=0</text>
+
+          <rect x="40" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="73" y="102" class="ex-t-sm">req</text>
+          <rect x="116" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="149" y="102" class="ex-t-sm">req</text>
+          <rect x="192" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="225" y="102" class="ex-t-sm">req</text>
+          <rect x="268" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="301" y="102" class="ex-t-sm">× 5000</text>
+
+          <path d="M73,116 C110,140 150,160 176,178" class="ex-stroke" marker-end="url(#st1)"/>
+          <path d="M149,116 C160,142 172,162 180,178" class="ex-stroke" marker-end="url(#st1)"/>
+          <path d="M225,116 C216,142 200,162 188,178" class="ex-stroke" marker-end="url(#st1)"/>
+          <path d="M301,116 C264,140 220,160 194,178" class="ex-stroke" marker-end="url(#st1)"/>
+
+          <rect x="118" y="180" width="128" height="46" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="182" y="200" class="ex-t-sm">DATABASE</text>
+          <text x="182" y="218" class="ex-t-lbl">5000× same query</text>
+
+          <text x="182" y="256" class="ex-t-lbl">DB gira → aur requests fail</text>
+          <text x="182" y="278" class="ex-t-sm">→ retries → aur load → cascading failure</text>
+          <text x="182" y="308" class="ex-t-sm">"cache ne DB ko bachaya" ka ulta:</text>
+          <text x="182" y="328" class="ex-t-lbl">cache expiry ne DB ko maar diya</text>
+
+          <!-- fix -->
+          <rect x="396" y="40" width="316" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="554" y="60" class="ex-t-sm">key expire hui — t=0</text>
+
+          <rect x="412" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="445" y="102" class="ex-t-sm">req</text>
+          <rect x="488" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="521" y="102" class="ex-t-sm">req</text>
+          <rect x="564" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="597" y="102" class="ex-t-sm">req</text>
+          <rect x="640" y="88" width="66" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="673" y="102" class="ex-t-sm">× 5000</text>
+
+          <path d="M445,116 C452,140 458,158 462,176" class="ex-stroke ex-stroke-g" marker-end="url(#st1)"/>
+          <path d="M521,116 C520,140 522,158 520,176" class="ex-stroke ex-stroke-d"/>
+          <path d="M597,116 C596,140 598,158 596,176" class="ex-stroke ex-stroke-d"/>
+          <path d="M673,116 C660,140 640,158 624,176" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="420" y="178" width="290" height="46" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="565" y="196" class="ex-t-sm">SET NX lock — sirf EK jeeta</text>
+          <text x="565" y="216" class="ex-t-lbl">baaki 4999 thoda ruk ke cache dobara padhte hain</text>
+
+          <path d="M462,226 C460,240 464,250 462,262" class="ex-stroke ex-stroke-g" marker-end="url(#st1)"/>
+          <rect x="398" y="264" width="128" height="42" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="462" y="290" class="ex-t-sm">DATABASE — 1 query</text>
+
+          <text x="556" y="290" class="ex-t-lbl">5000 → 1</text>
+          <text x="556" y="318" class="ex-t-sm">aur behtar: TTL mein jitter daalo taaki</text>
+          <text x="556" y="338" class="ex-t-sm">saari keys ek saath expire hi na hon</text>
+        </svg>
+        <figcaption>
+          Stampede ka sabse dhoke wala roop: sab kuch theek chal raha hota hai, cache hit rate 99% hota hai —
+          aur phir ek popular key expire hoti hai aur poora system gir jaata hai. Monitoring mein ye ek
+          <em>achanak</em> spike dikhta hai, dheere-dheere degradation nahi.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">teen fix — aksar teeno saath lagte hain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── Fix 1: JITTER — expiry ko faila do ────────────────────</span>
+<span class="tok-kw">const</span> ttl = <span class="tok-num">300</span> + Math.<span class="tok-fn">floor</span>(Math.<span class="tok-fn">random</span>() * <span class="tok-num">60</span>);   <span class="tok-com">// 300–360s</span>
+<span class="tok-kw">await</span> redis.<span class="tok-fn">setex</span>(key, ttl, value);
+<span class="tok-com">// Bina jitter ke, ek saath cache ki gayi 1000 keys ek saath expire hoti hain.</span>
+<span class="tok-com">// Ye deploy ke baad ya bulk warm-up ke baad bahut common hai.</span>
+
+<span class="tok-com">// ── Fix 2: SINGLE-FLIGHT — sirf ek request DB tak jaaye ───</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">getWithLock</span>(key, loader, ttl) {
+  <span class="tok-kw">const</span> cached = <span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(key);
+  <span class="tok-kw">if</span> (cached !== <span class="tok-kw">null</span>) <span class="tok-kw">return</span> JSON.<span class="tok-fn">parse</span>(cached);
+
+  <span class="tok-com">// NX = "sirf tab set karo jab exist na kare" → ek ATOMIC lock</span>
+  <span class="tok-kw">const</span> got = <span class="tok-kw">await</span> redis.<span class="tok-fn">set</span>(<span class="tok-str">`lock:${key}`</span>, <span class="tok-str">"1"</span>, <span class="tok-str">"NX"</span>, <span class="tok-str">"EX"</span>, <span class="tok-num">10</span>);
+  <span class="tok-com">// EX 10 zaroori hai — warna loader crash hua toh lock hamesha ke liye atka rahega</span>
+
+  <span class="tok-kw">if</span> (!got) {
+    <span class="tok-kw">await</span> <span class="tok-fn">sleep</span>(<span class="tok-num">50</span>);                       <span class="tok-com">// koi aur laa raha hai — thoda ruko</span>
+    <span class="tok-kw">return</span> <span class="tok-fn">getWithLock</span>(key, loader, ttl);   <span class="tok-com">// aur dobara cache dekho</span>
+  }
+
+  <span class="tok-kw">try</span> {
+    <span class="tok-kw">const</span> value = <span class="tok-kw">await</span> <span class="tok-fn">loader</span>();          <span class="tok-com">// sirf YE request DB pe jaati hai</span>
+    <span class="tok-kw">await</span> redis.<span class="tok-fn">setex</span>(key, ttl, JSON.<span class="tok-fn">stringify</span>(value));
+    <span class="tok-kw">return</span> value;
+  } <span class="tok-kw">finally</span> {
+    <span class="tok-kw">await</span> redis.<span class="tok-fn">del</span>(<span class="tok-str">`lock:${key}`</span>);        <span class="tok-com">// error pe bhi lock chhodo</span>
+  }
+}
+
+<span class="tok-com">// ── Fix 3: STALE-WHILE-REVALIDATE — kabhi miss hi mat karo ─</span>
+<span class="tok-com">// Do TTL rakho: ek "fresh tak", ek "asli expiry"</span>
+<span class="tok-kw">const</span> entry = <span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(key);   <span class="tok-com">// { data, freshUntil }</span>
+<span class="tok-kw">if</span> (entry) {
+  <span class="tok-kw">if</span> (entry.freshUntil &lt; <span class="tok-fn">now</span>()) <span class="tok-fn">refreshInBackground</span>(key);  <span class="tok-com">// await NAHI</span>
+  <span class="tok-kw">return</span> entry.data;   <span class="tok-com">// thoda purana data turant — user kabhi wait nahi karta</span>
+}
+<span class="tok-com">// Ye wahi idea hai jo HTTP ke stale-while-revalidate header mein hai (ch 3).</span>
+</code></pre>
+      </div>
+
+      <h2 id="failures">Baaki Failure Modes</h2>
+      <table>
+        <thead><tr><th>Problem</th><th>Kya hota hai</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Cache penetration</strong></td>
+            <td>Aisi key maangi jo exist hi nahi karti (<code>/products/99999999</code>) — har baar miss, har baar DB. Attacker ise deliberately kar sakta hai</td>
+            <td>"Not found" ko bhi cache karo, chhote TTL (30–60s) ke saath. Bade scale pe bloom filter</td>
+          </tr>
+          <tr>
+            <td><strong>Cache avalanche</strong></td>
+            <td>Poora Redis gir gaya / restart hua → saara traffic ek saath DB pe</td>
+            <td>Jitter, in-process fallback layer, DB pe circuit breaker (ch 14)</td>
+          </tr>
+          <tr>
+            <td><strong>Hot key</strong></td>
+            <td>Ek key itni popular ki ek Redis node hi bottleneck ban gaya</td>
+            <td>Us key ko in-process bhi cache karo (chhota TTL); ya key ko shards mein todo</td>
+          </tr>
+          <tr>
+            <td><strong>Big key</strong></td>
+            <td>10 MB ka value — Redis single-threaded hai, ek badi serialize/transfer sabko block karti hai</td>
+            <td>Value chhoti rakho; bade objects ko todo ya sirf ID list cache karo</td>
+          </tr>
+          <tr>
+            <td><strong>Stale after deploy</strong></td>
+            <td>Naya code purane shape ka cached JSON padh ke crash</td>
+            <td>Key mein version (<code>:v2:</code>) — §4</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Cache down hone pe app ko <em>slow</em> hona chahiye, <em>down</em> nahi</div>
+        <p>
+          Redis call ko hamesha <strong>timeout aur try/catch</strong> ke saath wrap karo, aur fail hone pe
+          seedha DB se serve karo. Bina iske ek cache outage ek <em>full</em> outage ban jaata hai — jo ironic
+          hai, kyunki cache ka kaam availability badhana tha. Timeout aggressive rakho (50–100ms): agar Redis
+          slow hai toh uska intezaar karna DB se seedha padhne se bhi mehnga hai.
+        </p>
+      </div>
+
+      <h2 id="eviction">Eviction Policies Aur Memory</h2>
+      <p>
+        Redis ki memory bharne pe kya ho — ye <code>maxmemory-policy</code> se decide hota hai, aur default
+        galat hota hai:
+      </p>
+      <ul>
+        <li><strong><code>noeviction</code></strong> (default) — memory full hone pe writes <em>error</em> dene
+        lagte hain. Pure cache use-case ke liye ye galat hai.</li>
+        <li><strong><code>allkeys-lru</code></strong> — sabse kam recently use hui keys hatao. Cache ke liye
+        yahi sahi default hai.</li>
+        <li><strong><code>volatile-lru</code></strong> — sirf un keys ko hatao jinpe TTL laga hai. Tab use karo
+        jab ek hi Redis mein cache aur permanent data (jaise sessions) dono hon.</li>
+        <li><strong><code>allkeys-lfu</code></strong> — frequency ke hisaab se. Behtar jab access pattern skewed
+        ho (kuch keys hamesha popular).</li>
+      </ul>
+      <p>
+        Aur ek design decision: <strong>cache aur durable data ko mila mat do</strong>. Sessions (jo kho jaayein
+        toh sab logged out) aur query cache (jo kho jaaye toh bas slow) ek hi Redis mein rakhne ka matlab hai ki
+        eviction policy dono ke liye compromise karni padegi. Alag instance ya alag DB index use karo.
+      </p>
+
+      <h2 id="when">Kab Cache <em>Nahi</em> Karna Chahiye</h2>
+      <p>
+        Cache ek <strong>complexity ka trade</strong> hai — tum speed ke badle correctness ka risk le rahe ho.
+        Wo trade hamesha faayde ka nahi hota:
+      </p>
+      <ul>
+        <li><strong>Query already fast hai</strong> — 5ms ki indexed query ko 1ms banane ka koi matlab nahi jab
+        request ka total budget 200ms hai. Pehle measure karo.</li>
+        <li><strong>Data har baar badalta hai</strong> — hit rate itna kam hoga ki cache sirf overhead banegi.</li>
+        <li><strong>Staleness allowed nahi hai</strong> — account balance, stock quantity checkout ke waqt,
+        permission checks. Yahan galat jawab fast jawab se bura hai.</li>
+        <li><strong>Asli problem N+1 ya missing index hai</strong> — cache us bug ko <em>chhupa</em> deti hai.
+        Cache miss pe wo dobara dikhega, aur tab tak diagnose karna mushkil ho chuka hoga.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Order of operations</div>
+        <p>
+          <strong>Pehle query theek karo (ch 10), phir cache lagao.</strong> Ek slow query ko cache karna use
+          fast nahi banata — wo bas usse kam baar slow banata hai. Aur jab cache miss hoti hai (deploy, eviction,
+          Redis restart), wo poori slowness ek saath wapas aati hai — sabse bure waqt pe. Cache ko
+          <em>optimization</em> ki tarah use karo, <em>fix</em> ki tarah nahi.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Caching do cheezon pe khadi hai: <strong>locality</strong> (traffic uniform nahi hota) aur <strong>latency pyramid</strong> (har layer 10× slow).</li>
+        <li>Cache ka bada faayda aksar user ki speed nahi, <strong>DB pe load hatna</strong> hota hai.</li>
+        <li>In-process cache sabse fast hai par <strong>per-instance</strong> — invalidation multi-instance mein toot-ti hai. "Kabhi-kabhi purana data" ka yahi cause hai.</li>
+        <li><strong>Cache-aside</strong> default pattern hai; write-behind mein cache girne pe data kho jaata hai.</li>
+        <li>Write pe cache <strong>delete karo, update nahi</strong> — concurrent writes ka order ulta ho sakta hai.</li>
+        <li><code>if (cached)</code> galat hai — <code>if (cached !== null)</code> likho, warna <code>0</code> aur <code>""</code> miss ban jaate hain.</li>
+        <li>Key mein <strong>version</strong> daalo (<code>:v1:</code>) — shape badalne pe ek free migration mil jaata hai.</li>
+        <li>Per-user data ki key mein user ID hona chahiye; personalized responses pe <code>Cache-Control: private</code>.</li>
+        <li>Production Redis pe <code>KEYS</code>/<code>SCAN</code> mat chalao — prefix invalidation ke liye <strong>generation counter</strong> use karo (O(1)).</li>
+        <li><strong>Stampede</strong> = popular key expire, hazaaron requests ek saath DB pe. Fix: jitter + single-flight lock (<code>SET NX EX</code>) + stale-while-revalidate.</li>
+        <li>Lock pe hamesha TTL lagao, warna crash pe wo permanently atak jaata hai.</li>
+        <li>Penetration (missing key baar-baar) ke liye "not found" bhi cache karo, chhote TTL se.</li>
+        <li>Redis call pe timeout + try/catch — <strong>cache down = slow, down nahi</strong>.</li>
+        <li><code>maxmemory-policy</code> cache ke liye <code>allkeys-lru</code> hona chahiye; default <code>noeviction</code> writes fail karta hai.</li>
+        <li>Sessions aur cache alag rakho — unki eviction requirements ulti hain.</li>
+        <li><strong>Pehle query theek karo, phir cache lagao.</strong> Cache slow query ko chhupati hai, theek nahi karti.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Cache-aside kaise kaam karta hai? Write pe cache update karoge ya delete?"</div>
+        <p>
+          Cache-aside: cache padho → miss pe DB se lao → TTL ke saath cache mein daalo. Write pe
+          <strong>delete</strong>, update nahi — kyunki do concurrent writes mein cache-write ka order DB-write
+          ke order se ulta ho sakta hai, jisse purani value permanently cache mein baith jaati hai. Delete ka
+          worst case sirf ek extra DB read hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Cache stampede kya hai aur kaise rokoge?"</div>
+        <p>
+          Ek popular key expire hoti hai aur hazaaron concurrent requests ek saath miss karke same mehnga query
+          DB pe maarti hain — DB girta hai, retries se aur load, cascading failure. Teen fix, aksar saath:
+          (1) TTL mein <strong>jitter</strong> taaki keys ek saath expire na hon; (2) <strong>single-flight</strong> —
+          <code>SET NX EX</code> se ek atomic lock, sirf ek request loader chalati hai, baaki thoda ruk ke cache
+          dobara padhti hain; (3) <strong>stale-while-revalidate</strong> — thoda purana data turant do aur
+          background mein refresh karo, toh miss hoti hi nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Cache invalidation mushkil kyun hai?"</div>
+        <p>
+          Kyunki tumhe <em>har</em> us jagah ka pata hona chahiye jahan wo data badal sakta hai — API handler,
+          admin panel, migration script, cron, doosri service. Ek raasta bhool gaye toh stale data permanently
+          baitha rahega. Isliye layered defense: hamesha TTL (upper bound on staleness), write path pe explicit
+          delete, key versioning shape changes ke liye, aur bade systems mein event-driven invalidation taaki har
+          write path automatically cover ho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "In-process cache vs Redis?"</div>
+        <p>
+          In-process ~100ns hai aur serialization ka cost bhi nahi, par <strong>per-instance</strong> — 10
+          instances = 10 alag states, aur invalidation ka koi seedha tareeka nahi. Isliye wo sirf us data ke liye
+          theek hai jo shayad hi badalta ho (config, feature flags, reference data). Redis ~1ms leta hai par
+          shared hai — ek invalidate sabke liye — aur TTL, atomic ops, pub/sub deta hai. Default Redis; dono
+          layers saath bhi use hoti hain (hot key ko in-process bhi chhote TTL se).
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Redis gir gaya toh app ka kya hoga?"</div>
+        <p>
+          Design aisa hona chahiye ki app <em>slow</em> ho, <em>down</em> nahi — har Redis call pe aggressive
+          timeout (50–100ms) aur try/catch, fail pe seedha DB se serve. Par saath mein ye bhi soch lo ki poora
+          traffic ek saath DB pe jaayega (cache avalanche) — isliye DB pe circuit breaker/rate limit (ch 14) aur
+          ek chhoti in-process fallback layer madad karti hai. Aur agar Redis mein sessions bhi hain toh outage
+          ka matlab sab logged out — isliye sessions aur cache alag instances mein rakhne chahiye.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="12-task-queues.html"><strong>Chapter 12 — Task Queues & Background Jobs</strong></a>: cache
+          se repeated kaam bachaya. Ab wo kaam jo request ke andar hona hi nahi chahiye — usse time mein aage
+          kaise dhakelte hain.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scaling & Performance II — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link active" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 20</div>
+      <div class="progress-pill">20 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Replicas · Partitioning · Sharding · CDN · CAP Trade-offs</span>
+      <h1>Scaling & Performance II</h1>
+      <p class="subtitle">
+        Ch 19 mein app layer horizontally scale kar di — kyunki wo <em>stateless</em> thi, aur stateless cheezein
+        scale karna aasaan hai. Ab asli mushkil: <strong>database stateless nahi hai.</strong> Usko scale karne
+        ka matlab hai data ko copy karna ya baant-na — aur dono cases mein tumhe kuch na kuch
+        <em>chhodna</em> padta hai. Ye chapter un trade-offs ke baare mein hai.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 21.2 —
+        <a href="https://www.youtube.com/watch?v=sOhAopEwjH4">Backend Scaling and Performance Engineering: Part-2</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#order">1. Scaling Ka Sahi Order</a></li>
+          <li><a href="#replicas">2. Read Replicas Aur Replication Lag</a></li>
+          <li><a href="#partition">3. Partitioning — Ek Hi Machine, Chhoti Tables</a></li>
+          <li><a href="#sharding">4. Sharding — Aakhri Hathiyar</a></li>
+          <li><a href="#hashing">5. Consistent Hashing</a></li>
+          <li><a href="#denorm">6. Denormalization Aur Materialized Views</a></li>
+          <li><a href="#cdn">7. CDN Aur Edge</a></li>
+          <li><a href="#edge">8. Edge Computing</a></li>
+          <li><a href="#cap">9. CAP Aur Consistency Models</a></li>
+          <li><a href="#micro">10. Monolith vs Microservices</a></li>
+          <li><a href="#serverless">11. Serverless</a></li>
+          <li><a href="#ladder">12. Poori Scaling Ladder</a></li>
+          <li><a href="#takeaways">13. Key Takeaways</a></li>
+          <li><a href="#interview">14. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="order">Scaling Ka Sahi Order</h2>
+      <p>
+        Sabse important cheez pehle: <strong>order matter karta hai</strong>, aur zyadatar teams seedha step 7
+        pe kood jaati hain. Har step ka cost complexity mein exponentially badhta hai:
+      </p>
+      <ol>
+        <li><strong>Query optimize karo</strong> (ch 10) — index, N+1, <code>SELECT *</code>. Sabse sasta, aksar 10× faayda.</li>
+        <li><strong>Connection pooling tune karo</strong> (ch 10) — PgBouncer.</li>
+        <li><strong>Cache lagao</strong> (ch 11) — read load ka bada hissa DB tak pahunchta hi nahi.</li>
+        <li><strong>Vertical scale</strong> — sabse sasta step jab tak chhat na aaye.</li>
+        <li><strong>Read replicas</strong> — read-heavy workload ke liye (aur zyadatar apps read-heavy hain).</li>
+        <li><strong>Partitioning</strong> — ek hi machine, par chhoti tables.</li>
+        <li><strong>Sharding</strong> — aakhri option, sabse mehnga.</li>
+      </ol>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Sharding se pehle 1–6 khatam karo</div>
+        <p>
+          Sharding ek <strong>one-way door</strong> hai — usse undo karna practically namumkin hota hai, aur wo
+          har cheez todta hai: cross-shard joins, distributed transactions, unique constraints,
+          <code>ORDER BY</code> across shards, aur schema migrations. Ek single Postgres instance modern hardware
+          pe <strong>crores of rows aur hazaaron TPS</strong> handle kar leta hai jab indexes theek hon. Agar tum
+          sharding soch rahe ho, pehle imaandaari se poocho: kya query optimization, caching, aur read replicas
+          sach mein khatam ho chuke hain? 90% cases mein jawab "nahi" hota hai.
+        </p>
+      </div>
+
+      <h2 id="replicas">Read Replicas Aur Replication Lag</h2>
+      <p>
+        Primary sab writes leta hai aur apna change-log (Postgres mein WAL — ch 10) replicas ko stream karta
+        hai. Replicas reads serve karti hain. Zyadatar apps 90:10 ya 99:1 read:write hoti hain, isliye ye ek
+        bada jeet hai — aur code change bhi minimal hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Primary database streaming WAL to read replicas, and the read-your-own-writes problem caused by replication lag">
+          <defs>
+            <marker id="rp1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="40" y="46" width="150" height="66" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="115" y="70" class="ex-t-sm">app</text>
+          <text x="115" y="92" class="ex-t-sm">writes → primary</text>
+
+          <path d="M192,68 C226,64 250,62 282,60" class="ex-stroke" marker-end="url(#rp1)"/>
+          <text x="238" y="48" class="ex-t-lbl">WRITE</text>
+
+          <rect x="284" y="36" width="160" height="66" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="364" y="60" class="ex-t-sm">PRIMARY</text>
+          <text x="364" y="82" class="ex-t-sm">saare writes</text>
+
+          <path d="M446,58 C500,52 540,50 588,48" class="ex-stroke ex-stroke-g" marker-end="url(#rp1)"/>
+          <path d="M446,74 C500,90 540,104 588,118" class="ex-stroke ex-stroke-g" marker-end="url(#rp1)"/>
+          <path d="M446,86 C500,120 540,158 588,188" class="ex-stroke ex-stroke-g" marker-end="url(#rp1)"/>
+          <text x="516" y="106" class="ex-t-lbl">WAL stream</text>
+
+          <rect x="590" y="30" width="146" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="663" y="52" class="ex-t-sm">replica 1</text>
+          <rect x="590" y="100" width="146" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="663" y="122" class="ex-t-sm">replica 2</text>
+          <rect x="590" y="170" width="146" height="40" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="663" y="192" class="ex-t-sm">replica 3</text>
+
+          <path d="M588,230 C480,232 300,180 192,96" class="ex-stroke ex-stroke-d" marker-end="url(#rp1)"/>
+          <text x="380" y="230" class="ex-t-lbl">reads ← replicas (round robin)</text>
+
+          <rect x="40" y="256" width="330" height="126" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="205" y="278" class="ex-t">Replication lag ka nateeja</text>
+          <text x="205" y="302" class="ex-t-sm">t=0    user ne profile update kiya → PRIMARY</text>
+          <text x="205" y="322" class="ex-t-sm">t=0.05 page reload → REPLICA se padha</text>
+          <text x="205" y="342" class="ex-t-lbl">→ PURANA data dikha</text>
+          <text x="205" y="366" class="ex-t-sm">user: "mera change save hi nahi hua!"</text>
+
+          <rect x="390" y="256" width="346" height="126" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="563" y="278" class="ex-t">Read-your-own-writes ke fix</text>
+          <text x="563" y="302" class="ex-t-sm">1 · write ke baad N seconds primary se padho</text>
+          <text x="563" y="322" class="ex-t-sm">2 · user-specific data hamesha primary se</text>
+          <text x="563" y="342" class="ex-t-sm">3 · replica ka lag check karo, zyada ho toh primary</text>
+          <text x="563" y="366" class="ex-t-lbl">4 · UI mein turant apna change dikha do (optimistic)</text>
+        </svg>
+        <figcaption>
+          Replication <strong>asynchronous</strong> hai — replicas hamesha thodi peeche hoti hain (normally
+          milliseconds, par load pe seconds). Isliye replica pe bheji gayi har read "thodi purani" ho sakti hai,
+          aur <em>apna hi likha hua</em> data na dikhna sabse confusing user experience hai.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">routing — aur wo queries jo replica pe kabhi nahi jaani chahiye<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Repository layer (ch 8) is routing ke liye perfect jagah hai —</span>
+<span class="tok-com">// service ko pata bhi nahi chalega ki replicas exist karte hain.</span>
+<span class="tok-kw">class</span> OrderRepository {
+  <span class="tok-fn">findById</span>(id, { consistent = <span class="tok-kw">false</span> } = {}) {
+    <span class="tok-kw">const</span> db = consistent ? <span class="tok-kw">this</span>.primary : <span class="tok-kw">this</span>.replica;
+    <span class="tok-kw">return</span> db.<span class="tok-fn">query</span>(…);
+  }
+  <span class="tok-fn">create</span>(data) { <span class="tok-kw">return</span> <span class="tok-kw">this</span>.primary.<span class="tok-fn">query</span>(…); }   <span class="tok-com">// writes HAMESHA primary</span>
+}
+
+<span class="tok-com">// ⚠️ PRIMARY se padhna zaroori hai jab:</span>
+<span class="tok-com">//   • abhi-abhi write kiya hai (read-your-own-writes)</span>
+<span class="tok-com">//   • paisa/balance check kar rahe ho — stale value se overdraft ho sakta hai</span>
+<span class="tok-com">//   • SELECT ... FOR UPDATE (ch 10) — lock replica pe kaam hi nahi karega</span>
+<span class="tok-com">//   • transaction ke andar ho jisme write bhi hai</span>
+
+<span class="tok-com">// ✅ REPLICA ke liye perfect:</span>
+<span class="tok-com">//   • analytics, reports, dashboards (bhaari queries jo primary ko bacha degi)</span>
+<span class="tok-com">//   • search results, listings, public pages</span>
+<span class="tok-com">//   • background jobs jo latency-sensitive nahi hain (ch 12)</span>
+
+<span class="tok-com">// ⚠️ FAILOVER: primary gira toh replica promote hoti hai. Async replication mein</span>
+<span class="tok-com">// jo writes abhi replicate nahi hui thi wo KHO jaati hain. Zero data loss chahiye</span>
+<span class="tok-com">// toh synchronous replication chahiye — par uska cost ye hai ki har write ko</span>
+<span class="tok-com">// replica ka ack chahiye, matlab write latency badh jaati hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Replicas <em>write</em> scaling nahi dete</div>
+        <p>
+          Har replica <strong>saare writes</strong> apply karti hai — wo sirf reads baant-ti hai. Agar tumhara
+          bottleneck writes hai, toh 10 replicas add karke kuch nahi hoga; ulta primary pe replication ka aur
+          load aayega. Write bottleneck ke liye sirf teen raaste hain: writes kam karo (batching, ch 12 se
+          async), vertical scale, ya <strong>sharding</strong>.
+        </p>
+      </div>
+
+      <h2 id="partition">Partitioning — Ek Hi Machine, Chhoti Tables</h2>
+      <p>
+        Partitioning ek badi table ko chhote physical tukdon mein todti hai — <em>usi database ke andar</em>.
+        Ye sharding se bilkul alag cheez hai (aur bahut kam khatarnak).
+      </p>
+      <div class="code-block">
+        <div class="code-title">Postgres declarative partitioning<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">CREATE TABLE</span> events (
+  id bigserial, created_at timestamptz <span class="tok-kw">NOT NULL</span>, payload jsonb
+) <span class="tok-kw">PARTITION BY RANGE</span> (created_at);
+
+<span class="tok-kw">CREATE TABLE</span> events_2026_07 <span class="tok-kw">PARTITION OF</span> events
+  <span class="tok-kw">FOR VALUES FROM</span> (<span class="tok-str">'2026-07-01'</span>) <span class="tok-kw">TO</span> (<span class="tok-str">'2026-08-01'</span>);
+<span class="tok-kw">CREATE TABLE</span> events_2026_08 <span class="tok-kw">PARTITION OF</span> events
+  <span class="tok-kw">FOR VALUES FROM</span> (<span class="tok-str">'2026-08-01'</span>) <span class="tok-kw">TO</span> (<span class="tok-str">'2026-09-01'</span>);
+
+<span class="tok-com">-- PARTITION PRUNING — planner sirf relevant partitions chhuta hai (ch 10)</span>
+<span class="tok-kw">SELECT</span> * <span class="tok-kw">FROM</span> events <span class="tok-kw">WHERE</span> created_at &gt;= <span class="tok-str">'2026-08-01'</span>;
+<span class="tok-com">-- → sirf events_2026_08 scan hoti hai. Baaki 23 partitions chhui bhi nahi.</span>
+
+<span class="tok-com">-- Sabse bada faayda aksar ye hota hai: purana data hatana INSTANT ho jaata hai</span>
+<span class="tok-kw">DROP TABLE</span> events_2026_07;          <span class="tok-com">-- milliseconds</span>
+<span class="tok-com">-- vs DELETE FROM events WHERE created_at &lt; '2026-08-01'</span>
+<span class="tok-com">--    → ghanton lagti hai, WAL bharti hai, dead rows chhodti hai (ch 10 ka VACUUM)</span>
+
+<span class="tok-com">-- ⚠️ Gotchas:</span>
+<span class="tok-com">--   • partition key har UNIQUE constraint mein hona chahiye</span>
+<span class="tok-com">--   • jis query mein partition key nahi hai wo SAARI partitions scan karegi</span>
+<span class="tok-com">--   • future partitions pehle se banane padte hain (automate karo!)</span>
+</code></pre>
+      </div>
+
+      <h2 id="sharding">Sharding — Aakhri Hathiyar</h2>
+      <p>
+        Sharding data ko <strong>alag-alag databases</strong> mein baant-ti hai. Ab har shard ke apne writes,
+        apni memory, apni CPU — matlab yahi ek tareeka hai jo <em>write</em> scaling deta hai. Cost ye hai ki
+        SQL ka bahut kuch kaam karna band kar deta hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Strategy</th><th>Kaise</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Hash-based</strong></td>
+            <td><code>hash(userId) % N</code></td>
+            <td>Even distribution. Par range queries sab shards pe jaati hain, aur resharding mushkil (isliye §5)</td>
+          </tr>
+          <tr>
+            <td><strong>Range-based</strong></td>
+            <td>A–M shard 1, N–Z shard 2</td>
+            <td>Range queries efficient. Par <strong>hotspots</strong> — sequential IDs sab ek shard pe</td>
+          </tr>
+          <tr>
+            <td><strong>Directory-based</strong></td>
+            <td>Ek lookup table batati hai kaunsa shard</td>
+            <td>Sabse flexible, rebalance aasaan. Par lookup ek extra hop + single point of failure</td>
+          </tr>
+          <tr>
+            <td><strong>Geo-based</strong></td>
+            <td>Region ke hisaab se</td>
+            <td>Latency aur data residency (GDPR). Par cross-region queries mehngi</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">shard key — sabse important decision<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Ek achhi shard key ke teen gun:</span>
+<span class="tok-com">//   1. HIGH CARDINALITY — bahut saari alag values</span>
+<span class="tok-com">//   2. EVEN DISTRIBUTION — koi ek value zyada popular na ho</span>
+<span class="tok-com">//   3. QUERY PATTERN SE MATCH — zyadatar queries mein wo key maujood ho</span>
+
+<span class="tok-com">// ✅ userId — multi-tenant app ke liye aksar sahi</span>
+<span class="tok-com">//    ek user ka SAARA data ek shard pe → uski queries single-shard rehti hain</span>
+<span class="tok-com">// ❌ country — sirf ~200 values, aur India/US wale shard phat jayenge</span>
+<span class="tok-com">// ❌ created_at — SAARE naye writes ek hi shard pe (hotspot)</span>
+<span class="tok-com">// ❌ status — 5 values, aur wo BADALTI hai (row ko shard badalna padega!)</span>
+<span class="tok-com">// ⚠️ Rule: shard key IMMUTABLE honi chahiye.</span>
+
+<span class="tok-com">// ── Jo cheezein sharding TODTI hai ─────────────────────────</span>
+<span class="tok-com">// ❌ Cross-shard JOIN — application mein manually karna padega</span>
+<span class="tok-com">// ❌ Distributed transaction — 2PC ya saga pattern (dono complex)</span>
+<span class="tok-com">// ❌ Global UNIQUE constraint — email uniqueness ab DB enforce nahi kar sakta</span>
+<span class="tok-com">// ❌ ORDER BY + LIMIT across shards — har shard se lo, merge karo, phir cut karo</span>
+<span class="tok-com">// ❌ COUNT(*) — sab shards se jodo</span>
+<span class="tok-com">// ❌ Schema migration — ab N databases pe coordinate karni hai</span>
+<span class="tok-com">// ❌ Auto-increment IDs — UUID/ULID ya Snowflake IDs pe jaana padega</span>
+
+<span class="tok-com">// ── HOTSPOT: ek celebrity user, ek shard ────────────────────</span>
+<span class="tok-com">// Even hashing ke bawajood ek "bhaari" tenant ek shard ko dubo sakta hai.</span>
+<span class="tok-com">// Fix: composite key hash(userId + bucket), ya us tenant ke liye dedicated shard.</span>
+</code></pre>
+      </div>
+
+      <h2 id="hashing">Consistent Hashing</h2>
+      <p>
+        Naive <code>hash(key) % N</code> ka ek fatal problem hai: <strong>N badalte hi lagbhag saara data
+        move karna padta hai.</strong> 4 shards se 5 shards — ~80% keys ka mapping badal jaata hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Modulo hashing remapping almost all keys versus consistent hashing ring moving only a fraction">
+          <text x="180" y="20" class="ex-t">hash % N — node add karo</text>
+          <text x="556" y="20" class="ex-t">Consistent hashing ring</text>
+          <path d="M366,32 C370,140 362,250 366,326" class="ex-stroke ex-stroke-d"/>
+
+          <text x="180" y="56" class="ex-t-sm">N=4:  key 17 → 17 % 4 = shard 1</text>
+          <text x="180" y="80" class="ex-t-sm">N=5:  key 17 → 17 % 5 = shard 2</text>
+          <rect x="30" y="96" width="300" height="40" rx="8" class="ex-fill-o ex-stroke"/>
+          <text x="180" y="120" class="ex-t-lbl">~80% keys ko MOVE karna padega</text>
+          <text x="180" y="164" class="ex-t-sm">matlab ek node add karne ke liye</text>
+          <text x="180" y="184" class="ex-t-sm">poore cluster ka data reshuffle</text>
+          <text x="180" y="212" class="ex-t-lbl">→ ghanton ka downtime/migration</text>
+          <text x="180" y="244" class="ex-t-sm">cache ke liye toh aur bura —</text>
+          <text x="180" y="264" class="ex-t-sm">saari cache ek saath invalid</text>
+          <text x="180" y="284" class="ex-t-lbl">→ stampede (ch 11)</text>
+
+          <!-- ring -->
+          <circle cx="556" cy="150" r="88" class="ex-stroke ex-stroke-g" fill="none"/>
+          <circle cx="556" cy="62"  r="8" class="ex-fill-o ex-stroke"/><text x="556" y="44" class="ex-t-sm">A</text>
+          <circle cx="644" cy="150" r="8" class="ex-fill-o ex-stroke"/><text x="676" y="150" class="ex-t-sm">B</text>
+          <circle cx="556" cy="238" r="8" class="ex-fill-o ex-stroke"/><text x="556" y="258" class="ex-t-sm">C</text>
+          <circle cx="468" cy="150" r="8" class="ex-fill-o ex-stroke"/><text x="436" y="150" class="ex-t-sm">D</text>
+
+          <circle cx="620" cy="90" r="4" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <circle cx="638" cy="118" r="4" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <circle cx="612" cy="212" r="4" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="556" y="150" class="ex-t-sm">keys clockwise</text>
+          <text x="556" y="170" class="ex-t-sm">agle node pe</text>
+
+          <text x="556" y="284" class="ex-t-lbl">naya node E add → sirf uske aage wali keys move</text>
+          <text x="556" y="306" class="ex-t-sm">~1/N data, baaki sab wahin ka wahin</text>
+          <text x="556" y="326" class="ex-t-sm">(virtual nodes se distribution even rehta hai)</text>
+        </svg>
+        <figcaption>
+          Nodes aur keys dono ek circular hash space pe map hote hain; key clockwise agle node pe jaati hai.
+          Node add/remove karne pe sirf <strong>~1/N</strong> keys move hoti hain. Har physical node ko kai
+          <em>virtual nodes</em> ke roop mein ring pe rakha jaata hai taaki distribution even rahe. Yahi
+          mechanism Redis Cluster, Cassandra, DynamoDB, aur CDN routing — sab mein hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="denorm">Denormalization Aur Materialized Views</h2>
+      <p>
+        Normalization (data ek hi jagah) writes ke liye achhi hai aur reads ke liye mehngi — kyunki har read
+        ko joins karne padte hain. Bade read scale pe hum ulta karte hain: <strong>data duplicate karo taaki
+        read sasta ho</strong>.
+      </p>
+      <div class="code-block">
+        <div class="code-title">teen techniques<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- 1. Counter denormalize karo — COUNT(*) har baar mehnga hai (ch 10)</span>
+<span class="tok-kw">ALTER TABLE</span> posts <span class="tok-kw">ADD COLUMN</span> comment_count int <span class="tok-kw">NOT NULL DEFAULT</span> <span class="tok-num">0</span>;
+<span class="tok-com">-- comment insert ke saath USI TRANSACTION mein increment (ch 10)</span>
+<span class="tok-com">-- trade: ek extra write, par har read pe ek COUNT(*) bacha</span>
+
+<span class="tok-com">-- 2. Materialized view — bhaari aggregate pehle se compute</span>
+<span class="tok-kw">CREATE MATERIALIZED VIEW</span> daily_sales <span class="tok-kw">AS</span>
+  <span class="tok-kw">SELECT</span> date_trunc(<span class="tok-str">'day'</span>, created_at) d, <span class="tok-fn">sum</span>(total_paise), <span class="tok-fn">count</span>(*)
+  <span class="tok-kw">FROM</span> orders <span class="tok-kw">GROUP BY</span> <span class="tok-num">1</span>;
+<span class="tok-kw">REFRESH MATERIALIZED VIEW CONCURRENTLY</span> daily_sales;   <span class="tok-com">-- reads block nahi hongi</span>
+<span class="tok-com">-- Ye cache ka DB-level version hai — wahi staleness trade-off (ch 11)</span>
+
+<span class="tok-com">-- 3. Read model alag rakho (CQRS ka halka version)</span>
+<span class="tok-com">-- Writes normalized tables mein; ek worker (ch 12) denormalized read table</span>
+<span class="tok-com">-- update karta hai jo UI ke shape se exactly match karti hai.</span>
+<span class="tok-com">-- ⚠️ Cost: eventual consistency + ek aur cheez jo out-of-sync ho sakti hai (ch 13)</span>
+</code></pre>
+      </div>
+
+      <h2 id="cdn">CDN Aur Edge</h2>
+      <p>
+        Sabse sasta scaling wo hai jisme request tumhare server tak pahunchti hi nahi. CDN geographically
+        distributed cache hai — content user ke paas.
+      </p>
+      <ul>
+        <li><strong>Static assets</strong> — JS, CSS, images. Content-hashed filenames
+        (<code>app.a3f2.js</code>) + <code>max-age=31536000, immutable</code>. Naya deploy = naya filename,
+        toh invalidation ki zaroorat hi nahi.</li>
+        <li><strong>Public API GETs</strong> — cacheable responses pe <code>Cache-Control: public, s-maxage</code>.
+        Par personalized responses pe <code>private</code> (ch 3, ch 11) — warna ek user ka data doosre ko
+        serve ho jaayega.</li>
+        <li><strong>TLS termination edge pe</strong> — handshake (ch 3) user ke paas hota hai, isliye
+        connection setup bahut fast.</li>
+        <li><strong>Origin shield</strong> — CDN nodes seedha origin ko hit karne ki jagah ek intermediate
+        layer se guzarte hain, taaki cache miss pe origin pe stampede na ho (ch 11).</li>
+      </ul>
+
+      <h2 id="edge">Edge Computing</h2>
+      <p>
+        CDN static content user ke paas laata hai. <strong>Edge computing</strong> agla kadam hai —
+        <em>code</em> bhi user ke paas chalao, na ki ek central region mein.
+      </p>
+      <div class="code-block">
+        <div class="code-title">edge pe kya theek hai, kya nahi<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Mumbai ka user, us-east-1 ka server → ~200ms round trip, khali network pe.</span>
+<span class="tok-com">// Edge function 50+ locations pe chalta hai → ~10ms.</span>
+
+<span class="tok-com">// ✅ EDGE ke liye achha — chhota, stateless, latency-sensitive kaam:</span>
+<span class="tok-com">//   • auth token verify karna (JWT signature — ch 6, koi DB lookup nahi)</span>
+<span class="tok-com">//   • A/B test bucketing, feature flags (ch 15)</span>
+<span class="tok-com">//   • geo-routing, redirects, URL rewrites</span>
+<span class="tok-com">//   • bot detection, rate limiting (ch 18) — origin tak pahunchne se pehle</span>
+<span class="tok-com">//   • personalized headers / HTML fragments inject karna</span>
+
+<span class="tok-com">// ❌ EDGE ke liye galat:</span>
+<span class="tok-com">//   • koi bhi kaam jisme central DB chahiye — tumne latency BADHA di</span>
+<span class="tok-com">//     (edge → DB ka trip abhi bhi 200ms hai, plus ek extra hop)</span>
+<span class="tok-com">//   • CPU-heavy kaam (ch 21) — edge runtimes ki limits sakht hoti hain</span>
+<span class="tok-com">//   • bade dependencies — edge runtime aksar full Node nahi hota</span>
+
+<span class="tok-com">// ⚠️ Edge ka asli constraint: DATA GRAVITY</span>
+<span class="tok-com">// Code ko distribute karna aasaan hai; DATA ko distribute karna mushkil hai</span>
+<span class="tok-com">// (wahi replication/consistency problems — upar §2, §8).</span>
+<span class="tok-com">// Isliye edge tabhi jeetta hai jab kaam ko central data chahiye HI NAHI.</span>
+</code></pre>
+      </div>
+
+      <h2 id="cap">CAP Aur Consistency Models</h2>
+      <p>
+        CAP theorem: jab <strong>network partition</strong> ho (P), toh tum consistency (C) aur availability
+        (A) mein se ek hi chun sakte ho. Par ise samajhne ka practical tareeka alag hai:
+      </p>
+      <div class="callout warn">
+        <div class="callout-title">⚠️ CAP ko galat samjha jaata hai</div>
+        <p>
+          "CP ya AP chuno" ek system-wide permanent choice nahi hai — wo choice <em>sirf partition ke dauraan</em>
+          matter karti hai, aur alag <em>operations</em> ke liye alag ho sakti hai. Aur normal (non-partition)
+          time mein asli trade-off <strong>consistency vs latency</strong> hai — isliye <strong>PACELC</strong>
+          zyada useful framing hai: <em>if Partition then A-or-C, Else Latency-or-Consistency</em>. Rozana ki
+          engineering mein tum partitions se zyada isi "else" wale hisse se deal karte ho.
+        </p>
+      </div>
+      <table>
+        <thead><tr><th>Model</th><th>Guarantee</th><th>Kahan use</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Strong</strong></td><td>Har read latest write dekhta hai</td><td>Balance, inventory, auth — paisa aur permissions</td></tr>
+          <tr><td><strong>Read-your-writes</strong></td><td>Tum apna likha hua dekhte ho</td><td>Profile edit, post karna — user-facing writes</td></tr>
+          <tr><td><strong>Monotonic reads</strong></td><td>Peeche nahi jaoge</td><td>Timelines, feeds</td></tr>
+          <tr><td><strong>Eventual</strong></td><td>Kabhi na kabhi converge</td><td>View counts, likes, analytics, search index</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Practical approach: <strong>poore system pe ek model mat thopo.</strong> Ek hi app mein order total
+        strongly consistent ho sakta hai aur view count eventually consistent — aur yahi sahi design hai.
+      </p>
+
+      <h2 id="micro">Monolith vs Microservices</h2>
+      <p>
+        Sabse pehle ek galatfehmi hataao: <strong>microservices ek scaling solution nahi hain.</strong> Ek
+        monolith ko horizontally scale karna trivially aasaan hai — bas aur instances chala do (ch 19). Jo cheez
+        scale <em>nahi</em> hoti wo <em>team</em> hai. Microservices ek <strong>organizational</strong> solution
+        hain jiski technical keemat bahut zyada hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monolith versus microservices trade-offs">
+          <defs>
+            <marker id="ms1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="184" y="20" class="ex-t">MONOLITH</text>
+          <text x="566" y="20" class="ex-t">MICROSERVICES</text>
+          <path d="M376,32 C380,150 372,270 376,388" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="60" y="40" width="250" height="96" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="185" y="62" class="ex-t-sm">ek deployable unit</text>
+          <text x="185" y="84" class="ex-t-sm">orders · users · payments</text>
+          <text x="185" y="104" class="ex-t-sm">function call se baat</text>
+          <text x="185" y="126" class="ex-t-lbl">ek DB, ek transaction</text>
+
+          <rect x="60" y="150" width="250" height="34" rx="7" class="ex-stroke ex-stroke-d"/>
+          <text x="185" y="171" class="ex-t-sm">× N instances → horizontal scale ✅</text>
+
+          <text x="184" y="212" class="ex-t-lbl">✅ ACID transactions free</text>
+          <text x="184" y="232" class="ex-t-sm">✅ refactor karna aasaan (compiler madad karta hai)</text>
+          <text x="184" y="252" class="ex-t-sm">✅ ek trace, ek log stream, ek deploy</text>
+          <text x="184" y="272" class="ex-t-sm">✅ local pe poora system chal jaata hai</text>
+          <text x="184" y="298" class="ex-t-sm">❌ ek team ka change sabko block karta hai</text>
+          <text x="184" y="318" class="ex-t-sm">❌ ek hi tech stack</text>
+          <text x="184" y="338" class="ex-t-sm">❌ poora app ek saath deploy hota hai</text>
+          <text x="184" y="366" class="ex-t-lbl">→ default choice</text>
+
+          <rect x="420" y="40" width="90" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="465" y="64" class="ex-t-sm">orders</text>
+          <rect x="522" y="40" width="90" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="567" y="64" class="ex-t-sm">users</text>
+          <rect x="624" y="40" width="90" height="40" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="669" y="64" class="ex-t-sm">payments</text>
+          <path d="M512,60 C516,60 518,60 520,60" class="ex-stroke" marker-end="url(#ms1)"/>
+          <path d="M614,60 C618,60 620,60 622,60" class="ex-stroke" marker-end="url(#ms1)"/>
+          <rect x="420" y="94" width="90" height="30" rx="6" class="ex-stroke ex-stroke-d"/><text x="465" y="113" class="ex-t-sm">db</text>
+          <rect x="522" y="94" width="90" height="30" rx="6" class="ex-stroke ex-stroke-d"/><text x="567" y="113" class="ex-t-sm">db</text>
+          <rect x="624" y="94" width="90" height="30" rx="6" class="ex-stroke ex-stroke-d"/><text x="669" y="113" class="ex-t-sm">db</text>
+          <text x="566" y="146" class="ex-t-lbl">network calls · alag DBs</text>
+
+          <text x="566" y="176" class="ex-t-sm">✅ teams independently deploy karti hain</text>
+          <text x="566" y="196" class="ex-t-sm">✅ fault isolation (agar theek se kiya jaaye)</text>
+          <text x="566" y="216" class="ex-t-sm">✅ per-service tech aur scaling</text>
+          <text x="566" y="242" class="ex-t-sm">❌ distributed transactions (saga)</text>
+          <text x="566" y="262" class="ex-t-sm">❌ har call ab fail ho sakti hai (ch 14)</text>
+          <text x="566" y="282" class="ex-t-sm">❌ tracing/observability zaroori (ch 16)</text>
+          <text x="566" y="302" class="ex-t-sm">❌ local dev mushkil, testing mushkil</text>
+          <text x="566" y="322" class="ex-t-sm">❌ versioning aur contract management</text>
+          <text x="566" y="352" class="ex-t-lbl">→ tab jab TEAM scale na kar rahi ho</text>
+          <text x="566" y="376" class="ex-t-sm">Conway's law: architecture team structure follow karti hai</text>
+        </svg>
+        <figcaption>
+          Sabse important line neeche dayein hai: microservices ka trigger <strong>team coordination cost</strong>
+          hota hai, traffic nahi. 5 developers ke liye ye lagbhag hamesha galat choice hai; 50 ke liye aksar
+          sahi.
+        </figcaption>
+      </figure>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Jo cheezein "free" thi, ab kaam ban jaati hain</div>
+        <p>
+          Monolith mein ek function call: hamesha safal, nanoseconds, aur ek transaction ke andar. Microservice
+          mein wahi call ab ek <strong>network call</strong> hai — matlab uspe timeout chahiye, retry chahiye,
+          circuit breaker chahiye (ch 14), tracing chahiye (ch 16), aur wo <em>fail ho sakti hai</em>. Aur do
+          services ke beech atomicity ab DB se nahi milti — tumhe <strong>saga pattern</strong> (har step ka
+          compensating action) ya eventual consistency lagani padti hai. Ek simple "order banao + payment
+          karo" ab ek distributed workflow ban jaata hai.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical raasta — modular monolith</div>
+        <p>
+          Beech ka rasta sabse achha hai: <strong>monolith rakho, par usme saaf module boundaries banao</strong>
+          — har module ka apna schema/tables, aur inter-module baat sirf explicit interfaces se (direct table
+          access nahi). Ye tumhe microservices ke <em>design discipline</em> ka zyadatar faayda deta hai bina
+          network, deployment, aur observability ki keemat chukaye. Aur agar kabhi sach mein ek module ko
+          nikalna pada, toh boundary already maujood hai — extraction ek din ka kaam hai, ek saal ka nahi.
+          <strong>Distributed monolith</strong> (services jo har request pe ek doosre ko sync call karti hain)
+          sabse bura outcome hai: microservices ki saari complexity, monolith ki saari coupling.
+        </p>
+      </div>
+
+      <h2 id="serverless">Serverless</h2>
+      <p>
+        Serverless ka matlab "server nahi hai" nahi — matlab <em>tum</em> server manage nahi karte. Tum ek
+        function deploy karte ho; platform request aane pe usse chalata hai, aur idle hone pe band kar deta hai.
+      </p>
+
+      <table>
+        <thead><tr><th></th><th>Traditional server</th><th>Serverless</th></tr></thead>
+        <tbody>
+          <tr><td>Billing</td><td>Chalte rehne ka — idle ka bhi</td><td>Sirf execution time ka</td></tr>
+          <tr><td>Scaling</td><td>Tum configure karte ho (ch 19)</td><td>Automatic, ~instant, zero se hazaaron tak</td></tr>
+          <tr><td>Idle cost</td><td>Poora</td><td><strong>Zero</strong></td></tr>
+          <tr><td>Cold start</td><td>Nahi</td><td>Haan — 100ms se seconds tak</td></tr>
+          <tr><td>Max duration</td><td>Unlimited</td><td>Limited (typically 15 min)</td></tr>
+          <tr><td>State</td><td>In-memory chal sakta hai</td><td>Stateless zaroori — invocations ke beech kuch nahi bachta</td></tr>
+          <tr><td>DB connections</td><td>Pool (ch 10)</td><td><strong>Problem</strong> — har instance apna connection kholta hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">serverless ke do asli traps<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── TRAP 1: CONNECTION EXHAUSTION (ch 10 wapas) ────────────</span>
+<span class="tok-com">// Serverless 1000 concurrent instances tak scale kar sakta hai.</span>
+<span class="tok-com">// Har instance ek DB connection kholta hai → 1000 connections.</span>
+<span class="tok-com">// Postgres max_connections = 100. DB gir gaya.</span>
+<span class="tok-com">// ← Ye bilkul wahi problem hai jo ch 2 mein "browser se seedha DB" wali thi,</span>
+<span class="tok-com">//   aur ch 19 ka "autoscaling downstream ko kuchal deti hai" wala point bhi.</span>
+<span class="tok-com">// ✅ Fix: external pooler (RDS Proxy, PgBouncer) ya HTTP-based DB driver.</span>
+
+<span class="tok-com">// ── TRAP 2: COLD START ─────────────────────────────────────</span>
+<span class="tok-com">// Pehli request pe: container boot + runtime init + tumhara init code</span>
+<span class="tok-com">// Node/Python: ~100-500ms · Java/.NET: 1-5s (JVM startup)</span>
+<span class="tok-com">// Aur VPC ke andar ho toh aur zyada.</span>
+
+<span class="tok-com">// ✅ Kam karne ke tareeke:</span>
+<span class="tok-com">//   • handler ke BAHAR heavy init karo — wo warm invocations mein reuse hota hai</span>
+<span class="tok-kw">const</span> db = <span class="tok-fn">createClient</span>();          <span class="tok-com">// ✅ module scope — ek baar</span>
+<span class="tok-fn">exports</span>.handler = <span class="tok-kw">async</span> (event) =&gt; {   <span class="tok-com">// har invocation</span>
+  <span class="tok-kw">return</span> db.<span class="tok-fn">query</span>(…);
+};
+<span class="tok-com">//   • bundle chhota rakho, provisioned concurrency (par tab idle cost wapas aa gayi)</span>
+
+<span class="tok-com">// 💰 Cost curve: kam/spiky traffic pe serverless BAHUT sasta,</span>
+<span class="tok-com">// par steady high traffic pe wo traditional servers se MEHNGA pad jaata hai.</span>
+<span class="tok-com">// Ek crossover point hota hai — usse calculate karo, maano mat.</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Serverless kab sach mein achha hai</div>
+        <p>
+          <strong>Spiky ya kam traffic</strong> (internal tools, admin jobs), <strong>event-driven kaam</strong>
+          (S3 upload pe thumbnail banana, webhook receiver — ch 12 ke workers isme perfectly fit hote hain),
+          <strong>cron jobs</strong>, aur <strong>glue code</strong> jahan poora service khada karna overkill
+          ho. Kab galat: steady high traffic (cost), long-running jobs (duration limit), aur wo services jahan
+          consistent low latency chahiye (cold starts). Ek accha pattern hai <em>hybrid</em> — main API
+          traditional servers pe, aur background/event kaam serverless pe.
+        </p>
+      </div>
+
+      <h2 id="ladder">Poori Scaling Ladder</h2>
+      <table>
+        <thead><tr><th>Scale</th><th>Kya kaafi hai</th></tr></thead>
+        <tbody>
+          <tr><td><strong>~1k users</strong></td><td>Ek server + ek DB. Bas.</td></tr>
+          <tr><td><strong>~10k</strong></td><td>App aur DB alag; indexes theek; connection pool tuned (ch 10)</td></tr>
+          <tr><td><strong>~100k</strong></td><td>Multiple app instances + LB (ch 19); Redis cache (ch 11); queues (ch 12); CDN</td></tr>
+          <tr><td><strong>~1M</strong></td><td>Read replicas; partitioning; search index alag (ch 13); read models</td></tr>
+          <tr><td><strong>10M+</strong></td><td>Sharding; multi-region; per-domain services</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Aakhri baat — premature scaling ek real cost hai</div>
+        <p>
+          Har scaling step <strong>complexity</strong> add karta hai, aur complexity ka bill roz aata hai:
+          debugging mushkil, deploy mushkil, naye developer ka onboarding mushkil, aur bugs ke chhupne ki jagah
+          zyada. Ek monolith + Postgres bahut door tak le jaata hai — <em>bahut</em> door, agar indexes aur
+          queries theek hon. Jab tak ek concrete, <strong>measured</strong> problem na ho, agla step mat lo.
+          Aur jab lo, toh <em>ek</em> step lo — do ek saath nahi.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>App layer isliye scale karti hai kyunki wo stateless hai; <strong>DB stateless nahi hai</strong> — isliye wahi asli mushkil hai.</li>
+        <li>Order: query optimization → pooling → cache → vertical → replicas → partitioning → <strong>sharding sabse aakhir</strong>.</li>
+        <li><strong>Sharding ek one-way door hai</strong> — joins, transactions, unique constraints, migrations, sab todti hai. Uski nौbat 90% cases mein aati hi nahi.</li>
+        <li>Read replicas read-heavy load ke liye bade jeet hain, par <strong>write scaling nahi deti</strong> — har replica saare writes apply karti hai.</li>
+        <li>Replication async hai → <strong>read-your-own-writes</strong> problem. Fix: write ke baad primary se padho, ya user-specific data hamesha primary se.</li>
+        <li>Primary se padhna zaroori: abhi-abhi likha data, paisa/balance, <code>FOR UPDATE</code>, write wale transaction ke andar.</li>
+        <li>Replica routing <strong>repository layer</strong> mein rakho (ch 8) — service ko pata bhi na chale.</li>
+        <li>Async failover mein <strong>unreplicated writes kho jaate hain</strong>; sync replication write latency badha deti hai.</li>
+        <li><strong>Partitioning ≠ sharding</strong> — ek hi DB, chhoti tables. Pruning + instant <code>DROP</code> of old data.</li>
+        <li>Shard key: high cardinality, even distribution, query pattern se match, aur <strong>immutable</strong>.</li>
+        <li><code>hash % N</code> mein node add karne pe ~80% keys move hoti hain; <strong>consistent hashing</strong> mein sirf ~1/N.</li>
+        <li>Denormalization = reads sasti karne ke liye data duplicate karna; materialized view cache ka DB-level version hai (wahi staleness trade-off).</li>
+        <li>CDN sabse sasta scaling hai — content-hashed filenames se invalidation ki zaroorat hi khatam; personalized responses pe <code>private</code>.</li>
+        <li><strong>CAP ka choice sirf partition ke dauraan matter karta hai</strong>; normal time mein asli trade-off consistency vs latency hai (PACELC).</li>
+        <li>Ek consistency model poore system pe mat thopo — order total strong, view count eventual.</li>
+        <li><strong>Edge computing</strong> tabhi jeetta hai jab kaam ko central data chahiye <em>hi nahi</em> — data gravity uski asli limit hai.</li>
+        <li><strong>Microservices ek scaling solution nahi hain</strong> — monolith trivially horizontally scale hota hai. Wo ek <em>organizational</em> solution hain; trigger team coordination cost hai, traffic nahi.</li>
+        <li>Microservices mein jo free tha wo kaam ban jaata hai: function call → network call (timeout, retry, breaker, tracing), aur ACID transaction → saga.</li>
+        <li><strong>Modular monolith</strong> best default hai — saaf boundaries, par ek deployment. <em>Distributed monolith</em> sabse bura outcome hai.</li>
+        <li>Serverless ke do asli traps: <strong>connection exhaustion</strong> (pooler chahiye) aur <strong>cold starts</strong> (init handler ke bahar rakho).</li>
+        <li>Serverless spiky/event-driven kaam pe sasta hai, steady high traffic pe <em>mehnga</em> — crossover point calculate karo.</li>
+        <li><strong>Premature scaling ki complexity ka bill roz aata hai.</strong> Ek step lo, aur sirf measured problem pe.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Database bottleneck ban raha hai. Kya karoge?"</div>
+        <p>
+          Order mein: pehle <strong>queries optimize</strong> karo (<code>EXPLAIN</code>, missing indexes, N+1 —
+          ch 10, aksar sabse bada faayda yahin hota hai), phir <strong>connection pooling</strong> tune karo,
+          phir <strong>caching</strong> (ch 11) taaki read load DB tak pahunche hi na, phir vertical scale, phir
+          <strong>read replicas</strong> agar read-heavy hai, phir partitioning. Sharding aakhir mein — wo
+          one-way door hai. Sabse important point: pehle measure karo ki bottleneck reads hain ya writes, kyunki
+          replicas writes mein bilkul madad nahi karti.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "User ne profile update kiya par purana data dikh raha hai. Kya hua?"</div>
+        <p>
+          <strong>Replication lag</strong> — write primary pe gaya, agla read replica se aaya jo abhi
+          catch-up nahi hui. Fixes: write ke baad kuch seconds tak us user ke reads primary pe bhejo (session
+          pinning), ya user-specific/user-owned data hamesha primary se padho, ya replica ka lag check karke
+          threshold se zyada hone pe primary use karo. UI-level pe optimistic update bhi user experience theek
+          kar deta hai. General principle: read-your-own-writes ek <em>consistency model</em> ka choice hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Sharding kab karoge aur shard key kaise chunoge?"</div>
+        <p>
+          Sirf tab jab <strong>writes</strong> ek machine pe fit na hon aur query optimization, caching, aur
+          replicas exhaust ho chuke hon. Shard key ke teen gun: high cardinality, even distribution, aur
+          zyadatar queries mein maujood hona — aur wo <strong>immutable</strong> honi chahiye (badalne pe row ko
+          shard badalna padega). Multi-tenant apps mein <code>userId</code>/<code>tenantId</code> aksar sahi
+          hota hai kyunki ek tenant ka data ek shard pe rehta hai. <code>created_at</code> galat hai (naye writes
+          ka hotspot), <code>country</code> galat hai (low cardinality + skew). Aur bata do ki kya toot-ta hai:
+          cross-shard joins, distributed transactions, global unique constraints, <code>ORDER BY</code> across
+          shards, aur migrations.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Consistent hashing kya hai aur kyun chahiye?"</div>
+        <p>
+          <code>hash(key) % N</code> mein N badalte hi lagbhag saara mapping badal jaata hai — 4 se 5 nodes pe
+          ~80% keys move karni padti hain, jo cache ke liye poori invalidation (stampede, ch 11) aur DB ke liye
+          ghanton ka migration hai. Consistent hashing mein nodes aur keys dono ek circular hash space pe hote
+          hain aur key clockwise agle node pe jaati hai — node add/remove pe sirf <strong>~1/N</strong> keys
+          move hoti hain. Virtual nodes se distribution even rakha jaata hai. Redis Cluster, Cassandra,
+          DynamoDB, aur CDN routing sab yahi use karte hain.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "CAP theorem samjhao."</div>
+        <p>
+          Network partition (P) hone par tum consistency aur availability dono nahi rakh sakte — ya to stale
+          jawab do (AP) ya jawab dene se mana karo (CP). Par do nuances jo strong answer banate hain: (1) ye
+          choice sirf <em>partition ke dauraan</em> lagti hai, aur alag operations ke liye alag ho sakti hai —
+          system-wide permanent label nahi hai; (2) normal time mein asli trade-off <strong>consistency vs
+          latency</strong> hai, isliye <strong>PACELC</strong> zyada useful hai. Practically: paisa/inventory
+          strong consistency, view counts aur feeds eventual — ek hi app mein dono.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Q6. "Traffic badh raha hai — microservices mein tod dein?"</div>
+        <p>
+          Nahi, kyunki <strong>microservices scaling problem solve nahi karte</strong> — ek monolith ko
+          horizontally scale karna trivially aasaan hai, bas aur instances. Microservices ka asli trigger
+          <em>team</em> hai: jab bahut saari teams ek hi codebase pe deploy karne ke liye ek doosre ko block
+          kar rahi hon. Aur uski keemat: har inter-service call ab fail ho sakti hai (timeout, retry, circuit
+          breaker — ch 14), cross-service atomicity saga pattern maangti hai, aur observability optional se
+          mandatory ban jaati hai (ch 16). Mera default jawab: <strong>modular monolith</strong> — saaf module
+          boundaries aur per-module schema, ek deployment. Tab extraction baad mein aasaan rehta hai, aur
+          "distributed monolith" ka worst case nahi banta.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q7. "Serverless use karna chahiye? Kya problems aati hain?"</div>
+        <p>
+          Achha hai spiky/kam traffic, event-driven kaam (S3 trigger, webhooks, cron) aur glue code ke liye —
+          idle cost zero, aur scaling automatic. Do bade traps: (1) <strong>connection exhaustion</strong> —
+          1000 concurrent instances = 1000 DB connections, jabki Postgres 100 pe hai (ch 10); fix external
+          pooler ya HTTP-based driver; (2) <strong>cold starts</strong> — 100ms se seconds tak, isliye heavy
+          init handler ke bahar rakho taaki warm invocations usse reuse karein. Aur cost curve dhyan se dekho:
+          steady high traffic pe serverless traditional servers se mehnga pad jaata hai. Hybrid aksar sahi
+          jawab hai — API servers pe, background/event kaam serverless pe.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Aakhri chapter</div>
+        <p>
+          <a href="21-concurrency.html"><strong>Chapter 21 — Concurrency & Parallelism</strong></a>: ab tak
+          humne machines add ki. Ab andar jhaankte hain — <em>ek</em> process ke andar kaam actually parallel
+          hota kaise hai, aur IO-bound vs CPU-bound ka farq kyun har scaling decision ko badal deta hai.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REST API Design — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link active" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 9</div>
+      <div class="progress-pill">9 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Resources · Versioning · Pagination · Idempotency · Errors</span>
+      <h1>REST API Design</h1>
+      <p class="subtitle">
+        Ab tak sab kuch <em>andar</em> ka tha. API design bahar ka <strong>contract</strong> hai — aur contract
+        ki ek khaas property hai: <em>usse badalna sabse mehnga hota hai</em>. Code refactor kar sakte ho, DB
+        migrate kar sakte ho, par ek baar public API ban gayi toh uske clients tumhare control mein nahi rehte.
+        Isliye ye chapter Phase 1 ka aakhri hai — yahan tak aake tum ek <strong>correct</strong> API design kar
+        sakte ho.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 11 —
+        <a href="https://www.youtube.com/watch?v=RG6q57DwV8Y">Complete REST API Design</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#rest">1. REST Actually Kya Hai (Aur Kya Nahi)</a></li>
+          <li><a href="#resources">2. Resource Modelling — Noun, Verb Nahi</a></li>
+          <li><a href="#actions">3. Wo Cheezein Jo Resource Mein Fit Nahi Hoti</a></li>
+          <li><a href="#pagination">4. Pagination — Offset vs Cursor</a></li>
+          <li><a href="#filtering">5. Filtering, Sorting, Sparse Fields</a></li>
+          <li><a href="#idempotency">6. Idempotency Keys — Mechanism</a></li>
+          <li><a href="#concurrency">7. Lost Update Problem Aur ETags</a></li>
+          <li><a href="#versioning">8. Versioning — Chaar Tareeke</a></li>
+          <li><a href="#errors">9. Error Contract</a></li>
+          <li><a href="#checklist">10. Design Checklist</a></li>
+          <li><a href="#takeaways">11. Key Takeaways</a></li>
+          <li><a href="#interview">12. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="rest">REST Actually Kya Hai (Aur Kya Nahi)</h2>
+      <p>
+        REST ek <strong>architectural style</strong> hai (Roy Fielding, 2000), protocol nahi. Uske constraints
+        mein se jo backend ke liye actually matter karte hain:
+      </p>
+      <ul>
+        <li><strong>Client-server</strong> — alag-alag evolve kar sakte hain (ch 2).</li>
+        <li><strong>Stateless</strong> — har request self-contained (ch 3). Yahi horizontal scaling deta hai.</li>
+        <li><strong>Uniform interface</strong> — resources ki identity URL mein, manipulation standard methods se.</li>
+        <li><strong>Cacheable</strong> — response batata hai ki wo cache ho sakta hai ya nahi.</li>
+        <li><strong>Layered</strong> — client ko pata nahi ki wo proxy se baat kar raha hai ya origin se (ch 2 ka nginx).</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Practical sach — jise log "REST" kehte hain wo "HTTP + JSON + resource URLs" hai</div>
+        <p>
+          Fielding ke original definition mein HATEOAS (response mein hi agle actions ke links) bhi zaroori tha.
+          Practice mein 99% "REST APIs" wo nahi karti, aur wo theek hai. <strong>Purity ke chakkar mein mat
+          pado</strong> — asli goal <em>predictability</em> hai: ek naya developer tumhari ek endpoint dekh ke
+          baaki 50 ka behaviour guess kar sake. Consistency &gt; correctness-by-the-book.
+        </p>
+      </div>
+
+      <h2 id="resources">Resource Modelling — Noun, Verb Nahi</h2>
+      <p>
+        Central idea: URL ek <strong>cheez</strong> (noun) ko identify karta hai, aur <em>method</em> batata hai
+        us cheez ka kya karna hai. Verb URL mein aana matlab tum method ka kaam URL se kara rahe ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">RPC-style vs resource-style<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ RPC style — har action ka apna endpoint, koi pattern nahi</span>
+POST /getUser?id=42
+POST /createOrder
+POST /updateOrderStatus
+POST /deleteUserById
+<span class="tok-com">// 200 endpoints = 200 alag naam yaad rakhne padenge. Kuch bhi guess nahi kar sakte.</span>
+
+<span class="tok-com">// ✅ Resource style — ek noun, standard methods</span>
+GET    /users          <span class="tok-com">// collection — list</span>
+POST   /users          <span class="tok-com">// collection pe create → 201 + Location</span>
+GET    /users/42       <span class="tok-com">// ek resource</span>
+PATCH  /users/42       <span class="tok-com">// partial update</span>
+PUT    /users/42       <span class="tok-com">// full replace (idempotent — ch 3)</span>
+DELETE /users/42       <span class="tok-com">// → 204 No Content</span>
+
+<span class="tok-com">// Nesting — sirf jab child parent ke BINA meaningless ho</span>
+GET  /users/42/orders  <span class="tok-com">// is user ke orders</span>
+POST /users/42/orders
+
+<span class="tok-com">// ⚠️ 2 level se zyada mat karo</span>
+<span class="tok-com">// ❌ /users/42/orders/99/items/7/reviews/3   — bhayanak</span>
+<span class="tok-com">// ✅ /reviews/3   — agar review ki apni identity hai toh usko top-level rakho</span>
+</code></pre>
+      </div>
+
+      <table>
+        <thead><tr><th>Convention</th><th>Karo</th><th>Kyun</th></tr></thead>
+        <tbody>
+          <tr><td>Plural nouns</td><td><code>/users</code>, <code>/users/42</code></td><td>Consistent — collection aur item ek hi naam ke</td></tr>
+          <tr><td>Lowercase + hyphen</td><td><code>/order-items</code></td><td>URLs case-sensitive hote hain; underscore hyperlink underline mein chhup jaata hai</td></tr>
+          <tr><td>Trailing slash nahi</td><td><code>/users</code></td><td>Ek hi canonical form — warna 404 mysteries (ch 4)</td></tr>
+          <tr><td>File extension nahi</td><td><code>/users</code> + <code>Accept</code> header</td><td>Format content negotiation se, URL se nahi</td></tr>
+          <tr><td>ID kabhi sequential guess-able na ho</td><td>UUID / ULID</td><td>Sequential IDs se total count leak hoti hai aur enumeration aasaan ho jaati hai (ch 18)</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="actions">Wo Cheezein Jo Resource Mein Fit Nahi Hoti</h2>
+      <p>
+        Har operation ek noun nahi hota. "Password reset karo", "order cancel karo", "email bhejo" — ye actions
+        hain. Teen approaches, badhte hue practicality ke saath:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">actions ko model karne ke teen tareeke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. State change ko ek FIELD ki tarah dekho (sabse RESTful) ──</span>
+PATCH /orders/99   { <span class="tok-str">"status"</span>: <span class="tok-str">"cancelled"</span> }
+<span class="tok-com">// ✅ shuddh REST. ❌ par "cancel" ke saath aur logic ho (refund, email, restock)</span>
+<span class="tok-com">//    toh ye chhupa deta hai ki ye ek simple field update NAHI hai.</span>
+<span class="tok-com">//    Aur "status: shipped" client ko kabhi set nahi karne dena chahiye.</span>
+
+<span class="tok-com">// ── 2. Sub-resource banao (accha jab action ka apna record ho) ──</span>
+POST /orders/99/cancellation   { <span class="tok-str">"reason"</span>: <span class="tok-str">"changed mind"</span> }
+<span class="tok-com">// ✅ cancellation ek CHEEZ ban gayi — timestamp, reason, kisne ki, sab store hoga</span>
+<span class="tok-com">// ✅ GET /orders/99/cancellation bhi ab meaningful hai</span>
+
+<span class="tok-com">// ── 3. Action endpoint (pragmatic — sabse common) ──────────</span>
+POST /orders/99/cancel
+POST /users/42/reset-password
+POST /invoices/7/send
+<span class="tok-com">// "Pure REST" nahi hai, par SAAF hai. Stripe, GitHub, Slack — sab ye karte hain.</span>
+<span class="tok-com">// Rule: POST use karo (side effect hai), aur verb ko resource ke NEECHE rakho —</span>
+<span class="tok-com">// /cancelOrder?id=99 nahi.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Kab kaunsa</div>
+        <p>
+          Agar operation sach mein ek field ka update hai → PATCH. Agar us action ka apna
+          <em>record</em> banta hai (kisne kiya, kab, kyun) → sub-resource. Agar wo ek multi-step workflow
+          trigger karta hai → action endpoint. <strong>Sabse bada red flag:</strong> client ko koi aisa field
+          set karne dena jo actually server ka faisla hai (<code>status: "paid"</code>). Wo authorization bug
+          hai, design taste ka sawaal nahi.
+        </p>
+      </div>
+
+      <h2 id="pagination">Pagination — Offset vs Cursor</h2>
+      <p>
+        Koi bhi collection endpoint jo <em>saara</em> data return karta hai, wo ek future outage hai (ch 7 ka
+        <code>limit</code> wala point). Pagination optional nahi hai. Do tareeke hain, aur inka farq sirf
+        performance ka nahi — <strong>correctness ka</strong> hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Offset pagination skipping rows versus cursor pagination seeking by key">
+          <defs>
+            <marker id="pg1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="186" y="20" class="ex-t">OFFSET — LIMIT 20 OFFSET 10000</text>
+          <text x="574" y="20" class="ex-t">CURSOR — WHERE id &lt; :cursor</text>
+          <path d="M378,32 C382,150 374,290 378,384" class="ex-stroke ex-stroke-d"/>
+
+          <!-- offset -->
+          <rect x="24" y="44" width="322" height="46" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="185" y="62" class="ex-t-sm">DB ko 10,020 rows padhni padti hain</text>
+          <text x="185" y="80" class="ex-t-lbl">…phir pehli 10,000 FEK deni padti hain</text>
+
+          <rect x="24" y="102" width="322" height="30" rx="7" class="ex-fill-o ex-stroke"/>
+          <text x="185" y="117" class="ex-t-sm">page 500 → slow. page 5000 → timeout.</text>
+
+          <text x="185" y="158" class="ex-t-lbl">Aur ek badi problem — DRIFT:</text>
+          <rect x="24" y="172" width="322" height="106" rx="9" class="ex-stroke"/>
+          <text x="185" y="194" class="ex-t-sm">page 1 padha  →  [A B C D E]</text>
+          <text x="185" y="216" class="ex-t-sm">koi naya item insert hua top pe</text>
+          <text x="185" y="238" class="ex-t-sm">page 2 padha  →  [E F G H I]</text>
+          <text x="185" y="262" class="ex-t-lbl">E DOBARA aa gaya · koi item CHOOT bhi sakta hai</text>
+
+          <text x="185" y="306" class="ex-t-lbl">✅ "page 7 pe jao" possible</text>
+          <text x="185" y="328" class="ex-t-lbl">✅ total count dikha sakte ho</text>
+          <text x="185" y="352" class="ex-t-sm">❌ deep pages slow · ❌ drift</text>
+          <text x="185" y="376" class="ex-t-sm">theek hai: admin tables, chhota data</text>
+
+          <!-- cursor -->
+          <rect x="410" y="44" width="326" height="46" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="573" y="62" class="ex-t-sm">index pe SEEK karke seedha jagah pe</text>
+          <text x="573" y="80" class="ex-t-lbl">sirf 20 rows padhi jaati hain</text>
+
+          <rect x="410" y="102" width="326" height="30" rx="7" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="573" y="117" class="ex-t-sm">page 1 aur page 5000 — SAME speed</text>
+
+          <text x="573" y="158" class="ex-t-lbl">Drift nahi hoti:</text>
+          <rect x="410" y="172" width="326" height="106" rx="9" class="ex-stroke ex-stroke-g"/>
+          <text x="573" y="194" class="ex-t-sm">page 1 → [A B C D E], cursor = E.id</text>
+          <text x="573" y="216" class="ex-t-sm">naya item insert hua — farq nahi padta</text>
+          <text x="573" y="238" class="ex-t-sm">page 2 → WHERE id &lt; E.id → [F G H I J]</text>
+          <text x="573" y="262" class="ex-t-lbl">position ek KEY se bandhi hai, ginti se nahi</text>
+
+          <text x="573" y="306" class="ex-t-lbl">✅ har page constant time</text>
+          <text x="573" y="328" class="ex-t-lbl">✅ stable — koi duplicate/skip nahi</text>
+          <text x="573" y="352" class="ex-t-sm">❌ "page 7 pe jao" nahi · ❌ total count mehnga</text>
+          <text x="573" y="376" class="ex-t-sm">theek hai: feeds, infinite scroll, bade datasets</text>
+        </svg>
+        <figcaption>
+          Sabse important point wo hai jo log miss karte hain: offset pagination sirf <em>slow</em> nahi hai, wo
+          <strong>galat results</strong> deti hai jab data badal raha ho — items duplicate ya skip hote hain.
+          Feeds ke liye cursor hi ek sahi jawab hai.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">cursor pagination — implementation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// GET /orders?limit=20&amp;cursor=eyJpZCI6IjAxSF...</span>
+
+<span class="tok-com">// cursor ek OPAQUE base64 string honi chahiye — client usse parse na kare</span>
+<span class="tok-kw">const</span> after = cursor ? JSON.<span class="tok-fn">parse</span>(<span class="tok-fn">atob</span>(cursor)) : <span class="tok-kw">null</span>;
+
+<span class="tok-com">// Sorting key UNIQUE aur STABLE honi chahiye.</span>
+<span class="tok-com">// created_at akela kaafi NAHI — same timestamp wale rows pe pagination toot-ti hai.</span>
+<span class="tok-com">// Isliye tie-breaker ke saath composite key: (created_at, id)</span>
+<span class="tok-kw">const</span> rows = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(
+  <span class="tok-str">`SELECT * FROM orders
+    WHERE user_id = $1
+      AND ($2::timestamptz IS NULL OR (created_at, id) &lt; ($2, $3))
+    ORDER BY created_at DESC, id DESC
+    LIMIT $4`</span>,                          <span class="tok-com">// ← index: (user_id, created_at DESC, id DESC)</span>
+  [userId, after?.createdAt, after?.id, limit + <span class="tok-num">1</span>]
+);                                       <span class="tok-com">// ↑ limit+1 — ek extra row maango</span>
+
+<span class="tok-kw">const</span> hasMore = rows.length &gt; limit;    <span class="tok-com">// extra row mila? matlab aur data hai</span>
+<span class="tok-kw">const</span> items   = rows.<span class="tok-fn">slice</span>(<span class="tok-num">0</span>, limit);   <span class="tok-com">// extra row response se hata do</span>
+<span class="tok-com">// Ye trick ek alag COUNT(*) query bacha leti hai — wo bade tables pe mehngi hai.</span>
+
+res.<span class="tok-fn">json</span>({
+  data: items.<span class="tok-fn">map</span>(toResponse),
+  <span class="tok-str">"pagination"</span>: {
+    nextCursor: hasMore
+      ? <span class="tok-fn">btoa</span>(JSON.<span class="tok-fn">stringify</span>({ createdAt: last.createdAt, id: last.id }))
+      : <span class="tok-kw">null</span>,                          <span class="tok-com">// null = aakhri page</span>
+    hasMore,
+  },
+});
+</code></pre>
+      </div>
+
+      <h2 id="filtering">Filtering, Sorting, Sparse Fields</h2>
+      <div class="code-block">
+        <div class="code-title">query param conventions<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// filtering — flat, predictable</span>
+GET /orders?status=paid&amp;min_total=1000&amp;created_after=2026-01-01
+
+<span class="tok-com">// sorting — "-" se descending</span>
+GET /orders?sort=-created_at,total
+
+<span class="tok-com">// sparse fields — sirf ye fields do (payload chhota)</span>
+GET /orders?fields=id,total,status
+
+<span class="tok-com">// embedding — N+1 requests bachane ke liye</span>
+GET /orders/99?include=items,customer
+
+<span class="tok-com">// ⚠️ SECURITY: filter aur sort fields ko ALLOWLIST karo</span>
+<span class="tok-kw">const</span> SORTABLE = <span class="tok-kw">new</span> <span class="tok-fn">Set</span>([<span class="tok-str">"created_at"</span>, <span class="tok-str">"total"</span>, <span class="tok-str">"status"</span>]);
+<span class="tok-kw">if</span> (!SORTABLE.<span class="tok-fn">has</span>(field)) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ValidationError</span>(<span class="tok-str">"invalid sort field"</span>);
+<span class="tok-com">// Sort/filter column ko kabhi seedha SQL mein mat daalo — ye SQL injection ka</span>
+<span class="tok-com">// wo raasta hai jise parameterized queries BACHA nahi sakti (column names</span>
+<span class="tok-com">// parameterize ho hi nahi sakte). Aur bina index wale column pe sort allow</span>
+<span class="tok-com">// karna ek performance DoS hai (ch 10).</span>
+</code></pre>
+      </div>
+
+      <h2 id="idempotency">Idempotency Keys — Mechanism</h2>
+      <p>
+        Ch 3 mein problem set ki thi: client ne <code>POST /payments</code> bheja, timeout ho gaya, aur ab wo
+        <em>jaanta hi nahi</em> ki charge hua ya nahi. Retry kare toh double charge, na kare toh possible lost
+        payment. Ab uska solution.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">idempotency key — server side<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Client har LOGICAL operation ke liye ek unique key generate karta hai</span>
+<span class="tok-com">// aur RETRY pe WAHI key dobara bhejta hai.</span>
+POST /payments
+Idempotency-Key: 01HQ8Z3M2K4N5P6Q7R8S9T   <span class="tok-com">// UUID/ULID, client-generated</span>
+{ <span class="tok-str">"amount_paise"</span>: <span class="tok-num">199900</span>, <span class="tok-str">"order_id"</span>: <span class="tok-str">"99"</span> }
+
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">handlePayment</span>(key, body, userId) {
+  <span class="tok-com">// 1. Key ko ATOMICALLY reserve karo. Ye INSERT hi lock ka kaam karta hai —</span>
+  <span class="tok-com">//    "pehle SELECT karke dekho" wala pattern race condition hai (ch 7).</span>
+  <span class="tok-kw">const</span> reserved = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(
+    <span class="tok-str">`INSERT INTO idempotency_keys (key, user_id, request_hash, status)
+     VALUES ($1, $2, $3, 'in_progress')
+     ON CONFLICT (key) DO NOTHING
+     RETURNING id`</span>,
+    [key, userId, <span class="tok-fn">sha256</span>(body)]
+  );
+
+  <span class="tok-kw">if</span> (reserved.rowCount === <span class="tok-num">0</span>) {
+    <span class="tok-com">// Key pehle se hai → ye ek RETRY hai</span>
+    <span class="tok-kw">const</span> prev = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(<span class="tok-str">`SELECT * FROM idempotency_keys WHERE key = $1`</span>, [key]);
+
+    <span class="tok-com">// Same key par ALAG body? Client ki bug hai — chupchaap purana result mat do.</span>
+    <span class="tok-kw">if</span> (prev.request_hash !== <span class="tok-fn">sha256</span>(body))
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ConflictError</span>(<span class="tok-str">"idempotency key reused with different payload"</span>);
+
+    <span class="tok-kw">if</span> (prev.status === <span class="tok-str">"in_progress"</span>)
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ConflictError</span>(<span class="tok-str">"request already in progress"</span>);   <span class="tok-com">// 409</span>
+
+    <span class="tok-kw">return</span> JSON.<span class="tok-fn">parse</span>(prev.response_body);   <span class="tok-com">// ✅ WAHI purana response wapas</span>
+  }
+
+  <span class="tok-com">// 2. Pehli baar — asli kaam karo</span>
+  <span class="tok-kw">const</span> payment = <span class="tok-kw">await</span> paymentService.<span class="tok-fn">charge</span>(body);
+
+  <span class="tok-com">// 3. Result store karo taaki retry pe wahi mile</span>
+  <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(
+    <span class="tok-str">`UPDATE idempotency_keys SET status='completed', response_body=$2 WHERE key=$1`</span>,
+    [key, JSON.<span class="tok-fn">stringify</span>(payment)]
+  );
+  <span class="tok-kw">return</span> payment;
+}
+<span class="tok-com">// Keys ko 24-48h baad expire kar do — ye table warna infinitely badhta hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Fintech mein ye optional nahi hai</div>
+        <p>
+          Har paisa-chhoone wala endpoint (<code>POST /payments</code>, <code>/refunds</code>,
+          <code>/transfers</code>) mein idempotency key honi chahiye. Bina iske, ek network glitch ya client
+          retry double charge banata hai — aur uska pata customer complaint se chalta hai, monitoring se nahi.
+          Stripe, Razorpay, aur har serious payment API ye header support karti hai; tumhari API ko bhi karna
+          chahiye. <strong>Aur key <em>client</em> generate karta hai, server nahi</strong> — kyunki server ko
+          pata hi nahi ki do requests "same logical operation" hain.
+        </p>
+      </div>
+
+      <h2 id="concurrency">Lost Update Problem Aur ETags</h2>
+      <p>
+        Do users ek hi resource ko ek saath edit kar rahe hain. A padhta hai, B padhta hai, A likhta hai, B
+        likhta hai — <strong>A ka change chupchaap gayab</strong>. Isko <em>lost update</em> kehte hain, aur ye
+        bug tab tak dikhta nahi jab tak koi shikayat na kare.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">optimistic concurrency — ETag + If-Match<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// 1. GET pe server current version ka tag deta hai (ch 3 ka ETag)</span>
+GET /documents/7
+→ 200 OK
+  ETag: <span class="tok-str">"v12"</span>              <span class="tok-com">// version number ya content ka hash</span>
+  { <span class="tok-str">"title"</span>: <span class="tok-str">"Draft"</span>, <span class="tok-str">"version"</span>: <span class="tok-num">12</span> }
+
+<span class="tok-com">// 2. Update ke waqt client wahi tag wapas bhejta hai</span>
+PATCH /documents/7
+If-Match: <span class="tok-str">"v12"</span>            <span class="tok-com">// "main v12 ke upar edit kar raha hoon"</span>
+{ <span class="tok-str">"title"</span>: <span class="tok-str">"Final"</span> }
+
+<span class="tok-com">// 3. Server atomically check karta hai — WHERE clause hi lock hai</span>
+UPDATE documents SET title = $1, version = version + <span class="tok-num">1</span>
+ WHERE id = $2 AND version = $3;         <span class="tok-com">// ← version match hua tabhi update</span>
+
+<span class="tok-com">// rowCount === 0 → beech mein kisi aur ne badal diya</span>
+→ <span class="tok-num">412</span> Precondition Failed
+  { <span class="tok-str">"error"</span>: <span class="tok-str">"stale_version"</span>, <span class="tok-str">"message"</span>: <span class="tok-str">"Resource modified; re-fetch and retry"</span> }
+<span class="tok-com">// Client ko ab pata hai ki conflict hua — wo re-fetch karke merge kar sakta hai,</span>
+<span class="tok-com">// ya user ko dikha sakta hai. Chupchaap data kho nahi raha.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Idempotency vs optimistic locking — do alag problems</div>
+        <p>
+          Dono "concurrency" jaisa lagta hai par bilkul alag hain. <strong>Idempotency key</strong> ek hi client
+          ki <em>duplicate</em> request se bachati hai (retry ke baad double charge). <strong>ETag/If-Match</strong>
+          do <em>alag</em> clients ke conflicting updates se bachata hai (lost update). Ek payment endpoint pe
+          pehla chahiye; ek collaborative document pe doosra. Interview mein ye distinction seedha
+          differentiate kar deta hai.
+        </p>
+      </div>
+
+      <h2 id="versioning">Versioning — Chaar Tareeke</h2>
+      <table>
+        <thead><tr><th>Tareeka</th><th>Example</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>URL path</strong></td>
+            <td><code>/v1/users</code></td>
+            <td>Sabse saaf aur visible; browser/curl se test karna trivial. Purist kehte hain "resource wahi hai, URL alag kyun" — par practically ye sabse common hai</td>
+          </tr>
+          <tr>
+            <td><strong>Header</strong></td>
+            <td><code>Accept: application/vnd.api.v2+json</code></td>
+            <td>URL saaf rehta hai, par debug/share karna mushkil — curl mein header yaad rakhna padta hai</td>
+          </tr>
+          <tr>
+            <td><strong>Query param</strong></td>
+            <td><code>/users?version=2</code></td>
+            <td>Aasaan par gandha; caching aur routing mein galtiyan hoti hain</td>
+          </tr>
+          <tr>
+            <td><strong>Date-based</strong></td>
+            <td><code>Stripe-Version: 2026-08-17</code></td>
+            <td>Har client apni version pe pinned; sabse powerful, par server pe har version ka transformation layer maintain karna padta hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Sabse achhi versioning = version hi na banana</div>
+        <p>
+          Ch 5 ka schema evolution rule yahan bhi lagta hai: <strong>additive changes breaking nahi hote.</strong>
+          Naya optional field add karna, naya endpoint add karna, response mein naya field bhejna — in sab ke
+          liye v2 ki zaroorat nahi. v2 sirf tab chahiye jab tumhe kuch <em>hatana</em> ya <em>badalna</em> ho.
+          Isliye din 1 se clients ko ye batao: <em>"unknown fields ko ignore karo"</em> — tabhi tum aage aaram
+          se evolve kar paoge.
+        </p>
+      </div>
+
+      <h2 id="errors">Error Contract</h2>
+      <p>
+        Errors bhi API ka hissa hain — utne hi documented hone chahiye jitne success responses. Ek consistent
+        shape rakho poore API mein:
+      </p>
+      <div class="code-block">
+        <div class="code-title">consistent error shape<button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-str">"error"</span>:   <span class="tok-str">"insufficient_stock"</span>,   <span class="tok-com">// stable machine code — client isse branch karta hai</span>
+  <span class="tok-str">"message"</span>: <span class="tok-str">"Product 'X' has only 2 left"</span>,  <span class="tok-com">// insaan ke liye, badal sakta hai</span>
+  <span class="tok-str">"details"</span>: [ … ],                    <span class="tok-com">// optional — field-wise (ch 7)</span>
+  <span class="tok-str">"requestId"</span>: <span class="tok-str">"req_8f3a2b"</span>            <span class="tok-com">// logs se jodne ke liye (ch 16)</span>
+}
+<span class="tok-com">// RULE: `error` code KABHI mat badlo — wo contract hai. `message` badal sakta hai.</span>
+<span class="tok-com">// Client ko kabhi message string pe branch nahi karna chahiye.</span>
+</code></pre>
+      </div>
+      <p>
+        Status codes ke liye ch 3 ka mapping use karo. Do aur cheezein jo API-level pe zaroori hain:
+      </p>
+      <ul>
+        <li><strong><code>429</code> ke saath <code>Retry-After</code></strong> — warna client aggressive retry
+        karta hai aur load aur badhta hai (ch 14).</li>
+        <li><strong>5xx pe internal details kabhi nahi</strong> — stack trace, SQL error, ya file path leak karna
+        attacker ko tumhare stack ka map de deta hai (ch 18). Generic message bhejo, asli error
+        <code>requestId</code> ke saath log karo.</li>
+      </ul>
+
+      <h2 id="checklist">Design Checklist</h2>
+      <p>Naya endpoint banate waqt ye list pe ek nazar — zyadatar API bugs inhi mein se kisi ek se aate hain:</p>
+      <ul>
+        <li>☐ URL noun hai, verb nahi. Nesting 2 level se zyada nahi.</li>
+        <li>☐ Method ka contract sahi hai — GET safe hai, PUT/DELETE idempotent (ch 3).</li>
+        <li>☐ Success status theek hai — <code>201 + Location</code> create pe, <code>204</code> delete pe.</li>
+        <li>☐ Collection endpoint pe pagination hai, aur <code>limit</code> pe upper bound hai (ch 7).</li>
+        <li>☐ Sort/filter fields <strong>allowlisted</strong> hain.</li>
+        <li>☐ Paisa/side-effect wale POST pe <code>Idempotency-Key</code> support hai.</li>
+        <li>☐ Concurrent edit possible hai toh ETag/<code>If-Match</code> hai.</li>
+        <li>☐ Response ek explicit output model se banta hai (allowlist), domain object seedha nahi (ch 7).</li>
+        <li>☐ Server-controlled fields (<code>id</code>, <code>role</code>, <code>status</code>) client set nahi kar sakta.</li>
+        <li>☐ Ownership check query ke andar hai (ch 6).</li>
+        <li>☐ Errors mein stable <code>error</code> code + <code>requestId</code> hai; 5xx mein internals nahi.</li>
+        <li>☐ IDs guess-able nahi hain (UUID/ULID).</li>
+      </ul>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>API ek <strong>contract</strong> hai — code se kahin zyada mehnga badalna. Isliye din 1 se soch ke banao.</li>
+        <li>Practical goal purity nahi, <strong>predictability</strong> hai: ek endpoint dekh ke baaki 50 guess ho jaayein.</li>
+        <li>URL = noun, method = verb. Nesting 2 level tak; child ki apni identity ho toh top-level rakho.</li>
+        <li>Actions ke liye teen options: PATCH field, sub-resource (jab record banta ho), ya <code>POST /orders/99/cancel</code>. Teesra pragmatic aur common hai.</li>
+        <li>Client ko kabhi server-controlled field (<code>status</code>, <code>role</code>) set mat karne do — wo authorization bug hai.</li>
+        <li><strong>Offset pagination sirf slow nahi, galat hai</strong> — data badalne pe items duplicate/skip hote hain. Feeds pe cursor use karo.</li>
+        <li>Cursor key <strong>unique + stable</strong> honi chahiye — <code>created_at</code> akela nahi, <code>(created_at, id)</code>.</li>
+        <li><code>limit + 1</code> maango — <code>hasMore</code> mil jaata hai bina mehngi <code>COUNT(*)</code> ke.</li>
+        <li>Sort/filter columns allowlist karo — parameterized queries column names ko bacha nahi sakti.</li>
+        <li><strong>Idempotency key</strong> duplicate requests se bachati hai (client generate karta hai); <strong>ETag/If-Match</strong> lost updates se (<code>412</code>). Do alag problems.</li>
+        <li>Best versioning = version na banana. Additive changes breaking nahi hote — clients ko unknown fields ignore karna sikhao.</li>
+        <li>Error mein <code>error</code> code stable rakho, <code>message</code> badal sakta hai. 5xx mein internals kabhi nahi.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Ek endpoint design karo: user apne orders dekhe."</div>
+        <p>
+          <code>GET /orders?status=paid&amp;limit=20&amp;cursor=…</code> — <code>/users/42/orders</code> nahi,
+          kyunki user apna hi data dekh raha hai aur ID context se aati hai (URL se lene pe IDOR ka darwaza
+          khulta hai, ch 6). Cursor pagination with <code>limit</code> capped at 100, sort fields allowlisted,
+          response ek explicit output model se, aur ownership <code>WHERE user_id = ctx.user.id</code> mein —
+          na ki alag check mein.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Offset vs cursor pagination?"</div>
+        <p>
+          Offset: <code>LIMIT 20 OFFSET 10000</code> — DB ko 10,020 rows padh ke 10,000 fekni padti hain, toh
+          deep pages slow hote hain. Aur usse bada issue <em>correctness</em> ka hai: data badalne pe items
+          duplicate ya skip hote hain. Cursor: last item ki key se index pe seek — har page constant time, aur
+          stable. Trade-off: cursor mein "page 7 pe jao" aur total count nahi milte. Admin tables pe offset
+          theek hai, feeds pe cursor.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Double charge kaise rokoge?"</div>
+        <p>
+          <code>Idempotency-Key</code> header — client har logical operation ke liye ek unique key banata hai
+          aur retry pe wahi bhejta hai. Server usse <code>ON CONFLICT DO NOTHING</code> ke saath atomically
+          reserve karta hai (SELECT-then-INSERT race condition hai), pehli baar kaam karke response store karta
+          hai, aur usi key pe dobara aane par wahi stored response laut&#8203;a deta hai. Same key par alag
+          payload aaye toh <code>409</code>. Keys 24–48h baad expire.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Do users ek saath edit kar rahe hain — ek ka change kho raha hai."</div>
+        <p>
+          Lost update problem. Optimistic locking: GET pe <code>ETag</code> (version/hash) do, client
+          <code>If-Match</code> mein wapas bheje, aur update
+          <code>WHERE id = $1 AND version = $2</code> ho — <code>rowCount === 0</code> matlab beech mein koi aur
+          badal chuka hai, toh <code>412 Precondition Failed</code>. Client re-fetch karke merge kare. Pessimistic
+          locking (row lock) bhi option hai par wo concurrency ghata deta hai aur user-facing edits ke liye
+          practical nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "API versioning kaise karoge?"</div>
+        <p>
+          Pehla jawab: <em>jitna ho sake version banao hi mat</em> — additive changes (naya optional field, naya
+          endpoint) breaking nahi hote, bas clients ko unknown fields ignore karne chahiye. Jab sach mein
+          breaking change chahiye: URL path versioning (<code>/v1/</code>) sabse practical hai — visible aur
+          debug karne mein aasaan. Date-based (Stripe style) sabse powerful hai par har version ka
+          transformation layer maintain karna padta hai. Aur purani version ke liye ek clear deprecation
+          timeline do.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Phase 1 khatam — agla chapter</div>
+        <p>
+          Yahan tak tum ek <strong>correct</strong> API design kar sakte ho. Ab Phase 2 shuru hota hai —
+          <em>data aur time</em>. <a href="10-databases-postgres.html"><strong>Chapter 10 — Databases with
+          Postgres</strong></a>: storage engine, B-tree indexes, query planner, transactions, isolation levels,
+          aur connection pooling.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Queues & Background Jobs — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link active" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 12</div>
+      <div class="progress-pill">12 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Broker · Workers · Retries · DLQ · Delivery Guarantees</span>
+      <h1>Task Queues & Background Jobs</h1>
+      <p class="subtitle">
+        Ab tak sab kuch <strong>request ke andar</strong> ho raha tha — user bheja, server kaam kiya, response
+        gaya. Par bahut saara kaam aisa hota hai jo user ke intezaar karne layak hai hi nahi: email bhejna, PDF
+        banana, image resize karna, report generate karna. Queue ka poora idea ek line mein hai:
+        <strong>kaam ko time mein aage dhakel do</strong> — request se decouple kar do.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 14 —
+        <a href="https://www.youtube.com/watch?v=r-nQsyguU1Y">Task queues and background jobs</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why">1. Problem — Sync Request Mein Kya Ghalat Ho Raha Hai</a></li>
+          <li><a href="#arch">2. Architecture — Producer, Broker, Worker</a></li>
+          <li><a href="#api">3. API Contract Badal Jaata Hai (202 Accepted)</a></li>
+          <li><a href="#guarantees">4. Delivery Guarantees — At-Most/At-Least/Exactly Once</a></li>
+          <li><a href="#idempotent">5. Idempotent Workers — Non-Negotiable</a></li>
+          <li><a href="#retries">6. Retries, Backoff, Aur DLQ</a></li>
+          <li><a href="#payload">7. Message Design — Kya Bhejein</a></li>
+          <li><a href="#outbox">8. Dual Write Problem Aur Outbox Pattern</a></li>
+          <li><a href="#ops">9. Production Concerns</a></li>
+          <li><a href="#takeaways">10. Key Takeaways</a></li>
+          <li><a href="#interview">11. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why">Problem — Sync Request Mein Kya Ghalat Ho Raha Hai</h2>
+      <p>Ch 8 ka order example yaad karo, par ab sab kuch sync mein:</p>
+
+      <div class="code-block">
+        <div class="code-title">❌ sab kuch request ke andar<button class="copy-btn">Copy</button></div>
+        <pre><code>app.<span class="tok-fn">post</span>(<span class="tok-str">"/orders"</span>, <span class="tok-kw">async</span> (req, res) =&gt; {
+  <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> db.orders.<span class="tok-fn">create</span>(…);        <span class="tok-com">//   20 ms  — asli kaam</span>
+
+  <span class="tok-kw">await</span> sendgrid.<span class="tok-fn">send</span>(confirmationEmail);         <span class="tok-com">//  800 ms  — user ko kya matlab?</span>
+  <span class="tok-kw">await</span> pdfService.<span class="tok-fn">generateInvoice</span>(order);        <span class="tok-com">// 2500 ms</span>
+  <span class="tok-kw">await</span> analytics.<span class="tok-fn">track</span>(<span class="tok-str">"order_created"</span>, order);   <span class="tok-com">//  300 ms</span>
+  <span class="tok-kw">await</span> warehouse.<span class="tok-fn">notify</span>(order);                  <span class="tok-com">// 1200 ms</span>
+
+  res.<span class="tok-fn">json</span>(order);                                 <span class="tok-com">// TOTAL: ~4.8 seconds</span>
+});
+</code></pre>
+      </div>
+
+      <p>Chaar alag problems, aur teesri sabse buri hai:</p>
+      <ul>
+        <li><strong>Latency</strong> — user 4.8 second baitha hai jabki uska asli kaam 20ms mein ho gaya tha.</li>
+        <li><strong>Resource waste</strong> — poore 4.8 second ek connection aur (ch 10 ka) pool slot bandha hai.</li>
+        <li><strong>Reliability ulta ho gaya</strong> — <em>SendGrid down hone se order fail ho raha hai.</em>
+        Ek non-critical dependency ne critical path ko todna shuru kar diya. Aur agar PDF step pe fail hua toh
+        order <em>ban chuka hai</em> par user ko error mila — wo retry karega aur duplicate order banega.</li>
+        <li><strong>Retry namumkin hai</strong> — email fail ho gayi toh usse dobara try karne ka koi mechanism
+        hi nahi hai. Wo permanently kho gayi.</li>
+      </ul>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Decision rule — kya sync rehna chahiye</div>
+        <p>
+          Ek hi sawaal poocho: <strong>"kya user ko is kaam ka result <em>abhi</em> chahiye, ya wo fail ho toh
+          poora operation invalid hai?"</strong> Haan → sync. Nahi → queue. Order create karna sync hai (user ko
+          order ID chahiye). Confirmation email async hai (30 second baad aaye toh kisi ko farq nahi padta).
+          Payment charge sync hai (fail hua toh order nahi banna chahiye). Invoice PDF async hai.
+        </p>
+      </div>
+
+      <h2 id="arch">Architecture — Producer, Broker, Worker</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Producer enqueues to a broker, workers consume, failures go to a dead letter queue">
+          <defs>
+            <marker id="q1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="24" y="60" width="150" height="72" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="99" y="82" class="ex-t-sm">API (producer)</text>
+          <text x="99" y="102" class="ex-t-sm">order banao — 20 ms</text>
+          <text x="99" y="120" class="ex-t-lbl">enqueue → turant return</text>
+
+          <path d="M176,96 C200,94 216,98 240,96" class="ex-stroke" marker-end="url(#q1)"/>
+          <text x="208" y="78" class="ex-t-lbl">push</text>
+
+          <rect x="242" y="46" width="220" height="100" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="352" y="68" class="ex-t">BROKER</text>
+          <text x="352" y="88" class="ex-t-sm">Redis / SQS / RabbitMQ / Kafka</text>
+          <rect x="262" y="100" width="36" height="26" rx="5" class="ex-stroke"/><text x="280" y="114" class="ex-t-sm">m1</text>
+          <rect x="304" y="100" width="36" height="26" rx="5" class="ex-stroke"/><text x="322" y="114" class="ex-t-sm">m2</text>
+          <rect x="346" y="100" width="36" height="26" rx="5" class="ex-stroke"/><text x="364" y="114" class="ex-t-sm">m3</text>
+          <rect x="388" y="100" width="56" height="26" rx="5" class="ex-stroke ex-stroke-d"/><text x="416" y="114" class="ex-t-sm">…</text>
+
+          <path d="M464,80 C490,76 506,72 530,68" class="ex-stroke" marker-end="url(#q1)"/>
+          <path d="M464,100 C490,100 506,100 530,100" class="ex-stroke" marker-end="url(#q1)"/>
+          <path d="M464,120 C490,124 506,128 530,132" class="ex-stroke" marker-end="url(#q1)"/>
+          <text x="498" y="150" class="ex-t-lbl">pull</text>
+
+          <rect x="532" y="50" width="204" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="634" y="70" class="ex-t-sm">worker 1</text>
+          <rect x="532" y="88" width="204" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="634" y="108" class="ex-t-sm">worker 2</text>
+          <rect x="532" y="126" width="204" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="634" y="146" class="ex-t-sm">worker 3 — alag process/machine</text>
+
+          <text x="634" y="184" class="ex-t-lbl">workers independently scale hote hain</text>
+          <text x="634" y="204" class="ex-t-sm">backlog bada? aur workers add kar do</text>
+
+          <!-- retry loop -->
+          <path d="M634,162 C700,200 700,240 640,254" class="ex-stroke ex-stroke-d" marker-end="url(#q1)"/>
+          <rect x="452" y="238" width="186" height="34" rx="8" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="545" y="258" class="ex-t-sm">fail → retry with backoff</text>
+          <path d="M452,254 C400,250 380,180 348,152" class="ex-stroke ex-stroke-d" marker-end="url(#q1)"/>
+          <text x="392" y="212" class="ex-t-lbl">wapas queue mein</text>
+
+          <path d="M545,274 C543,292 547,302 545,318" class="ex-stroke" marker-end="url(#q1)"/>
+          <rect x="440" y="320" width="210" height="52" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="545" y="340" class="ex-t-sm">DLQ — dead letter queue</text>
+          <text x="545" y="360" class="ex-t-lbl">N retries ke baad yahan</text>
+
+          <rect x="24" y="238" width="380" height="134" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="214" y="260" class="ex-t">Kya badla</text>
+          <text x="214" y="286" class="ex-t-sm">response time: 4.8 s  →  20 ms</text>
+          <text x="214" y="308" class="ex-t-sm">SendGrid down? order phir bhi banega</text>
+          <text x="214" y="330" class="ex-t-sm">email fail? apne aap retry hogi</text>
+          <text x="214" y="352" class="ex-t-lbl">par ab kaam "ho chuka" nahi, "hoga" hai</text>
+        </svg>
+        <figcaption>
+          Teen alag cheezein: <strong>producer</strong> (kaam banata hai), <strong>broker</strong> (kaam ko
+          durably rakhta hai), <strong>worker</strong> (kaam karta hai). Sabse important consequence sabse neeche
+          likha hai — kaam ab <em>guaranteed done</em> nahi, <em>eventually done</em> hai. Poora system design
+          isi shift ke around badalta hai.
+        </figcaption>
+      </figure>
+
+      <table>
+        <thead><tr><th>Broker</th><th>Kaisa hai</th><th>Kab</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Redis</strong> (BullMQ, Sidekiq)</td><td>Fast, simple, already tumhare stack mein (ch 11)</td><td>Zyadatar apps ke liye kaafi. Default choice</td></tr>
+          <tr><td><strong>SQS</strong></td><td>Managed, infinitely scalable, at-least-once</td><td>AWS pe ho aur infra manage nahi karna</td></tr>
+          <tr><td><strong>RabbitMQ</strong></td><td>Rich routing (exchanges, topics), mature</td><td>Complex routing rules chahiye</td></tr>
+          <tr><td><strong>Kafka</strong></td><td>Log hai, queue nahi — messages consume ke baad bhi rehte hain</td><td>Event streaming, replay, multiple independent consumers</td></tr>
+          <tr><td><strong>Postgres table</strong></td><td><code>SELECT … FOR UPDATE SKIP LOCKED</code></td><td>Chhota scale — ek kam moving part, aur transaction ke saath atomic (§8)</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="api">API Contract Badal Jaata Hai (202 Accepted)</h2>
+      <p>
+        Ye wo hissa hai jo log bhool jaate hain: async karne se <strong>API ka contract badalta hai</strong>.
+        Server ab ye nahi keh sakta "ho gaya" — wo keh sakta hai "le liya, hoga".
+      </p>
+      <div class="code-block">
+        <div class="code-title">202 pattern — ch 3 ka status code yahan kaam aata hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Long-running kaam ke liye (report generate, bulk import)</span>
+POST /reports
+→ <span class="tok-num">202</span> Accepted
+  Location: /jobs/job_8f3a2b            <span class="tok-com">// yahan status dekho</span>
+  { <span class="tok-str">"jobId"</span>: <span class="tok-str">"job_8f3a2b"</span>, <span class="tok-str">"status"</span>: <span class="tok-str">"queued"</span> }
+
+<span class="tok-com">// Client poll karta hai (ya WebSocket/SSE se push milta hai)</span>
+GET /jobs/job_8f3a2b
+→ { <span class="tok-str">"status"</span>: <span class="tok-str">"processing"</span>, <span class="tok-str">"progress"</span>: <span class="tok-num">40</span> }
+→ { <span class="tok-str">"status"</span>: <span class="tok-str">"completed"</span>, <span class="tok-str">"result"</span>: { <span class="tok-str">"url"</span>: <span class="tok-str">"/reports/xyz.pdf"</span> } }
+→ { <span class="tok-str">"status"</span>: <span class="tok-str">"failed"</span>,    <span class="tok-str">"error"</span>: <span class="tok-str">"source data unavailable"</span> }
+
+<span class="tok-com">// ⚠️ 200 OK bhejna jhooth hai — client samjhega kaam pura ho gaya (ch 3)</span>
+</code></pre>
+      </div>
+      <p>
+        Fire-and-forget kaam (email, analytics) ke liye job ID ki zaroorat nahi — bas <code>201</code> se order
+        return karo aur email chupchaap background mein chali jaaye. Job status endpoint sirf tab chahiye jab
+        <em>user ko result ka intezaar hai</em>.
+      </p>
+
+      <h2 id="guarantees">Delivery Guarantees — At-Most/At-Least/Exactly Once</h2>
+      <p>Ye distributed systems ka core concept hai, aur queue mein rozana dikhta hai:</p>
+      <table>
+        <thead><tr><th>Guarantee</th><th>Matlab</th><th>Risk</th><th>Kab</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>At-most-once</strong></td>
+            <td>Kaam se pehle message delete — 0 ya 1 baar chalega</td>
+            <td>Worker crash = kaam <strong>kho gaya</strong></td>
+            <td>Sirf jab kaam kho jaana acceptable ho (metrics ping)</td>
+          </tr>
+          <tr>
+            <td><strong>At-least-once</strong></td>
+            <td>Kaam ke <em>baad</em> ack — 1 ya zyada baar chalega</td>
+            <td><strong>Duplicates</strong></td>
+            <td>Practically har broker ka default. Yahi use karo</td>
+          </tr>
+          <tr>
+            <td><strong>Exactly-once</strong></td>
+            <td>Theek ek baar</td>
+            <td>Distributed system mein end-to-end <em>possible nahi</em></td>
+            <td>Jo log "exactly once" bolte hain wo actually at-least-once + idempotency hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ "Exactly once" ek marketing shabd hai</div>
+        <p>
+          Socho: worker ne kaam khatam kiya aur <em>ack bhejne se pehle</em> crash ho gaya. Broker ko kabhi pata
+          nahi chalega ki kaam hua tha — wo message dobara dega. Isse bachne ka koi tareeka nahi, kyunki "kaam
+          karna" aur "ack karna" do alag operations hain jo atomically nahi ho sakte (wo do alag systems mein
+          hain). Isliye asli engineering answer ye hai: <strong>at-least-once accept karo, aur worker ko
+          idempotent banao.</strong> Ye bilkul wahi logic hai jo ch 3/ch 9 ke idempotency key ka tha.
+        </p>
+      </div>
+
+      <h2 id="idempotent">Idempotent Workers — Non-Negotiable</h2>
+      <p>
+        Kyunki duplicates aayenge hi, har worker ko <strong>ek hi message do baar aane pe safe</strong> hona
+        chahiye. Teen practical tareeke:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">worker ko idempotent banane ke 3 tareeke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. Processed-IDs table (sabse general) ─────────────────</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">handleOrderCreated</span>(msg) {
+  <span class="tok-com">// message ID ko atomically claim karo — INSERT hi lock hai (ch 9 wala pattern)</span>
+  <span class="tok-kw">const</span> claimed = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(
+    <span class="tok-str">`INSERT INTO processed_messages (message_id, handler)
+     VALUES ($1, 'order_created') ON CONFLICT DO NOTHING RETURNING 1`</span>,
+    [msg.id]
+  );
+  <span class="tok-kw">if</span> (claimed.rowCount === <span class="tok-num">0</span>) <span class="tok-kw">return</span>;   <span class="tok-com">// pehle ho chuka — chupchaap chhod do</span>
+
+  <span class="tok-kw">await</span> <span class="tok-fn">sendEmail</span>(msg.data);
+}
+<span class="tok-com">// Table ko purani entries se saaf karte raho (7 din se purani delete).</span>
+
+<span class="tok-com">// ── 2. Naturally idempotent likho (sabse achha jab possible ho) ──</span>
+<span class="tok-com">// ❌ increment — dobara chala toh count galat</span>
+<span class="tok-kw">UPDATE</span> stats <span class="tok-kw">SET</span> views = views + <span class="tok-num">1</span> <span class="tok-kw">WHERE</span> id = <span class="tok-num">1</span>;
+<span class="tok-com">// ✅ absolute set — kitni baar bhi chalao, wahi state</span>
+<span class="tok-kw">UPDATE</span> orders <span class="tok-kw">SET</span> status = <span class="tok-str">'shipped'</span>, shipped_at = $<span class="tok-num">1</span> <span class="tok-kw">WHERE</span> id = $<span class="tok-num">2</span>;
+<span class="tok-com">// ✅ upsert</span>
+<span class="tok-kw">INSERT INTO</span> invoices (order_id, …) <span class="tok-kw">VALUES</span> (…)
+  <span class="tok-kw">ON CONFLICT</span> (order_id) <span class="tok-kw">DO UPDATE SET</span> …;
+
+<span class="tok-com">// ── 3. Downstream ki idempotency use karo ──────────────────</span>
+<span class="tok-kw">await</span> stripe.charges.<span class="tok-fn">create</span>(payload, {
+  idempotencyKey: <span class="tok-str">`order-${orderId}-charge`</span>   <span class="tok-com">// Stripe khud duplicate rok dega (ch 9)</span>
+});
+</code></pre>
+      </div>
+
+      <h2 id="retries">Retries, Backoff, Aur DLQ</h2>
+      <p>
+        Kaam fail hoga — network glitch, downstream 503, timeout. Par blindly retry karna cheezon ko
+        <em>bigaad</em> deta hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">retry policy — teen zaroori hisse<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. Transient vs permanent errors ko ALAG karo ──────────</span>
+<span class="tok-kw">try</span> {
+  <span class="tok-kw">await</span> <span class="tok-fn">processJob</span>(msg);
+} <span class="tok-kw">catch</span> (err) {
+  <span class="tok-kw">if</span> (err <span class="tok-kw">instanceof</span> ValidationError || err.status === <span class="tok-num">404</span>) {
+    <span class="tok-com">// PERMANENT — 100 retries se bhi theek nahi hoga. Seedha DLQ.</span>
+    <span class="tok-kw">await</span> <span class="tok-fn">moveToDLQ</span>(msg, err);
+    <span class="tok-kw">return</span>;
+  }
+  <span class="tok-kw">throw</span> err;   <span class="tok-com">// TRANSIENT (timeout, 503, connection reset) — retry karo</span>
+}
+
+<span class="tok-com">// ── 2. Exponential backoff + JITTER ────────────────────────</span>
+<span class="tok-kw">const</span> delay = Math.<span class="tok-fn">min</span>(
+  <span class="tok-num">1000</span> * <span class="tok-num">2</span> ** attempt,           <span class="tok-com">// 1s, 2s, 4s, 8s, 16s…</span>
+  <span class="tok-num">300_000</span>                        <span class="tok-com">// cap: 5 min</span>
+) * (<span class="tok-num">0.5</span> + Math.<span class="tok-fn">random</span>());        <span class="tok-com">// ← jitter</span>
+<span class="tok-com">// Jitter ke bina: 1000 jobs ek saath fail hue → sab exactly 1s baad ek saath</span>
+<span class="tok-com">// retry karenge → wahi thundering herd. Ch 11 ke cache jitter jaisa hi (ch 14).</span>
+
+<span class="tok-com">// ── 3. Max attempts, phir DLQ ──────────────────────────────</span>
+<span class="tok-kw">if</span> (attempt &gt;= <span class="tok-num">5</span>) <span class="tok-kw">await</span> <span class="tok-fn">moveToDLQ</span>(msg, err);
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ DLQ ek alert hai, ek storage nahi</div>
+        <p>
+          Dead letter queue = wo messages jo N attempts ke baad bhi fail hue. Ye <strong>silently jama nahi
+          hone chahiye</strong> — DLQ ki depth pe alert lagao (ch 16), warna 3 mahine baad pata chalta hai ki
+          40,000 emails kabhi gayi hi nahi. DLQ ka poora point ye hai ki tum message inspect karo, root cause
+          fix karo, aur phir usse <em>replay</em> karo. Isliye DLQ message ke saath original payload, error, aur
+          attempt count store karo.
+        </p>
+      </div>
+
+      <h2 id="payload">Message Design — Kya Bhejein</h2>
+      <div class="code-block">
+        <div class="code-title">accha message<button class="copy-btn">Copy</button></div>
+        <pre><code>{
+  <span class="tok-str">"id"</span>:      <span class="tok-str">"msg_01HQ8Z3M"</span>,        <span class="tok-com">// idempotency ke liye zaroori</span>
+  <span class="tok-str">"type"</span>:    <span class="tok-str">"order.created"</span>,
+  <span class="tok-str">"version"</span>: <span class="tok-num">1</span>,                       <span class="tok-com">// schema evolution (ch 5)</span>
+  <span class="tok-str">"data"</span>:    { <span class="tok-str">"orderId"</span>: <span class="tok-str">"99"</span> },     <span class="tok-com">// ← sirf ID, poora object NAHI</span>
+  <span class="tok-str">"meta"</span>: {
+    <span class="tok-str">"requestId"</span>: <span class="tok-str">"req_8f3a"</span>,       <span class="tok-com">// trace jodne ke liye (ch 8, ch 16)</span>
+    <span class="tok-str">"createdAt"</span>: <span class="tok-str">"2026-08-17T09:14:22Z"</span>
+  }
+}
+</code></pre>
+      </div>
+      <p>
+        <strong>ID bhejo, poora object nahi</strong> — kyunki message queue mein 30 second (ya retry ke baad 10
+        minute) pada rah sakta hai, aur tab tak data badal chuka hoga. Worker ko hamesha <em>current</em> state
+        chahiye, snapshot nahi. Exception: agar tumhe deliberately us waqt ka snapshot chahiye (audit log,
+        historical email content), tab data embed karo — par wo ek conscious decision ho.
+      </p>
+      <p>
+        Aur ch 7 ka rule yahan bhi: <strong>worker mein message ko validate karo</strong>. Producer deploy ho
+        chuka hai naye format ke saath, par queue mein purane format ke messages pade hain — ye normal hai, bug
+        nahi.
+      </p>
+
+      <h2 id="outbox">Dual Write Problem Aur Outbox Pattern</h2>
+      <p>
+        Ek subtle par important bug. Tum DB mein likhte ho <em>aur</em> queue mein push karte ho — do alag
+        systems. Beech mein crash hua toh?
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">dual write — dono taraf toot-ta hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Order A</span>
+<span class="tok-kw">await</span> db.orders.<span class="tok-fn">create</span>(order);      <span class="tok-com">// ✅ commit ho gaya</span>
+<span class="tok-com">// 💥 process crash</span>
+<span class="tok-kw">await</span> queue.<span class="tok-fn">push</span>(<span class="tok-str">"order.created"</span>);   <span class="tok-com">// ❌ kabhi nahi chala</span>
+<span class="tok-com">// → order exist karta hai, par email/invoice kabhi nahi honge. SILENT loss.</span>
+
+<span class="tok-com">// ❌ Order B (ulta karo toh ulta bug)</span>
+<span class="tok-kw">await</span> queue.<span class="tok-fn">push</span>(<span class="tok-str">"order.created"</span>);   <span class="tok-com">// ✅ push ho gaya</span>
+<span class="tok-kw">await</span> db.orders.<span class="tok-fn">create</span>(order);      <span class="tok-com">// ❌ transaction fail</span>
+<span class="tok-com">// → worker ek aise order ko process karega jo exist hi nahi karta</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">✅ Outbox pattern — ek hi transaction<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Insight: message ko USI DATABASE mein likho, usi transaction mein.</span>
+<span class="tok-com">// Ab do systems nahi rahe — atomicity DB se free mein mil gayi.</span>
+<span class="tok-kw">await</span> db.<span class="tok-fn">transaction</span>(<span class="tok-kw">async</span> (tx) =&gt; {
+  <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> tx.orders.<span class="tok-fn">create</span>(data);
+  <span class="tok-kw">await</span> tx.outbox.<span class="tok-fn">insert</span>({                  <span class="tok-com">// ← ek SAADI table</span>
+    id: <span class="tok-fn">ulid</span>(), type: <span class="tok-str">"order.created"</span>,
+    payload: { orderId: order.id }, status: <span class="tok-str">"pending"</span>,
+  });
+});
+<span class="tok-com">// Dono commit honge ya dono nahi. Beech ki koi state hai hi nahi.</span>
+
+<span class="tok-com">// Ek alag relay process outbox se padh ke broker pe bhejta hai</span>
+<span class="tok-kw">const</span> rows = <span class="tok-kw">await</span> db.<span class="tok-fn">query</span>(
+  <span class="tok-str">`SELECT * FROM outbox WHERE status = 'pending'
+   ORDER BY id LIMIT 100
+   FOR UPDATE SKIP LOCKED`</span>            <span class="tok-com">// ← kai relay instances safely chal sakte hain</span>
+);
+<span class="tok-kw">for</span> (<span class="tok-kw">const</span> r <span class="tok-kw">of</span> rows) {
+  <span class="tok-kw">await</span> broker.<span class="tok-fn">publish</span>(r);
+  <span class="tok-kw">await</span> db.outbox.<span class="tok-fn">markSent</span>(r.id);
+}
+<span class="tok-com">// Relay crash hua publish ke BAAD, markSent se PEHLE? → duplicate.</span>
+<span class="tok-com">// Isliye at-least-once hai — aur isiliye worker idempotent hona zaroori hai (§5).</span>
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 <code>SKIP LOCKED</code> — ek chhota par powerful Postgres feature</div>
+        <p>
+          <code>FOR UPDATE SKIP LOCKED</code> kehta hai: "jo rows already kisi aur ne lock ki hain, unhe chhod
+          do aur aage badho". Isse kai workers ek hi table se bina ek doosre ko block kiye kaam utha sakte hain
+          — matlab tum <strong>Postgres ko hi ek queue ki tarah</strong> use kar sakte ho. Chhote aur medium
+          scale pe ye ek genuinely accha option hai: ek kam infrastructure component, aur outbox atomicity free
+          mein.
+        </p>
+      </div>
+
+      <h2 id="ops">Production Concerns</h2>
+      <table>
+        <thead><tr><th>Concern</th><th>Kya karna hai</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Backlog monitoring</strong></td><td>Queue depth aur <em>oldest message age</em> — dono. Depth 100 par age 2 ghante = workers atke hue hain (ch 16)</td></tr>
+          <tr><td><strong>Visibility timeout</strong></td><td>Worker ne message uthaya par crash ho gaya — broker use timeout ke baad dobara deta hai. Timeout job ke max duration se lamba rakho, warna do workers ek saath chalayenge</td></tr>
+          <tr><td><strong>Poison message</strong></td><td>Ek message jo har worker ko crash karta hai — wo baar-baar redeliver hota rahega. Max attempts + DLQ isse rokta hai</td></tr>
+          <tr><td><strong>Ordering</strong></td><td>Zyadatar queues order guarantee nahi karti (parallel workers!). Order chahiye toh partition key (Kafka) ya FIFO queue — par tab throughput girta hai</td></tr>
+          <tr><td><strong>Priority</strong></td><td>Alag queues banao (<code>critical</code>, <code>default</code>, <code>bulk</code>) — ek queue mein priority sorting aksar buggy hoti hai</td></tr>
+          <tr><td><strong>Graceful shutdown</strong></td><td>SIGTERM pe naya message mat lo, chalu wale ko poora karo, phir exit (ch 17)</td></tr>
+          <tr><td><strong>Long jobs</strong></td><td>Ek 2-ghante ka job ek worker ko block karta hai. Usse chhote chunks mein todo taaki progress bache aur retry sasta ho</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Queue ka idea: kaam ko <strong>time mein aage dhakelna</strong>, request se decouple karna.</li>
+        <li>Sync mein rakhne ka test: <em>"user ko result abhi chahiye, ya fail hone pe poora operation invalid hai?"</em></li>
+        <li>Sabse bada faayda latency nahi — <strong>reliability</strong>: non-critical dependency (SendGrid) ab critical path ko nahi tod sakti.</li>
+        <li>Teen hisse: producer, broker, worker. Workers independently scale hote hain.</li>
+        <li>Async karne se <strong>API contract badalta hai</strong> — <code>202 Accepted</code> + job status endpoint, <code>200</code> nahi.</li>
+        <li><strong>Exactly-once possible nahi hai</strong> (ack aur kaam atomically nahi ho sakte). Asli answer: at-least-once + idempotent worker.</li>
+        <li>Idempotency ke 3 tareeke: processed-IDs table (<code>ON CONFLICT DO NOTHING</code>), naturally idempotent operations (absolute set/upsert, increment nahi), ya downstream ki idempotency key.</li>
+        <li>Retries mein <strong>transient aur permanent errors alag karo</strong> — validation error 100 baar retry karke bhi pass nahi hogi.</li>
+        <li>Exponential backoff <strong>+ jitter</strong> — bina jitter ke ek saath fail hue jobs ek saath retry karte hain (thundering herd).</li>
+        <li><strong>DLQ ek alert hai, storage nahi</strong> — uski depth pe monitoring lagao aur replay ka raasta rakho.</li>
+        <li>Message mein <strong>ID bhejo, poora object nahi</strong> — queue mein pade-pade data badal jaata hai.</li>
+        <li>Worker mein message ko validate karo — purane format ke messages queue mein padey hona normal hai.</li>
+        <li><strong>Dual write problem</strong>: DB + queue do alag systems hain, beech mein crash = silent loss. Fix <strong>outbox pattern</strong> — message usi DB transaction mein likho, ek relay usse broker pe bheje.</li>
+        <li><code>FOR UPDATE SKIP LOCKED</code> se Postgres khud ek accha queue ban jaata hai — chhote/medium scale pe ek kam moving part.</li>
+        <li>Monitor karo: queue depth <em>aur</em> oldest message age — dono.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Kaunsa kaam queue mein daaloge aur kaunsa sync rakhoge?"</div>
+        <p>
+          Test: kya user ko result abhi chahiye, ya fail hone pe poora operation invalid hai? Order create aur
+          payment charge sync (user ko order ID chahiye, charge fail = order nahi banna chahiye). Confirmation
+          email, invoice PDF, analytics, warehouse notification async. Asli argument latency nahi hai —
+          <strong>reliability</strong> hai: sync rakhne ka matlab SendGrid ka downtime tumhare order flow ka
+          downtime ban jaata hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Exactly-once delivery kaise achieve karoge?"</div>
+        <p>
+          End-to-end nahi kar sakte — worker kaam karke ack se pehle crash ho sakta hai, aur broker ko farq pata
+          nahi chalega, toh wo redeliver karega. "Kaam karna" aur "ack karna" do alag systems mein hain, atomically
+          nahi ho sakte. Isliye practical answer: <strong>at-least-once delivery + idempotent processing</strong>
+          — processed-message-IDs table, ya naturally idempotent operations (absolute set/upsert), ya downstream
+          idempotency key (Stripe).
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "DB mein order banaya aur queue mein push kiya — beech mein crash. Kya hoga?"</div>
+        <p>
+          Dual write problem. Order commit ho gaya par message nahi gaya → email/invoice kabhi nahi honge, aur
+          koi error bhi nahi dikhega. Ulta order karo toh worker ek non-existent order process karega. Fix:
+          <strong>outbox pattern</strong> — message ko usi DB transaction mein ek <code>outbox</code> table mein
+          likho, taaki dono ek saath commit hon; ek alag relay process
+          <code>FOR UPDATE SKIP LOCKED</code> se rows uthake broker pe bheje. Relay publish ke baad crash ho
+          sakta hai, isliye ye at-least-once hai — worker idempotent hona chahiye.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Job baar-baar fail ho raha hai. Retry strategy?"</div>
+        <p>
+          Pehle error classify karo: permanent (validation error, 404, malformed payload) → seedha DLQ, retry
+          bekaar hai. Transient (timeout, 503, connection reset) → retry with <strong>exponential backoff +
+          jitter</strong>, cap ke saath. Jitter zaroori hai warna ek saath fail hue 1000 jobs ek saath retry
+          karke thundering herd banayenge. Max ~5 attempts ke baad DLQ, aur DLQ depth pe alert — wo inspect,
+          fix, aur replay ke liye hai, silently jama hone ke liye nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Message mein poora object bhejoge ya sirf ID?"</div>
+        <p>
+          Default <strong>sirf ID</strong> — message queue mein seconds se minutes tak pada rah sakta hai (aur
+          retry ke baad aur zyada), tab tak data badal chuka hoga; worker ko current state chahiye. Exception:
+          jab tumhe deliberately us waqt ka snapshot chahiye (audit trail, email ka exact content) — tab embed
+          karo, par consciously. Saath mein message ID (idempotency), version (schema evolution), aur requestId
+          (tracing) hamesha rakho.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="13-full-text-search.html"><strong>Chapter 13 — Full-Text Search</strong></a>: ch 10 mein
+          dekha tha ki <code>LIKE '%query%'</code> index use nahi kar sakta. Toh search actually kaam kaise
+          karta hai — inverted index, analyzers, aur relevance scoring.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

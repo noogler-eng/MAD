@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serialization & Deserialization — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link active" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 5</div>
+      <div class="progress-pill">5 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Wire Format · JSON · Protobuf · Schema Evolution</span>
+      <h1>Serialization & Deserialization</h1>
+      <p class="subtitle">
+        Handler mil gaya (ch 4), par body abhi bhi ek <strong>byte buffer</strong> hai. Network sirf bytes
+        bhej sakta hai — objects, pointers, aur classes usme exist hi nahi karte. Serialization wo translation
+        layer hai jo memory ke structured object ko flat bytes banati hai, aur deserialization ulta karti hai.
+        Ye chapter batata hai ki us translation mein <em>kya kho jaata hai</em> — kyunki asli bugs wahin
+        paida hote hain.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 7 —
+        <a href="https://www.youtube.com/watch?v=vzg90tY3uM0">Serialization and Deserialization for backend engineers</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#why">1. Problem — Memory Object Network Pe Nahi Ja Sakta</a></li>
+          <li><a href="#flow">2. Poora Round Trip (Diagram)</a></li>
+          <li><a href="#json">3. JSON — Default Kyun Hai, Aur Isme Kya Nahi Hai</a></li>
+          <li><a href="#pitfalls">4. JSON Ke Chaar Classic Data-Loss Bugs</a></li>
+          <li><a href="#binary">5. Binary Formats — Protobuf Ka Mechanism</a></li>
+          <li><a href="#compare">6. Format Choose Kaise Karein</a></li>
+          <li><a href="#evolution">7. Schema Evolution — Purane Clients Ko Kaise Na Todein</a></li>
+          <li><a href="#security">8. Deserialization Ek Attack Surface Hai</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="why">Problem — Memory Object Network Pe Nahi Ja Sakta</h2>
+      <p>
+        Tumhare paas ek object hai. RAM mein wo kya hai? Ek memory address pe kuch bytes, jinme
+        <strong>pointers</strong> hain doosre addresses ki taraf, ek type/class ka reference hai, aur layout
+        tumhare language runtime ne decide kiya hai. Ye teeno cheezein us process ke bahar <em>bekaar</em>
+        hain:
+      </p>
+      <ul>
+        <li><strong>Pointer</strong> ek address hai <em>is process ke</em> memory space mein. Doosri machine pe
+        wo address kisi aur cheez ko point karega ya crash karega.</li>
+        <li><strong>Type information</strong> language-specific hai. Python ka <code>dict</code> Go ke
+        <code>map</code> jaisa memory mein bilkul nahi dikhta.</li>
+        <li><strong>Layout</strong> compiler/runtime, architecture, aur padding pe depend karta hai.</li>
+      </ul>
+      <p>
+        Toh network pe kuch bhejne ke liye object ko ek aisi cheez mein badalna padta hai jo
+        <strong>self-contained, flat, aur language-neutral</strong> ho — matlab bytes ka ek aisa sequence
+        jisme saari zaroori information <em>andar</em> ho, kisi external memory reference pe depend na kare.
+        Yahi <strong>serialization</strong> hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Ye sirf network ke liye nahi hai</div>
+        <p>
+          Wahi problem har jagah aati hai jahan data process ki memory se bahar jaata hai — file mein likhna,
+          Redis mein cache karna (ch 11), queue mein message daalna (ch 12), DB mein JSONB column. Sab jagah
+          serialization hi hai. Isliye ye concept ek baar theek se samajh lo, poore stack mein kaam aata hai.
+        </p>
+      </div>
+
+      <h2 id="flow">Poora Round Trip</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Object to bytes on the wire and back to object">
+          <defs>
+            <marker id="sz1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="120" y="20" class="ex-t">Client process</text>
+          <text x="620" y="20" class="ex-t">Server process</text>
+
+          <rect x="30" y="40" width="180" height="72" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="120" y="62" class="ex-t-sm">JS object (RAM)</text>
+          <text x="120" y="82" class="ex-t-sm">{ name: "Sharad",</text>
+          <text x="120" y="100" class="ex-t-sm">&#160; age: 26 }</text>
+
+          <path d="M120,116 C118,134 122,146 120,164" class="ex-stroke ex-stroke-b" marker-end="url(#sz1)"/>
+          <text x="196" y="142" class="ex-t-lbl">serialize</text>
+
+          <rect x="30" y="166" width="180" height="52" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="120" y="185" class="ex-t-sm">bytes</text>
+          <text x="120" y="205" class="ex-t-sm">7b 22 6e 61 6d 65 22 …</text>
+
+          <path d="M214,192 C330,190 400,194 516,192" class="ex-stroke" marker-end="url(#sz1)"/>
+          <text x="366" y="172" class="ex-t-lbl">TCP — sirf bytes jaate hain</text>
+          <text x="366" y="216" class="ex-t-sm">Content-Type: application/json</text>
+          <text x="366" y="236" class="ex-t-sm">Content-Length: 30</text>
+
+          <rect x="520" y="166" width="180" height="52" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="610" y="185" class="ex-t-sm">bytes</text>
+          <text x="610" y="205" class="ex-t-sm">wahi 30 bytes</text>
+
+          <path d="M610,164 C608,146 612,134 610,116" class="ex-stroke ex-stroke-p" marker-end="url(#sz1)"/>
+          <text x="686" y="142" class="ex-t-lbl">deserialize</text>
+
+          <rect x="520" y="40" width="180" height="72" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="610" y="62" class="ex-t-sm">Python dict (RAM)</text>
+          <text x="610" y="82" class="ex-t-sm">{"name": "Sharad",</text>
+          <text x="610" y="100" class="ex-t-sm">&#160;"age": 26}</text>
+
+          <rect x="248" y="278" width="244" height="102" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="370" y="300" class="ex-t-lbl">Jo translation mein KHO jaata hai</text>
+          <text x="370" y="324" class="ex-t-sm">pointers · class identity · methods</text>
+          <text x="370" y="344" class="ex-t-sm">int vs float ka farq · precision</text>
+          <text x="370" y="364" class="ex-t-sm">Date, Set, Map, undefined, NaN</text>
+
+          <text x="120" y="300" class="ex-t-sm">bhejne wale ka</text>
+          <text x="120" y="320" class="ex-t-sm">language koi bhi ho —</text>
+          <text x="120" y="340" class="ex-t-lbl">bytes universal hain</text>
+
+          <text x="620" y="300" class="ex-t-sm">receiver bytes ko apne</text>
+          <text x="620" y="320" class="ex-t-sm">language ke types mein</text>
+          <text x="620" y="340" class="ex-t-lbl">dobara banata hai</text>
+        </svg>
+        <figcaption>
+          Note karo — dono taraf ke objects <strong>alag-alag cheezein</strong> hain, wahi object nahi. Beech
+          mein sirf bytes gaye. Jo cheez wire format mein represent nahi ho sakti, wo chupchaap kho jaati hai
+          — aur wahi baad mein bug banti hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="json">JSON — Default Kyun Hai, Aur Isme Kya Nahi Hai</h2>
+      <p>
+        JSON aaj web APIs ka default hai. Iske jeetne ki wajah technical superiority nahi hai —
+        <strong>simplicity</strong> hai. Insaan padh sakta hai, har language mein built-in support hai, browser
+        mein native hai, aur debugging trivial hai (<code>curl</code> ka output seedha samajh aata hai).
+      </p>
+      <p>
+        Par iske types <em>bahut</em> kam hain. JSON mein sirf ye exist karte hain:
+      </p>
+      <ul>
+        <li><code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code></li>
+        <li><code>object</code> (string keys), <code>array</code></li>
+      </ul>
+      <p>
+        Bas. <strong>Koi date nahi. Koi integer/float ka farq nahi. Koi binary nahi. Koi comment nahi.</strong>
+        Har baaki cheez ek convention hai jo tumne ya tumhari library ne upar se chipkayi hai — aur convention
+        dono taraf match na kare toh data chupchaap galat ho jaata hai.
+      </p>
+
+      <h2 id="pitfalls">JSON Ke Chaar Classic Data-Loss Bugs</h2>
+
+      <h3>1. Large integers — precision chupchaap khatam</h3>
+      <p>
+        JSON ka <code>number</code> spec mein precision-less hai, par har JS parser use IEEE-754 double
+        banata hai. Double sirf <code>2^53 - 1</code> tak integers exactly rakh sakta hai. Uske aage bits kho
+        jaate hain — <em>bina kisi error ke</em>.
+      </p>
+      <div class="code-block">
+        <div class="code-title">precision loss — koi exception nahi aata<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Server ne bheja: {"orderId": 9007199254740993}</span>
+JSON.<span class="tok-fn">parse</span>(<span class="tok-str">'{"orderId": 9007199254740993}'</span>).orderId
+<span class="tok-com">// → 9007199254740992   ← last digit BADAL gaya. Silently.</span>
+
+<span class="tok-com">// Ye Twitter ke saath actually hua tha — tweet IDs 2^53 cross kar gaye</span>
+<span class="tok-com">// aur JS clients galat tweet fetch karne lage. Fix: id_str field add kiya.</span>
+
+<span class="tok-com">// ✅ Rule: 64-bit IDs, paise ke amounts, aur bade counters STRING mein bhejo</span>
+{ <span class="tok-str">"orderId"</span>: <span class="tok-str">"9007199254740993"</span>, <span class="tok-str">"amountPaise"</span>: <span class="tok-str">"1999900"</span> }
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Fintech mein ye sabse mehnga bug hai</div>
+        <p>
+          Paisa kabhi float mein mat rakho — na JSON mein, na DB mein, na code mein. <code>0.1 + 0.2</code>
+          binary floating point mein <code>0.30000000000000004</code> hota hai. Standard practice:
+          <strong>smallest unit mein integer</strong> (rupaye nahi, paise) aur JSON mein string. DB mein
+          <code>NUMERIC</code>/<code>DECIMAL</code>, kabhi <code>FLOAT</code> nahi (ch 10).
+        </p>
+      </div>
+
+      <h3>2. Dates — koi type hai hi nahi</h3>
+      <div class="code-block">
+        <div class="code-title">date round-trip toot jaata hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// JS: Date object → JSON</span>
+JSON.<span class="tok-fn">stringify</span>({ createdAt: <span class="tok-kw">new</span> <span class="tok-fn">Date</span>() })
+<span class="tok-com">// → {"createdAt":"2026-08-17T09:14:22.000Z"}   ← ab ye ek STRING hai</span>
+
+<span class="tok-com">// wapas parse karo:</span>
+JSON.<span class="tok-fn">parse</span>(s).createdAt <span class="tok-kw">instanceof</span> Date   <span class="tok-com">// → false. String hi rahega.</span>
+<span class="tok-com">// createdAt &gt; someDate → string comparison chalegi, date comparison nahi</span>
+
+<span class="tok-com">// ✅ Convention: hamesha ISO 8601 in UTC, aur receiving side pe explicitly parse karo</span>
+<span class="tok-com">// ❌ Kabhi mat bhejo: "17/08/2026" (DD/MM ya MM/DD? ambiguous)</span>
+<span class="tok-com">// ❌ Kabhi mat bhejo: local time bina timezone ke</span>
+</code></pre>
+      </div>
+
+      <h3>3. <code>undefined</code> vs <code>null</code> vs missing — teen alag cheezein</h3>
+      <div class="code-block">
+        <div class="code-title">PATCH mein ye farq critical ho jaata hai<button class="copy-btn">Copy</button></div>
+        <pre><code>JSON.<span class="tok-fn">stringify</span>({ a: <span class="tok-num">1</span>, b: <span class="tok-kw">undefined</span>, c: <span class="tok-kw">null</span> })
+<span class="tok-com">// → {"a":1,"c":null}     ← b poori tarah GAYAB ho gaya</span>
+
+<span class="tok-com">// PATCH /users/42 mein teen alag intents hain:</span>
+{ <span class="tok-str">"nickname"</span>: <span class="tok-str">"sharad"</span> }  <span class="tok-com">// → is field ko set karo</span>
+{ <span class="tok-str">"nickname"</span>: <span class="tok-kw">null</span> }      <span class="tok-com">// → is field ko KHAALI karo</span>
+{ }                          <span class="tok-com">// → is field ko HAATH MAT LAGAO</span>
+
+<span class="tok-com">// Agar tumhara code null aur missing ko same treat karta hai,</span>
+<span class="tok-com">// toh user kabhi field clear nahi kar payega — ya galti se clear ho jayega.</span>
+</code></pre>
+      </div>
+
+      <h3>4. Key order aur duplicate keys — undefined behaviour</h3>
+      <p>
+        JSON objects mein key order spec ke hisaab se <em>meaningless</em> hai, aur duplicate keys ka behaviour
+        parser-specific hai (zyadatar last-wins, kuch first-wins). Isliye JSON string ka hash lekar signature
+        verify karna ek classic bug hai — dono taraf key order alag ho sakta hai. Signing ke liye
+        <strong>canonical JSON</strong> chahiye (keys sorted, whitespace fixed), ya better: raw bytes pe
+        signature lo, parsed object pe nahi.
+      </p>
+
+      <h2 id="binary">Binary Formats — Protobuf Ka Mechanism</h2>
+      <p>
+        JSON har field ka naam <em>har message mein</em> repeat karta hai. 10,000 records ka array bhejo, toh
+        <code>"createdAt"</code> 10,000 baar wire pe jaata hai. Binary formats is redundancy ko hatate hain —
+        <strong>schema dono taraf pehle se hai</strong>, isliye wire pe sirf values jaati hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">user.proto — schema pehle define hota hai<button class="copy-btn">Copy</button></div>
+        <pre><code>syntax = <span class="tok-str">"proto3"</span>;
+
+message User {
+  <span class="tok-com">// har field ka ek NUMBER hai — yahi wire pe jaata hai, naam nahi</span>
+  string name  = <span class="tok-num">1</span>;   <span class="tok-com">// field tag 1</span>
+  int32  age   = <span class="tok-num">2</span>;   <span class="tok-com">// field tag 2</span>
+  string email = <span class="tok-num">3</span>;   <span class="tok-com">// field tag 3</span>
+}
+<span class="tok-com">// Is file se compiler har language ke liye classes generate karta hai —</span>
+<span class="tok-com">// Go struct, Python class, TS interface. Ek hi source of truth.</span>
+</code></pre>
+      </div>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="JSON wire bytes versus protobuf tag-length-value encoding">
+          <text x="180" y="20" class="ex-t">JSON — 46 bytes</text>
+          <text x="552" y="20" class="ex-t">Protobuf — 20 bytes</text>
+          <path d="M366,32 C370,140 362,240 366,312" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="24" y="40" width="316" height="62" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="182" y="62" class="ex-t-sm">{"name":"Sharad","age":26,</text>
+          <text x="182" y="82" class="ex-t-sm">&#160;"email":"s@x.com"}</text>
+
+          <text x="182" y="126" class="ex-t-lbl">field ke NAAM wire pe jaate hain</text>
+          <text x="182" y="150" class="ex-t-sm">"name" "age" "email" — har message mein</text>
+          <text x="182" y="170" class="ex-t-sm">quotes, colons, braces bhi bytes hain</text>
+
+          <text x="182" y="212" class="ex-t-lbl">✅ insaan padh sakta hai</text>
+          <text x="182" y="234" class="ex-t-lbl">✅ schema ki zaroorat nahi</text>
+          <text x="182" y="256" class="ex-t-sm">❌ bada payload</text>
+          <text x="182" y="276" class="ex-t-sm">❌ parse slow (text scanning)</text>
+          <text x="182" y="296" class="ex-t-sm">❌ types weak</text>
+
+          <rect x="392" y="40" width="316" height="62" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="550" y="62" class="ex-t-sm">0a 06 53 68 61 72 61 64</text>
+          <text x="550" y="82" class="ex-t-sm">10 1a  1a 07 73 40 78 …</text>
+
+          <text x="550" y="126" class="ex-t-lbl">tag → length → value</text>
+          <text x="550" y="150" class="ex-t-sm">0a = field 1, type string · 06 = 6 bytes</text>
+          <text x="550" y="170" class="ex-t-sm">10 = field 2, varint  · 1a = 26</text>
+
+          <text x="550" y="212" class="ex-t-lbl">✅ ~50–70% chhota</text>
+          <text x="550" y="234" class="ex-t-lbl">✅ parse fast, types strong</text>
+          <text x="550" y="256" class="ex-t-sm">❌ schema ke bina bekaar bytes</text>
+          <text x="550" y="276" class="ex-t-sm">❌ curl se debug nahi hota</text>
+          <text x="550" y="296" class="ex-t-sm">❌ build step chahiye</text>
+        </svg>
+        <figcaption>
+          Protobuf field <em>naam</em> nahi, field <em>number</em> bhejta hai — isiliye
+          <code>.proto</code> file dono taraf honi zaroori hai. Yahi trade hai: <strong>size aur speed ke badle
+          debuggability aur flexibility.</strong>
+        </figcaption>
+      </figure>
+
+      <h2 id="compare">Format Choose Kaise Karein</h2>
+      <table>
+        <thead><tr><th>Format</th><th>Kab use karo</th><th>Kab mat karo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>JSON</strong></td>
+            <td>Public APIs, browser clients, webhooks, config, logs — jahan bhi human debuggability chahiye</td>
+            <td>Bahut high throughput internal traffic; binary data</td>
+          </tr>
+          <tr>
+            <td><strong>Protobuf / gRPC</strong></td>
+            <td>Internal service-to-service calls, high volume, strong contracts, polyglot teams</td>
+            <td>Browser se seedha (proxy chahiye); public API jahan clients tumhare control mein nahi</td>
+          </tr>
+          <tr>
+            <td><strong>MessagePack / CBOR</strong></td>
+            <td>JSON ka data model chahiye par chhota payload — schema ke bina</td>
+            <td>Jahan human-readable hona chahiye</td>
+          </tr>
+          <tr>
+            <td><strong>Avro</strong></td>
+            <td>Data pipelines, Kafka — schema registry ke saath, strong evolution rules</td>
+            <td>Simple request/response APIs</td>
+          </tr>
+          <tr>
+            <td><strong>multipart/form-data</strong></td>
+            <td>File uploads — binary + metadata ek saath</td>
+            <td>Normal structured payloads</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical default</div>
+        <p>
+          <strong>JSON se shuru karo.</strong> Jab tak tum measure na kar lo ki serialization actually tumhara
+          bottleneck hai, protobuf ka build-step, tooling, aur debugging cost faayde se zyada hai. Zyadatar
+          apps mein latency DB queries aur network round-trips se aati hai (ch 10, 19), payload size se nahi.
+          Premature binary format ek classic over-engineering hai.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Binary data JSON mein — base64 ka cost</div>
+        <p>
+          JSON mein raw bytes ja hi nahi sakte, toh log base64 use karte hain. Cost:
+          <strong>~33% size badh jaata hai</strong> plus encode/decode ka CPU. Chhoti cheezon ke liye theek hai;
+          images/files ke liye galat design hai. Behtar: file ko object storage (S3) pe daalo aur JSON mein
+          sirf <em>URL</em> bhejo — ya upload ke liye <code>multipart/form-data</code> use karo.
+        </p>
+      </div>
+
+      <h2 id="evolution">Schema Evolution — Purane Clients Ko Kaise Na Todein</h2>
+      <p>
+        Real system mein client aur server kabhi ek saath deploy nahi hote. Mobile app ka purana version mahine
+        tak chalta rehta hai. Isliye har format change ka ek hi sawaal hai: <strong>kya purana code naya data
+        padh sakta hai, aur naya code purana data?</strong>
+      </p>
+      <table>
+        <thead><tr><th>Change</th><th>Safe?</th><th>Kyun</th></tr></thead>
+        <tbody>
+          <tr><td>Naya <em>optional</em> field add karna</td><td>✅</td><td>Purane clients use ignore kar dete hain</td></tr>
+          <tr><td>Naya <em>required</em> field add karna</td><td>❌</td><td>Purane clients wo bhejte hi nahi → server reject karega</td></tr>
+          <tr><td>Field <em>hatana</em></td><td>❌</td><td>Purane clients abhi bhi usko expect kar rahe hain</td></tr>
+          <tr><td>Field ka naam badalna</td><td>❌</td><td>Ye "hatao + add karo" hai — dono taraf toot-ta hai</td></tr>
+          <tr><td>Type badalna (<code>int</code> → <code>string</code>)</td><td>❌</td><td>Parse fail ya silent coercion</td></tr>
+          <tr><td>Enum mein nayi value add karna</td><td>⚠️</td><td>Tabhi safe jab clients unknown values handle karte hon</td></tr>
+          <tr><td>Protobuf mein field <em>number</em> reuse karna</td><td>❌❌</td><td>Purana data naye field ki tarah parse hoga — silent corruption</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Isliye safe migration hamesha <strong>teen steps</strong> mein hoti hai — kabhi ek mein nahi:
+        (1) naya field <em>add</em> karo, dono likhо/padho; (2) saare clients ko naye field pe shift hone do;
+        (3) tab purana field hatao. Protobuf mein hatane par field number ko <code>reserved</code> mark karo
+        taaki koi galti se reuse na kare.
+      </p>
+
+      <h2 id="security">Deserialization Ek Attack Surface Hai</h2>
+      <p>
+        Deserialization ka matlab hai <strong>untrusted bytes ko apne process ke andar object banana</strong> —
+        ye definition se hi khatarnaak hai. Teen concrete risks:
+      </p>
+      <ul>
+        <li><strong>Unbounded size</strong> — 500 MB ka JSON body memory mein parse karne ki koshish server ko
+        OOM kar deti hai. Fix: body size limit lagao (nginx ka <code>client_max_body_size</code> aur app-level
+        dono).</li>
+        <li><strong>Deep nesting</strong> — 100,000 nested arrays parser ko stack overflow kar sakte hain.
+        Fix: depth limit.</li>
+        <li><strong>Unsafe deserializers</strong> — Python ka <code>pickle</code>, Java ki native
+        serialization, PHP ka <code>unserialize()</code> deserialize karte waqt <em>code execute</em> kar sakte
+        hain. Untrusted input pe inhe kabhi mat chalao. JSON is maamle mein safe hai — wo sirf data describe
+        karta hai, behaviour nahi.</li>
+      </ul>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Deserialize ≠ validate</div>
+        <p>
+          <code>JSON.parse()</code> safal hone ka matlab sirf itna hai ki <em>syntax</em> theek tha. Uske baad
+          bhi <code>age</code> <code>-5</code> ho sakti hai, <code>email</code> mein <code>"hello"</code> ho
+          sakta hai, aur ek extra <code>isAdmin: true</code> field aa sakta hai. <strong>Parsing aur validation
+          do alag layers hain</strong> — aur agla chapter poora usi ke baare mein hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Memory object network pe nahi ja sakta — usme <strong>pointers, type identity, aur runtime layout</strong> hote hain jo process ke bahar meaningless hain.</li>
+        <li>Serialization sirf network ke liye nahi — file, cache, queue, DB column, sab jagah wahi problem hai.</li>
+        <li>JSON ke sirf 6 types hain. <strong>Date, integer/float ka farq, aur binary usme exist hi nahi karte</strong> — baaki sab convention hai.</li>
+        <li>Bade integers (IDs, paise) JSON number mein <strong>chupchaap precision kho dete hain</strong> (2^53 limit) — unhe string mein bhejo.</li>
+        <li>Paisa kabhi float mein nahi — smallest unit mein integer, DB mein <code>NUMERIC</code>.</li>
+        <li><code>undefined</code>, <code>null</code>, aur missing key teen <em>alag</em> intents hain — PATCH semantics inhi pe khadi hai.</li>
+        <li>Protobuf field <em>numbers</em> bhejta hai, naam nahi — 50–70% chhota aur fast, par schema ke bina bytes bekaar.</li>
+        <li>Default JSON rakho; binary tabhi jab measure karke pata chale ki serialization hi bottleneck hai.</li>
+        <li>Schema evolution ka rule: <strong>add safe hai, remove aur rename nahi</strong>. Migration hamesha 3 steps mein.</li>
+        <li>Deserialization untrusted input ko object banata hai — size limit, depth limit, aur <code>pickle</code>-type deserializers se door raho.</li>
+        <li><strong>Parse safal ≠ data valid.</strong> Wo agla chapter hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Serialization kyun chahiye? Object ko seedha kyun nahi bhej sakte?"</div>
+        <p>
+          Kyunki memory object process-specific hai: usme pointers hain jo <em>is</em> address space mein
+          valid hain, ek language-specific type identity hai, aur ek runtime-decided memory layout. Network sirf
+          bytes bhej sakta hai. Isliye object ko flat, self-contained, language-neutral byte sequence mein badalna
+          padta hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "JSON mein bada ID bhejne pe kya problem hai?"</div>
+        <p>
+          JS parser JSON numbers ko IEEE-754 double banata hai, jo sirf <code>2^53-1</code> tak integers exactly
+          rakhta hai. Uske aage precision <em>bina error ke</em> khatam ho jaati hai — ID badal jaati hai. Ye
+          Twitter ke saath real mein hua tha (fix: <code>id_str</code>). Solution: 64-bit IDs aur monetary amounts
+          string mein bhejo.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "JSON vs Protobuf — kab kya?"</div>
+        <p>
+          JSON: public APIs, browser clients, webhooks — human-readable, schema-free, universal. Protobuf:
+          internal service-to-service, high volume, strong typed contracts — 50–70% chhota, fast parse,
+          generated code se compile-time safety. Trade: protobuf bytes schema ke bina bekaar hain aur
+          <code>curl</code> se debug nahi hote. Default JSON, binary sirf measured need pe.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "API mein ek field ka naam badalna hai bina clients tode. Kaise?"</div>
+        <p>
+          Ek deploy mein possible hi nahi — purane clients mahino chalte hain. Teen phase: (1) naya field add
+          karo, server dono likhe aur dono padhe; (2) clients ko naye field pe migrate hone do, usage monitor
+          karo; (3) usage zero hone par purana field hatao. Protobuf mein purana field number
+          <code>reserved</code> karo taaki reuse pe silent corruption na ho.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Deserialization security risk kyun hai?"</div>
+        <p>
+          Wo untrusted bytes se tumhare process ke andar objects banata hai. Teen vectors: huge payload → OOM
+          (body size limit chahiye), deeply nested structure → stack overflow (depth limit), aur
+          language-native deserializers (<code>pickle</code>, Java serialization) jo deserialize karte waqt code
+          execute kar sakte hain → RCE. JSON is maamle mein safe hai kyunki wo sirf data describe karta hai,
+          behaviour nahi.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="06-auth.html"><strong>Chapter 6 — Authentication & Authorization</strong></a>: object toh
+          ban gaya, par bhejne wala kaun hai — aur usko ye karne ka haq hai bhi ya nahi? Sessions, JWT, OAuth,
+          RBAC.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

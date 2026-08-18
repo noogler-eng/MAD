@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full-Text Search — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link active" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 13</div>
+      <div class="progress-pill">13 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Inverted Index · Analyzers · Relevance · Elasticsearch</span>
+      <h1>Full-Text Search</h1>
+      <p class="subtitle">
+        Ch 10 mein ek line thi: <code>LIKE '%query%'</code> index use kar hi nahi sakta. Par asli problem
+        usse bhi badi hai — <code>LIKE</code> se "running shoes" search karne pe "run shoe" nahi milta, spelling
+        galti pe kuch nahi milta, aur results ka koi <em>order</em> nahi hota. Search sirf ek fast
+        <code>WHERE</code> nahi hai; wo ek bilkul alag data structure aur ek bilkul alag problem hai —
+        <strong>relevance</strong>.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 15 —
+        <a href="https://www.youtube.com/watch?v=7_sovzAhRSM">Full text search using Elasticsearch for blazingly fast search</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#problem">1. <code>LIKE</code> Kyun Kaafi Nahi Hai</a></li>
+          <li><a href="#inverted">2. Inverted Index — Poora Raaz</a></li>
+          <li><a href="#analyzer">3. Analyzer Pipeline — Text Se Tokens Tak</a></li>
+          <li><a href="#relevance">4. Relevance Scoring — TF-IDF Se BM25</a></li>
+          <li><a href="#postgres">5. Postgres Ka Built-in FTS</a></li>
+          <li><a href="#es">6. Elasticsearch Kab Chahiye</a></li>
+          <li><a href="#sync">7. Sabse Bada Operational Problem — Sync</a></li>
+          <li><a href="#quality">8. Search Quality Ke Practical Levers</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="problem"><code>LIKE</code> Kyun Kaafi Nahi Hai</h2>
+      <div class="code-block">
+        <div class="code-title">chaar alag failures, ek hi query mein<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">SELECT</span> * <span class="tok-kw">FROM</span> products <span class="tok-kw">WHERE</span> description <span class="tok-kw">ILIKE</span> <span class="tok-str">'%running shoes%'</span>;
+
+<span class="tok-com">-- 1. PERFORMANCE — leading wildcard, toh B-tree seek kar hi nahi sakta (ch 10)</span>
+<span class="tok-com">--    har row, har baar. 10 lakh products = 10 lakh string comparisons.</span>
+
+<span class="tok-com">-- 2. LINGUISTICS — exact substring chahiye</span>
+<span class="tok-com">--    "running shoes" ye sab MISS karega:</span>
+<span class="tok-com">--      "shoes for running"      (word order alag)</span>
+<span class="tok-com">--      "run shoe"               (word form alag)</span>
+<span class="tok-com">--      "Running Shoe - Nike"    (ILIKE case bacha leta hai, par exact phrase chahiye)</span>
+
+<span class="tok-com">-- 3. RANKING — koi order nahi. Ek product jiske TITLE mein "running shoes" hai</span>
+<span class="tok-com">--    aur ek jiske 2000-word description mein ek baar aaya hai — dono barabar.</span>
+
+<span class="tok-com">-- 4. TYPOS — "runing shoes" → 0 results. User ko lagta hai stock hi nahi hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Mental shift — search ek <em>ranking</em> problem hai, filtering nahi</div>
+        <p>
+          Database query ka jawab binary hota hai: row match karti hai ya nahi. Search ka jawab
+          <strong>graded</strong> hota hai: ye row kitni relevant hai. Isliye search engine ka output ek
+          <em>set</em> nahi, ek <em>sorted list with scores</em> hota hai. Ye ek line poore chapter ka base hai
+          — aur yahi wajah hai ki search ke liye alag index, alag pipeline, aur alag tooling chahiye.
+        </p>
+      </div>
+
+      <h2 id="inverted">Inverted Index — Poora Raaz</h2>
+      <p>
+        Normal (forward) index ye rakhta hai: <em>document → uske words</em>. Search ke liye tumhe ulta chahiye:
+        <em>word → un documents ki list jisme wo hai</em>. Isi ulte mapping ka naam
+        <strong>inverted index</strong> hai — aur ye poore search ka core hai, chahe Postgres ho ya
+        Elasticsearch.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Forward index versus inverted index mapping terms to document postings">
+          <defs>
+            <marker id="fs1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="180" y="20" class="ex-t">Forward — doc → words</text>
+          <text x="556" y="20" class="ex-t">Inverted — word → docs</text>
+          <path d="M366,32 C370,150 362,300 366,414" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="24" y="40" width="320" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="184" y="60" class="ex-t-sm">doc 1 → [running, shoes, nike]</text>
+          <rect x="24" y="80" width="320" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="184" y="100" class="ex-t-sm">doc 2 → [shoes, leather, formal]</text>
+          <rect x="24" y="120" width="320" height="34" rx="8" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="184" y="140" class="ex-t-sm">doc 3 → [running, track, spikes]</text>
+
+          <text x="184" y="184" class="ex-t-lbl">"shoes" dhoondhna hai?</text>
+          <text x="184" y="208" class="ex-t-sm">HAR doc kholo, HAR word check karo</text>
+          <text x="184" y="230" class="ex-t-lbl">O(total documents)</text>
+
+          <!-- inverted -->
+          <rect x="396" y="40" width="340" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="566" y="60" class="ex-t-sm">"run"    → [1, 3]</text>
+          <rect x="396" y="80" width="340" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="566" y="100" class="ex-t-sm">"shoe"   → [1, 2]</text>
+          <rect x="396" y="120" width="340" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="566" y="140" class="ex-t-sm">"nike"   → [1]</text>
+          <rect x="396" y="160" width="340" height="34" rx="8" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="566" y="180" class="ex-t-sm">"track"  → [3]</text>
+
+          <text x="566" y="216" class="ex-t-lbl">"shoe" → seedha [1, 2]. Ek lookup.</text>
+          <text x="566" y="238" class="ex-t-sm">terms sorted hain → binary search / trie</text>
+
+          <!-- posting list detail -->
+          <rect x="120" y="266" width="520" height="96" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="380" y="288" class="ex-t">Posting list mein sirf doc IDs nahi hote</text>
+          <text x="380" y="312" class="ex-t-sm">"shoe" → [ (doc 1, freq 3, pos [2,7,14]),  (doc 2, freq 1, pos [1]) ]</text>
+          <text x="380" y="336" class="ex-t-lbl">freq → scoring ke liye · positions → phrase search ke liye</text>
+          <text x="380" y="354" class="ex-t-sm">"running shoes" phrase = dono terms ki positions adjacent honi chahiye</text>
+
+          <!-- multi term -->
+          <rect x="120" y="376" width="520" height="46" rx="9" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="396" class="ex-t-sm">Multi-word query = posting lists ka INTERSECTION (AND) ya UNION (OR)</text>
+          <text x="380" y="414" class="ex-t-lbl">lists sorted hain, isliye merge O(n+m) mein hota hai — bahut fast</text>
+        </svg>
+        <figcaption>
+          Ek book ka index socho — peeche wala "Index" page, jo word se page numbers batata hai. Bilkul wahi
+          cheez hai. Aur dhyan do ki posting list mein <strong>frequency aur positions</strong> bhi hain — inhi
+          do se scoring aur phrase search possible hote hain.
+        </figcaption>
+      </figure>
+
+      <h2 id="analyzer">Analyzer Pipeline — Text Se Tokens Tak</h2>
+      <p>
+        Inverted index mein raw words nahi jaate. Text ek <strong>analyzer pipeline</strong> se guzarta hai jo
+        use <em>normalize</em> karti hai. Aur sabse important rule: <strong>wahi pipeline query pe bhi chalti
+        hai</strong> — tabhi dono match kar paate hain.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">analyzer ke steps<button class="copy-btn">Copy</button></div>
+        <pre><code>Input:  <span class="tok-str">"The Running Shoes aren't cheap!"</span>
+
+<span class="tok-com">// 1. CHARACTER FILTER — HTML strip, unicode normalize</span>
+     <span class="tok-str">"The Running Shoes aren't cheap!"</span>
+
+<span class="tok-com">// 2. TOKENIZER — text ko tokens mein todo</span>
+     [<span class="tok-str">"The"</span>, <span class="tok-str">"Running"</span>, <span class="tok-str">"Shoes"</span>, <span class="tok-str">"aren't"</span>, <span class="tok-str">"cheap"</span>]
+
+<span class="tok-com">// 3. LOWERCASE</span>
+     [<span class="tok-str">"the"</span>, <span class="tok-str">"running"</span>, <span class="tok-str">"shoes"</span>, <span class="tok-str">"aren't"</span>, <span class="tok-str">"cheap"</span>]
+
+<span class="tok-com">// 4. STOPWORD REMOVAL — "the", "a", "is" har doc mein hain, koi info nahi dete</span>
+     [<span class="tok-str">"running"</span>, <span class="tok-str">"shoes"</span>, <span class="tok-str">"cheap"</span>]
+<span class="tok-com">// ⚠️ Par dhyan: "The Who", "to be or not to be" — stopwords hatane se ye</span>
+<span class="tok-com">//    queries mar jaati hain. Modern engines aksar stopwords rakhte hain</span>
+<span class="tok-com">//    aur scoring (IDF) se hi unka weight kam kar dete hain.</span>
+
+<span class="tok-com">// 5. STEMMING — word ko uske root tak kaato</span>
+     [<span class="tok-str">"run"</span>, <span class="tok-str">"shoe"</span>, <span class="tok-str">"cheap"</span>]
+<span class="tok-com">// Ab "running", "runs", "ran", "runner" — sab "run" pe map hote hain.</span>
+<span class="tok-com">// YAHI wo cheez hai jo LIKE kabhi nahi kar sakta.</span>
+
+<span class="tok-com">// Query pe bhi WAHI pipeline:</span>
+<span class="tok-str">"shoes for running"</span> → [<span class="tok-str">"shoe"</span>, <span class="tok-str">"run"</span>] → dono index mein hain → ✅ MATCH
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Analyzer mismatch = "search kaam hi nahi kar raha"</div>
+        <p>
+          Agar index karte waqt ek analyzer use kiya aur query pe doosra, toh tokens match hi nahi karenge aur
+          har search khali aayegi — bina kisi error ke. Ye Elasticsearch ka sabse common
+          "kuch bhi nahi mil raha" wala bug hai. Aur ek aur baat: <strong>analyzer badalne pe poora index
+          dobara banana padta hai</strong>, kyunki purane documents purane tokens ke saath store hain.
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Stemming vs lemmatization, aur Indian languages</div>
+        <p>
+          <strong>Stemming</strong> rule-based kaat-chhaant hai — fast, par "university" → "univers" jaise
+          galat roots bana deta hai. <strong>Lemmatization</strong> dictionary use karke asli root nikaalta hai
+          ("better" → "good") — accurate par slow. English ke liye stemming (Snowball/Porter) kaafi hai. Hindi
+          aur baaki Indian languages ke liye ye zyada complex hai (rich morphology, aur Hinglish mein
+          transliteration variants — "khareedna" vs "kharidna"); wahan aksar n-gram based approach ya custom
+          synonym lists behtar kaam karti hain.
+        </p>
+      </div>
+
+      <h2 id="relevance">Relevance Scoring — TF-IDF Se BM25</h2>
+      <p>
+        Ab asli sawaal: 5000 documents match kar gaye, unhe <em>order</em> kis hisaab se karein? Do intuitions
+        se poori cheez ban jaati hai.
+      </p>
+      <ul>
+        <li><strong>TF — Term Frequency</strong>: jis document mein wo word zyada baar aaya hai, wo shayad zyada
+        relevant hai.</li>
+        <li><strong>IDF — Inverse Document Frequency</strong>: jo word <em>har</em> document mein hai
+        (<code>"the"</code>, <code>"product"</code>), wo kuch batata hi nahi. Jo word <em>kam</em> documents
+        mein hai (<code>"vibranium"</code>), wo bahut kuch batata hai. Isliye <strong>rare terms ko zyada
+        weight</strong>.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">score = TF × IDF, aur BM25 ke do sudhaar<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Query "running shoes" ke liye har matching doc ka score:</span>
+score(doc) = Σ over query terms [ TF(term, doc) × IDF(term) ]
+
+<span class="tok-com">// Example: 10,00,000 products ka corpus</span>
+<span class="tok-com">//   "shoes"    9,00,000 docs mein  → IDF kam   → weight kam</span>
+<span class="tok-com">//   "vibranium"      12 docs mein  → IDF zyada → weight BAHUT zyada</span>
+<span class="tok-com">// Isliye "vibranium shoes" search mein vibranium wale docs upar aayenge.</span>
+
+<span class="tok-com">// ── BM25 (aaj ka default: Lucene, ES, Postgres) do problems fix karta hai ──</span>
+
+<span class="tok-com">// 1. TF SATURATION — word 100 baar aane ka matlab 10 baar se 10x relevant NAHI hai</span>
+<span class="tok-com">//    Plain TF: 1 → 1, 10 → 10, 100 → 100   (linear, keyword stuffing se exploit hota hai)</span>
+<span class="tok-com">//    BM25:     1 → 1, 10 → 2.4, 100 → 2.9  (saturate ho jaata hai)</span>
+
+<span class="tok-com">// 2. LENGTH NORMALIZATION — 50-word title mein "shoe" aana zyada strong signal hai</span>
+<span class="tok-com">//    bajaye 5000-word description mein aane ke. BM25 doc length se divide karta hai.</span>
+
+<span class="tok-com">// ── Field boosting — practical relevance ka sabse bada lever ──</span>
+{ <span class="tok-str">"multi_match"</span>: {
+    <span class="tok-str">"query"</span>: <span class="tok-str">"running shoes"</span>,
+    <span class="tok-str">"fields"</span>: [<span class="tok-str">"title^3"</span>, <span class="tok-str">"brand^2"</span>, <span class="tok-str">"description"</span>]   <span class="tok-com">// title 3× weight</span>
+}}
+<span class="tok-com">// Title mein match hona description mein match hone se kahin zyada matlab rakhta hai.</span>
+</code></pre>
+      </div>
+
+      <h2 id="postgres">Postgres Ka Built-in FTS</h2>
+      <p>
+        Elasticsearch pe jaane se pehle: <strong>Postgres ke paas already full-text search hai</strong>, aur
+        zyadatar apps ke liye wo kaafi hai. Ek kam infrastructure component, aur data hamesha in-sync (§7 ka
+        poora problem hi nahi aata).
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">Postgres FTS — production setup<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">-- tsvector = analyzed tokens, tsquery = analyzed query</span>
+<span class="tok-kw">SELECT</span> <span class="tok-fn">to_tsvector</span>(<span class="tok-str">'english'</span>, <span class="tok-str">'The Running Shoes'</span>);
+<span class="tok-com">-- → 'run':2 'shoe':3        ← stemmed, stopwords hatt gaye, positions ke saath</span>
+
+<span class="tok-com">-- ✅ Generated column — hamesha auto in-sync rehta hai</span>
+<span class="tok-kw">ALTER TABLE</span> products <span class="tok-kw">ADD COLUMN</span> search_vector tsvector
+  <span class="tok-kw">GENERATED ALWAYS AS</span> (
+    <span class="tok-fn">setweight</span>(<span class="tok-fn">to_tsvector</span>(<span class="tok-str">'english'</span>, <span class="tok-fn">coalesce</span>(title,<span class="tok-str">''</span>)),       <span class="tok-str">'A'</span>) ||
+    <span class="tok-fn">setweight</span>(<span class="tok-fn">to_tsvector</span>(<span class="tok-str">'english'</span>, <span class="tok-fn">coalesce</span>(brand,<span class="tok-str">''</span>)),       <span class="tok-str">'B'</span>) ||
+    <span class="tok-fn">setweight</span>(<span class="tok-fn">to_tsvector</span>(<span class="tok-str">'english'</span>, <span class="tok-fn">coalesce</span>(description,<span class="tok-str">''</span>)), <span class="tok-str">'C'</span>)
+  ) <span class="tok-kw">STORED</span>;
+<span class="tok-com">-- setweight A/B/C/D = field boosting ka Postgres version</span>
+<span class="tok-com">-- coalesce zaroori hai — ek NULL poore vector ko NULL kar deta hai</span>
+
+<span class="tok-kw">CREATE INDEX CONCURRENTLY</span> idx_search <span class="tok-kw">ON</span> products <span class="tok-kw">USING GIN</span> (search_vector);
+<span class="tok-com">-- GIN = inverted index ka Postgres implementation (ch 10)</span>
+
+<span class="tok-com">-- Query + ranking</span>
+<span class="tok-kw">SELECT</span> id, title, <span class="tok-fn">ts_rank_cd</span>(search_vector, query) <span class="tok-kw">AS</span> rank
+  <span class="tok-kw">FROM</span> products, <span class="tok-fn">websearch_to_tsquery</span>(<span class="tok-str">'english'</span>, $<span class="tok-num">1</span>) query
+ <span class="tok-kw">WHERE</span> search_vector @@ query        <span class="tok-com">-- @@ = "matches" operator</span>
+   <span class="tok-kw">AND</span> status = <span class="tok-str">'active'</span>            <span class="tok-com">-- normal filters saath mein — ye ES pe mushkil hota hai</span>
+ <span class="tok-kw">ORDER BY</span> rank <span class="tok-kw">DESC</span> <span class="tok-kw">LIMIT</span> <span class="tok-num">20</span>;
+<span class="tok-com">-- websearch_to_tsquery user-friendly syntax samajhta hai: "quoted phrase" -exclude OR</span>
+
+<span class="tok-com">-- TYPO tolerance ke liye pg_trgm (trigram similarity)</span>
+<span class="tok-kw">CREATE EXTENSION</span> pg_trgm;
+<span class="tok-kw">SELECT</span> title <span class="tok-kw">FROM</span> products
+ <span class="tok-kw">WHERE</span> <span class="tok-fn">similarity</span>(title, <span class="tok-str">'runing shoe'</span>) &gt; <span class="tok-num">0.3</span>
+ <span class="tok-kw">ORDER BY</span> <span class="tok-fn">similarity</span>(title, <span class="tok-str">'runing shoe'</span>) <span class="tok-kw">DESC</span>;
+<span class="tok-com">-- Bonus: pg_trgm GIN index LIKE '%...%' ko bhi fast bana deta hai!</span>
+</code></pre>
+      </div>
+
+      <h2 id="es">Elasticsearch Kab Chahiye</h2>
+      <table>
+        <thead><tr><th>Feature</th><th>Postgres FTS</th><th>Elasticsearch</th></tr></thead>
+        <tbody>
+          <tr><td>Setup</td><td>Kuch nahi — already hai</td><td>Ek alag cluster, ops overhead</td></tr>
+          <tr><td>Data consistency</td><td><strong>Hamesha in-sync</strong> (same DB, same txn)</td><td>Sync pipeline chahiye (§7)</td></tr>
+          <tr><td>Scale</td><td>~lakhon–1 crore docs comfortably</td><td>Arbon docs, sharded</td></tr>
+          <tr><td>Relevance tuning</td><td>Basic (weights, <code>ts_rank</code>)</td><td>Bahut rich — custom scoring, function_score</td></tr>
+          <tr><td>Typo tolerance</td><td><code>pg_trgm</code> se possible</td><td>Built-in fuzzy matching (edit distance)</td></tr>
+          <tr><td>Autocomplete</td><td>Manual (prefix index, trigram)</td><td>Built-in completion suggester</td></tr>
+          <tr><td>Faceting/aggregations</td><td><code>GROUP BY</code> — bade data pe slow</td><td>Isi ke liye bana hai — bahut fast</td></tr>
+          <tr><td>Synonyms, multi-language</td><td>Manual dictionaries</td><td>First-class support</td></tr>
+          <tr><td>Filters + search saath</td><td>Trivial (wahi SQL)</td><td>Possible par denormalize karna padta hai</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Practical rule</div>
+        <p>
+          <strong>Postgres FTS se shuru karo.</strong> Elasticsearch tab lao jab ek concrete requirement aaye jo
+          Postgres se nahi ho rahi — usually ye teen mein se koi ek: (1) real-time faceted navigation (har filter
+          ke saath counts), (2) serious relevance tuning aur A/B testing, ya (3) scale jahan search load DB ko
+          hi nuksaan pahuncha raha ho. Bahut saari teams din 1 se Elasticsearch le aati hain aur phir apni
+          zindagi §7 wale sync problem ko debug karne mein guzaarti hain — ek aisi problem jo unke paas thi hi
+          nahi.
+        </p>
+      </div>
+
+      <h2 id="sync">Sabse Bada Operational Problem — Sync</h2>
+      <p>
+        Elasticsearch use karne ka matlab hai tumhare paas ab <strong>do source of truth</strong> hain — DB aur
+        search index. Aur wo diverge karenge. Ye Elasticsearch ka sabse bada hidden cost hai, aur ye ch 12 ke
+        dual-write problem ka bilkul wahi roop hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">sync ke teen tareeke — badhte hue reliability ke saath<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ 1. Dual write — DB aur ES dono ko seedha likhna</span>
+<span class="tok-kw">await</span> db.products.<span class="tok-fn">update</span>(id, data);
+<span class="tok-kw">await</span> es.<span class="tok-fn">index</span>({ index: <span class="tok-str">"products"</span>, id, body: data });
+<span class="tok-com">// Beech mein crash → permanently out of sync, aur koi error bhi nahi.</span>
+<span class="tok-com">// Aur ES down hone se ab tumhara WRITE fail ho raha hai — ch 12 wali galti.</span>
+
+<span class="tok-com">// ⚠️ 2. Outbox + worker (ch 12) — practical aur reliable</span>
+<span class="tok-kw">await</span> db.<span class="tok-fn">transaction</span>(<span class="tok-kw">async</span> (tx) =&gt; {
+  <span class="tok-kw">await</span> tx.products.<span class="tok-fn">update</span>(id, data);
+  <span class="tok-kw">await</span> tx.outbox.<span class="tok-fn">insert</span>({ type: <span class="tok-str">"product.updated"</span>, payload: { id } });
+});
+<span class="tok-com">// Worker outbox se padhta hai, DB se FRESH data uthata hai, ES mein index karta hai.</span>
+<span class="tok-com">// ID bhejna zaroori hai, snapshot nahi (ch 12) — warna out-of-order updates se</span>
+<span class="tok-com">// purana data ES mein baith sakta hai.</span>
+
+<span class="tok-com">// ✅ 3. CDC (Change Data Capture) — Debezium, Postgres logical replication</span>
+<span class="tok-com">// WAL (ch 10) ko padh ke har change ko events mein badal deta hai.</span>
+<span class="tok-com">// App code ko kuch karna hi nahi padta — koi write path miss ho hi nahi sakta.</span>
+<span class="tok-com">// Sabse robust, par ek aur infra component.</span>
+
+<span class="tok-com">// 🔁 Aur teeno ke saath: ek periodic RECONCILIATION job</span>
+<span class="tok-com">// Raat ko DB aur ES ke counts/checksums compare karo, mismatch ko fix karo.</span>
+<span class="tok-com">// Drift HOGA hi — sawaal sirf ye hai ki tumhe pata chalega ya nahi.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Search index authoritative nahi hai</div>
+        <p>
+          ES se sirf <strong>IDs aur ranking</strong> lo, aur asli data DB se fetch karo. Do wajah: (1) ES thoda
+          stale ho sakta hai, toh usse dikhaya gaya price ya stock galat ho sakta hai; (2) permissions aur
+          ownership checks (ch 6) DB pe hote hain — search results se seedha data serve karna ek data leak ka
+          raasta hai. ES ka kaam "kaunse documents, kis order mein" batana hai, "unme kya likha hai" nahi.
+        </p>
+      </div>
+
+      <h2 id="quality">Search Quality Ke Practical Levers</h2>
+      <p>
+        Search "kaam kar raha hai" aur search "achhi hai" mein bada farq hai. Jo cheezein sabse zyada farq
+        lati hain, ranking ke order mein:
+      </p>
+      <ul>
+        <li><strong>Field boosting</strong> — title &gt; brand &gt; description. Sabse sasta aur sabse bada
+        improvement.</li>
+        <li><strong>Business signals</strong> — popularity, rating, in-stock, recency ko score mein mix karo.
+        Ek "perfectly relevant" out-of-stock product bekaar result hai.</li>
+        <li><strong>Synonyms</strong> — "mobile" = "phone" = "smartphone", "kurta" = "kurti". Domain-specific
+        list se bahut jaldi results better lagne lagte hain.</li>
+        <li><strong>Typo tolerance</strong> — fuzzy matching, par edit distance ko chhota rakho (1–2), warna
+        results shor ban jaate hain.</li>
+        <li><strong>Autocomplete</strong> — user ko sahi query <em>likhne</em> mein madad karna aksar ranking
+        theek karne se zyada effective hai.</li>
+        <li><strong>Zero-result queries log karo</strong> — ye tumhara sabse valuable dataset hai. Har zero-result
+        query ya toh missing synonym hai, ya missing product, ya typo handling ka gap.</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Measure karo, warna sirf andaaza hai</div>
+        <p>
+          Search quality ka andaaza mat lagao — track karo: <strong>zero-result rate</strong>,
+          <strong>click-through rate</strong>, <strong>average clicked position</strong> (neeche ja raha hai
+          matlab ranking bigad rahi hai), aur <strong>search → conversion</strong>. Har relevance change ke
+          baad ye numbers dekho. "Mujhe results behtar lag rahe hain" ek metric nahi hai — aur relevance tuning
+          mein intuition aksar galat hoti hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li><code>LIKE '%x%'</code> chaar tareeke se fail karta hai: slow (no index), no stemming, no ranking, no typo tolerance.</li>
+        <li><strong>Search ek ranking problem hai, filtering nahi</strong> — output ek set nahi, scored sorted list hai.</li>
+        <li><strong>Inverted index</strong> = word → documents ki posting list, jisme frequency (scoring ke liye) aur positions (phrase search ke liye) bhi hoti hain.</li>
+        <li>Multi-word query = sorted posting lists ka merge — O(n+m), bahut fast.</li>
+        <li><strong>Analyzer pipeline</strong>: tokenize → lowercase → stopwords → stemming. Wahi pipeline index aur query dono pe chalti hai.</li>
+        <li>Analyzer mismatch = har search khali, bina error ke. Aur analyzer badalna = poora reindex.</li>
+        <li><strong>TF-IDF</strong>: term jitna zyada baar aaya utna relevant, par jo term har doc mein hai wo kuch nahi batata (rare terms ka weight zyada).</li>
+        <li><strong>BM25</strong> do cheezein fix karta hai: TF saturation (keyword stuffing rokta hai) aur document length normalization.</li>
+        <li><strong>Field boosting</strong> (<code>title^3</code>) relevance ka sabse sasta aur bada lever hai.</li>
+        <li>Postgres FTS real hai: <code>tsvector</code> generated column + GIN index + <code>setweight</code> se boosting + <code>ts_rank_cd</code>. Aur <code>pg_trgm</code> typo tolerance deta hai.</li>
+        <li>Postgres ka bada faayda: <strong>search aur normal SQL filters ek hi query mein</strong>, aur data hamesha in-sync.</li>
+        <li>Elasticsearch tab lao jab concrete zaroorat ho — faceting, serious relevance tuning, ya scale. Warna tum ek sync problem khareed rahe ho jo tumhare paas thi hi nahi.</li>
+        <li>ES ke saath do source of truth ho jaate hain — sync ke liye <strong>outbox/CDC</strong> use karo, dual write kabhi nahi. Aur reconciliation job zaroori hai; drift hoga hi.</li>
+        <li><strong>ES se sirf IDs aur order lo, data DB se</strong> — staleness aur permission dono ke liye.</li>
+        <li>Zero-result queries log karo — wahi tumhara sabse valuable improvement dataset hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Search ke liye <code>LIKE</code> kyun kaafi nahi?"</div>
+        <p>
+          Chaar wajah: (1) leading wildcard pe B-tree seek nahi kar sakta, toh har row scan hoti hai;
+          (2) exact substring chahiye — "shoes for running" aur "run shoe" miss ho jaate hain;
+          (3) koi <strong>ranking</strong> nahi — title match aur 2000-word description ka match barabar;
+          (4) typo pe zero results. Search ko alag data structure (inverted index) aur alag concept
+          (relevance score) chahiye.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Inverted index kya hai aur kaam kaise karta hai?"</div>
+        <p>
+          Normal index doc → words rakhta hai; inverted index ulta — <strong>term → posting list</strong> of
+          documents. Posting list mein doc ID ke saath term frequency (scoring ke liye) aur positions (phrase
+          search ke liye) bhi hoti hain. Terms sorted hote hain, toh lookup binary search/trie se hota hai, aur
+          multi-word query sorted lists ka intersection/union hai — O(n+m). Ye ek book ke peeche wale index ki
+          tarah hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Relevance kaise calculate hoti hai?"</div>
+        <p>
+          Base TF-IDF hai: term document mein jitna zyada aaya (TF) utna relevant, par jo term poore corpus mein
+          har jagah hai (IDF kam) wo kuch nahi batata — rare terms ka weight zyada. Aaj ka standard
+          <strong>BM25</strong> hai jo do cheezein add karta hai: TF <em>saturation</em> (100 baar aana 10 baar
+          se 10× behtar nahi — keyword stuffing rokta hai) aur <em>document length normalization</em> (chhote
+          title mein match bade description ke match se strong hai). Uske upar practical layer: field boosting
+          aur business signals (popularity, stock, recency).
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Postgres FTS vs Elasticsearch — kya choose karoge?"</div>
+        <p>
+          Postgres se shuru — <code>tsvector</code> generated column + GIN index zyadatar apps (lakhon docs) ke
+          liye kaafi hai, aur do bade faayde deta hai: search normal SQL filters/permissions ke saath ek hi query
+          mein, aur data hamesha in-sync (koi sync pipeline nahi). Elasticsearch tab jab concrete requirement ho:
+          real-time faceted navigation with counts, serious relevance tuning/A-B testing, multi-language +
+          synonyms at scale, ya itna search load ki wo DB ko nuksaan pahunchaye. ES ka asli cost feature nahi,
+          <strong>sync</strong> hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "DB aur Elasticsearch ko in-sync kaise rakhoge?"</div>
+        <p>
+          Dual write kabhi nahi — beech mein crash pe permanent divergence, aur ES down hone se writes fail hone
+          lagti hain. Do sahi options: <strong>outbox pattern</strong> (ch 12) — DB update aur outbox row ek
+          transaction mein, worker outbox se ID uthake DB se fresh data laake index kare; ya <strong>CDC</strong>
+          (Debezium / logical replication) jo WAL padh ke har change ko event banata hai — sabse robust kyunki
+          koi write path miss ho hi nahi sakta. Dono ke saath ek periodic reconciliation job rakho — drift hoga
+          hi, sawaal sirf detection ka hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Phase 2 khatam — agla chapter</div>
+        <p>
+          API ab correct <em>aur</em> fast hai. Phase 3 shuru — <em>production reality</em>.
+          <a href="14-error-handling.html"><strong>Chapter 14 — Error Handling & Fault Tolerance</strong></a>:
+          cheezein fail hongi. Sawaal ye hai ki fail hone pe system <em>kaise</em> behave karta hai.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

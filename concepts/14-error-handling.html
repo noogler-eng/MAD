@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Handling & Fault Tolerance — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link active" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 14</div>
+      <div class="progress-pill">14 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Timeouts · Backoff · Circuit Breaker · Bulkhead · Degradation</span>
+      <h1>Error Handling & Fault Tolerance</h1>
+      <p class="subtitle">
+        Phase 3 shuru — <em>production reality</em>. Yahan ek assumption badalti hai jo pichle 13 chapters mein
+        chupi hui thi: ab tak humne maana ki cheezein kaam karti hain. Production mein wo nahi karti. Network
+        packets girte hain, downstream services 503 dete hain, disks bhar jaate hain. Sawaal
+        <em>"failure kaise roken"</em> nahi hai — wo namumkin hai. Sawaal hai:
+        <strong>fail hone par system kaise behave karta hai.</strong>
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 16 —
+        <a href="https://www.youtube.com/watch?v=8NaM_9aKS24">Error Handling and Building Fault Tolerant Systems</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#taxonomy">1. Errors Ke Do Bilkul Alag Kism</a></li>
+          <li><a href="#central">2. Central Error Handling — Ch 8 Ka Wada</a></li>
+          <li><a href="#timeouts">3. Timeouts — Sabse Under-rated Defense</a></li>
+          <li><a href="#retries">4. Retries — Aur Wo Kab Nuksaan Karti Hain</a></li>
+          <li><a href="#breaker">5. Circuit Breaker — Mechanism</a></li>
+          <li><a href="#bulkhead">6. Bulkhead — Failure Ko Ek Jagah Rokna</a></li>
+          <li><a href="#cascade">7. Cascading Failure — Poora Anatomy</a></li>
+          <li><a href="#degradation">8. Graceful Degradation</a></li>
+          <li><a href="#checklist">9. Har External Call Ka Checklist</a></li>
+          <li><a href="#takeaways">10. Key Takeaways</a></li>
+          <li><a href="#interview">11. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="taxonomy">Errors Ke Do Bilkul Alag Kism</h2>
+      <p>
+        Sabse pehla aur sabse important distinction — inhe mila dena poore error handling ko bekaar kar deta
+        hai:
+      </p>
+
+      <table>
+        <thead><tr><th></th><th>Expected (operational)</th><th>Unexpected (programmer)</th></tr></thead>
+        <tbody>
+          <tr><td>Kya hai</td><td>Validation fail, 404, insufficient stock, downstream 503</td><td><code>undefined is not a function</code>, null deref, typo</td></tr>
+          <tr><td>Kya ye "bug" hai</td><td><strong>Nahi</strong> — ye normal flow ka hissa hai</td><td><strong>Haan</strong> — code galat hai</td></tr>
+          <tr><td>Handle karna</td><td>Explicitly — client ko meaningful jawab do</td><td>Handle nahi karna — <em>fail fast</em>, log, alert</td></tr>
+          <tr><td>HTTP</td><td>4xx (ya specific 5xx jaise 503)</td><td>500 — generic message (ch 3)</td></tr>
+          <tr><td>Alert?</td><td>Sirf rate spike pe</td><td>Har ek pe</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Sabse mehnga anti-pattern — errors nigal jaana</div>
+        <p>
+          <code>try { … } catch (e) { console.log(e) }</code> aur aage badh jaana. Ab code ek galat state mein
+          chal raha hai, aur asli failure 3 layers baad kisi aur jagah dikhegi — jahan uska root cause dhoondhna
+          bahut mushkil hai. Rule: <strong>ya toh error ko meaningfully handle karo, ya usse upar jaane do.</strong>
+          Log karke swallow karna dono mein se kuch nahi hai. Aur khaali <code>catch {}</code> toh
+          production mein hafton tak bugs chhupa deta hai.
+        </p>
+      </div>
+
+      <h2 id="central">Central Error Handling — Ch 8 Ka Wada</h2>
+      <p>
+        Ch 8 mein bola tha: service <strong>domain errors</strong> throw kare, HTTP status nahi — mapping ek
+        central handler ka kaam hai. Ab wo poora setup.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">domain error hierarchy + central mapping<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. Domain errors — HTTP ka naam tak nahi ──────────────</span>
+<span class="tok-kw">class</span> AppError <span class="tok-kw">extends</span> Error {
+  <span class="tok-fn">constructor</span>(code, message, { cause, context } = {}) {
+    <span class="tok-kw">super</span>(message, { cause });   <span class="tok-com">// `cause` — original error chain bachaye rakho</span>
+    <span class="tok-kw">this</span>.code = code;            <span class="tok-com">// stable machine code (ch 9)</span>
+    <span class="tok-kw">this</span>.context = context;      <span class="tok-com">// debugging ke liye — orderId, userId etc.</span>
+    <span class="tok-kw">this</span>.isOperational = <span class="tok-kw">true</span>;   <span class="tok-com">// ← "expected hai, bug nahi"</span>
+  }
+}
+<span class="tok-kw">class</span> NotFoundError   <span class="tok-kw">extends</span> AppError { <span class="tok-com">/* code: "not_found"  */</span> }
+<span class="tok-kw">class</span> ConflictError   <span class="tok-kw">extends</span> AppError { <span class="tok-com">/* code: "conflict"   */</span> }
+<span class="tok-kw">class</span> ValidationError <span class="tok-kw">extends</span> AppError { <span class="tok-com">/* code: "validation" */</span> }
+<span class="tok-kw">class</span> UpstreamError   <span class="tok-kw">extends</span> AppError { <span class="tok-com">/* code: "upstream"   */</span> }
+
+<span class="tok-com">// ── 2. Ek jagah mapping — poore app mein consistent ───────</span>
+<span class="tok-kw">const</span> STATUS = {
+  validation: <span class="tok-num">422</span>,  not_found: <span class="tok-num">404</span>,  conflict: <span class="tok-num">409</span>,
+  forbidden:  <span class="tok-num">403</span>,  unauthorized: <span class="tok-num">401</span>, rate_limited: <span class="tok-num">429</span>,
+  upstream:   <span class="tok-num">503</span>,  <span class="tok-com">// downstream fail — 500 nahi, kyunki ye RETRYABLE hai (ch 3)</span>
+};
+
+<span class="tok-kw">function</span> <span class="tok-fn">errorHandler</span>(err, req, res, next) {
+  <span class="tok-kw">const</span> status = err.isOperational ? (STATUS[err.code] ?? <span class="tok-num">400</span>) : <span class="tok-num">500</span>;
+
+  <span class="tok-com">// Log level severity se — 4xx ka spam alerts ko bekaar kar deta hai</span>
+  <span class="tok-kw">const</span> log = { requestId: req.ctx.requestId, code: err.code, path: req.path };
+  <span class="tok-kw">if</span> (status &gt;= <span class="tok-num">500</span>) logger.<span class="tok-fn">error</span>({ ...log, err, stack: err.stack });
+  <span class="tok-kw">else</span>                 logger.<span class="tok-fn">warn</span>({ ...log });
+
+  res.<span class="tok-fn">status</span>(status).<span class="tok-fn">json</span>({
+    error: err.code ?? <span class="tok-str">"internal_error"</span>,
+    <span class="tok-com">// 5xx pe asli message KABHI nahi — SQL/stack/paths leak hote hain (ch 18)</span>
+    message: status &gt;= <span class="tok-num">500</span> ? <span class="tok-str">"Something went wrong"</span> : err.message,
+    requestId: req.ctx.requestId,   <span class="tok-com">// user support ko yahi batayega (ch 16)</span>
+  });
+}
+
+<span class="tok-com">// ── 3. Wo errors jo middleware tak pahunchte hi nahi ──────</span>
+process.<span class="tok-fn">on</span>(<span class="tok-str">"unhandledRejection"</span>, (reason) =&gt; {
+  logger.<span class="tok-fn">fatal</span>({ reason }, <span class="tok-str">"unhandled rejection"</span>);
+  <span class="tok-fn">gracefulShutdown</span>();   <span class="tok-com">// process ab unknown state mein hai — restart karo (ch 17)</span>
+});
+process.<span class="tok-fn">on</span>(<span class="tok-str">"uncaughtException"</span>, (err) =&gt; {
+  logger.<span class="tok-fn">fatal</span>({ err }, <span class="tok-str">"uncaught exception"</span>);
+  <span class="tok-fn">gracefulShutdown</span>();
+});
+<span class="tok-com">// Counter-intuitive par sahi: crash-and-restart ek corrupted process mein</span>
+<span class="tok-com">// chalte rehne se BEHTAR hai. "Let it crash" — process manager restart karega.</span>
+</code></pre>
+      </div>
+
+      <h2 id="timeouts">Timeouts — Sabse Under-rated Defense</h2>
+      <p>
+        Har network call ka <strong>ek default timeout hota hai: infinity</strong>. Aur infinity hi wo cheez hai
+        jo ek slow dependency ko poore outage mein badal deti hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">bina timeout ke kya hota hai — poori chain<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Payment API slow ho gayi — down nahi, sirf SLOW (30s per request)</span>
+<span class="tok-kw">await</span> fetch(<span class="tok-str">"https://payments.example.com/charge"</span>);  <span class="tok-com">// koi timeout nahi</span>
+
+<span class="tok-com">// 1. Har request 30s tak atki rehti hai</span>
+<span class="tok-com">// 2. Har atki request ek DB connection pakde hai (agar txn khula hai — ch 10)</span>
+<span class="tok-com">// 3. 30s × normal traffic = sainkdon concurrent atki requests</span>
+<span class="tok-com">// 4. Connection pool khatam → ab wo endpoints bhi fail hone lage</span>
+<span class="tok-com">//    jinka payment se koi lena-dena hi nahi tha</span>
+<span class="tok-com">// 5. Health check bhi timeout → load balancer ne instance ko unhealthy maar diya</span>
+<span class="tok-com">// 6. Traffic bache hue instances pe → wo bhi girre → POORA OUTAGE</span>
+
+<span class="tok-com">// ← Ek non-critical dependency ne poora system gira diya. Ye REAL pattern hai.</span>
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">timeout budget — har layer pe<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Rule: har layer ka timeout apne CALLER se KAM hona chahiye.</span>
+<span class="tok-com">// Warna caller pehle timeout hoga aur tumhara kaam bekaar chala jayega.</span>
+
+nginx      proxy_read_timeout   <span class="tok-num">30</span>s     <span class="tok-com">// bahar wali seema (ch 2)</span>
+  └─ app   server timeout       <span class="tok-num">25</span>s
+       └─ DB  statement_timeout  <span class="tok-num">10</span>s     <span class="tok-com">// (ch 10)</span>
+       └─ HTTP client            <span class="tok-num">5</span>s     <span class="tok-com">// downstream API</span>
+       └─ Redis                <span class="tok-num">100</span>ms     <span class="tok-com">// cache — fast fail (ch 11)</span>
+
+<span class="tok-com">// Node mein — fetch pe timeout AbortSignal se lagta hai</span>
+<span class="tok-kw">const</span> res = <span class="tok-kw">await</span> fetch(url, {
+  signal: AbortSignal.<span class="tok-fn">timeout</span>(<span class="tok-num">5000</span>),   <span class="tok-com">// 5s ke baad abort</span>
+});
+
+<span class="tok-com">// ⚠️ Do alag timeouts hote hain, dono chahiye:</span>
+<span class="tok-com">//   connect timeout — connection banne ka intezaar (chhota: 1-2s)</span>
+<span class="tok-com">//   read timeout    — response ka intezaar (bada: 5-30s)</span>
+</code></pre>
+      </div>
+
+      <h2 id="retries">Retries — Aur Wo Kab Nuksaan Karti Hain</h2>
+      <p>
+        Retry karna obvious lagta hai, par galat retry <strong>outage ko lamba kar deti hai</strong>. Teen rules
+        hain, aur teeno zaroori:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">retry ke teen rules<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── Rule 1: sirf TRANSIENT errors retry karo ──────────────</span>
+<span class="tok-kw">const</span> RETRYABLE = <span class="tok-kw">new</span> <span class="tok-fn">Set</span>([<span class="tok-num">408</span>, <span class="tok-num">429</span>, <span class="tok-num">500</span>, <span class="tok-num">502</span>, <span class="tok-num">503</span>, <span class="tok-num">504</span>]);
+<span class="tok-com">// 4xx (429 chhod ke) retry mat karo — 400 100 baar bhejne se bhi 400 hi rahega</span>
+<span class="tok-com">// Aur network errors: ECONNRESET, ETIMEDOUT, EAI_AGAIN → retryable</span>
+
+<span class="tok-com">// ── Rule 2: sirf IDEMPOTENT operations retry karo (ch 3, ch 9) ──</span>
+<span class="tok-com">// GET, PUT, DELETE → safe</span>
+<span class="tok-com">// POST → sirf idempotency key ke saath, warna double charge</span>
+
+<span class="tok-com">// ── Rule 3: exponential backoff + JITTER ──────────────────</span>
+<span class="tok-kw">async</span> <span class="tok-kw">function</span> <span class="tok-fn">withRetry</span>(fn, { attempts = <span class="tok-num">3</span>, base = <span class="tok-num">200</span> } = {}) {
+  <span class="tok-kw">for</span> (<span class="tok-kw">let</span> i = <span class="tok-num">0</span>; i &lt; attempts; i++) {
+    <span class="tok-kw">try</span> { <span class="tok-kw">return</span> <span class="tok-kw">await</span> <span class="tok-fn">fn</span>(); }
+    <span class="tok-kw">catch</span> (err) {
+      <span class="tok-kw">if</span> (!<span class="tok-fn">isRetryable</span>(err) || i === attempts - <span class="tok-num">1</span>) <span class="tok-kw">throw</span> err;
+
+      <span class="tok-com">// server ne bataya hai toh uski suno (ch 3 ka 429 + Retry-After)</span>
+      <span class="tok-kw">const</span> hinted = err.headers?.[<span class="tok-str">"retry-after"</span>];
+      <span class="tok-kw">const</span> delay = hinted
+        ? <span class="tok-fn">Number</span>(hinted) * <span class="tok-num">1000</span>
+        : base * <span class="tok-num">2</span> ** i * (<span class="tok-num">0.5</span> + Math.<span class="tok-fn">random</span>());   <span class="tok-com">// ← jitter</span>
+      <span class="tok-kw">await</span> <span class="tok-fn">sleep</span>(delay);
+    }
+  }
+}
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Retry amplification — nested retries ka multiplication</div>
+        <p>
+          Har layer 3 retries kar rahi hai: client → gateway → service A → service B. Total attempts =
+          3×3×3 = <strong>27</strong> requests, ek user action ke liye. Jab B already overloaded hai, tumne uska
+          load 27× kar diya — retry ne outage <em>banaya</em>, theek nahi kiya. Do fixes:
+          <strong>retry sirf ek layer pe karo</strong> (usually sabse bahar wali, jo user ke sabse paas hai),
+          aur ek <strong>retry budget</strong> rakho (jaise "total requests ka max 10% retries ho sakti hain").
+        </p>
+      </div>
+
+      <h2 id="breaker">Circuit Breaker — Mechanism</h2>
+      <p>
+        Retry ek <em>ek request</em> ka faisla hai. Circuit breaker ek <em>system-level</em> faisla hai: agar
+        downstream clearly down hai, toh usse call karna hi band kar do. Har failed call time, threads, aur
+        connections barbaad karti hai — aur girti hui service pe aur load daalti hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Circuit breaker state machine with closed, open and half-open states">
+          <defs>
+            <marker id="cb1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="40" y="60" width="180" height="86" rx="12" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="130" y="86" class="ex-t">CLOSED</text>
+          <text x="130" y="108" class="ex-t-sm">sab normal — calls jaati hain</text>
+          <text x="130" y="128" class="ex-t-sm">failures count ho rahi hain</text>
+
+          <path d="M222,88 C300,74 380,78 452,88" class="ex-stroke" marker-end="url(#cb1)"/>
+          <text x="338" y="62" class="ex-t-lbl">failure rate &gt; 50% (min 20 calls)</text>
+
+          <rect x="456" y="60" width="180" height="86" rx="12" class="ex-fill-o ex-stroke"/>
+          <text x="546" y="86" class="ex-t">OPEN</text>
+          <text x="546" y="108" class="ex-t-sm">call ki hi NAHI jaati</text>
+          <text x="546" y="128" class="ex-t-lbl">turant fail — 0 ms</text>
+
+          <path d="M546,150 C544,180 548,200 546,228" class="ex-stroke" marker-end="url(#cb1)"/>
+          <text x="626" y="192" class="ex-t-lbl">30s baad</text>
+
+          <rect x="456" y="230" width="180" height="86" rx="12" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="546" y="256" class="ex-t">HALF-OPEN</text>
+          <text x="546" y="278" class="ex-t-sm">sirf 1–2 test calls</text>
+          <text x="546" y="298" class="ex-t-sm">baaki ab bhi fail</text>
+
+          <path d="M452,272 C360,286 240,240 224,166" class="ex-stroke ex-stroke-g" marker-end="url(#cb1)"/>
+          <text x="300" y="252" class="ex-t-lbl">test pass → CLOSED</text>
+
+          <path d="M600,316 C660,330 680,240 640,152" class="ex-stroke" marker-end="url(#cb1)"/>
+          <text x="686" y="240" class="ex-t-lbl" transform="rotate(90 686 240)">test fail → OPEN</text>
+
+          <rect x="30" y="200" width="380" height="150" rx="10" class="ex-stroke ex-stroke-d"/>
+          <text x="220" y="224" class="ex-t">OPEN state ka double faayda</text>
+          <text x="220" y="252" class="ex-t-lbl">1 · Tumhe bachata hai</text>
+          <text x="220" y="272" class="ex-t-sm">calls 5s timeout mein nahi, 0ms mein fail hoti hain —</text>
+          <text x="220" y="290" class="ex-t-sm">threads/connections free rehte hain</text>
+          <text x="220" y="316" class="ex-t-lbl">2 · Downstream ko bachata hai</text>
+          <text x="220" y="336" class="ex-t-sm">girti hui service ko saans lene ka mauka milta hai</text>
+        </svg>
+        <figcaption>
+          Teen states: <strong>CLOSED</strong> (normal), <strong>OPEN</strong> (calls block, turant fail),
+          <strong>HALF-OPEN</strong> (thodi test calls). Half-open state hi wo cheez hai jo recovery ko safe
+          banati hai — seedha closed pe jump karne se poora traffic ek saath usi girti hui service pe wapas
+          chala jaata, aur wo dobara gir jaati.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">breaker ka core logic<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> CircuitBreaker {
+  <span class="tok-fn">constructor</span>({ threshold = <span class="tok-num">0.5</span>, minCalls = <span class="tok-num">20</span>, resetMs = <span class="tok-num">30_000</span> }) { … }
+
+  <span class="tok-kw">async</span> <span class="tok-fn">call</span>(fn, fallback) {
+    <span class="tok-kw">if</span> (<span class="tok-kw">this</span>.state === <span class="tok-str">"OPEN"</span>) {
+      <span class="tok-kw">if</span> (<span class="tok-fn">now</span>() - <span class="tok-kw">this</span>.openedAt &lt; <span class="tok-kw">this</span>.resetMs) {
+        <span class="tok-kw">return</span> <span class="tok-fn">fallback</span>?.() ?? <span class="tok-fn">reject</span>(<span class="tok-kw">new</span> <span class="tok-fn">UpstreamError</span>(<span class="tok-str">"circuit_open"</span>));
+        <span class="tok-com">// ↑ 0 ms mein fail — koi thread, koi connection block nahi hua</span>
+      }
+      <span class="tok-kw">this</span>.state = <span class="tok-str">"HALF_OPEN"</span>;   <span class="tok-com">// ek test call ki ijaazat</span>
+    }
+
+    <span class="tok-kw">try</span> {
+      <span class="tok-kw">const</span> result = <span class="tok-kw">await</span> <span class="tok-fn">fn</span>();
+      <span class="tok-kw">this</span>.<span class="tok-fn">onSuccess</span>();     <span class="tok-com">// HALF_OPEN → CLOSED, counters reset</span>
+      <span class="tok-kw">return</span> result;
+    } <span class="tok-kw">catch</span> (err) {
+      <span class="tok-kw">this</span>.<span class="tok-fn">onFailure</span>();     <span class="tok-com">// rate threshold cross → OPEN</span>
+      <span class="tok-kw">if</span> (fallback) <span class="tok-kw">return</span> <span class="tok-fn">fallback</span>();
+      <span class="tok-kw">throw</span> err;
+    }
+  }
+}
+
+<span class="tok-com">// ⚠️ Threshold ABSOLUTE count pe nahi, RATE pe rakho — aur minimum calls ke saath.</span>
+<span class="tok-com">// "5 failures" pe open karna low-traffic pe har thodi der mein trip karega.</span>
+</code></pre>
+      </div>
+
+      <h2 id="bulkhead">Bulkhead — Failure Ko Ek Jagah Rokna</h2>
+      <p>
+        Naam jahaz se aaya hai: ship ke andar watertight compartments hote hain, taaki ek chhed poore jahaz ko na
+        dubo de. Software mein wahi idea — <strong>resources ko partition karo</strong>, taaki ek slow
+        dependency saare resources na kha jaaye.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">bulkhead — alag pools<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ❌ Ek shared pool — payment ki slowness search ko bhi maar degi</span>
+<span class="tok-kw">const</span> pool = { max: <span class="tok-num">50</span> };
+
+<span class="tok-com">// ✅ Alag pools per dependency</span>
+<span class="tok-kw">const</span> pools = {
+  payment:   { max: <span class="tok-num">10</span> },   <span class="tok-com">// payment slow ho toh max 10 slots atkenge</span>
+  search:    { max: <span class="tok-num">20</span> },   <span class="tok-com">// search ke apne 20 surakshit hain</span>
+  analytics: { max: <span class="tok-num">5</span>  },   <span class="tok-com">// non-critical — sabse kam</span>
+};
+<span class="tok-com">// Payment poori tarah down bhi ho jaaye, toh baaki app chalta rahega.</span>
+
+<span class="tok-com">// Isi ka ek aur roop: alag WORKER queues (ch 12)</span>
+<span class="tok-com">//   critical / default / bulk — taaki ek bulk import saare workers na kha jaaye</span>
+
+<span class="tok-com">// Aur sabse bada roop: alag DEPLOYMENTS</span>
+<span class="tok-com">//   API instances aur worker instances alag — ek gira toh doosra bacha rahega</span>
+</code></pre>
+      </div>
+
+      <h2 id="cascade">Cascading Failure — Poora Anatomy</h2>
+      <p>
+        Production outages ka sabse common shape. Ek chhoti si cheez se shuru hota hai aur poore system ko le
+        doobta hai. Isko step-by-step samajhna zaroori hai kyunki har step pe ek defense lagti hai:
+      </p>
+
+      <table>
+        <thead><tr><th>Step</th><th>Kya hota hai</th><th>Yahan kaunsi defense lagti hai</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Ek downstream service slow hui (down nahi — <em>slow</em>)</td><td>—</td></tr>
+          <tr><td>2</td><td>Tumhare requests uska intezaar kar rahi hain</td><td><strong>Timeout</strong></td></tr>
+          <tr><td>3</td><td>Atki requests threads/connections pakde hain</td><td><strong>Bulkhead</strong></td></tr>
+          <tr><td>4</td><td>Pool khatam — <em>unrelated</em> endpoints bhi fail</td><td><strong>Bulkhead</strong></td></tr>
+          <tr><td>5</td><td>Clients retry karte hain → load badhta hai</td><td><strong>Backoff + jitter, retry budget</strong></td></tr>
+          <tr><td>6</td><td>Health check timeout → LB instance ko maar deta hai</td><td><strong>Alag health-check path</strong></td></tr>
+          <tr><td>7</td><td>Traffic bache instances pe → wo bhi girte hain</td><td><strong>Circuit breaker, load shedding</strong></td></tr>
+          <tr><td>8</td><td>Poora outage</td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 "Slow" "down" se zyada khatarnak hai</div>
+        <p>
+          Agar downstream <em>down</em> hai, toh connection turant refuse hota hai — tum fast fail karke aage
+          badh jaate ho. Agar wo <em>slow</em> hai, toh tumhari requests atki rehti hain, resources pakde rehte
+          hain, aur failure andar ki taraf failti hai. Isliye monitoring mein "up/down" check kaafi nahi hai —
+          <strong>latency percentiles</strong> (p95, p99) dekhna zaroori hai (ch 16). Aur isiliye timeout
+          har defense se pehle aata hai: wo "slow" ko "fail" mein badal deta hai, jo handle karna aasaan hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Health check dependencies check mat karo</div>
+        <p>
+          Agar tumhara <code>/health</code> DB, Redis, aur 3 downstream services ko check karta hai, toh
+          <em>kisi ek</em> ke slow hone pe <strong>saare instances</strong> unhealthy mark ho jaayenge — aur
+          load balancer sabko traffic se hata dega. Ek partial degradation poora outage ban gaya. Isliye do alag
+          endpoints rakho: <strong>liveness</strong> (kya process zinda hai — koi dependency check nahi) aur
+          <strong>readiness</strong> (kya ye traffic le sakta hai — sirf <em>essential</em> dependencies). Aur
+          health check ko fast rakho, timeout ke saath (ch 17).
+        </p>
+      </div>
+
+      <h2 id="degradation">Graceful Degradation</h2>
+      <p>
+        Sabse achha failure handling wo hai jisme user ko pata hi na chale ki kuch fail hua. Har failure ka
+        matlab error page nahi hona chahiye:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">degradation ke tareeke<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// ── 1. Fallback value — non-critical feature chup ho jaaye ──</span>
+<span class="tok-kw">const</span> recommendations = <span class="tok-kw">await</span> breaker
+  .<span class="tok-fn">call</span>(() =&gt; recoService.<span class="tok-fn">get</span>(userId))
+  .<span class="tok-fn">catch</span>(() =&gt; []);   <span class="tok-com">// reco service down → khali section, page phir bhi chalega</span>
+
+<span class="tok-com">// ── 2. Stale data — thoda purana &gt;&gt; kuch bhi nahi (ch 11) ──</span>
+<span class="tok-kw">try</span> { <span class="tok-kw">return</span> <span class="tok-kw">await</span> <span class="tok-fn">fetchFresh</span>(); }
+<span class="tok-kw">catch</span> { <span class="tok-kw">return</span> <span class="tok-kw">await</span> cache.<span class="tok-fn">getStale</span>(key); }
+
+<span class="tok-com">// ── 3. Async mein daal do (ch 12) ──────────────────────────</span>
+<span class="tok-com">// Email service down? Queue mein daalo, baad mein bhej dena.</span>
+<span class="tok-com">// User ka order phir bhi ban gaya.</span>
+
+<span class="tok-com">// ── 4. LOAD SHEDDING — deliberately kuch requests reject karo ──</span>
+<span class="tok-kw">if</span> (currentLoad &gt; THRESHOLD &amp;&amp; !req.isCritical) {
+  <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">503</span>).<span class="tok-fn">set</span>(<span class="tok-str">"Retry-After"</span>, <span class="tok-str">"5"</span>).<span class="tok-fn">json</span>({ error: <span class="tok-str">"overloaded"</span> });
+}
+<span class="tok-com">// Counter-intuitive par critical: 100% requests ko slowly fail karne se</span>
+<span class="tok-com">// BEHTAR hai 80% ko theek se serve karna aur 20% ko saaf mana kar dena.</span>
+<span class="tok-com">// Overload pe ek system jo "sab try karta hai" wo SAB fail karta hai.</span>
+</code></pre>
+      </div>
+
+      <h2 id="checklist">Har External Call Ka Checklist</h2>
+      <p>Jab bhi code apne process ke bahar kisi cheez ko call kare (DB, cache, HTTP, queue):</p>
+      <ul>
+        <li>☐ <strong>Timeout</strong> hai? (connect aur read dono)</li>
+        <li>☐ Failure pe kya hoga — error, fallback, ya stale data?</li>
+        <li>☐ Retry kar rahe ho? Toh — operation idempotent hai? Backoff + jitter hai? Sirf transient errors pe?</li>
+        <li>☐ Ye dependency <strong>critical</strong> hai ya optional? Optional hai toh circuit breaker + fallback lagao.</li>
+        <li>☐ Iske resources <strong>bulkheaded</strong> hain?</li>
+        <li>☐ Failure log ho rahi hai <code>requestId</code> aur context ke saath? (ch 16)</li>
+        <li>☐ Metric hai — success rate aur latency? Alert kis pe lagega?</li>
+        <li>☐ Error client tak jaa raha hai toh — internals leak toh nahi ho rahe? (ch 18)</li>
+      </ul>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>Sawaal "failure kaise roken" nahi, <strong>"fail hone pe system kaise behave karta hai"</strong> hai.</li>
+        <li><strong>Expected</strong> (validation, 404, 503 — normal flow) aur <strong>unexpected</strong> (bug) errors alag hain: pehle ko handle karo, doosre pe fail fast + alert.</li>
+        <li>Error nigalna (<code>catch { log }</code> aur aage badhna) sabse mehnga anti-pattern hai — failure 3 layers baad dikhegi.</li>
+        <li>Service domain errors throw kare; <strong>central handler</strong> unhe status codes mein map kare. 5xx pe asli message kabhi na bhejo.</li>
+        <li><code>unhandledRejection</code>/<code>uncaughtException</code> pe <strong>crash and restart</strong> — corrupted process mein chalte rehna zyada khatarnak hai.</li>
+        <li>Har network call ka default timeout <strong>infinity</strong> hai — yahi outage ka sabse bada single cause hai.</li>
+        <li>Timeout <strong>budget</strong> banao: har layer ka timeout apne caller se kam.</li>
+        <li>Retry ke teen rules: sirf transient errors, sirf idempotent operations, hamesha backoff + <strong>jitter</strong>.</li>
+        <li><strong>Retry amplification</strong>: 3 layers × 3 retries = 27 requests. Retry sirf ek layer pe, aur retry budget rakho.</li>
+        <li><strong>Circuit breaker</strong> OPEN state mein 0ms mein fail karta hai — tumhare resources bachte hain <em>aur</em> downstream ko recover karne ka mauka milta hai. HALF-OPEN recovery ko safe banata hai.</li>
+        <li>Breaker threshold <strong>rate</strong> pe rakho (absolute count pe nahi) + minimum call count.</li>
+        <li><strong>Bulkhead</strong> — per-dependency alag pools, alag queues, alag deployments. Ek slow dependency sab resources na khaye.</li>
+        <li><strong>"Slow" "down" se zyada khatarnak hai</strong> — isliye up/down nahi, latency percentiles monitor karo.</li>
+        <li>Health check mein dependencies check mat karo — liveness aur readiness alag rakho, warna ek slow DB saare instances ko unhealthy kar dega.</li>
+        <li><strong>Load shedding</strong>: overload pe kuch requests deliberately reject karo. Sabko slowly fail karne se 80% ko theek serve karna behtar hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Ek downstream service slow ho gayi. Tumhare system pe kya asar hoga?"</div>
+        <p>
+          Bina defenses ke: requests atki rahengi, threads/connections pakde rahenge, pool khatam hoga, aur
+          <em>unrelated</em> endpoints bhi fail karne lagenge; health check timeout hoga toh LB instances ko
+          maar dega, traffic bache instances pe jaayega, aur cascading failure ban jaayega. Defenses layer by
+          layer: <strong>timeout</strong> (slow ko fail mein badlo), <strong>bulkhead</strong> (blast radius
+          seemit karo), <strong>circuit breaker</strong> (0ms fail), <strong>backoff+jitter</strong> (retry
+          storm rokо), aur <strong>fallback/degradation</strong>.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Circuit breaker kya hai? Retry se kaise alag hai?"</div>
+        <p>
+          Retry <em>ek request</em> ka faisla hai; breaker <em>system-level</em> hai. Teen states: CLOSED
+          (normal, failures count ho rahi hain), OPEN (failure rate threshold cross — calls bheji hi nahi
+          jaati, 0ms mein fail), HALF-OPEN (reset window ke baad 1–2 test calls; pass → CLOSED, fail → OPEN).
+          Do faayde: tumhare resources bachte hain (5s timeout ki jagah instant fail) aur downstream ko recover
+          karne ka space milta hai. Threshold rate pe rakho, absolute count pe nahi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Retries kab nuksaan karti hain?"</div>
+        <p>
+          Teen cases: (1) <strong>non-idempotent</strong> operation retry karna — double charge (fix:
+          idempotency key, ch 9); (2) <strong>bina jitter</strong> ke — ek saath fail hui requests ek saath
+          retry karti hain, thundering herd; (3) <strong>amplification</strong> — har layer 3 retries kare toh
+          3 layers = 27 requests, matlab already-overloaded service pe 27× load. Retry sirf ek layer pe rakho
+          (user ke sabse paas wali), retry budget lagao, aur permanent errors (4xx) kabhi retry mat karo.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Health check endpoint mein kya check karoge?"</div>
+        <p>
+          Do alag endpoints. <strong>Liveness</strong>: kya process zinda hai — koi dependency check nahi,
+          bas <code>200</code>. Fail hone ka matlab restart. <strong>Readiness</strong>: kya ye instance traffic
+          le sakta hai — sirf <em>essential</em> dependencies (DB), fast timeout ke saath. Sabhi downstream
+          services ko check karna ek anti-pattern hai: ek non-critical service slow hui aur saare instances
+          unhealthy ho gaye — partial degradation poora outage ban jaata hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "System overloaded hai. Kya karoge?"</div>
+        <p>
+          <strong>Load shedding</strong> — kuch requests deliberately <code>503 + Retry-After</code> ke saath
+          reject karo, priority ke hisaab se (critical paths pehle, analytics/bulk baad mein). Reason
+          counter-intuitive hai par decisive: overload pe agar system sab requests serve karne ki koshish karta
+          hai toh sabki latency badhti hai, timeouts hote hain, retries aati hain, aur <em>sab</em> fail hota
+          hai. 80% ko theek serve karna 100% ko slowly fail karne se behtar hai. Saath mein rate limiting
+          (ch 18), backpressure, aur autoscaling (ch 19).
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="15-configuration.html"><strong>Chapter 15 — Configuration Management</strong></a>: system
+          resilient hai. Par wo har environment mein alag behave karta hai — aur wo difference kahan aur kaise
+          rakha jaaye, ye ek surprisingly deep sawaal hai.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

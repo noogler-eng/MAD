@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backend Engineering from First Principles — MAD Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link active" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts › Backend Engineering</div>
+      <div class="progress-pill">21 / 21 chapters ready</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">First Principles · HTTP · Databases · Scaling · Architecture</span>
+      <h1>Backend Engineering from First Principles</h1>
+      <p class="subtitle">
+        Ye handbook ek 23-video playlist ke upar bana hai, lekin transcript ka dump nahi hai — har concept ko
+        <strong>root level tak</strong> khola gaya hai: kya problem thi, us problem ka solution kaise evolve
+        hua, aur aaj production mein us solution ka actual shape kya hai. Har chapter mein
+        <strong>architecture diagrams</strong> (Excalidraw-style, inline SVG) hain jo woh cheez dikhate hain
+        jo video mein sirf boli gayi hai.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">📌 "First principles" ka yahan matlab kya hai</div>
+        <p>
+          Framework-first seekhne mein tum <code>@app.get("/users")</code> likhna seekh lete ho, par pata nahi
+          hota ki us decorator ke peeche TCP socket, HTTP parsing, route matching, aur serialization ka poora
+          pipeline chal raha hai. Is handbook ka rule ulta hai — <strong>pehle layer ka mechanism, phir
+          framework ka syntax.</strong> Isliye har chapter "problem kya thi" se shuru hota hai, "library kaunsi
+          use karein" se nahi.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Kaise use karo ise</div>
+        <p>
+          Pehle playlist ka video dekho (1x pe, bina notes) — speaker ka reasoning aur order samajhne ke liye.
+          Uske baad ye chapter padho — jo skip hua tha wo yahan expand kiya gaya hai, aur diagram se poora
+          model ek saath dikh jaata hai. Har chapter ke top pe uske source video ka link hai.
+        </p>
+      </div>
+
+      <h2 style="border-top:none; padding-top:0; margin-top:32px;">Chapters</h2>
+      <div class="grid">
+
+        <a class="card" href="01-first-principles-roadmap.html">
+          <div class="card-num">1</div>
+          <h3>First Principles & Roadmap</h3>
+          <p>Framework-first seekhne mein kya toot-ta hai, aur ye 21 chapters kis order mein ek dusre pe khade hain.</p>
+          <div class="topics"><span>Learning Path</span><span>Mental Model</span><span>Layer Stack</span></div>
+        </a>
+
+        <a class="card" href="02-what-is-a-backend.html">
+          <div class="card-num">2</div>
+          <h3>What Is a Backend</h3>
+          <p>Backend kyun exist karta hai, client-server split ka asli reason, aur ek request ka poora lifecycle.</p>
+          <div class="topics"><span>Client-Server</span><span>Trust Boundary</span><span>Request Lifecycle</span></div>
+        </a>
+
+        <a class="card" href="03-http-deep-dive.html">
+          <div class="card-num">3</div>
+          <h3>HTTP Deep-Dive</h3>
+          <p>TCP se leke HTTP/2 tak — request/response anatomy, methods, status codes, headers, statelessness.</p>
+          <div class="topics"><span>TCP</span><span>Methods</span><span>Status Codes</span><span>Headers</span></div>
+        </a>
+
+        <a class="card" href="04-routing.html">
+          <div class="card-num">4</div>
+          <h3>Routing</h3>
+          <p>Request URL se handler function tak ka mapping — trie/radix matching, params, route precedence.</p>
+          <div class="topics"><span>Route Matching</span><span>Path Params</span><span>Radix Tree</span></div>
+        </a>
+
+        <a class="card" href="05-serialization.html">
+          <div class="card-num">5</div>
+          <h3>Serialization & Deserialization</h3>
+          <p>Memory object ↔ bytes ke beech translation — JSON, Protobuf, aur format choose karne ke trade-offs.</p>
+          <div class="topics"><span>JSON</span><span>Protobuf</span><span>Wire Format</span></div>
+        </a>
+
+        <a class="card" href="06-auth.html">
+          <div class="card-num">6</div>
+          <h3>Authentication & Authorization</h3>
+          <p>Tum kaun ho (authN) vs tum kya kar sakte ho (authZ) — sessions, JWT, OAuth, RBAC.</p>
+          <div class="topics"><span>Sessions</span><span>JWT</span><span>OAuth</span><span>RBAC</span></div>
+        </a>
+
+        <a class="card" href="07-validation.html">
+          <div class="card-num">7</div>
+          <h3>Validation & Transformation</h3>
+          <p>Untrusted input ko trusted domain object banana — schema validation, coercion, boundary rules.</p>
+          <div class="topics"><span>Schema</span><span>Coercion</span><span>Trust Boundary</span></div>
+        </a>
+
+        <a class="card" href="08-layered-architecture.html">
+          <div class="card-num">8</div>
+          <h3>Controllers, Services, Repositories</h3>
+          <p>Layered architecture — har layer ki exact zimmedari, middleware chain, aur request context.</p>
+          <div class="topics"><span>Layers</span><span>Middleware</span><span>Request Context</span></div>
+        </a>
+
+        <a class="card" href="09-rest-api-design.html">
+          <div class="card-num">9</div>
+          <h3>REST API Design</h3>
+          <p>Resource modelling, versioning, pagination, idempotency, error contracts — complete design guide.</p>
+          <div class="topics"><span>Resources</span><span>Versioning</span><span>Idempotency</span></div>
+        </a>
+
+        <a class="card" href="10-databases-postgres.html">
+          <div class="card-num">10</div>
+          <h3>Databases with Postgres</h3>
+          <p>Storage engine, B-tree indexes, query planner, transactions, isolation levels, connection pooling.</p>
+          <div class="topics"><span>Indexes</span><span>ACID</span><span>Query Planner</span><span>Pooling</span></div>
+        </a>
+
+        <a class="card" href="11-caching.html">
+          <div class="card-num">11</div>
+          <h3>Caching</h3>
+          <p>Cache layers, invalidation strategies, TTL, stampede, cache-aside vs write-through.</p>
+          <div class="topics"><span>Redis</span><span>Invalidation</span><span>Stampede</span></div>
+        </a>
+
+        <a class="card" href="12-task-queues.html">
+          <div class="card-num">12</div>
+          <h3>Task Queues & Background Jobs</h3>
+          <p>Sync request se kaam nikaal ke async worker ko dena — brokers, retries, DLQ, idempotent workers.</p>
+          <div class="topics"><span>Broker</span><span>Retries</span><span>DLQ</span></div>
+        </a>
+
+        <a class="card" href="13-full-text-search.html">
+          <div class="card-num">13</div>
+          <h3>Full-Text Search</h3>
+          <p>Inverted index kaise banta hai, analyzers, relevance scoring, aur Elasticsearch ka role.</p>
+          <div class="topics"><span>Inverted Index</span><span>Analyzers</span><span>Relevance</span></div>
+        </a>
+
+        <a class="card" href="14-error-handling.html">
+          <div class="card-num">14</div>
+          <h3>Error Handling & Fault Tolerance</h3>
+          <p>Expected vs unexpected failures, retries with backoff, circuit breakers, timeouts, bulkheads.</p>
+          <div class="topics"><span>Backoff</span><span>Circuit Breaker</span><span>Timeouts</span></div>
+        </a>
+
+        <a class="card" href="15-configuration.html">
+          <div class="card-num">15</div>
+          <h3>Configuration Management</h3>
+          <p>Config vs code vs secrets, env-based layering, validation at boot, runtime feature flags.</p>
+          <div class="topics"><span>12-Factor</span><span>Secrets</span><span>Feature Flags</span></div>
+        </a>
+
+        <a class="card" href="16-observability.html">
+          <div class="card-num">16</div>
+          <h3>Logging, Monitoring, Observability</h3>
+          <p>Structured logs, metrics, distributed traces — teen pillars aur unka actual production setup.</p>
+          <div class="topics"><span>Logs</span><span>Metrics</span><span>Tracing</span></div>
+        </a>
+
+        <a class="card" href="17-graceful-shutdown.html">
+          <div class="card-num">17</div>
+          <h3>Graceful Shutdown</h3>
+          <p>SIGTERM se process exit tak — in-flight requests drain, connection close, k8s lifecycle hooks.</p>
+          <div class="topics"><span>SIGTERM</span><span>Draining</span><span>Kubernetes</span></div>
+        </a>
+
+        <a class="card" href="18-security.html">
+          <div class="card-num">18</div>
+          <h3>Backend Security</h3>
+          <p>Injection, XSS/CSRF, rate limiting, secrets handling, TLS, least privilege — attack surface ke saath.</p>
+          <div class="topics"><span>Injection</span><span>CSRF</span><span>Rate Limiting</span><span>TLS</span></div>
+        </a>
+
+        <a class="card" href="19-scaling-part-1.html">
+          <div class="card-num">19</div>
+          <h3>Scaling & Performance I</h3>
+          <p>Bottleneck kaise dhoondhein, vertical vs horizontal, load balancing, stateless services.</p>
+          <div class="topics"><span>Bottlenecks</span><span>Load Balancing</span><span>Stateless</span></div>
+        </a>
+
+        <a class="card" href="20-scaling-part-2.html">
+          <div class="card-num">20</div>
+          <h3>Scaling & Performance II</h3>
+          <p>Read replicas, sharding, partitioning, CDN, denormalization, aur consistency ke trade-offs.</p>
+          <div class="topics"><span>Replicas</span><span>Sharding</span><span>CAP Trade-offs</span></div>
+        </a>
+
+        <a class="card" href="21-concurrency.html">
+          <div class="card-num">21</div>
+          <h3>Concurrency & Parallelism</h3>
+          <p>IO-bound vs CPU-bound, threads vs event loop vs processes, GIL, aur sahi model choose karna.</p>
+          <div class="topics"><span>IO vs CPU</span><span>Event Loop</span><span>Threads</span></div>
+        </a>
+
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">✅ Handbook complete — 21 / 21</div>
+        <p>
+          Saare chapters ready hain. Suggested order wahi hai jo sidebar mein hai — har chapter apne se pehle
+          wale pe khada hai. Jaldi mein ho toh Phase 1 (ch 1–9) padho; wo apne aap mein ek poora "ek request ka
+          safar" hai.
+        </p>
+      </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

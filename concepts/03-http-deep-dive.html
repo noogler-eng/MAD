@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Deep-Dive — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link active" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 3</div>
+      <div class="progress-pill">3 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">TCP · Methods · Status Codes · Headers · HTTP/2</span>
+      <h1>HTTP Deep-Dive</h1>
+      <p class="subtitle">
+        HTTP ek <strong>text-based request/response protocol</strong> hai jo TCP ke upar chalta hai. Poore
+        backend ka contract yahi hai — routing, auth, caching, REST design, sab isi ke rules pe khade hain.
+        Isliye ye chapter sabse lamba hai: yahan jo galat samjha, wo agle 18 chapters mein bar-bar kaatega.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 5 —
+        <a href="https://www.youtube.com/watch?v=a3C1DMswClQ">Understanding HTTP for backend engineers, where it all starts</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#stack">1. HTTP Kahan Baithta Hai — Network Stack</a></li>
+          <li><a href="#anatomy">2. Request & Response Ki Anatomy (Raw Bytes)</a></li>
+          <li><a href="#methods">3. Methods — Safe, Idempotent, Cacheable</a></li>
+          <li><a href="#status">4. Status Codes — Classes Aur Unka Asli Matlab</a></li>
+          <li><a href="#headers">5. Headers — Woh Sat Jo Rozana Kaam Aate Hain</a></li>
+          <li><a href="#stateless">6. Statelessness — Sabse Under-rated Idea</a></li>
+          <li><a href="#cors">7. CORS Aur OPTIONS — Preflight Ka Poora Workflow</a></li>
+          <li><a href="#caching">8. HTTP Caching — Freshness Aur Validation</a></li>
+          <li><a href="#negotiation">9. Content Negotiation</a></li>
+          <li><a href="#compression">10. Compression</a></li>
+          <li><a href="#versions">11. HTTP/1.0 → 1.1 → 2 → 3 Ka Evolution</a></li>
+          <li><a href="#body">12. Body Kaise Padhi Jaati Hai — Length vs Chunked</a></li>
+          <li><a href="#takeaways">13. Key Takeaways</a></li>
+          <li><a href="#interview">14. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="stack">HTTP Kahan Baithta Hai — Network Stack</h2>
+      <p>
+        HTTP khud data transfer nahi karta — wo sirf <em>format</em> define karta hai. Actual bytes ek TCP
+        connection pe jaate hain, jo IP packets pe jaate hain. Ye layering samajhna zaroori hai kyunki har layer
+        alag tarah se fail hoti hai (jaise ch 2 mein <code>timeout</code> vs <code>refused</code> vs
+        <code>502</code> dekha tha).
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 720 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Network layer stack and TCP plus TLS handshake before the first HTTP byte">
+          <defs>
+            <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="150" y="20" class="ex-t">Layers</text>
+          <rect x="30" y="36" width="242" height="46" rx="9" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="151" y="52" class="ex-t-sm">HTTP — kya bola ja raha hai</text>
+          <text x="151" y="70" class="ex-t-sm">methods, headers, status, body</text>
+
+          <rect x="30" y="94" width="242" height="46" rx="9" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="151" y="110" class="ex-t-sm">TLS — encryption (https)</text>
+          <text x="151" y="128" class="ex-t-sm">optional layer, HTTP ke neeche</text>
+
+          <rect x="30" y="152" width="242" height="46" rx="9" class="ex-fill-o ex-stroke"/>
+          <text x="151" y="168" class="ex-t-sm">TCP — reliable byte stream</text>
+          <text x="151" y="186" class="ex-t-sm">order, retransmit, congestion</text>
+
+          <rect x="30" y="210" width="242" height="46" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="151" y="226" class="ex-t-sm">IP — packet kahan jaana hai</text>
+          <text x="151" y="244" class="ex-t-sm">koi guarantee nahi</text>
+
+          <text x="151" y="286" class="ex-t-lbl">HTTP ko "ordered bytes" free milte hain —</text>
+          <text x="151" y="306" class="ex-t-sm">wo TCP ka kaam hai, HTTP ka nahi</text>
+
+          <!-- handshake timeline -->
+          <text x="500" y="20" class="ex-t">Pehle HTTP byte se pehle kya hota hai</text>
+          <path d="M340,44 C338,180 344,300 340,404" class="ex-stroke ex-stroke-d"/>
+          <path d="M660,44 C658,180 664,300 660,404" class="ex-stroke ex-stroke-d"/>
+          <text x="340" y="424" class="ex-t-sm">client</text>
+          <text x="660" y="424" class="ex-t-sm">server</text>
+
+          <path d="M342,62 C440,64 560,60 656,64" class="ex-stroke" marker-end="url(#ah1)"/>
+          <text x="500" y="52" class="ex-t-sm">SYN</text>
+          <path d="M658,92 C560,94 440,90 344,94" class="ex-stroke" marker-end="url(#ah1)"/>
+          <text x="500" y="82" class="ex-t-sm">SYN-ACK</text>
+          <path d="M342,122 C440,124 560,120 656,124" class="ex-stroke" marker-end="url(#ah1)"/>
+          <text x="500" y="112" class="ex-t-sm">ACK   → TCP ready (1 RTT)</text>
+
+          <path d="M342,168 C440,170 560,166 656,170" class="ex-stroke ex-stroke-g" marker-end="url(#ah1)"/>
+          <text x="500" y="156" class="ex-t-sm">ClientHello</text>
+          <path d="M658,198 C560,200 440,196 344,200" class="ex-stroke ex-stroke-g" marker-end="url(#ah1)"/>
+          <text x="500" y="188" class="ex-t-sm">ServerHello + certificate</text>
+          <path d="M342,228 C440,230 560,226 656,230" class="ex-stroke ex-stroke-g" marker-end="url(#ah1)"/>
+          <text x="500" y="218" class="ex-t-sm">key exchange → TLS ready</text>
+
+          <path d="M342,286 C440,288 560,284 656,288" class="ex-stroke ex-stroke-p" marker-end="url(#ah1)"/>
+          <text x="500" y="274" class="ex-t-lbl">GET /users HTTP/1.1  ← pehla HTTP byte</text>
+          <path d="M658,320 C560,322 440,318 344,322" class="ex-stroke ex-stroke-p" marker-end="url(#ah1)"/>
+          <text x="500" y="308" class="ex-t-lbl">200 OK + body</text>
+
+          <text x="500" y="360" class="ex-t-sm">https pe pehla request ≈ 2–3 round trips ka</text>
+          <text x="500" y="380" class="ex-t-sm">overhead leta hai — isiliye connection reuse</text>
+          <text x="500" y="400" class="ex-t-lbl">(keep-alive) itna important hai</text>
+        </svg>
+        <figcaption>
+          Connection banane ki cost hi wo reason hai jiske liye HTTP/1.1 ne keep-alive default kiya aur HTTP/2
+          ne multiplexing add ki. Ye pattern DB connection pooling se bilkul same hai (ch 2, ch 10) —
+          <strong>mehnga setup, isliye reuse.</strong>
+        </figcaption>
+      </figure>
+
+      <h2 id="anatomy">Request & Response Ki Anatomy</h2>
+      <p>
+        HTTP/1.1 mein message literally plain text hai — tum use <code>telnet</code> se haath se type kar sakte
+        ho. Structure fixed hai: ek <strong>start line</strong>, phir <strong>headers</strong> (har ek apni line
+        pe), phir ek <strong>blank line</strong>, phir optional <strong>body</strong>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">raw HTTP request — jo actually socket pe jaata hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># ── start line: METHOD  TARGET  VERSION ─────────────────────</span>
+POST /api/users?verbose=true HTTP/1.1
+
+<span class="tok-com"># ── headers: "Name: value", case-insensitive names ──────────</span>
+Host: api.example.com          <span class="tok-com"># HTTP/1.1 mein MANDATORY — ek IP pe kai domains isi se alag hote hain</span>
+Content-Type: application/json <span class="tok-com"># body ka format — server isse parser chunta hai</span>
+Content-Length: 46             <span class="tok-com"># body kitne BYTES ki hai — server itne hi padhega</span>
+Authorization: Bearer eyJhbGc… <span class="tok-com"># kaun bhej raha hai (ch 6)</span>
+Accept: application/json       <span class="tok-com"># mujhe response is format mein chahiye</span>
+User-Agent: curl/8.4.0
+
+<span class="tok-com"># ── blank line: headers khatam, body shuru (\r\n\r\n) ───────</span>
+{"name":"Sharad","email":"sharad@example.com"}
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">raw HTTP response<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># ── status line: VERSION  CODE  REASON-PHRASE ───────────────</span>
+HTTP/1.1 201 Created           <span class="tok-com"># reason phrase sirf insaan ke liye; code hi authoritative hai</span>
+
+Content-Type: application/json; charset=utf-8
+Content-Length: 61
+Location: /api/users/42        <span class="tok-com"># 201 ke saath: naya resource kahan bana</span>
+Cache-Control: no-store        <span class="tok-com"># ise kahin cache mat karo</span>
+Date: Mon, 17 Aug 2026 09:14:22 GMT
+
+{"id":42,"name":"Sharad","email":"sharad@example.com"}
+</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Khud dekhna ho toh</div>
+        <p>
+          <code>curl -v https://api.github.com/users/torvalds</code> — <code>&gt;</code> wali lines tumhari
+          request hain, <code>&lt;</code> wali response. Aur <code>curl --http1.1 --trace-ascii -</code> se
+          literally raw bytes dikhte hain. Ek baar khud dekh lena poore chapter ko concrete bana deta hai.
+        </p>
+      </div>
+
+      <h2 id="methods">Methods — Safe, Idempotent, Cacheable</h2>
+      <p>
+        Method server ko <em>intent</em> batata hai. Par yaad rakhna: <strong>HTTP enforce kuch nahi karta</strong>
+        — tum <code>GET /delete-user?id=5</code> bana sakte ho aur wo chal jayega. Ye rules
+        <em>contracts</em> hain, aur poori internet infrastructure (browsers, proxies, CDNs, retry libraries)
+        in contracts pe bharosa karke behave karti hai. Contract todo, toh infrastructure tumhare against kaam
+        karne lagti hai.
+      </p>
+      <p>Do properties sabse important hain:</p>
+      <ul>
+        <li><strong>Safe</strong> — server ka state badalta hi nahi. Sirf read.</li>
+        <li><strong>Idempotent</strong> — ek baar bhejo ya paanch baar, <em>end state wahi</em> rehta hai.
+        (Response body alag ho sakti hai — jaise doosri DELETE 404 de sakti hai — par state same hai.)</li>
+      </ul>
+
+      <table>
+        <thead>
+          <tr><th>Method</th><th>Kaam</th><th>Safe</th><th>Idempotent</th><th>Body</th><th>Cacheable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>GET</code></td><td>Resource padho</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+          <tr><td><code>HEAD</code></td><td>GET par sirf headers</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+          <tr><td><code>POST</code></td><td>Naya banao / action trigger</td><td>❌</td><td>❌</td><td>✅</td><td>❌ (praktikal)</td></tr>
+          <tr><td><code>PUT</code></td><td>Pura resource replace</td><td>❌</td><td>✅</td><td>✅</td><td>❌</td></tr>
+          <tr><td><code>PATCH</code></td><td>Partial update</td><td>❌</td><td>❌*</td><td>✅</td><td>❌</td></tr>
+          <tr><td><code>DELETE</code></td><td>Resource hatao</td><td>❌</td><td>✅</td><td>optional</td><td>❌</td></tr>
+          <tr><td><code>OPTIONS</code></td><td>Kya allowed hai (CORS preflight)</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e)">
+        * PATCH idempotent <em>ho sakta</em> hai agar tum absolute values bhejo
+        (<code>{"count": 5}</code>), par nahi hoga agar relative operation bhejo
+        (<code>{"increment": 1}</code>). Spec ise idempotent guarantee nahi karta.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Idempotency sirf theory nahi — network ki majboori hai</div>
+        <p>
+          Client ne <code>POST /payments</code> bheja aur timeout ho gaya. Ab wo <em>jaanta hi nahi</em> ki
+          payment hua ya nahi — request server tak pahunche bina mari, ya server ne process karke response
+          bhejte waqt connection toota. Dono cases client se identical dikhte hain. Retry kare toh double
+          charge ka risk; na kare toh possible lost payment. Isiliye non-idempotent operations pe
+          <strong>idempotency key</strong> pattern use hota hai: client ek unique key bhejta hai, server usko
+          store karke duplicate request pe wahi purana result laut&#8203;a deta hai. Ye ch 9 aur ch 14 dono ka
+          central idea hai — fintech mein toh ye non-negotiable hai.
+        </p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Classic bug — GET se state badalna</div>
+        <p>
+          Agar <code>GET /posts/5/delete</code> banaya, toh: browser prefetch usse chala sakta hai, proxy/CDN
+          use cache kar sakta hai, crawler use hit kar sakta hai, aur user ka "back" button dobara trigger kar
+          sakta hai. Ek famous case tha jahan ek admin panel ke delete links <code>GET</code> pe the, aur Google
+          Web Accelerator ne <em>saara data delete kar diya</em> — sirf links crawl karke. Method ka contract
+          todna infrastructure ko hathiyaar bana deta hai.
+        </p>
+      </div>
+
+      <h2 id="status">Status Codes — Classes Aur Unka Asli Matlab</h2>
+      <p>
+        Pehla digit hi class batata hai, aur asli skill 2xx/4xx/5xx ke <em>beech ki line</em> theek se
+        khींchna hai — kyunki wo line "kiski galti hai" define karti hai, aur monitoring/alerting usi pe khadi
+        hoti hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 740 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HTTP status code classes and who is at fault">
+          <rect x="24" y="30" width="132" height="250" rx="10" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="90" y="54" class="ex-t">1xx</text>
+          <text x="90" y="76" class="ex-t-sm">informational</text>
+          <text x="90" y="106" class="ex-t-sm">100 Continue</text>
+          <text x="90" y="126" class="ex-t-sm">101 Switching</text>
+          <text x="90" y="146" class="ex-t-sm">(websocket)</text>
+          <text x="90" y="252" class="ex-t-lbl">rare</text>
+
+          <rect x="168" y="30" width="132" height="250" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="234" y="54" class="ex-t">2xx</text>
+          <text x="234" y="76" class="ex-t-sm">success</text>
+          <text x="234" y="106" class="ex-t-sm">200 OK</text>
+          <text x="234" y="126" class="ex-t-sm">201 Created</text>
+          <text x="234" y="146" class="ex-t-sm">202 Accepted</text>
+          <text x="234" y="166" class="ex-t-sm">204 No Content</text>
+          <text x="234" y="252" class="ex-t-lbl">sab theek</text>
+
+          <rect x="312" y="30" width="132" height="250" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="378" y="54" class="ex-t">3xx</text>
+          <text x="378" y="76" class="ex-t-sm">redirection</text>
+          <text x="378" y="106" class="ex-t-sm">301 permanent</text>
+          <text x="378" y="126" class="ex-t-sm">302 temporary</text>
+          <text x="378" y="146" class="ex-t-sm">304 Not Modified</text>
+          <text x="378" y="252" class="ex-t-lbl">kahin aur dekho</text>
+
+          <rect x="456" y="30" width="132" height="250" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="522" y="54" class="ex-t">4xx</text>
+          <text x="522" y="76" class="ex-t-sm">client ki galti</text>
+          <text x="522" y="106" class="ex-t-sm">400 bad request</text>
+          <text x="522" y="126" class="ex-t-sm">401 unauth</text>
+          <text x="522" y="146" class="ex-t-sm">403 forbidden</text>
+          <text x="522" y="166" class="ex-t-sm">404 not found</text>
+          <text x="522" y="186" class="ex-t-sm">409 conflict</text>
+          <text x="522" y="206" class="ex-t-sm">422 unprocessable</text>
+          <text x="522" y="226" class="ex-t-sm">429 rate limited</text>
+          <text x="522" y="252" class="ex-t-lbl">retry se fayda NAHI</text>
+
+          <rect x="600" y="30" width="118" height="250" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="659" y="54" class="ex-t">5xx</text>
+          <text x="659" y="76" class="ex-t-sm">server ki galti</text>
+          <text x="659" y="106" class="ex-t-sm">500 internal</text>
+          <text x="659" y="126" class="ex-t-sm">502 bad gateway</text>
+          <text x="659" y="146" class="ex-t-sm">503 unavailable</text>
+          <text x="659" y="166" class="ex-t-sm">504 gw timeout</text>
+          <text x="659" y="252" class="ex-t-lbl">retry KAAM aata hai</text>
+
+          <text x="370" y="306" class="ex-t-lbl">Ye line hi alerting define karti hai: 5xx pe page karo, 4xx spike pe investigate karo</text>
+        </svg>
+        <figcaption>
+          4xx aur 5xx ke beech ki line = <strong>"kya retry karne se theek ho sakta hai?"</strong> Yahi ek sawaal
+          client libraries, load balancers, aur tumhare on-call alerts — teenon ka behaviour decide karta hai.
+        </figcaption>
+      </figure>
+
+      <p>Wo codes jo log rozana galat use karte hain:</p>
+      <table>
+        <thead><tr><th>Code</th><th>Kab use karo</th><th>Common galti</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>201 Created</code></td>
+            <td>POST se naya resource bana; <code>Location</code> header ke saath</td>
+            <td>Har POST pe 200 bhej dena — client ko pata hi nahi chalta ki naya bana ya nahi</td>
+          </tr>
+          <tr>
+            <td><code>202 Accepted</code></td>
+            <td>Kaam queue mein daal diya, abhi hua nahi (ch 12)</td>
+            <td>200 bhej dena, jisse client samjhe kaam pura ho gaya</td>
+          </tr>
+          <tr>
+            <td><code>204 No Content</code></td>
+            <td>Success par body hai hi nahi (DELETE, PUT)</td>
+            <td>200 ke saath <code>{}</code> bhejna</td>
+          </tr>
+          <tr>
+            <td><code>401</code> vs <code>403</code></td>
+            <td>401 = "tum kaun ho pata nahi / token invalid". 403 = "pata hai tum kaun ho, par permission nahi"</td>
+            <td>Dono jagah 401. Client retry-with-login loop mein fas jaata hai</td>
+          </tr>
+          <tr>
+            <td><code>400</code> vs <code>422</code></td>
+            <td>400 = request malformed (JSON hi toota hua). 422 = syntax theek, par values invalid</td>
+            <td>Sab kuch 400 — client debug nahi kar paata</td>
+          </tr>
+          <tr>
+            <td><code>409 Conflict</code></td>
+            <td>Current state se clash (duplicate email, version mismatch)</td>
+            <td>400 bhejna, jisse retry logic galat decide karta hai</td>
+          </tr>
+          <tr>
+            <td><code>429</code></td>
+            <td>Rate limit hit; <code>Retry-After</code> header zaroor bhejo</td>
+            <td>503 bhejna — client exponential backoff ki jagah aggressive retry karta hai</td>
+          </tr>
+          <tr>
+            <td><code>500</code> vs <code>503</code></td>
+            <td>500 = code phat gaya. 503 = temporarily overloaded/down, baad mein try karo</td>
+            <td>Overload pe 500 — load balancer instance ko healthy samajhta rehta hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Anti-pattern — "200 OK" ke andar error</div>
+        <p>
+          <code>200 OK</code> body <code>{"success": false, "error": "not found"}</code> — ye har HTTP-aware
+          cheez ko andha kar deta hai. Monitoring ko error rate 0% dikhega, retry library retry nahi karegi,
+          CDN error response cache kar lega, aur load balancer instance ko healthy maanega. <strong>Status code
+          hi wo channel hai jise poori infrastructure padhti hai</strong> — usme sach bolo, details body mein
+          daalo.
+        </p>
+      </div>
+
+      <h2 id="headers">Headers — Woh Saat Jo Rozana Kaam Aate Hain</h2>
+      <p>
+        Headers request/response ka <em>metadata</em> hain — "content ke baare mein content". Sau se zyada
+        standard headers hain, par backend engineer ko practically ye samajhne chahiye:
+      </p>
+      <ul>
+        <li><strong><code>Host</code></strong> — HTTP/1.1 mein mandatory. Yahi wo header hai jiske bharose ek
+        IP pe hazaaron domains chal sakte hain (ch 2 ka nginx <code>server_name</code> isi ko match karta hai).
+        Iske bina virtual hosting exist hi nahi karti.</li>
+
+        <li><strong><code>Content-Type</code></strong> — body ka format
+        (<code>application/json</code>, <code>multipart/form-data</code>,
+        <code>application/x-www-form-urlencoded</code>). Server isi se parser chunta hai. Galat bhejoge toh
+        body <code>undefined</code> milegi — ek classic "mera POST body khali kyun hai" bug.</li>
+
+        <li><strong><code>Content-Length</code></strong> — body ke exact bytes. Receiver itne hi bytes padhta
+        hai, phir rukta hai. Ye galat ho toh connection hang ho jaata hai. Note: <em>bytes</em>, characters
+        nahi — UTF-8 mein "नमस्ते" ke 6 characters 18 bytes hain.</li>
+
+        <li><strong><code>Authorization</code></strong> — credentials.
+        <code>Bearer &lt;token&gt;</code> (JWT/OAuth) ya <code>Basic &lt;base64&gt;</code>. Base64
+        <em>encoding</em> hai, encryption nahi — isiliye Basic auth sirf TLS ke upar hi meaningful hai (ch 6).</li>
+
+        <li><strong><code>Cookie</code> / <code>Set-Cookie</code></strong> — server client pe chhota state
+        rakhta hai jo har request pe wapas aata hai. Yahi HTTP ki statelessness ke upar sessions banata hai.
+        Flags matter karte hain: <code>HttpOnly</code> (JS padh nahi sakta — XSS defense),
+        <code>Secure</code> (sirf HTTPS pe), <code>SameSite</code> (CSRF defense). Detail ch 6, ch 18.</li>
+
+        <li><strong><code>Cache-Control</code></strong> — cache ke rules.
+        <code>no-store</code> (kahin mat rakho), <code>no-cache</code> (rakho par har baar revalidate karo),
+        <code>max-age=3600</code>, <code>private</code> (sirf browser, CDN nahi). Naming confusing hai:
+        <code>no-cache</code> ka matlab "cache mat karo" <em>nahi</em> hai.</li>
+
+        <li><strong><code>ETag</code> + <code>If-None-Match</code></strong> — conditional requests. Server
+        response ka ek version-tag bhejta hai; agli baar client wo tag bhejta hai; agar badla nahi toh server
+        <code>304 Not Modified</code> deta hai <em>bina body ke</em>. Bandwidth ki bachat, aur ch 9 mein yahi
+        optimistic concurrency control ka base banta hai.</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 Headers case-insensitive hain, values nahi</div>
+        <p>
+          <code>Content-Type</code>, <code>content-type</code>, <code>CONTENT-TYPE</code> — teeno same header
+          hain (spec ke hisaab se). HTTP/2 toh saare header names lowercase hi bhejta hai. Isliye apne code mein
+          kabhi <code>headers['Content-Type']</code> se seedha index mat karo — framework ka
+          case-insensitive accessor use karo, warna HTTP/2 pe pahunchte hi code silently toot-ta hai.
+        </p>
+      </div>
+
+      <h2 id="stateless">Statelessness — Sabse Under-rated Idea</h2>
+      <p>
+        HTTP <strong>stateless</strong> hai: server ko do requests ke beech kuch yaad rakhna zaroori nahi.
+        Har request apne saath <em>saara zaroori context</em> laati hai. Server ke liye request #1 aur request
+        #1000 mein koi rishta nahi hai.
+      </p>
+      <p>
+        Pehli nazar mein ye kami lagti hai. Actually ye poore modern backend architecture ki <strong>neev</strong>
+        hai:
+      </p>
+      <ul>
+        <li><strong>Horizontal scaling possible hai</strong> — koi bhi request kisi bhi server pe ja sakti hai,
+        kyunki kisi server ke paas special knowledge nahi hai. Sirf ek aur instance add kar do. (ch 19)</li>
+        <li><strong>Crash sasta hai</strong> — server mar gaya toh us server ke saath kuch "kho" nahi gaya.
+        Restart karo, kaam chalta rahega. (ch 17)</li>
+        <li><strong>Load balancing simple hai</strong> — round-robin kaafi hai; sticky sessions ki zaroorat
+        nahi.</li>
+        <li><strong>Caching kaam karti hai</strong> — ek response self-contained hai, toh use store karke doosre
+        client ko dena valid hai. (ch 11)</li>
+      </ul>
+      <p>
+        Cost ye hai ki har request thodi <em>bhaari</em> hoti hai — auth token har baar bhejo, aur user ka
+        context har baar reconstruct karo. Ye trade deliberately accepted hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 "Stateless" ka matlab "state hi nahi" nahi hai</div>
+        <p>
+          State hoti hai — bas wo <em>server ki memory mein</em> nahi hoti. Wo teen jagah shift hoti hai:
+          <strong>client pe</strong> (cookie, JWT), <strong>shared store mein</strong> (Redis session, database),
+          ya <strong>request ke andar</strong> (query params). Anti-pattern ye hai ki tum user session ko
+          process ki local memory mein rakh do — sab kuch chalta hai jab tak ek hi server hai; doosra instance
+          add karte hi users random logout hone lagte hain. Isi ek galti ka naam hai "sticky session ki
+          majboori".
+        </p>
+      </div>
+
+      <h2 id="cors">CORS Aur OPTIONS — Preflight Ka Poora Workflow</h2>
+      <p>
+        Ch 2 mein CORS ko ek line mein chhoda tha: "browser ki security policy". Ab uska poora mechanism, kyunki
+        ye rozana ka sabse zyada frustrating error hai aur uska 90% ilaaj log copy-paste se karte hain bina
+        samjhe.
+      </p>
+      <p>
+        Sabse pehle do cheezein bilkul saaf kar lo:
+      </p>
+      <ul>
+        <li><strong>CORS ek relaxation hai, restriction nahi.</strong> Default browser policy hai
+        <em>Same-Origin Policy (SOP)</em> — domain A ka JS domain B ka response padh hi nahi sakta. CORS wo
+        mechanism hai jisse server <em>chhoot deta hai</em>: "theek hai, A ko padhne do."</li>
+        <li><strong>CORS request bhejne se nahi rokta</strong> — wo response <em>padhne</em> se rokta hai.
+        Request server tak pahunch chuki hoti hai aur side effect ho chuka hota hai. (Yahi wajah hai ki CORS
+        CSRF nahi rokta — ch 18.)</li>
+      </ul>
+
+      <div class="callout info">
+        <div class="callout-title">📌 "Origin" kya hai — teenon match karne chahiye</div>
+        <p>
+          Origin = <strong>scheme + host + port</strong>. <code>https://app.example.com</code> aur
+          <code>http://app.example.com</code> alag origins hain (scheme alag). <code>example.com</code> aur
+          <code>api.example.com</code> alag hain (host alag). <code>localhost:3000</code> aur
+          <code>localhost:3001</code> alag hain (port alag). Isiliye local development mein CORS itni baar
+          takraata hai — frontend 3000 pe, backend 3001 pe.
+        </p>
+      </div>
+
+      <h3>Simple requests vs preflighted requests</h3>
+      <p>
+        Har cross-origin request preflight nahi karti. Browser pehle dekhta hai ki request
+        <strong>"simple"</strong> hai ya nahi. Simple ki definition historical hai — wo requests jo ek HTML
+        form bhi bhej sakta tha (aur form CORS se pehle se exist karta hai, isliye unhe rokna backwards
+        compatibility todta):
+      </p>
+      <ul>
+        <li>Method <code>GET</code>, <code>HEAD</code>, ya <code>POST</code> ho, <strong>aur</strong></li>
+        <li><code>Content-Type</code> in teen mein se ho: <code>text/plain</code>,
+        <code>application/x-www-form-urlencoded</code>, <code>multipart/form-data</code>, <strong>aur</strong></li>
+        <li>Koi custom header na ho (<code>Authorization</code>, <code>X-API-Key</code> — inse preflight
+        trigger hota hai).</li>
+      </ul>
+      <p>
+        Dhyan do: <strong><code>Content-Type: application/json</code> us list mein nahi hai.</strong> Isliye
+        practically <em>har</em> modern API call preflight karti hai — aur yahi wajah hai ki tumhe
+        <code>OPTIONS</code> requests network tab mein dikhti hain.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CORS preflight OPTIONS request followed by the actual request">
+          <defs>
+            <marker id="co1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <text x="120" y="20" class="ex-t-sm">Browser</text>
+          <text x="640" y="20" class="ex-t-sm">api.example.com</text>
+          <path d="M120,30 C118,160 124,300 120,404" class="ex-stroke ex-stroke-d"/>
+          <path d="M640,30 C638,160 644,300 640,404" class="ex-stroke ex-stroke-d"/>
+
+          <rect x="176" y="38" width="408" height="30" rx="7" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="380" y="57" class="ex-t-sm">JS: fetch("https://api.example.com/orders", {method:"POST", …})</text>
+
+          <text x="380" y="88" class="ex-t-lbl">Content-Type: application/json → simple NAHI hai → PREFLIGHT</text>
+
+          <path d="M122,112 C280,110 480,114 636,112" class="ex-stroke" marker-end="url(#co1)"/>
+          <text x="380" y="102" class="ex-t-sm">OPTIONS /orders</text>
+          <rect x="196" y="120" width="368" height="52" rx="7" class="ex-stroke ex-stroke-d"/>
+          <text x="380" y="140" class="ex-t-sm">Origin: https://app.example.com</text>
+          <text x="380" y="158" class="ex-t-sm">Access-Control-Request-Method: POST</text>
+
+          <path d="M638,196 C480,198 280,194 124,196" class="ex-stroke ex-stroke-g" marker-end="url(#co1)"/>
+          <text x="380" y="186" class="ex-t-sm">204 No Content</text>
+          <rect x="176" y="204" width="408" height="70" rx="7" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="380" y="224" class="ex-t-sm">Access-Control-Allow-Origin: https://app.example.com</text>
+          <text x="380" y="242" class="ex-t-sm">Access-Control-Allow-Methods: POST, GET</text>
+          <text x="380" y="260" class="ex-t-sm">Access-Control-Max-Age: 86400</text>
+
+          <text x="380" y="294" class="ex-t-lbl">browser ne check kiya → allowed → ab ASLI request</text>
+
+          <path d="M122,320 C280,318 480,322 636,320" class="ex-stroke ex-stroke-p" marker-end="url(#co1)"/>
+          <text x="380" y="310" class="ex-t-sm">POST /orders  + body</text>
+
+          <path d="M638,356 C480,358 280,354 124,356" class="ex-stroke ex-stroke-p" marker-end="url(#co1)"/>
+          <text x="380" y="346" class="ex-t-sm">201 Created</text>
+          <text x="380" y="376" class="ex-t-lbl">⚠️ response pe BHI Access-Control-Allow-Origin chahiye</text>
+          <text x="380" y="398" class="ex-t-sm">warna browser response ko JS se chhupa dega — request to ho hi chuki hai</text>
+        </svg>
+        <figcaption>
+          Do round trips: pehla <code>OPTIONS</code> (preflight) sirf <em>permission poochne</em> ke liye —
+          usme body nahi jaati. Aur sabse zyada bhoola jaane wala point sabse neeche hai:
+          <strong>actual response pe bhi CORS headers chahiye</strong>, sirf preflight pe nahi.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">CORS headers — dono taraf<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># ── Browser bhejta hai (preflight mein) ─────────────────────</span>
+Origin: https://app.example.com          <span class="tok-com"># kaun poochh raha hai (browser SET karta hai, JS nahi)</span>
+Access-Control-Request-Method:  POST     <span class="tok-com"># main ye method use karna chahta hoon</span>
+Access-Control-Request-Headers: authorization, content-type
+
+<span class="tok-com"># ── Server jawab deta hai ───────────────────────────────────</span>
+Access-Control-Allow-Origin:  https://app.example.com   <span class="tok-com"># ya "*" (par credentials ke saath nahi)</span>
+Access-Control-Allow-Methods: GET, POST, PATCH, DELETE
+Access-Control-Allow-Headers: authorization, content-type
+Access-Control-Allow-Credentials: true   <span class="tok-com"># cookies bhejne ki ijaazat (ch 6)</span>
+Access-Control-Max-Age: 86400            <span class="tok-com"># preflight ka jawab 24h cache karo</span>
+Access-Control-Expose-Headers: X-Request-Id, X-Total-Count
+<span class="tok-com">#   ↑ ye NA ho toh JS in headers ko PADH nahi payega, chahe wo bheje gaye hon</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ CORS ke chaar sabse common bugs</div>
+        <p>
+          <strong>1. <code>Allow-Origin: *</code> + <code>Allow-Credentials: true</code></strong> — browser ise
+          <em>reject</em> karta hai, spec ke hisaab se. Credentials ke saath exact origin echo karna padta hai
+          (allowlist se, har origin blindly nahi — ch 18).<br>
+          <strong>2. Preflight pe CORS headers hain par actual response pe nahi</strong> — preflight pass ho
+          jaata hai, phir asli response block hota hai. Confusing kyunki OPTIONS network tab mein green dikhta
+          hai.<br>
+          <strong>3. Error responses pe CORS headers missing</strong> — tumhara 500 handler (ch 14) CORS
+          middleware ke baad chalta hai aur headers nahi lagata, toh browser mein error "CORS error" dikhta hai,
+          asli 500 nahi. Ghanton debug hota hai.<br>
+          <strong>4. Custom response header padh nahi paa rahe</strong> — <code>Expose-Headers</code> chahiye.
+          Pagination count ya request ID bhejne pe ye zaroori hai.
+        </p>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 CORS server-to-server pe lagta hi nahi</div>
+        <p>
+          <code>curl</code>, Postman, ya tumhara backend jab doosri API call karta hai — <strong>wahan CORS ka
+          naam bhi nahi aata</strong>. Ye poori tarah ek <em>browser</em> ki policy hai, network ki nahi.
+          Isliye "CORS error aa raha hai" ka matlab hamesha ye hota hai ki request browser se ja rahi hai. Aur
+          yahi ch 2 ke us point ka mechanism hai jahan bola tha ki frontend se third-party APIs call karna
+          structurally toot-ta hai — kyunki wo headers <em>unke</em> control mein hain, tumhare nahi.
+        </p>
+      </div>
+
+      <h2 id="caching">HTTP Caching — Freshness Aur Validation</h2>
+      <p>
+        HTTP ka apna caching model hai, aur wo do bilkul alag mechanisms pe khada hai. Ye samajhna zaroori hai
+        kyunki browser, CDN, aur proxy — teenon isi ke hisaab se behave karte hain (ch 11 mein hum
+        <em>application-level</em> caching dekhenge; ye protocol-level hai).
+      </p>
+
+      <table>
+        <thead><tr><th>Mechanism</th><th>Sawaal</th><th>Network trip?</th><th>Headers</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Freshness</strong></td>
+            <td>"Kya ye abhi bhi taaza hai?"</td>
+            <td><strong>Koi request hi nahi</strong> — cache se seedha</td>
+            <td><code>Cache-Control: max-age</code>, <code>Expires</code></td>
+          </tr>
+          <tr>
+            <td><strong>Validation</strong></td>
+            <td>"Kya ye badla hai?"</td>
+            <td>Request jaati hai, par body wapas nahi aati (<code>304</code>)</td>
+            <td><code>ETag</code>/<code>If-None-Match</code>, <code>Last-Modified</code>/<code>If-Modified-Since</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-title">Cache-Control directives — jo actually matter karte hain<button class="copy-btn">Copy</button></div>
+        <pre><code>Cache-Control: max-age=<span class="tok-num">3600</span>          <span class="tok-com"># 1 ghante tak fresh — koi request nahi jayegi</span>
+Cache-Control: s-maxage=<span class="tok-num">86400</span>        <span class="tok-com"># SHARED caches (CDN) ke liye alag age</span>
+Cache-Control: no-cache               <span class="tok-com"># cache karo, par HAR BAAR revalidate karo</span>
+Cache-Control: no-store               <span class="tok-com"># kahin store mat karo (banking, PII)</span>
+Cache-Control: private                <span class="tok-com"># sirf browser, CDN NAHI (personalized data)</span>
+Cache-Control: public                 <span class="tok-com"># CDN bhi cache kar sakta hai</span>
+Cache-Control: immutable              <span class="tok-com"># kabhi badlega hi nahi → revalidate mat karo</span>
+Cache-Control: stale-while-revalidate=<span class="tok-num">60</span>  <span class="tok-com"># purana do, background mein refresh (ch 11)</span>
+
+<span class="tok-com"># ⚠️ Naming trap: `no-cache` ka matlab "cache mat karo" NAHI hai —</span>
+<span class="tok-com">#    wo "cache karo par use karne se pehle poochho" hai.</span>
+<span class="tok-com">#    "Cache mat karo" wala directive `no-store` hai.</span>
+
+<span class="tok-com"># ── Validation ka flow ──────────────────────────────────────</span>
+<span class="tok-com"># Pehli baar:</span>
+GET /api/products
+→ <span class="tok-num">200</span> OK
+  ETag: <span class="tok-str">"a3f2b8"</span>              <span class="tok-com"># content ka fingerprint</span>
+  Cache-Control: max-age=<span class="tok-num">60</span>
+  [ 200 KB body ]
+
+<span class="tok-com"># max-age khatam hone ke baad — client apna tag wapas bhejta hai:</span>
+GET /api/products
+If-None-Match: <span class="tok-str">"a3f2b8"</span>
+→ <span class="tok-num">304</span> Not Modified          <span class="tok-com"># BODY NAHI — sirf ~200 bytes headers</span>
+<span class="tok-com"># 200 KB ki jagah 200 bytes. Bandwidth aur render dono fast.</span>
+</code></pre>
+      </div>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Static assets ki classic strategy — "cache forever + rename"</div>
+        <p>
+          Build tool filename mein content hash daalta hai: <code>app.a3f2b8.js</code>. Us file pe
+          <code>Cache-Control: max-age=31536000, immutable</code> lagta hai — <em>ek saal</em>, kabhi
+          revalidate nahi. Content badla? Toh hash badla, matlab <strong>filename hi naya hai</strong> — aur
+          purani cache automatically irrelevant ho gayi. Isse invalidation ki poori problem gayab ho jaati hai.
+          Sirf <code>index.html</code> pe <code>no-cache</code> lagta hai, kyunki wahi naye filenames ki taraf
+          point karta hai. Ye pattern ch 11 ke "key versioning" jaisa hi idea hai, bas HTTP layer pe.
+        </p>
+      </div>
+
+      <h2 id="negotiation">Content Negotiation</h2>
+      <p>
+        Ek hi URL, kai representations. Client apni preference batata hai aur server sabse achhi match chunta
+        hai — isse format URL mein daalne ki zaroorat nahi padti (<code>/users.json</code> vs
+        <code>/users.xml</code>).
+      </p>
+      <div class="code-block">
+        <div class="code-title">negotiation ke chaar dimensions<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Client kya chahta hai — q = quality/preference (0 se 1)</span>
+Accept:          application/json;q=<span class="tok-num">1.0</span>, text/xml;q=<span class="tok-num">0.5</span>
+Accept-Language: hi-IN, en;q=<span class="tok-num">0.8</span>
+Accept-Encoding: br, gzip
+Accept-Charset:  utf-<span class="tok-num">8</span>
+
+<span class="tok-com"># Server ne kya chuna</span>
+Content-Type:     application/json; charset=utf-8
+Content-Language: hi-IN
+Content-Encoding: br
+
+<span class="tok-com"># ⚠️ Vary header — cache ke liye CRITICAL</span>
+Vary: Accept-Encoding, Accept-Language
+<span class="tok-com">#   ↑ Cache ko batata hai: "ye response IN headers pe depend karta hai,</span>
+<span class="tok-com">#     toh alag values ke liye alag entry rakho."</span>
+<span class="tok-com">#   Ye na ho toh CDN ek Hindi user ka response ek English user ko de dega,</span>
+<span class="tok-com">#   ya gzip response ek aise client ko jo gzip samajh hi nahi sakta.</span>
+
+<span class="tok-com"># Client jo maange wo de na sako toh: 406 Not Acceptable</span>
+<span class="tok-com"># (practically zyadatar APIs default JSON de deti hain — ye zyada friendly hai)</span>
+</code></pre>
+      </div>
+      <p>
+        Ek aur jagah content negotiation kaam aati hai — <strong>API versioning</strong> (ch 9):
+        <code>Accept: application/vnd.myapi.v2+json</code>. URL saaf rehta hai, par debug karna mushkil ho
+        jaata hai.
+      </p>
+
+      <h2 id="compression">Compression</h2>
+      <p>
+        Text responses (JSON, HTML, CSS, JS) bahut repetitive hote hain, isliye compression se
+        <strong>60–80% size kam</strong> ho jaata hai. Ye shayad sabse sasti performance win hai jo ek line
+        config se milti hai.
+      </p>
+      <div class="code-block">
+        <div class="code-title">compression ka flow aur trade-offs<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com"># Client batata hai kya samajh sakta hai</span>
+Accept-Encoding: br, gzip, deflate
+
+<span class="tok-com"># Server compress karke batata hai kya kiya</span>
+Content-Encoding: br
+Content-Length: <span class="tok-num">18432</span>          <span class="tok-com"># ye COMPRESSED size hai (ch 3 ka body reading)</span>
+Vary: Accept-Encoding             <span class="tok-com"># cache ke liye zaroori (upar dekho)</span>
+
+<span class="tok-com"># ── Algorithms ─────────────────────────────────────────────</span>
+<span class="tok-com"># gzip — universal support, fast, achha ratio. Safe default.</span>
+<span class="tok-com"># br (Brotli) — ~15-20% behtar ratio, par compress karna SLOW hai</span>
+<span class="tok-com">#   → static files ke liye ideal (ek baar build time pe compress karo)</span>
+<span class="tok-com">#   → dynamic responses ke liye low compression level use karo</span>
+<span class="tok-com"># zstd — naya, fast + achha ratio, support badh raha hai</span>
+
+<span class="tok-com"># ⚠️ Kya compress NA karein:</span>
+<span class="tok-com">#   • already-compressed formats — jpg, png, mp4, zip, pdf</span>
+<span class="tok-com">#     (CPU jalega aur size kabhi-kabhi BADH jaata hai)</span>
+<span class="tok-com">#   • bahut chhote responses (&lt;1 KB) — overhead faayde se zyada</span>
+<span class="tok-com">#   • streaming responses jahan TTFB matter karta hai (ch 3 ka chunked)</span>
+
+<span class="tok-com"># 📍 Kahan karein: aksar REVERSE PROXY pe (nginx — ch 2), app mein nahi.</span>
+<span class="tok-com">#    App ka CPU business logic ke liye bacha rehta hai (ch 21), aur config</span>
+<span class="tok-com">#    ek jagah rehti hai.</span>
+gzip on; gzip_types application/json text/css application/javascript;
+gzip_min_length <span class="tok-num">1024</span>;
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ BREACH/CRIME — compression + secrets ek saath khatarnak hain</div>
+        <p>
+          Agar ek response mein <em>attacker ka diya hua input</em> aur ek <em>secret</em> (jaise CSRF token)
+          dono hain, toh compressed response ka <strong>size</strong> hi secret ke baare mein information leak
+          kar deta hai — attacker guesses bhejta hai aur size dekh ke pata lagata hai ki guess sahi tha ya nahi.
+          Practical defences: secrets ko compressed response body mein mat daalo, CSRF token ko har response
+          mein randomize karo, aur sensitive endpoints pe compression band rakho.
+        </p>
+      </div>
+
+      <h2 id="versions">HTTP/1.0 → 1.1 → 2 → 3 Ka Evolution</h2>
+      <p>
+        Har version ek specific performance problem solve karne aaya. Semantics (methods, status, headers) sab
+        mein same hai — sirf <em>wire pe bytes kaise jaate hain</em> wo badla hai.
+      </p>
+
+      <table>
+        <thead><tr><th>Version</th><th>Problem jo thi</th><th>Solution</th><th>Jo bacha rah gaya</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>HTTP/1.0</strong></td>
+            <td>—</td>
+            <td>Ek request = ek TCP connection, phir band</td>
+            <td>Har request pe naya handshake — bohot mehnga</td>
+          </tr>
+          <tr>
+            <td><strong>HTTP/1.1</strong></td>
+            <td>Connection setup ka cost</td>
+            <td><code>keep-alive</code> default; <code>Host</code> header (virtual hosting); chunked transfer</td>
+            <td><strong>Head-of-line blocking</strong> — ek connection pe requests line mein, pehli slow toh baaki atki</td>
+          </tr>
+          <tr>
+            <td><strong>HTTP/2</strong></td>
+            <td>HOL blocking + text overhead</td>
+            <td>Binary framing; ek connection pe <strong>multiplexed streams</strong>; HPACK header compression; server push</td>
+            <td>TCP-level HOL blocking — ek packet kho jaaye toh <em>saari</em> streams rukti hain</td>
+          </tr>
+          <tr>
+            <td><strong>HTTP/3</strong></td>
+            <td>TCP-level HOL blocking</td>
+            <td>QUIC — UDP ke upar, har stream independent; handshake + TLS ek saath (0–1 RTT)</td>
+            <td>UDP kabhi-kabhi corporate networks mein block hota hai</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <figure class="excali">
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HTTP/1.1 sequential requests versus HTTP/2 multiplexed streams on one connection">
+          <text x="180" y="20" class="ex-t">HTTP/1.1 — ek connection, line mein</text>
+          <text x="540" y="20" class="ex-t">HTTP/2 — ek connection, multiplexed</text>
+          <path d="M360,34 C364,130 356,220 360,282" class="ex-stroke ex-stroke-d"/>
+
+          <!-- h1 -->
+          <rect x="30" y="46" width="120" height="26" rx="6" class="ex-fill-g ex-stroke ex-stroke-g"/><text x="90" y="59" class="ex-t-sm">req A</text>
+          <rect x="152" y="46" width="150" height="26" rx="6" class="ex-fill-o ex-stroke"/><text x="227" y="59" class="ex-t-sm">res A (slow)</text>
+          <rect x="30" y="86" width="272" height="26" rx="6" class="ex-stroke ex-stroke-d"/><text x="166" y="99" class="ex-t-sm">req B — WAIT</text>
+          <rect x="30" y="126" width="272" height="26" rx="6" class="ex-stroke ex-stroke-d"/><text x="166" y="139" class="ex-t-sm">req C — WAIT</text>
+          <text x="166" y="182" class="ex-t-lbl">head-of-line blocking</text>
+          <text x="166" y="206" class="ex-t-sm">browser isliye 6 parallel</text>
+          <text x="166" y="226" class="ex-t-sm">connections kholta tha —</text>
+          <text x="166" y="246" class="ex-t-sm">6× handshake ka cost</text>
+
+          <!-- h2 -->
+          <rect x="392" y="46" width="120" height="26" rx="6" class="ex-fill-g ex-stroke ex-stroke-g"/><text x="452" y="59" class="ex-t-sm">stream 1 · A</text>
+          <rect x="392" y="80" width="120" height="26" rx="6" class="ex-fill-b ex-stroke ex-stroke-b"/><text x="452" y="93" class="ex-t-sm">stream 3 · B</text>
+          <rect x="392" y="114" width="120" height="26" rx="6" class="ex-fill-p ex-stroke ex-stroke-p"/><text x="452" y="127" class="ex-t-sm">stream 5 · C</text>
+          <rect x="530" y="46" width="160" height="94" rx="8" class="ex-stroke"/>
+          <text x="610" y="76" class="ex-t-sm">interleaved binary</text>
+          <text x="610" y="96" class="ex-t-sm">frames — ek TCP</text>
+          <text x="610" y="116" class="ex-t-sm">connection pe saath-saath</text>
+          <text x="540" y="182" class="ex-t-lbl">B, C ko A ka wait nahi</text>
+          <text x="540" y="206" class="ex-t-sm">headers HPACK se compress</text>
+          <text x="540" y="226" class="ex-t-sm">domain sharding ab</text>
+          <text x="540" y="246" class="ex-t-sm">anti-pattern ban gaya</text>
+        </svg>
+        <figcaption>
+          Dhyan do — HTTP/2 mein <strong>semantics kuch nahi badle</strong>. Wahi methods, wahi status codes,
+          wahi headers. Sirf transport efficient hua. Isiliye tumhara application code same rehta hai; sirf
+          purani "optimizations" (domain sharding, sprite sheets, file concatenation) ulta nuksaan karne lagti hain.
+        </figcaption>
+      </figure>
+
+      <h2 id="body">Body Kaise Padhi Jaati Hai — Length vs Chunked</h2>
+      <p>
+        Ek chhoti par deep detail. TCP ek <em>byte stream</em> hai — usme "message khatam" jaisa koi concept
+        nahi hai. Toh receiver ko kaise pata chalta hai ki body kahan khatam hui? Do tareeke hain:
+      </p>
+      <ul>
+        <li><strong><code>Content-Length: 46</code></strong> — "exactly 46 bytes padho, phir ruk jao". Simple,
+        par sender ko poori body pehle se pata honi chahiye.</li>
+        <li><strong><code>Transfer-Encoding: chunked</code></strong> — body tukdon mein aati hai, har tukde se
+        pehle uska size hex mein. Size <code>0</code> ka matlab "khatam". Isse total size pehle se jaane bina
+        bhejna possible hota hai.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-title">chunked response — streaming ka mechanism<button class="copy-btn">Copy</button></div>
+        <pre><code>HTTP/1.1 200 OK
+Content-Type: text/plain
+Transfer-Encoding: chunked      <span class="tok-com"># Content-Length nahi hai — abhi pata hi nahi total kitna</span>
+
+1a                              <span class="tok-com"># agle chunk ke bytes, HEX mein (0x1a = 26)</span>
+processing your request… \n     <span class="tok-com"># exactly 26 bytes</span>
+9                               <span class="tok-com"># 9 bytes</span>
+step 1 ok
+0                               <span class="tok-com"># size 0 = body khatam</span>
+                                <span class="tok-com"># final blank line</span>
+</code></pre>
+      </div>
+
+      <p>
+        Yahi mechanism un sab cheezon ke neeche hai jo "live" lagti hain — log streaming, progress updates,
+        Server-Sent Events, aur LLM token-by-token responses. Iska practical faayda hai
+        <strong>time-to-first-byte</strong>: client ko pehla data turant milta hai, poora compute khatam hone ka
+        wait nahi karna padta.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Streaming aur reverse proxy — ek gotcha</div>
+        <p>
+          nginx default mein responses <em>buffer</em> karta hai — matlab wo poora response jama karke tab client
+          ko bhejta hai, jisse tumhari streaming ka poora fayda khatam ho jaata hai. SSE ya streaming endpoints
+          ke liye <code>proxy_buffering off;</code> chahiye. Ye "local pe streaming chal rahi thi, production
+          mein nahi" ka sabse common cause hai — aur ye ch 2 ke hop-thinking ka perfect example hai: bug tumhare
+          code mein nahi, hop #4 pe hai.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>HTTP sirf ek <strong>text format</strong> hai; reliability aur ordering TCP deta hai, encryption TLS.</li>
+        <li>Message structure fixed hai: start line → headers → blank line → body. HTTP/1.1 mein ye literally readable text hai.</li>
+        <li>Methods enforce nahi hote, par poori internet infrastructure unke contract pe bharosa karti hai — contract todo toh infra tumhare khilaf kaam karta hai.</li>
+        <li><strong>Idempotent</strong> = repeat karne pe end state same. Network timeout ke baad safe retry ka yahi base hai; non-idempotent ke liye idempotency key.</li>
+        <li>4xx vs 5xx ki line = "retry se theek hoga?" — yahi alerting aur client retry logic define karti hai.</li>
+        <li><code>200 OK</code> ke andar error bhejna monitoring, retries, aur caching — teeno ko andha kar deta hai.</li>
+        <li><code>Host</code> header virtual hosting ki neev hai; <code>Content-Type</code> galat ho toh body parse hi nahi hoti.</li>
+        <li>Statelessness ka matlab "state nahi" nahi — state client, shared store, ya request mein shift hoti hai. Isi se horizontal scaling possible hai.</li>
+        <li><strong>CORS ek relaxation hai, restriction nahi</strong> — default Same-Origin Policy hai; CORS server ko chhoot dene ka tareeka deta hai.</li>
+        <li>Origin = <strong>scheme + host + port</strong>; teenon match karne chahiye.</li>
+        <li><code>Content-Type: application/json</code> "simple request" nahi hai — isliye lagbhag har modern API call <strong>preflight</strong> karti hai.</li>
+        <li>CORS headers <strong>preflight aur actual response dono pe</strong> chahiye — aur error responses pe bhi, warna asli 500 "CORS error" ban jaata hai.</li>
+        <li><code>Allow-Origin: *</code> + <code>Allow-Credentials: true</code> browser reject karta hai; custom response headers ke liye <code>Expose-Headers</code> chahiye.</li>
+        <li>HTTP caching ke do mechanisms: <strong>freshness</strong> (koi request hi nahi) aur <strong>validation</strong> (<code>304</code>, body nahi aati).</li>
+        <li><code>no-cache</code> ≠ "cache mat karo" — wo <code>no-store</code> hai.</li>
+        <li>Static assets: <strong>content-hashed filename + <code>immutable</code></strong> — invalidation ki problem hi khatam.</li>
+        <li>Content negotiation ke saath <strong><code>Vary</code> header zaroori hai</strong>, warna CDN galat variant serve karega.</li>
+        <li>Compression text pe 60–80% bachati hai; already-compressed formats pe mat karo, aur usse proxy pe rakho.</li>
+        <li>HTTP/2 ne semantics nahi, sirf transport badla — multiplexing se HOL blocking gaya; HTTP/3 ne TCP hi chhod diya.</li>
+        <li>Chunked transfer streaming ka mechanism hai — par proxy buffering usse chupchaap maar deti hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "PUT aur PATCH mein farq? PUT idempotent kyun hai, POST nahi?"</div>
+        <p>
+          PUT poora resource replace karta hai — wahi body 5 baar bhejo, resource wahi final state pe rahega,
+          isliye idempotent. POST har baar <em>naya</em> resource banata hai — 5 baar bhejo, 5 records. PATCH
+          partial update hai, aur uski idempotency payload pe depend karti hai
+          (<code>{"count":5}</code> idempotent, <code>{"increment":1}</code> nahi).
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "401 aur 403 mein kya farq hai?"</div>
+        <p>
+          401 = <em>authentication</em> fail — server jaanta hi nahi tum kaun ho (token missing/invalid/expired).
+          Sahi response ke saath <code>WWW-Authenticate</code> header aata hai, aur client ko login/refresh karna
+          chahiye. 403 = <em>authorization</em> fail — identity clear hai, par is resource pe permission nahi.
+          Dobara login karne se kuch nahi hoga. Practical impact: galat code bhejne pe client infinite
+          re-login loop mein fas jaata hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "HTTP stateless hai toh login kaise kaam karta hai?"</div>
+        <p>
+          State server ki memory se hatake kahin aur rakhi jaati hai. Do patterns: <strong>session</strong> —
+          server ek opaque session ID cookie mein deta hai, asli data shared store (Redis/DB) mein rehta hai, har
+          request pe lookup hota hai. Ya <strong>token</strong> — JWT jisme claims khud signed form mein hote
+          hain, server ko lookup ki zaroorat hi nahi. Trade-off: session revoke karna aasaan par har request pe
+          lookup; JWT fast par revoke karna mushkil. Detail ch 6.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "HTTP/2 ne kya solve kiya, aur usne kya nahi solve kiya?"</div>
+        <p>
+          Solve kiya: HTTP-level head-of-line blocking (multiplexed streams ek connection pe), header overhead
+          (HPACK), aur 6-parallel-connections wala hack. Nahi solve kiya: <strong>TCP-level</strong> HOL
+          blocking — ek packet lost hone pe TCP saare streams rok deta hai, kyunki TCP ko streams ka pata hi
+          nahi. Yahi wajah hai HTTP/3 ke UDP/QUIC pe jaane ki.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Client ne POST bheja, timeout ho gaya. Retry karna chahiye?"</div>
+        <p>
+          Blindly nahi — POST idempotent nahi hai, aur client ko pata hi nahi ki server ne process kiya ya nahi
+          (request jaate hue mari ya response aate hue). Sahi answer: server ko <strong>idempotency key</strong>
+          support karna chahiye — client ek unique key bhejta hai, server pehli baar result store karta hai aur
+          same key pe wahi result laut&#8203;a deta hai. Tab retry safe ho jaati hai. Fintech mein ye mandatory
+          hai (ch 9, ch 14).
+        </p>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Q6. "CORS error aa raha hai. Kya ho raha hai aur kaise fix karoge?"</div>
+        <p>
+          Pehle framing theek karo: default policy <strong>Same-Origin Policy</strong> hai, aur CORS wo
+          mechanism hai jisse server chhoot deta hai. Browser ne dekha ki request cross-origin hai aur "simple"
+          nahi (<code>application/json</code> ya <code>Authorization</code> header ki wajah se), toh usne pehle
+          <code>OPTIONS</code> preflight bheja. Fix server pe hai: preflight ka jawab
+          <code>Access-Control-Allow-Origin/Methods/Headers</code> ke saath do, <em>aur</em> actual response pe
+          bhi wahi origin header lagao — error responses samet. Common traps: <code>*</code> +
+          <code>credentials</code> saath nahi chal sakte, aur custom response headers padhne ke liye
+          <code>Expose-Headers</code> chahiye. Aur ek important line: <strong>CORS server-to-server calls pe
+          lagta hi nahi</strong> — wo purely browser policy hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q7. "HTTP caching kaise kaam karti hai? <code>ETag</code> ka kya role hai?"</div>
+        <p>
+          Do mechanisms. <strong>Freshness</strong>: <code>Cache-Control: max-age</code> — us window mein
+          browser request bhejta hi nahi, cache se serve karta hai. <strong>Validation</strong>: window khatam
+          hone par client <code>If-None-Match</code> mein purana <code>ETag</code> bhejta hai; content na badla
+          ho toh server <code>304 Not Modified</code> deta hai <em>bina body ke</em> — 200 KB ki jagah ~200
+          bytes. Static assets ke liye best strategy content-hashed filename + <code>immutable</code> hai, jisse
+          invalidation ki zaroorat hi nahi padti. Aur <code>no-cache</code> ka matlab "revalidate karo" hai,
+          "cache mat karo" nahi — wo <code>no-store</code> hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="04-routing.html"><strong>Chapter 4 — Routing</strong></a>: request ka path aur method mil
+          gaya — ab framework us se <em>sahi handler function</em> tak kaise pahunchta hai. Radix trees, path
+          params, aur route precedence.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>

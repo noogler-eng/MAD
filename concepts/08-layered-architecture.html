@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controllers, Services, Repositories — Backend Concepts (Hinglish)</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Backend Concepts</span></div>
+    <div class="tagline">Backend engineering — first principles se. Har layer ka "andar se kaise chalta hai", architecture diagrams ke saath.</div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Handbook</div>
+      <a class="nav-link" href="index.html"><span class="num">•</span> Home</a>
+      <a class="nav-link" href="01-first-principles-roadmap.html"><span class="num">1</span> First Principles & Roadmap</a>
+      <a class="nav-link" href="02-what-is-a-backend.html"><span class="num">2</span> What Is a Backend</a>
+      <a class="nav-link" href="03-http-deep-dive.html"><span class="num">3</span> HTTP Deep-Dive</a>
+      <a class="nav-link" href="04-routing.html"><span class="num">4</span> Routing</a>
+      <a class="nav-link" href="05-serialization.html"><span class="num">5</span> Serialization & Deserialization</a>
+      <a class="nav-link" href="06-auth.html"><span class="num">6</span> Authentication & Authorization</a>
+      <a class="nav-link" href="07-validation.html"><span class="num">7</span> Validation & Transformation</a>
+      <a class="nav-link active" href="08-layered-architecture.html"><span class="num">8</span> Controllers, Services, Repositories</a>
+      <a class="nav-link" href="09-rest-api-design.html"><span class="num">9</span> REST API Design</a>
+      <a class="nav-link" href="10-databases-postgres.html"><span class="num">10</span> Databases with Postgres</a>
+      <a class="nav-link" href="11-caching.html"><span class="num">11</span> Caching</a>
+      <a class="nav-link" href="12-task-queues.html"><span class="num">12</span> Task Queues & Background Jobs</a>
+      <a class="nav-link" href="13-full-text-search.html"><span class="num">13</span> Full-Text Search</a>
+      <a class="nav-link" href="14-error-handling.html"><span class="num">14</span> Error Handling & Fault Tolerance</a>
+      <a class="nav-link" href="15-configuration.html"><span class="num">15</span> Configuration Management</a>
+      <a class="nav-link" href="16-observability.html"><span class="num">16</span> Logging, Monitoring, Observability</a>
+      <a class="nav-link" href="17-graceful-shutdown.html"><span class="num">17</span> Graceful Shutdown</a>
+      <a class="nav-link" href="18-security.html"><span class="num">18</span> Backend Security</a>
+      <a class="nav-link" href="19-scaling-part-1.html"><span class="num">19</span> Scaling & Performance I</a>
+      <a class="nav-link" href="20-scaling-part-2.html"><span class="num">20</span> Scaling & Performance II</a>
+      <a class="nav-link" href="21-concurrency.html"><span class="num">21</span> Concurrency & Parallelism</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">MAD Concepts <span>›</span> Chapter 8</div>
+      <div class="progress-pill">8 / 21</div>
+    </div>
+
+    <div class="content">
+      <span class="chapter-badge">Layers · Middleware · Request Context · Dependency Direction</span>
+      <h1>Controllers, Services, Repositories</h1>
+      <p class="subtitle">
+        Data trusted hai (ch 7). Ab sawaal ye hai ki business logic <strong>likhi kahan jaaye</strong>. Ye
+        chapter ek architecture pattern nahi sikhata — wo <em>ek problem</em> sikhata hai jiska naam
+        "sab kuch handler mein" hai, aur uske solution ka mechanism. Aur saath mein do cheezein jo har framework
+        mein hain par kam log theek se samajhte hain: <strong>middleware chain</strong> aur
+        <strong>request context</strong>.
+      </p>
+
+      <p style="font-size:13px;color:var(--text-dim,#a8a29e);margin-top:-8px">
+        📺 Source video 10 —
+        <a href="https://www.youtube.com/watch?v=hyc-7w3pee8">What are controllers, services, repositories, middlewares and request context?</a>
+      </p>
+
+      <div class="toc">
+        <div class="toc-title">Is chapter mein</div>
+        <ul>
+          <li><a href="#problem">1. Problem — "Fat Controller"</a></li>
+          <li><a href="#layers">2. Teen Layers Aur Unki Exact Zimmedari</a></li>
+          <li><a href="#diagram">3. Poora Flow (Diagram)</a></li>
+          <li><a href="#code">4. Ek Request, Teeno Layers Mein</a></li>
+          <li><a href="#direction">5. Dependency Direction — Asli Rule</a></li>
+          <li><a href="#middleware">6. Middleware — Onion Model</a></li>
+          <li><a href="#context">7. Request Context — Data Jo Saath Chalta Hai</a></li>
+          <li><a href="#overkill">8. Kab Ye Overkill Hai</a></li>
+          <li><a href="#takeaways">9. Key Takeaways</a></li>
+          <li><a href="#interview">10. 🎯 Interview Questions</a></li>
+        </ul>
+      </div>
+
+      <h2 id="problem">Problem — "Fat Controller"</h2>
+      <p>
+        Shuru mein sab kuch ek handler mein likhna sabse fast hota hai. Ye rahi wo shakal jo har codebase mein
+        6 mahine baad milti hai:
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">❌ sab kuch ek jagah — kaam karta hai, par…<button class="copy-btn">Copy</button></div>
+        <pre><code>app.<span class="tok-fn">post</span>(<span class="tok-str">"/orders"</span>, <span class="tok-kw">async</span> (req, res) =&gt; {
+  <span class="tok-com">// auth</span>
+  <span class="tok-kw">const</span> token = req.headers.authorization?.<span class="tok-fn">split</span>(<span class="tok-str">" "</span>)[<span class="tok-num">1</span>];
+  <span class="tok-kw">const</span> user  = jwt.<span class="tok-fn">verify</span>(token, SECRET);
+
+  <span class="tok-com">// validation</span>
+  <span class="tok-kw">if</span> (!req.body.items?.length) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">400</span>).<span class="tok-fn">json</span>({ e: <span class="tok-str">"no items"</span> });
+
+  <span class="tok-com">// SQL seedha handler mein</span>
+  <span class="tok-kw">const</span> { rows } = <span class="tok-kw">await</span> pool.<span class="tok-fn">query</span>(<span class="tok-str">"SELECT * FROM products WHERE id = ANY($1)"</span>, [ids]);
+
+  <span class="tok-com">// business logic</span>
+  <span class="tok-kw">let</span> total = <span class="tok-num">0</span>;
+  <span class="tok-kw">for</span> (<span class="tok-kw">const</span> item <span class="tok-kw">of</span> req.body.items) {
+    <span class="tok-kw">const</span> p = rows.<span class="tok-fn">find</span>(r =&gt; r.id === item.productId);
+    <span class="tok-kw">if</span> (p.stock &lt; item.qty) <span class="tok-kw">return</span> res.<span class="tok-fn">status</span>(<span class="tok-num">409</span>).<span class="tok-fn">json</span>({ e: <span class="tok-str">"out of stock"</span> });
+    total += p.price * item.qty;
+  }
+  <span class="tok-kw">if</span> (user.isPremium) total *= <span class="tok-num">0.9</span>;
+
+  <span class="tok-com">// aur SQL</span>
+  <span class="tok-kw">await</span> pool.<span class="tok-fn">query</span>(<span class="tok-str">"INSERT INTO orders …"</span>);
+  <span class="tok-kw">await</span> stripe.charges.<span class="tok-fn">create</span>({ amount: total });   <span class="tok-com">// external call</span>
+  <span class="tok-kw">await</span> sendgrid.<span class="tok-fn">send</span>({ to: user.email });          <span class="tok-com">// aur ek</span>
+
+  res.<span class="tok-fn">json</span>({ ok: <span class="tok-kw">true</span> });
+});
+</code></pre>
+      </div>
+
+      <p>Ye chalta hai. Problem tab shuru hoti hai jab:</p>
+      <ul>
+        <li><strong>Test karna namumkin hai</strong> — "premium user ko 10% discount milta hai" test karne ke
+        liye ek HTTP server, ek database, aur Stripe/SendGrid ke mocks chahiye. Ek pure calculation ke liye
+        poori duniya khadi karni padti hai.</li>
+        <li><strong>Reuse namumkin hai</strong> — ab admin panel se bhi order banana hai, ya ek CLI script se,
+        ya ek queue worker se (ch 12). Logic <code>req</code>/<code>res</code> ke saath chipki hui hai, toh
+        copy-paste hoti hai — aur ek jagah bug fix hota hai, doosri mein reh jaata hai.</li>
+        <li><strong>Transaction lagana mushkil hai</strong> — do INSERTs ke beech process crash ho gaya toh
+        aadha order ban gaya. Handler ke andar transaction boundary khींchna gandha ho jaata hai.</li>
+        <li><strong>Kuch bhi badalna dara deta hai</strong> — DB library badalni ho? Har handler chhoona padega.</li>
+      </ul>
+
+      <h2 id="layers">Teen Layers Aur Unki Exact Zimmedari</h2>
+      <p>
+        Solution ek hi principle hai — <strong>har layer sirf ek kism ka kaam kare</strong>. Rule yaad rakhne
+        ka sabse aasaan tareeka:
+      </p>
+      <table>
+        <thead><tr><th>Layer</th><th>Kya jaanti hai</th><th>Kya <em>nahi</em> jaanti</th><th>Test kaise</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Controller</strong><br>(handler)</td>
+            <td>HTTP — request parse, status codes, headers, response shape</td>
+            <td>Business rules, SQL</td>
+            <td>Integration test (HTTP level)</td>
+          </tr>
+          <tr>
+            <td><strong>Service</strong><br>(use case)</td>
+            <td>Business rules — discount, stock, workflow, orchestration</td>
+            <td><strong>HTTP aur SQL dono nahi</strong></td>
+            <td>Unit test — sirf function call, koi server nahi</td>
+          </tr>
+          <tr>
+            <td><strong>Repository</strong><br>(data access)</td>
+            <td>Data store — SQL, queries, mapping</td>
+            <td>Business rules, HTTP</td>
+            <td>Integration test (real DB pe)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Ek line ka test — sabse useful heuristic</div>
+        <p>
+          <strong>Service layer mein <code>req</code>, <code>res</code>, ya SQL string dikhe — toh galat
+          hai.</strong> Service ko pata bhi nahi hona chahiye ki wo HTTP se bulaayi gayi hai ya ek cron job se.
+          Yahi ek check 90% layering mistakes pakad leta hai. Aur iska direct faayda ye hai: wahi service ko
+          ch 12 ka queue worker bina kisi badlaav ke call kar sakta hai.
+        </p>
+      </div>
+
+      <h2 id="diagram">Poora Flow</h2>
+
+      <figure class="excali">
+        <svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Middleware chain then controller, service and repository layers">
+          <defs>
+            <marker id="la1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="24" y="18" width="120" height="40" rx="9" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="84" y="42" class="ex-t-sm">request</text>
+          <path d="M146,38 C160,36 168,40 182,38" class="ex-stroke" marker-end="url(#la1)"/>
+
+          <!-- middleware chain -->
+          <rect x="184" y="10" width="552" height="58" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="230" y="26" class="ex-t-lbl">middleware chain</text>
+          <rect x="196" y="32" width="94" height="28" rx="7" class="ex-stroke"/><text x="243" y="47" class="ex-t-sm">requestId</text>
+          <rect x="298" y="32" width="94" height="28" rx="7" class="ex-stroke"/><text x="345" y="47" class="ex-t-sm">logger</text>
+          <rect x="400" y="32" width="94" height="28" rx="7" class="ex-stroke"/><text x="447" y="47" class="ex-t-sm">cors</text>
+          <rect x="502" y="32" width="106" height="28" rx="7" class="ex-stroke"/><text x="555" y="47" class="ex-t-sm">auth (ch 6)</text>
+          <rect x="616" y="32" width="106" height="28" rx="7" class="ex-stroke"/><text x="669" y="47" class="ex-t-sm">validate (ch 7)</text>
+
+          <path d="M460,70 C458,84 462,92 460,106" class="ex-stroke" marker-end="url(#la1)"/>
+
+          <!-- controller -->
+          <rect x="180" y="110" width="560" height="72" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="460" y="132" class="ex-t">Controller — HTTP ki bhasha</text>
+          <text x="460" y="154" class="ex-t-sm">input nikalo · service bulao · result ko status + JSON mein badlo</text>
+          <text x="460" y="172" class="ex-t-lbl">koi business rule nahi · koi SQL nahi · patla hona chahiye</text>
+
+          <path d="M460,184 C458,198 462,206 460,220" class="ex-stroke" marker-end="url(#la1)"/>
+
+          <!-- service -->
+          <rect x="180" y="224" width="560" height="94" rx="10" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="460" y="246" class="ex-t">Service — business rules</text>
+          <text x="460" y="268" class="ex-t-sm">stock check · discount · transaction boundary · orchestration</text>
+          <text x="460" y="288" class="ex-t-sm">domain errors throw karta hai (HTTP status nahi)</text>
+          <text x="460" y="308" class="ex-t-lbl">req/res ka naam tak nahi jaanta → CLI aur worker bhi isse call kar sakte hain</text>
+
+          <path d="M460,320 C458,334 462,342 460,356" class="ex-stroke" marker-end="url(#la1)"/>
+
+          <!-- repository -->
+          <rect x="180" y="360" width="560" height="66" rx="10" class="ex-fill-o ex-stroke"/>
+          <text x="460" y="382" class="ex-t">Repository — data access</text>
+          <text x="460" y="404" class="ex-t-sm">SQL / ORM queries · row → domain object mapping</text>
+
+          <path d="M460,428 C458,438 462,444 460,452" class="ex-stroke" marker-end="url(#la1)"/>
+          <text x="460" y="464" class="ex-t-sm">Postgres (ch 10)</text>
+
+          <!-- context rail -->
+          <path d="M158,20 C150,160 152,320 158,424" class="ex-stroke ex-stroke-d"/>
+          <text x="140" y="230" class="ex-t-lbl" transform="rotate(-90 140 230)">request context saath chalta hai</text>
+
+          <!-- response rail -->
+          <path d="M754,120 C762,240 758,360 754,60" class="ex-stroke ex-stroke-d"/>
+          <text x="774" y="240" class="ex-t-lbl" transform="rotate(90 774 240)">response ulta wapas</text>
+        </svg>
+        <figcaption>
+          Request neeche jaati hai, response upar wapas. Dhyan do — <strong>arrows sirf ek taraf hain</strong>:
+          repository kabhi service ko nahi bulata, service kabhi controller ko nahi. Ye ek-tarfa dependency hi
+          poore pattern ki jaan hai.
+        </figcaption>
+      </figure>
+
+      <h2 id="code">Ek Request, Teeno Layers Mein</h2>
+
+      <div class="code-block">
+        <div class="code-title">controller — patla, sirf translation<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Controller ka poora kaam: HTTP ↔ domain ki translation. Bas.</span>
+app.<span class="tok-fn">post</span>(<span class="tok-str">"/orders"</span>, requireAuth, <span class="tok-fn">validate</span>(CreateOrderSchema), <span class="tok-kw">async</span> (req, res, next) =&gt; {
+  <span class="tok-kw">try</span> {
+    <span class="tok-com">// 1. HTTP se input nikalo (auth aur validation middleware pehle ho chuke hain)</span>
+    <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> orderService.<span class="tok-fn">createOrder</span>({
+      userId: req.ctx.user.id,     <span class="tok-com">// context se — body se KABHI nahi (ch 6)</span>
+      items:  req.validated.items, <span class="tok-com">// ch 7 se validated data</span>
+    });
+
+    <span class="tok-com">// 2. domain result ko HTTP mein badlo</span>
+    res.<span class="tok-fn">status</span>(<span class="tok-num">201</span>)                       <span class="tok-com">// 201 kyunki naya resource bana (ch 3)</span>
+       .<span class="tok-fn">location</span>(<span class="tok-str">`/orders/${order.id}`</span>)  <span class="tok-com">// 201 ke saath Location header</span>
+       .<span class="tok-fn">json</span>(<span class="tok-fn">toOrderResponse</span>(order));    <span class="tok-com">// output mapping (ch 7) — allowlist</span>
+  } <span class="tok-kw">catch</span> (err) {
+    <span class="tok-fn">next</span>(err);   <span class="tok-com">// central error handler decide karega status (ch 14)</span>
+  }
+});
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">service — business rules, HTTP se bilkul azaad<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// Dependencies constructor se aati hain — hardcoded import nahi.</span>
+<span class="tok-com">// Isse test mein fake repo/gateway pass karna trivial ho jaata hai.</span>
+<span class="tok-kw">class</span> OrderService {
+  <span class="tok-fn">constructor</span>(orderRepo, productRepo, paymentGateway, eventBus) { … }
+
+  <span class="tok-kw">async</span> <span class="tok-fn">createOrder</span>({ userId, items }) {
+    <span class="tok-com">// ── business rule 1: products exist karte hain? (ch 7 ka "level 3") ──</span>
+    <span class="tok-kw">const</span> products = <span class="tok-kw">await</span> <span class="tok-kw">this</span>.productRepo.<span class="tok-fn">findByIds</span>(items.<span class="tok-fn">map</span>(i =&gt; i.productId));
+    <span class="tok-kw">if</span> (products.length !== items.length)
+      <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">NotFoundError</span>(<span class="tok-str">"product"</span>);   <span class="tok-com">// DOMAIN error — 404 nahi</span>
+
+    <span class="tok-com">// ── business rule 2: stock ──────────────────────────────</span>
+    <span class="tok-kw">for</span> (<span class="tok-kw">const</span> item <span class="tok-kw">of</span> items) {
+      <span class="tok-kw">const</span> p = products.<span class="tok-fn">find</span>(p =&gt; p.id === item.productId);
+      <span class="tok-kw">if</span> (p.stock &lt; item.qty)
+        <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">ConflictError</span>(<span class="tok-str">`insufficient stock: ${p.name}`</span>);
+    }
+
+    <span class="tok-com">// ── business rule 3: pricing — PURE function, alag se test ho sakta hai ──</span>
+    <span class="tok-kw">const</span> total = <span class="tok-fn">calculateTotal</span>(items, products, <span class="tok-kw">await</span> <span class="tok-kw">this</span>.userRepo.<span class="tok-fn">find</span>(userId));
+
+    <span class="tok-com">// ── TRANSACTION BOUNDARY yahan hai — service pe, repo pe nahi ──</span>
+    <span class="tok-com">// Kyunki "kaunse operations ek saath atomic hone chahiye" ek BUSINESS</span>
+    <span class="tok-com">// decision hai, data-access detail nahi.</span>
+    <span class="tok-kw">const</span> order = <span class="tok-kw">await</span> <span class="tok-kw">this</span>.db.<span class="tok-fn">transaction</span>(<span class="tok-kw">async</span> (tx) =&gt; {
+      <span class="tok-kw">await</span> <span class="tok-kw">this</span>.productRepo.<span class="tok-fn">decrementStock</span>(items, tx);
+      <span class="tok-kw">return</span> <span class="tok-kw">this</span>.orderRepo.<span class="tok-fn">create</span>({ userId, items, total }, tx);
+    });
+
+    <span class="tok-com">// ── slow/external kaam SYNC path se BAHAR (ch 12) ───────</span>
+    <span class="tok-kw">await</span> <span class="tok-kw">this</span>.eventBus.<span class="tok-fn">publish</span>(<span class="tok-str">"order.created"</span>, { orderId: order.id });
+    <span class="tok-com">// email/invoice worker sunega — user ko SendGrid ka wait nahi karna padega</span>
+
+    <span class="tok-kw">return</span> order;
+  }
+}
+</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-title">repository — sirf data access<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> OrderRepository {
+  <span class="tok-kw">async</span> <span class="tok-fn">create</span>({ userId, items, total }, tx = <span class="tok-kw">this</span>.pool) {
+    <span class="tok-com">// tx pass hua toh transaction ke andar, warna normal pool connection</span>
+    <span class="tok-kw">const</span> { rows } = <span class="tok-kw">await</span> tx.<span class="tok-fn">query</span>(
+      <span class="tok-str">`INSERT INTO orders (user_id, total_paise, status)
+       VALUES ($1, $2, 'pending') RETURNING *`</span>,
+      [userId, total]                <span class="tok-com">// ← parameterized — SQL injection safe (ch 18)</span>
+    );
+    <span class="tok-kw">return</span> <span class="tok-fn">toDomain</span>(rows[<span class="tok-num">0</span>]);   <span class="tok-com">// snake_case row → camelCase domain object</span>
+  }
+}
+<span class="tok-com">// Repository DB ke "vocabulary" ko domain ke vocabulary mein translate karta hai.</span>
+<span class="tok-com">// Isi wajah se DB badalna (Postgres → doosra store) sirf is layer ko chhoota hai.</span>
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Service se HTTP status codes throw mat karo</div>
+        <p>
+          <code>throw new ConflictError()</code> likho, <code>res.status(409)</code> nahi. Service ko HTTP ka
+          pata hi nahi hona chahiye — warna wahi service ek queue worker ya CLI se call karne pe bekaar ho
+          jaati hai (wahan "409" ka koi matlab hi nahi). Domain errors ko HTTP status mein badalna
+          <strong>ek central error handler</strong> ka kaam hai: <code>NotFoundError → 404</code>,
+          <code>ConflictError → 409</code>, <code>ValidationError → 422</code>. Ye ch 14 ka core pattern hai.
+        </p>
+      </div>
+
+      <h2 id="direction">Dependency Direction — Asli Rule</h2>
+      <p>
+        Layers ka asli faayda "3 folders" nahi hai — wo <strong>dependency ki direction</strong> hai. Arrows
+        hamesha ek taraf jaate hain, aur wo rule tod dena poore pattern ko bekaar kar deta hai:
+      </p>
+      <div class="code-block">
+        <div class="code-title">allowed vs forbidden<button class="copy-btn">Copy</button></div>
+        <pre><code>controller  ──→  service  ──→  repository  ──→  DB      <span class="tok-com">// ✅ ek hi direction</span>
+
+<span class="tok-com">// ❌ FORBIDDEN — ye teeno pattern ko tod dete hain:</span>
+repository  ──→  service      <span class="tok-com">// circular; repo ko business ka pata nahi hona chahiye</span>
+service     ──→  controller   <span class="tok-com">// service ab HTTP se bandh gayi</span>
+controller  ──→  repository   <span class="tok-com">// service bypass — business rule chhoot jaayega</span>
+</code></pre>
+      </div>
+      <p>
+        Wo aakhri wala sabse dhoke wala hai. "Ye toh simple GET hai, service kyun banayein" bolke controller
+        seedha repo call karta hai. Chhe mahine baad us GET pe ek permission rule add hota hai — aur wo rule
+        service mein likha jaata hai, jise ye endpoint call hi nahi karta. <strong>Bypass aaj shortcut hai, kal
+        security bug.</strong>
+      </p>
+
+      <h2 id="middleware">Middleware — Onion Model</h2>
+      <p>
+        Middleware wo functions hain jo handler se <em>pehle</em> (aur baad mein) chalte hain — cross-cutting
+        kaam ke liye jo har route pe chahiye: logging, auth, CORS, body parsing, rate limiting, error handling.
+      </p>
+      <p>
+        Mental model "list" nahi, <strong>onion</strong> hai: request bahar se andar jaati hai har layer ke
+        through, aur response ulti direction mein wapas guzarti hai. Isliye ek hi middleware request se pehle
+        aur response ke baad — dono jagah kaam kar sakta hai.
+      </p>
+
+      <figure class="excali">
+        <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Middleware onion model where request goes inward and response comes back outward">
+          <defs>
+            <marker id="mw1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d97757"/>
+            </marker>
+          </defs>
+
+          <rect x="120" y="24" width="480" height="272" rx="14" class="ex-fill-o ex-stroke"/>
+          <text x="360" y="46" class="ex-t-sm">1 · requestId + logger</text>
+
+          <rect x="164" y="60" width="392" height="200" rx="12" class="ex-fill-b ex-stroke ex-stroke-b"/>
+          <text x="360" y="82" class="ex-t-sm">2 · error handler (try/catch ke jaisa)</text>
+
+          <rect x="208" y="96" width="304" height="128" rx="11" class="ex-fill-g ex-stroke ex-stroke-g"/>
+          <text x="360" y="118" class="ex-t-sm">3 · auth</text>
+
+          <rect x="250" y="132" width="220" height="56" rx="10" class="ex-fill-p ex-stroke ex-stroke-p"/>
+          <text x="360" y="152" class="ex-t-sm">4 · validate</text>
+          <text x="360" y="174" class="ex-t-lbl">→ controller</text>
+
+          <path d="M40,120 C74,118 92,124 116,120" class="ex-stroke" marker-end="url(#mw1)"/>
+          <text x="60" y="102" class="ex-t-sm">request</text>
+          <path d="M116,200 C92,196 74,202 40,198" class="ex-stroke" marker-end="url(#mw1)"/>
+          <text x="60" y="228" class="ex-t-sm">response</text>
+
+          <text x="360" y="286" class="ex-t-lbl">andar jaate waqt: parse, authenticate, validate</text>
+          <text x="360" y="316" class="ex-t-sm">bahar aate waqt: duration log, headers add, errors map — ulte order mein</text>
+        </svg>
+        <figcaption>
+          Onion hone ki wajah se <strong>order matter karta hai</strong>: error handler auth se
+          <em>bahar</em> hona chahiye taaki auth ke errors bhi pakde jaayein; requestId sabse bahar hona chahiye
+          taaki har log line mein wo maujood ho.
+        </figcaption>
+      </figure>
+
+      <div class="code-block">
+        <div class="code-title">middleware ka mechanism — <code>next</code> hi poora raaz hai<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// har middleware ka signature: (req, res, next)</span>
+<span class="tok-kw">function</span> <span class="tok-fn">requestLogger</span>(req, res, next) {
+  <span class="tok-kw">const</span> start = process.<span class="tok-fn">hrtime</span>.<span class="tok-fn">bigint</span>();
+
+  res.<span class="tok-fn">on</span>(<span class="tok-str">"finish"</span>, () =&gt; {                <span class="tok-com">// ← response ke BAAD chalega</span>
+    <span class="tok-kw">const</span> ms = <span class="tok-fn">Number</span>(process.<span class="tok-fn">hrtime</span>.<span class="tok-fn">bigint</span>() - start) / <span class="tok-num">1e6</span>;
+    logger.<span class="tok-fn">info</span>({ method: req.method, path: req.path, status: res.statusCode, ms });
+  });
+
+  <span class="tok-fn">next</span>();   <span class="tok-com">// ← agli layer ko control do (onion mein andar jao)</span>
+  <span class="tok-com">// next() na bulao → request HANG ho jayegi, koi error nahi aayega.</span>
+  <span class="tok-com">// Ye sabse common middleware bug hai: ek branch mein next() bhool jaana.</span>
+}
+
+<span class="tok-com">// error middleware ka signature 4 arguments ka hota hai — Express isi se pehchanta hai</span>
+<span class="tok-kw">function</span> <span class="tok-fn">errorHandler</span>(err, req, res, next) {
+  <span class="tok-kw">const</span> status = err.status ?? <span class="tok-num">500</span>;
+  <span class="tok-kw">if</span> (status &gt;= <span class="tok-num">500</span>) logger.<span class="tok-fn">error</span>({ err, requestId: req.ctx.requestId });
+  res.<span class="tok-fn">status</span>(status).<span class="tok-fn">json</span>({
+    error: err.code ?? <span class="tok-str">"internal_error"</span>,
+    <span class="tok-com">// 5xx pe asli message KABHI mat bhejo — internals leak hote hain (ch 18)</span>
+    message: status &gt;= <span class="tok-num">500</span> ? <span class="tok-str">"Something went wrong"</span> : err.message,
+    requestId: req.ctx.requestId,   <span class="tok-com">// user support ko yahi ID batayega</span>
+  });
+}
+
+<span class="tok-com">// ORDER = onion ki layers. Ye sequence deliberate hai:</span>
+app.<span class="tok-fn">use</span>(requestId);      <span class="tok-com">// sabse bahar — har log line mein chahiye</span>
+app.<span class="tok-fn">use</span>(requestLogger);
+app.<span class="tok-fn">use</span>(cors);
+app.<span class="tok-fn">use</span>(express.<span class="tok-fn">json</span>({ limit: <span class="tok-str">"100kb"</span> }));   <span class="tok-com">// body size cap (ch 5)</span>
+app.<span class="tok-fn">use</span>(rateLimiter);
+app.<span class="tok-fn">use</span>(<span class="tok-str">"/api"</span>, apiRoutes);
+app.<span class="tok-fn">use</span>(errorHandler);    <span class="tok-com">// SABSE AAKHIR mein register, par onion mein bahar</span>
+</code></pre>
+      </div>
+
+      <h2 id="context">Request Context — Data Jo Saath Chalta Hai</h2>
+      <p>
+        Kuch data poori request ke saath chalna chahiye: kaun user hai, request ID kya hai, tenant kaunsa hai,
+        locale kya hai. Isko har function mein argument banake pass karna 8 layers deep jaake bekaar ho jaata
+        hai — isliye ek <strong>request context</strong> hota hai.
+      </p>
+
+      <div class="code-block">
+        <div class="code-title">context banana aur use karna<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-com">// sabse bahar wali middleware context banati hai</span>
+app.<span class="tok-fn">use</span>((req, res, next) =&gt; {
+  req.ctx = {
+    requestId: req.headers[<span class="tok-str">"x-request-id"</span>] ?? crypto.<span class="tok-fn">randomUUID</span>(),
+    <span class="tok-com">// ↑ upstream se aaya ID reuse karo — tabhi trace poore system mein judta hai (ch 16)</span>
+    startedAt: <span class="tok-fn">Date</span>.<span class="tok-fn">now</span>(),
+  };
+  res.<span class="tok-fn">setHeader</span>(<span class="tok-str">"x-request-id"</span>, req.ctx.requestId);  <span class="tok-com">// client ko wapas do</span>
+  <span class="tok-fn">next</span>();
+});
+
+<span class="tok-com">// auth middleware usko ENRICH karti hai</span>
+app.<span class="tok-fn">use</span>(<span class="tok-kw">async</span> (req, res, next) =&gt; {
+  req.ctx.user = <span class="tok-kw">await</span> <span class="tok-fn">verifyToken</span>(req.headers.authorization);
+  <span class="tok-fn">next</span>();
+});
+</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Context ko service tak <em>explicitly</em> pass karo</div>
+        <p>
+          Ek tempting shortcut hai: context ko ek global/AsyncLocalStorage mein daal do taaki koi bhi function
+          usse padh sake. Wo kaam karta hai, par service layer ab ek <em>chhupi hui</em> dependency pe khadi ho
+          jaati hai — test karte waqt wo global set karna padta hai, aur queue worker se call karne pe wo hai
+          hi nahi. Behtar: service ko wo cheezein <em>arguments</em> mein do jo usse chahiye
+          (<code>userId</code>, <code>requestId</code>). Global context sirf <strong>observability</strong>
+          (logging, tracing) ke liye theek hai, business logic ke liye nahi.
+        </p>
+      </div>
+
+      <h2 id="overkill">Kab Ye Overkill Hai</h2>
+      <p>
+        Har CRUD endpoint pe teen files banana bhi ek anti-pattern hai. Agar service sirf itna karta hai —
+      </p>
+      <div class="code-block">
+        <div class="code-title">anemic service — koi value nahi jod raha<button class="copy-btn">Copy</button></div>
+        <pre><code><span class="tok-kw">class</span> TagService {
+  <span class="tok-fn">list</span>() { <span class="tok-kw">return</span> <span class="tok-kw">this</span>.tagRepo.<span class="tok-fn">findAll</span>(); }   <span class="tok-com">// bas pass-through</span>
+}
+<span class="tok-com">// Ye layer sirf indirection hai — koi business rule nahi.</span>
+</code></pre>
+      </div>
+      <p>
+        — toh wo layer sirf ceremony hai. Practical rule: <strong>layer tab banao jab usme kuch rakhne ko
+        ho.</strong> Ek simple lookup endpoint controller se seedha repo call kar sakta hai, jab tak
+        <em>koi business rule na ho</em>. Par jaise hi pehla rule aaye (permission, calculation, multi-step
+        workflow), turant service extract karo — usse baad mein karna hamesha mehnga padta hai.
+      </p>
+
+      <div class="callout senior">
+        <div class="callout-title">🧠 Naam ke chakkar mein mat pado</div>
+        <p>
+          Controller/service/repository sirf ek vocabulary hai. Dusri jagah inhe handler/use-case/gateway,
+          ya route/domain/data-access kehte hain; hexagonal architecture, clean architecture, aur DDD sab
+          isi idea ke variants hain. <strong>Asli invariant sirf do hain:</strong> (1) business logic HTTP aur
+          SQL dono se azaad ho, aur (2) dependencies ek hi direction mein jaayein. Ye do cheezein hain toh
+          folder ka naam kuch bhi rakh lo.
+        </p>
+      </div>
+
+      <h2 id="takeaways">Key Takeaways</h2>
+      <ul>
+        <li>"Fat controller" ka asli nuksaan test aur reuse hai — pure calculation test karne ke liye HTTP server + DB + mocks chahiye ho jaate hain.</li>
+        <li><strong>Controller</strong> = HTTP translation, <strong>service</strong> = business rules, <strong>repository</strong> = data access.</li>
+        <li>Ek line ka test: <strong>service mein <code>req</code>, <code>res</code>, ya SQL dikhe toh galat hai.</strong></li>
+        <li>Service HTTP-agnostic hone ki wajah se hi queue worker (ch 12) aur CLI usko bina badle call kar sakte hain.</li>
+        <li>Service <strong>domain errors</strong> throw kare (<code>ConflictError</code>), HTTP status nahi — mapping central error handler ka kaam hai (ch 14).</li>
+        <li><strong>Transaction boundary service pe</strong> hoti hai, repository pe nahi — kya atomic hona chahiye ye business decision hai.</li>
+        <li>Dependency direction ek-tarfa: controller → service → repository. Controller ka repo ko seedha call karna aaj shortcut, kal security bug.</li>
+        <li>Middleware ek <strong>onion</strong> hai — request andar, response bahar. Isliye order matter karta hai: errorHandler auth se bahar, requestId sabse bahar.</li>
+        <li><code>next()</code> bhoolna = request silently hang. Sabse common middleware bug.</li>
+        <li>Request context upstream ka <code>x-request-id</code> reuse kare, aur response mein wapas bheje.</li>
+        <li>Global/ALS context sirf observability ke liye; business logic ko values <strong>explicitly</strong> pass karo.</li>
+        <li>Layer tab banao jab usme rakhne ko kuch ho — pass-through service sirf ceremony hai.</li>
+      </ul>
+
+      <h2 id="interview">🎯 Interview Questions</h2>
+      <div class="callout info">
+        <div class="callout-title">Q1. "Controller, service, repository — kaunsi layer kya karti hai?"</div>
+        <p>
+          Controller HTTP jaanta hai: request se input nikalna, service bulana, result ko status code + JSON
+          banana. Service business rules jaanti hai aur HTTP/SQL dono se azaad hoti hai — isliye usse ek worker
+          ya CLI bhi call kar sakta hai. Repository data access jaanti hai: queries aur row→domain mapping.
+          Sabse crisp test: <em>service mein <code>req</code>/<code>res</code>/SQL nahi dikhna chahiye.</em>
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q2. "Transaction boundary kahan honi chahiye?"</div>
+        <p>
+          <strong>Service layer pe.</strong> "Kaunse operations ek saath atomic hone chahiye" ek business
+          decision hai — stock decrement aur order insert dono saath, ya dono nahi. Repository ko sirf ek
+          optional transaction handle accept karna chahiye. Agar transaction repository ke andar hua, toh
+          multi-repo atomicity possible hi nahi rahegi.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q3. "Middleware kaise kaam karti hai? Order kyun matter karta hai?"</div>
+        <p>
+          Har middleware <code>(req, res, next)</code> leti hai aur <code>next()</code> se control agli ko deti
+          hai — ek onion, jisme request andar jaati hai aur response ulte order mein bahar. Order isliye matter
+          karta hai: error handler ko auth se <em>bahar</em> hona chahiye taaki auth ke errors bhi pakde
+          jaayein, body parser ko validation se pehle, aur requestId sabse bahar taaki har log line mein wo ho.
+          Ek branch mein <code>next()</code> bhool jaana request ko silently hang kar deta hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q4. "Request context kya hai aur usme kya rakhoge?"</div>
+        <p>
+          Per-request data jo poore call stack ko chahiye: requestId, authenticated user, tenant, locale. Sabse
+          bahar wali middleware banati hai (upstream ka <code>x-request-id</code> reuse karke, taaki distributed
+          trace juda rahe — ch 16), aur aage wali middleware use enrich karti hain. Business logic ko values
+          explicitly pass karo; global/AsyncLocalStorage sirf logging/tracing ke liye rakho, warna service ki
+          dependency chhup jaati hai aur test/worker mein toot-ti hai.
+        </p>
+      </div>
+      <div class="callout info">
+        <div class="callout-title">Q5. "Kya har endpoint ke liye service layer chahiye?"</div>
+        <p>
+          Nahi. Agar service sirf repo ko pass-through kar rahi hai toh wo indirection hai, abstraction nahi.
+          Simple lookup endpoints controller se seedha repo call kar sakte hain. Par jaise hi pehla business
+          rule aaye — permission check, calculation, multi-step workflow, transaction — service extract kar do.
+          Baad mein extract karna hamesha mehnga hota hai kyunki tab tak logic 4 jagah copy ho chuki hoti hai.
+        </p>
+      </div>
+
+      <div class="callout senior" style="margin-top:34px">
+        <div class="callout-title">➡️ Agla chapter</div>
+        <p>
+          <a href="09-rest-api-design.html"><strong>Chapter 9 — REST API Design</strong></a>: andar ka
+          structure theek hai. Ab bahar ka <em>contract</em> — resource modelling, versioning, pagination,
+          idempotency, aur error shapes.
+        </p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
