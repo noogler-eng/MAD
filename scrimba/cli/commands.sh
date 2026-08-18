@@ -127,3 +127,17 @@ kill <pid>
 
 
 # replace one pattern with another in a file
+sed 's/<pattern>/<replacement>/' <file_name>
+sed 's/,/:/' <file_name>
+
+sed 's/<pattern>/<replacement>/[options]' <file_name>
+# global replacement, search case insensitive
+sed 's/<pattern>/<replacement>/gI' <file_name>
+sed 's/a/z/gI' <file_name>
+
+
+# word count
+wc <file_name>
+wc -l <file_name> # line count
+wc -w <file_name> # word count
+wc -c <file_name> # character count
