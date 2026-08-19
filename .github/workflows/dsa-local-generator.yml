@@ -1,0 +1,44 @@
+name: dsa-local-generator
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No package-lock.json found; skipping npm ci"
+          fi
+
+      - name: Generate local DSA docs
+        run: node ./scripts/generate_dsa_local.js
+
+      - name: Commit generated docs
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/dsa/*.md
+          git commit -m "docs(dsa): generate local concept pages [skip ci]"
+          git push
