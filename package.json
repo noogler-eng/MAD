@@ -1,0 +1,10 @@
+{
+  "name": "mad-dsa-local-generator",
+  "private": true,
+  "scripts": {
+    "generate": "node ./scripts/generate_dsa_local.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
