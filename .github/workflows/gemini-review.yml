@@ -1,0 +1,124 @@
+name: gemini-review
+
+# Runs on every PR update, and again whenever you comment "gemini" on the PR.
+#
+# The comment trigger only works once this file is on the default branch --
+# GitHub always loads issue_comment workflows from the default branch, never
+# from the PR branch.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    # Two ways in:
+    #   1. a pull_request event, or
+    #   2. a comment containing "gemini" on a PR, from a human with write access.
+    #
+    # The author_association check is also what stops an infinite loop: the
+    # review is posted by github-actions[bot], whose association is NONE, so
+    # its own output can never retrigger this job even though it says "gemini".
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event.issue.pull_request != null &&
+       github.event.comment.user.type != 'Bot' &&
+       (contains(github.event.comment.body, 'gemini') || contains(github.event.comment.body, 'Gemini')) &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Acknowledge the comment
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST \
+            "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content=eyes || true
+
+      - name: Fetch the diff
+        id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr diff "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}" > diff.txt
+          # Cap the payload: a large PR would otherwise exceed the token limit
+          # or burn the free-tier daily quota in a single run.
+          head -c 100000 diff.txt > diff_capped.txt
+          echo "diff bytes: $(wc -c < diff.txt), sending: $(wc -c < diff_capped.txt)"
+          if [ ! -s diff_capped.txt ]; then
+            echo "empty=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ask Gemini
+        if: steps.diff.outputs.empty != 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::GEMINI_API_KEY secret is not set. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          PROMPT='You are reviewing a GitHub pull request diff.
+
+          Report only concrete defects: bugs, security issues, data loss, broken
+          logic, or incorrect error handling. For each, give the file, the problem
+          in one sentence, and a specific scenario where it fails. Order by
+          severity, worst first. Skip style, formatting and naming opinions.
+
+          If you find nothing substantive, reply with exactly: No issues found.
+
+          Diff follows:
+          '
+
+          jq -n --arg p "$PROMPT" --rawfile d diff_capped.txt \
+            '{contents:[{parts:[{text:($p + $d)}]}],
+              generationConfig:{temperature:0.2}}' > body.json
+
+          http=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent" \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d @body.json)
+
+          if [ "$http" != "200" ]; then
+            echo "::error::Gemini API returned HTTP $http"
+            head -c 800 resp.json
+            exit 1
+          fi
+
+          jq -r '.candidates[0].content.parts[0].text // empty' resp.json > review.md
+          if [ ! -s review.md ]; then
+            echo "::error::No text in the Gemini response -- check finishReason below"
+            head -c 800 resp.json
+            exit 1
+          fi
+
+      - name: Post the review
+        if: steps.diff.outputs.empty != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## Gemini review"
+            echo
+            cat review.md
+            echo
+            echo "<sub>gemini-3.7-flash · comment \`gemini\` on this PR to run again</sub>"
+          } > comment.md
+          gh pr comment "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}" --body-file comment.md
