@@ -90,17 +90,31 @@ jobs:
             '{contents:[{parts:[{text:($p + $d)}]}],
               generationConfig:{temperature:0.2}}' > body.json
 
-          http=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent" \
-            -H "x-goog-api-key: $GEMINI_API_KEY" \
-            -H 'Content-Type: application/json' \
-            -d @body.json)
+          max_attempts=5
+          attempt=1
+          while true; do
+            http=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent" \
+              -H "x-goog-api-key: $GEMINI_API_KEY" \
+              -H 'Content-Type: application/json' \
+              -d @body.json || echo "000")
 
-          if [ "$http" != "200" ]; then
-            echo "::error::Gemini API returned HTTP $http"
+            if [ "$http" = "200" ]; then
+              break
+            fi
+
+            if [[ "$http" =~ ^(429|500|502|503|504|000)$ ]] && [ "$attempt" -lt "$max_attempts" ]; then
+              delay=$((2 ** attempt))
+              echo "Gemini API returned HTTP $http (attempt $attempt/$max_attempts). Retrying in ${delay}s..."
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              continue
+            fi
+
+            echo "::error::Gemini API returned HTTP $http after $attempt attempt(s)"
             head -c 800 resp.json
             exit 1
-          fi
+          done
 
           jq -r '.candidates[0].content.parts[0].text // empty' resp.json > review.md
           if [ ! -s review.md ]; then
