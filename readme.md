@@ -72,3 +72,6 @@ cd file-parsing && source venv/bin/activate && python3 write_csv.py && python3 r
 
 Har sub-project ka apna detailed README hai (upar table mein linked) — setup steps, concepts, aur
 real debugging journeys (jo issues actually face hue, unke fixes) sab wahan documented hain.
+
+
+adding ai reviews

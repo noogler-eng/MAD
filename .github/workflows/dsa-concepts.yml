@@ -1,0 +1,194 @@
+name: dsa-concepts
+
+# When you push a DSA solution, this appends a "CONCEPTS" explainer block
+# below your code -- intuition, a dry run on a small input, complexity, and
+# common mistakes -- then commits it back.
+#
+# Copilot cannot be called from a workflow (GitHub Models was retired on
+# 2026-07-30), so this uses the Gemini key already in repo secrets.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dsa/**/*.cpp'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Glob of files to (re)generate, e.g. dsa/heap/*.cpp'
+        required: false
+        default: 'dsa/**/*.cpp'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Two runs committing to main at once would race.
+  group: dsa-concepts
+  cancel-in-progress: false
+
+jobs:
+  explain:
+    # The bot's own commit is tagged [skip ci], but guard here too so a manual
+    # revert or a rebase can never start a commit loop.
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # need HEAD^ to diff the push
+
+      - name: Pick files to process
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ github.event.inputs.target }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            # Backfill mode: every file matching the glob.
+            eval "ls -1 ${TARGET:-dsa/**/*.cpp}" 2>/dev/null | sort -u > files.txt || true
+          else
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              git diff --name-only HEAD^ HEAD -- 'dsa/*.cpp' 'dsa/**/*.cpp' > files.txt || true
+            else
+              git diff --name-only "$BEFORE" "${{ github.sha }}" -- 'dsa/*.cpp' 'dsa/**/*.cpp' > files.txt || true
+            fi
+          fi
+
+          # Drop deleted files.
+          : > kept.txt
+          while IFS= read -r f; do [ -f "$f" ] && echo "$f" >> kept.txt; done < files.txt
+          mv kept.txt files.txt
+
+          total=$(wc -l < files.txt | tr -d ' ')
+          # Cap per run so one big push cannot exhaust the free-tier quota.
+          # Announce it rather than silently truncating.
+          if [ "$total" -gt 10 ]; then
+            echo "::warning::$total files changed; processing the first 10 only. Re-run workflow_dispatch for the rest."
+            head -10 files.txt > t && mv t files.txt
+          fi
+
+          echo "count=$(wc -l < files.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "Files to process:"; cat files.txt
+
+      - name: Generate explanations
+        if: steps.pick.outputs.count != '0'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -uo pipefail
+          if [ -z "${GEMINI_API_KEY:-}" ]; then
+            echo "::error::GEMINI_API_KEY secret is not set."
+            exit 1
+          fi
+
+          BEGIN='// ===== CONCEPTS (auto-generated — do not edit below) ====='
+          END='// ===== END CONCEPTS ====='
+
+          # NOTE: a heredoc cannot be used here -- YAML requires this block to
+          # stay indented, but bash requires the heredoc terminator at column 0.
+          # A single-quoted assignment keeps both happy.
+          #
+          # Change "simple Hinglish" below to "simple English" if you prefer.
+          PROMPT='You are explaining a competitive-programming solution to someone learning DSA.
+
+          Given the C++ solution below, write an explanation in simple Hinglish (Hindi
+          written in English letters, mixed with English technical terms) -- the way a
+          good teacher explains at a whiteboard. Plain text only, no markdown headers,
+          no code fences.
+
+          Cover exactly these five parts, each with the heading shown:
+
+          1) PROBLEM KYA KEH RAHA HAI
+             One short paragraph: what is actually being asked.
+
+          2) CORE CONCEPT
+             Which data structure or technique is used and WHY that one. What property
+             of it makes this problem easy. This is the most important part -- be
+             specific, not generic.
+
+          3) DRY RUN
+             Take a small concrete input (4-6 elements). Walk through the code step by
+             step, showing the state of the data structure after each step. Use real
+             numbers, not placeholders.
+
+          4) COMPLEXITY
+             Time and space, with the reason for each -- say which operation costs what.
+
+          5) COMMON MISTAKES
+             2-3 specific errors someone would actually make on this problem, and the
+             edge cases the code must handle.
+
+          Be concrete and correct. Do not praise the code. Do not restate the code line
+          by line. If the solution has an actual bug, say so plainly under a 6th heading
+          WARNING.
+
+          Solution follows:'
+
+          changed=0
+          while IFS= read -r f; do
+            echo "::group::$f"
+
+            # Strip any previous block so re-running refreshes instead of stacking.
+            awk -v b="$BEGIN" 'index($0,b){exit} {print}' "$f" > code_only.cpp
+            # Trim trailing blank lines.
+            awk 'NF{p=NR} {l[NR]=$0} END{for(i=1;i<=p;i++) print l[i]}' code_only.cpp > code_trim.cpp
+            mv code_trim.cpp code_only.cpp
+
+            jq -n --arg p "$PROMPT" --rawfile c code_only.cpp \
+              '{contents:[{parts:[{text:($p + "\n\n" + $c)}]}],
+                generationConfig:{temperature:0.3}}' > body.json
+
+            http=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent" \
+              -H "x-goog-api-key: $GEMINI_API_KEY" \
+              -H 'Content-Type: application/json' \
+              -d @body.json || echo "000")
+
+            if [ "$http" != "200" ]; then
+              echo "::warning::$f — Gemini returned HTTP $http, skipping"
+              head -c 400 resp.json; echo; echo "::endgroup::"; continue
+            fi
+
+            jq -r '.candidates[0].content.parts[0].text // empty' resp.json > expl.txt
+            if [ ! -s expl.txt ]; then
+              echo "::warning::$f — empty response, skipping"; echo "::endgroup::"; continue
+            fi
+
+            # A literal */ in the text would terminate the C++ block comment
+            # early and break compilation. Neutralise it.
+            sed -i 's:\*/:* /:g' expl.txt
+
+            {
+              cat code_only.cpp
+              echo
+              echo
+              echo "$BEGIN"
+              echo "/*"
+              cat expl.txt
+              echo "*/"
+              echo "$END"
+            } > out.cpp
+            mv out.cpp "$f"
+
+            changed=$((changed+1))
+            echo "::endgroup::"
+          done < files.txt
+
+          echo "updated $changed file(s)"
+
+      - name: Commit back
+        if: steps.pick.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- 'dsa/**/*.cpp' 'dsa/*.cpp'
+          # [skip ci] is what stops this commit from retriggering the workflow.
+          git commit -m "docs(dsa): append generated concept explanations [skip ci]"
+          git push
