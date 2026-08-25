@@ -135,7 +135,70 @@ Access-Control-Request-Headers: Content-Type, Authorization
 
 # Respnse to preflight request
 HTTP/1.1 204 No Content
-Access-Control-Allow-Origin https://example.com
+Access-Control-Allow-Origin: https://example.com
 Access-Control-Allow-Methods: PUT, DELETE
 Access-Control-Allow-Headers: Authorization
 Access-Control-Max-Age: 86400
+
+
+# Response codes
+Information: 1xx
+Success: 2xx
+# 200 OK
+# 201 Created
+# 202 Accepted
+# 204 No Content
+
+Redirection: 3xx
+# 300 Multiple Choices
+# 301 Moved Permanently
+# 302 Found
+# 303 See Other
+# 304 Not Modified - use cached version of the resource
+
+Client Error: 4xx
+# 400 Bad Request
+# 401 Unauthorized
+# 403 Forbidden
+# 404 Not Found
+
+Server Error: 5xx
+# 500 Internal Server Error
+# 502 Bad Gateway
+# 503 Service Unavailable
+# 504 Gateway Timeout
+
+
+# HTTP caching
+# response contains
+# - Cache-Control: Specifies caching directives (e.g., no-cache, no-store, max-age) to control how and 
+#   for how long the response can be cached.
+# - ETag: Provides a unique identifier for the specific version of the resource, 
+#   allowing clients to validate cached responses.
+
+
+# Content Negotiation
+# Accept-Language: Specifies the preferred language(s) for the response, allowing the server to serve content in the appropriate language.
+# Accept-Encoding: Indicates the preferred content encoding(s) (e.g., gzip, deflate, br) for the response, 
+#   enabling the server to compress the response data accordingly.
+
+
+# Persistent Connections and Keep-Alive
+# Connection: keep-alive: Instructs the server to keep the TCP connection open for multiple requests/responses, 
+#   reducing the overhead of establishing new connections for each request.
+# Keep-Alive: timeout=5, max=100: Specifies the maximum time (in seconds) the connection should be kept alive and 
+#   the maximum number of requests that can be sent over the same connection before it is closed, allowing for
+#   efficient reuse of the connection.
+
+
+# Large data transfer and chunked encoding
+# Transfer-Encoding: chunked: Indicates that the response body is being sent in chunks, 
+#   allowing the server to start sending data before the entire response is ready, 
+#   which is useful for streaming large responses
+
+
+# TLS, SSL, and HTTPS
+# TLS (Transport Layer Security) and SSL (Secure Sockets Layer) are cryptographic protocols
+# that provide secure communication over a network. HTTPS (Hypertext Transfer Protocol Secure) is the
+# secure version of HTTP that uses TLS/SSL to encrypt data transmitted between a client and a server, 
+# ensuring confidentiality, integrity, and authenticity of the data exchanged.
