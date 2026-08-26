@@ -41,3 +41,4 @@
 # like gemini api key, stripe api key, etc.
 # user can rotate the api key, and revoke it if compromised.
 # same it works for the chatgpt api key, we can generate it, and use it to authenticate the client to the server.
+# this can be used in client to server, server to server, and server to client communication.
