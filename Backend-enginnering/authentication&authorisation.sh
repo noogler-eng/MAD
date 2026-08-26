@@ -42,3 +42,22 @@
 # user can rotate the api key, and revoke it if compromised.
 # same it works for the chatgpt api key, we can generate it, and use it to authenticate the client to the server.
 # this can be used in client to server, server to server, and server to client communication.
+
+
+# Oauth 2.0
+# Open Authorisation 2.0 is an authorization framework that enables applications to obtain 
+# limited access to user accounts on an HTTP service, such as Facebook, GitHub, and DigitalOcean.
+# sharing tokens instead of credentials, and allows users to grant third-party applications access 
+# to their resources without sharing their credentials.
+# it is great for authorization, but not for authentication. it is used to authorize access to resources, 
+# but not to authenticate the user.
+
+
+
+# OpenID Connect
+# OpenID Connect is an authentication layer on top of OAuth 2.0, which allows clients to verify the identity of 
+# the user based on the authentication performed by an authorization server, as well
+# idToken is a JWT that contains user information and is used to authenticate the user.
+# user -> google signin -> google authorisation server -> authorisation code + token id? -> auth code exchange with access token by client -> client can do different operations
+# client store this access token and id token in the client side, and use it to authenticate the user in subsequent requests.
+# client will get the user information from the id token, and use it to authenticate the user in subsequent requests.
