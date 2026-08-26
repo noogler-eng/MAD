@@ -22,6 +22,7 @@ try {
 
     console.log(response.choices[0].message.content);
 }catch(error){
+    // based on the error status code, you can handle different types of errors
     if(error.status === 401){
         console.error("Unauthorized: Please check your API key and URL.");
     } else if(error.status === 404){
