@@ -28,6 +28,8 @@
 # Cookies can be used to store sessionId or JWTs, and can be configured with various 
 # attributes such as expiration time, secure flag, httpOnly flag, etc.
 
+
+
 # Modern authentication
 # 1. Oauth 2.0
 # 2. OpenID Connect
@@ -36,12 +38,14 @@
 # 5. stateful authentication (sessions, etc)
 
 
+
 # API keys
 # we generate them, and they are used to authenticate the client to the server.
 # like gemini api key, stripe api key, etc.
 # user can rotate the api key, and revoke it if compromised.
 # same it works for the chatgpt api key, we can generate it, and use it to authenticate the client to the server.
 # this can be used in client to server, server to server, and server to client communication.
+
 
 
 # Oauth 2.0
@@ -61,3 +65,11 @@
 # user -> google signin -> google authorisation server -> authorisation code + token id? -> auth code exchange with access token by client -> client can do different operations
 # client store this access token and id token in the client side, and use it to authenticate the user in subsequent requests.
 # client will get the user information from the id token, and use it to authenticate the user in subsequent requests.
+
+
+
+# RBAC - role based access control
+# RBAC is a method of restricting access to resources based on the roles of individual users within an organization. 
+# RBAC allows administrators to define roles and assign permissions to those roles, and then assign users to those roles. 
+# This allows for a more granular level of access control,
+# as users can be assigned to multiple roles, and roles can have different permissions.
